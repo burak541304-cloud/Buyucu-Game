@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build Buyucu APK
 on: [push, workflow_dispatch]
 
 jobs:
@@ -20,22 +20,19 @@ jobs:
       - name: Web Build
         run: npm run build
 
-      - name: Capacitor Setup & Duplicate Fix
+      - name: Capacitor Setup & Fix
         run: |
           npm install @capacitor/core @capacitor/cli @capacitor/android
-          npx cap init "Testere" "com.burak.testere" --web-dir dist
+          npx cap init "Buyucu" "com.burak.buyucu" --web-dir dist
           npx cap add android
           
-          # 1. ÇAKIŞAN PAKETLERİ DIŞLA (Critiсal Fix)
-          # Android projesindeki tum build.gradle dosyalarına çakışmayı önleyen konfigürasyonu ekler
+          # Kotlin ve Duplicate Class hatalarını çözen kritik ayarlar
           sed -i '/dependencies {/a \    configurations.all { resolutionStrategy { force "org.jetbrains.kotlin:kotlin-stdlib:1.8.22"; force "org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.22"; force "org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.22" } }' android/app/build.gradle
-          
-          # 2. GRADLE AYARLARI
           echo "android.useAndroidX=true" >> android/gradle.properties
           echo "android.enableJetifier=true" >> android/gradle.properties
           echo "kotlin.stdlib.default.dependency=false" >> android/gradle.properties
 
-          # 3. JAVA 21 ZORLAMASI
+          # Java 21 uyumluluğu
           find android -name "build.gradle" -exec sed -i 's/JavaVersion.VERSION_17/JavaVersion.VERSION_21/g' {} +
           find android -name "build.gradle" -exec sed -i 's/JavaVersion.VERSION_1_8/JavaVersion.VERSION_21/g' {} +
           
@@ -50,5 +47,5 @@ jobs:
       - name: Save APK
         uses: actions/upload-artifact@v4
         with:
-          name: oyun-apk-dosyasi
+          name: buyucu-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
