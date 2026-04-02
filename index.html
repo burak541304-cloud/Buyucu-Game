@@ -1,0 +1,2054 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wizard RPG: Knight Edition</title>
+    <style>
+        body {
+            margin: 0; padding: 0;
+            display: flex; justify-content: center; align-items: center;
+            height: 100vh; background-color: #05050a;
+            color: #e0e0e0; font-family: 'Tahoma', sans-serif;
+            overflow: hidden;
+        }
+
+        #game-container {
+            position: relative;
+            box-shadow: 0 0 60px rgba(0, 0, 0, 0.9);
+            border: 2px solid #1a1a2e;
+            width: 800px; height: 600px;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        canvas { display: block; }
+
+        #ui {
+            position: absolute; top: 15px; left: 15px;
+            pointer-events: none; z-index: 10;
+            background: rgba(0, 0, 20, 0.7);
+            padding: 12px; border-radius: 4px;
+            border: 1px solid rgba(255, 215, 0, 0.3);
+        }
+
+        .stat-bar {
+            width: 150px; height: 12px;
+            background: #222; border-radius: 2px;
+            margin-bottom: 5px; border: 1px solid #444;
+            position: relative; overflow: hidden;
+        }
+        #hp-bar { width: 100%; height: 100%; background: #c0392b; transition: width 0.3s; }
+        #mp-bar { width: 100%; height: 100%; background: #2980b9; transition: width 0.3s; }
+        #xp-bar { width: 0%; height: 100%; background: #27ae60; transition: width 0.3s; }
+        .bar-text {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 9px; color: #fff; font-weight: bold; text-shadow: 1px 1px 1px #000;
+            pointer-events: none;
+        }
+
+        /* Quest UI */
+        #quest-ui {
+            position: absolute; top: 120px; left: 15px;
+            width: 180px; background: rgba(0, 0, 20, 0.7);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            padding: 10px; border-radius: 4px;
+            color: #fff; font-size: 12px;
+            pointer-events: none;
+        }
+        .quest-title { color: #f1c40f; font-weight: bold; margin-bottom: 5px; border-bottom: 1px solid #444; }
+        .quest-item { margin-bottom: 8px; }
+        .quest-progress { color: #2ecc71; font-weight: bold; }
+
+        /* Tooltip Style */
+        #tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.9);
+            border: 1px solid #f1c40f;
+            padding: 10px;
+            border-radius: 4px;
+            pointer-events: none;
+            display: none;
+            z-index: 100;
+            font-size: 12px;
+            color: #fff;
+            min-width: 120px;
+        }
+        .tooltip-title { color: #f1c40f; font-weight: bold; margin-bottom: 5px; border-bottom: 1px solid #444; }
+        .stat-bonus { color: #2ecc71; }
+
+        /* Knight Online Style Inventory */
+        #inventory-ui {
+            position: absolute; top: 50px; right: 20px;
+            width: 280px; background: linear-gradient(135deg, #1e202e 0%, #11121a 100%);
+            border: 2px solid #5a5e7a; border-radius: 4px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.9), inset 0 0 10px rgba(255,255,255,0.05);
+            display: none; z-index: 50; padding: 12px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            user-select: none;
+        }
+
+        .inv-header {
+            text-align: center; font-weight: bold; margin-bottom: 15px;
+            padding-bottom: 8px; border-bottom: 2px solid #5a5e7a;
+            color: #d1d5db; text-transform: uppercase; letter-spacing: 1px;
+            font-size: 14px; text-shadow: 1px 1px 2px #000;
+            background: rgba(255,255,255,0.05); margin: -12px -12px 15px -12px; padding: 10px;
+        }
+
+        .character-preview {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+            padding: 15px; background: rgba(0,0,0,0.4);
+            margin-bottom: 15px; border-radius: 8px; border: 1px solid #3a3d52;
+            position: relative; height: 160px;
+        }
+        .character-preview::before {
+            content: '🧙'; position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%); font-size: 80px;
+            opacity: 0.05; filter: grayscale(1); pointer-events: none;
+        }
+
+        .equip-slot {
+            width: 50px; height: 50px;
+            background: radial-gradient(circle, #2d3142 0%, #1a1c2c 100%);
+            border: 2px solid #4a4e69; border-radius: 6px;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 28px; cursor: pointer; transition: all 0.2s;
+            box-shadow: inset 0 0 8px rgba(0,0,0,0.5);
+        }
+        .equip-slot:hover { border-color: #f1c40f; box-shadow: 0 0 12px rgba(241, 196, 15, 0.4); }
+        .equip-slot.active { border-color: #f1c40f; background: radial-gradient(circle, #3d4152 0%, #1a1c2c 100%); }
+
+        .inventory-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
+            background: rgba(0,0,0,0.2); padding: 8px; border-radius: 6px;
+            max-height: 240px; overflow-y: auto;
+        }
+
+        .grid-slot {
+            width: 54px; height: 54px;
+            background: #1a1c2c; border: 1px solid #3a3d52;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 24px; position: relative; cursor: pointer;
+            transition: all 0.15s; border-radius: 4px;
+        }
+        .grid-slot:hover {
+            background: #2d3142; border-color: #5a5e7a;
+            transform: translateY(-1px); box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+        }
+        .grid-slot .item-icon { font-size: 26px; }
+        .grid-slot .item-count {
+            position: absolute; bottom: 2px; right: 4px;
+            font-size: 11px; color: #f1c40f; font-weight: bold;
+            text-shadow: 1px 1px 1px #000;
+        }
+
+        .inv-footer {
+            margin-top: 15px; padding-top: 10px;
+            border-top: 2px solid #5a5e7a;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .noah-display {
+            background: #000; padding: 6px 12px; border-radius: 4px;
+            border: 1px solid #4a4e69; color: #f1c40f; font-weight: bold;
+            font-size: 13px; box-shadow: inset 0 0 5px rgba(241,196,15,0.2);
+            display: flex; align-items: center; gap: 5px;
+        }
+
+        /* Shop & Other UI */
+        /* Knight Online Style Stat Window */
+        #stat-ui {
+            position: absolute; top: 50px; left: 20px;
+            width: 220px; background: #1a1c2c;
+            border: 2px solid #3498db;
+            box-shadow: 0 0 20px rgba(0,0,0,0.8);
+            display: none; z-index: 55; padding: 10px;
+        }
+
+        .stat-row {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 8px; padding: 5px; background: rgba(0,0,0,0.3);
+            border-radius: 3px;
+        }
+
+        .stat-name { color: #3498db; font-weight: bold; font-size: 13px; }
+        .stat-value { color: #fff; font-weight: bold; }
+        .stat-btn {
+            width: 20px; height: 20px; background: #3498db; color: #fff;
+            border: none; border-radius: 2px; cursor: pointer;
+            display: flex; justify-content: center; align-items: center;
+            font-weight: bold; font-size: 14px;
+        }
+        .stat-btn:disabled { background: #444; cursor: not-allowed; }
+        .stat-btn:hover:not(:disabled) { background: #2980b9; }
+
+        .points-text {
+            text-align: center; color: #f1c40f; font-weight: bold;
+            margin: 10px 0; border-top: 1px solid #444; padding-top: 10px;
+        }
+
+        #shop-ui {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            background: #1a1c2c; border: 2px solid #f1c40f;
+            padding: 20px; border-radius: 4px;
+            display: none; z-index: 60; min-width: 300px;
+        }
+
+        .shop-item {
+            display:flex; justify-content:space-between; align-items:center; 
+            padding:10px; border-bottom:1px solid #444;
+            cursor: help;
+        }
+
+        .btn {
+            padding: 8px 16px; cursor: pointer;
+            background: #2d3436; border: 1px solid #f1c40f; color: #f1c40f;
+            font-family: inherit; font-size: 12px; font-weight: bold;
+        }
+        .btn:hover { background: #3d4446; }
+
+        #shop-trigger-msg {
+            position: absolute; bottom: 30px; left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8); color: #f1c40f;
+            padding: 8px 16px; border: 1px solid #f1c40f;
+            display: none; z-index: 10; font-size: 13px;
+        }
+
+        #overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: none; flex-direction: column; justify-content: center; align-items: center;
+            background: rgba(0,0,0,0.9); z-index: 100;
+        }
+
+        /* Mobile Joystick */
+        #joystick-container {
+            position: absolute; bottom: 40px; left: 40px;
+            width: 120px; height: 120px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.2);
+            display: none; touch-action: none; z-index: 1000;
+        }
+        #joystick-knob {
+            position: absolute; top: 50%; left: 50%;
+            width: 50px; height: 50px;
+            background: rgba(255, 255, 255, 0.4);
+            border-radius: 50%; transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+
+        /* Skill Bar */
+        #skill-bar {
+            position: absolute; bottom: 20px; left: 50%;
+            transform: translateX(-50%);
+            display: flex; gap: 10px;
+            background: rgba(0,0,0,0.6);
+            padding: 8px; border-radius: 8px;
+            border: 1px solid rgba(255,215,0,0.3);
+            z-index: 100;
+        }
+        .skill-slot {
+            width: 45px; height: 45px;
+            background: #2d3436; border: 2px solid #444;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 20px; color: #fff; position: relative;
+            cursor: pointer; border-radius: 4px;
+        }
+        .skill-slot.active { border-color: #f1c40f; box-shadow: 0 0 10px #f1c40f; }
+        .skill-slot .key-hint {
+            position: absolute; top: -5px; left: -5px;
+            background: #f1c40f; color: #000; font-size: 10px;
+            width: 15px; height: 15px; border-radius: 50%;
+            display: flex; justify-content: center; align-items: center; font-weight: bold;
+        }
+        .skill-slot .item-count {
+            position: absolute; bottom: -5px; right: -5px;
+            background: #c0392b; color: #fff; font-size: 10px;
+            min-width: 15px; height: 15px; border-radius: 8px;
+            display: flex; justify-content: center; align-items: center; 
+            font-weight: bold; padding: 0 4px;
+        }
+        .skill-cooldown {
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 0%;
+            background: rgba(0,0,0,0.6); transition: height 0.1s linear;
+        }
+
+        @media (max-width: 1024px) {
+            #joystick-container { display: block; }
+        }
+        #clock {
+            position: fixed; top: 20px; right: 20px;
+            background: rgba(0,0,0,0.7); border: 2px solid #f1c40f;
+            padding: 5px 15px; border-radius: 20px;
+            color: #f1c40f; font-weight: bold; font-family: 'Segoe UI', Arial;
+            display: flex; align-items: center; gap: 8px; z-index: 100;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <canvas id="gameCanvas"></canvas>
+    
+    <div id="clock">
+        <span id="clock-icon">☀️</span>
+        <span id="clock-time">12:00</span>
+    </div>
+
+    <div id="ui">
+        <div style="font-size: 12px; color: #c0392b; font-weight: bold;">HP</div>
+        <div class="stat-bar">
+            <div id="hp-bar"></div>
+            <div class="bar-text" id="hp-text">100 / 100</div>
+        </div>
+        <div style="font-size: 12px; color: #2980b9; font-weight: bold;">MP</div>
+        <div class="stat-bar">
+            <div id="mp-bar"></div>
+            <div class="bar-text" id="mp-text">100 / 100</div>
+        </div>
+        <div style="font-size: 12px; color: #27ae60; font-weight: bold;">EXP</div>
+        <div class="stat-bar">
+            <div id="xp-bar"></div>
+            <div class="bar-text" id="xp-text">0 / 100</div>
+        </div>
+        <div style="font-size: 14px; color: #f1c40f; margin-top: 5px;">LVL <span id="lvl-text">1</span> | ATK: <span id="atk-text">30</span></div>
+    </div>
+
+    <div id="quest-ui">
+        <div class="quest-title">GÖREVLER</div>
+        <div id="quest-list">
+            <!-- Görevler buraya gelecek -->
+        </div>
+    </div>
+
+    <div id="shop-trigger-msg">SUNDRIES [E]</div>
+
+    <!-- Stat Window -->
+    <div id="stat-ui">
+        <div class="inv-header" style="border-color: #3498db; color: #3498db;">CHARACTER STATS [U]</div>
+        <div class="stat-row">
+            <span class="stat-name">INT (Zeka)</span>
+            <div style="display:flex; align-items:center; gap:10px;">
+                <span class="stat-value" id="stat-int">0</span>
+                <button class="stat-btn" onclick="addStat('int')">+</button>
+            </div>
+        </div>
+        <div class="stat-row">
+            <span class="stat-name">HP (Sağlık)</span>
+            <div style="display:flex; align-items:center; gap:10px;">
+                <span class="stat-value" id="stat-hp">0</span>
+                <button class="stat-btn" onclick="addStat('hp')">+</button>
+            </div>
+        </div>
+        <div class="stat-row">
+            <span class="stat-name">DEX (Çeviklik)</span>
+            <div style="display:flex; align-items:center; gap:10px;">
+                <span class="stat-value" id="stat-dex">0</span>
+                <button class="stat-btn" onclick="addStat('dex')">+</button>
+            </div>
+        </div>
+        <div class="points-text">PUAN: <span id="stat-points">0</span></div>
+        <button class="btn" style="width: 100%; border-color: #3498db; color: #3498db;" onclick="toggleStats()">KAPAT</button>
+    </div>
+
+    <!-- Tooltip -->
+    <div id="tooltip"></div>
+
+    <!-- Knight Online Style Envanter -->
+    <div id="inventory-ui">
+        <div class="inv-header">INVENTORY [I]</div>
+        
+        <div class="character-preview">
+            <div style="grid-column: 1; grid-row: 1;" class="equip-slot" id="slot-hat" onclick="unequip('hat')">👒</div>
+            <div style="grid-column: 1; grid-row: 2;" class="equip-slot">👕</div>
+            <div style="grid-column: 1; grid-row: 3;" class="equip-slot">👖</div>
+            
+            <!-- Karakter Silüeti (Orta Kısım) -->
+            <div style="grid-column: 2; grid-row: 1 / 4; display:flex; align-items:center; justify-content:center;">
+                <div style="font-size: 50px; filter: drop-shadow(0 0 10px rgba(78, 204, 163, 0.3));">🧙‍♂️</div>
+            </div>
+            
+            <div style="grid-column: 3; grid-row: 1;" class="equip-slot" id="slot-weapon" onclick="unequip('weapon')">🪄</div>
+            <div style="grid-column: 3; grid-row: 2;" class="equip-slot">🛡️</div>
+            <div style="grid-column: 3; grid-row: 3;" class="equip-slot">💍</div>
+        </div>
+
+        <div class="inventory-grid" id="inv-grid">
+            <!-- Grid slotları JS ile dolacak -->
+        </div>
+
+        <div class="inv-footer">
+            <div class="noah-display">
+                💰 <span id="gold-text">0</span>
+            </div>
+            <div style="color: #aaa; font-size: 10px;">Weight: 12 / 100</div>
+        </div>
+        <button class="btn" style="width: 100%; margin-top: 10px; border-color: #5a5e7a; color: #aaa;" onclick="toggleInventory()">CLOSE</button>
+    </div>
+
+    <div id="shop-ui">
+        <h3 style="text-align: center; color: #f1c40f; margin-top: 0;">SUNDRIES</h3>
+        <div id="shop-items">
+            <!-- Market Eşyaları JS ile Gelecek -->
+        </div>
+        <button class="btn" style="width: 100%; margin-top: 15px;" onclick="toggleShop()">EXIT</button>
+    </div>
+
+    <div id="overlay">
+        <h1 style="color: #c0392b; font-size: 40px;">YOU DIED</h1>
+        <p id="overlay-msg" style="color: #aaa;"></p>
+        <button class="btn" style="padding: 10px 30px;" onclick="resetGame()">RESPAWN</button>
+    </div>
+
+    <div id="joystick-container">
+        <div id="joystick-knob"></div>
+    </div>
+
+    <div id="skill-bar">
+        <div class="skill-slot" id="skill-1" onclick="castSpecificSkill(0)">
+            <span class="key-hint">1</span>❄️
+            <div class="skill-cooldown" id="cd-1"></div>
+        </div>
+        <div class="skill-slot" id="skill-2" onclick="castSpecificSkill(1)">
+            <span class="key-hint">2</span>⚡
+            <div class="skill-cooldown" id="cd-2"></div>
+        </div>
+        <!-- Hızlı İksir Slotları -->
+        <div class="skill-slot" id="quick-hp" onclick="useQuickPotion('potion')" style="margin-left: 20px;">
+            <span class="key-hint">3</span>🧪
+            <span class="item-count" id="hp-potion-count">0</span>
+        </div>
+        <div class="skill-slot" id="quick-mp" onclick="useQuickPotion('mana_potion')">
+            <span class="key-hint">4</span>💧
+            <span class="item-count" id="mp-potion-count">0</span>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Sound Manager (Web Audio API)
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const lastSoundTimes = {}; // Optimizasyon: Seslerin üst üste binmesini önlemek için
+
+    function playSound(type) {
+        if (!gameActive && type !== 'click') return;
+        
+        // Rate Limiter: Aynı sesi 50ms içinde tekrar çalma (Donmaları önler)
+        const nowTime = Date.now();
+        if (lastSoundTimes[type] && nowTime - lastSoundTimes[type] < 50) return;
+        lastSoundTimes[type] = nowTime;
+
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        const now = audioCtx.currentTime;
+        let duration = 0.1;
+
+        switch(type) {
+            case 'cast': // Büyü Atma
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(440, now);
+                osc.frequency.exponentialRampToValueAtTime(110, now + 0.2);
+                gain.gain.setValueAtTime(0.05, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+                duration = 0.2;
+                break;
+            case 'hit': // Vuruş
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.linearRampToValueAtTime(50, now + 0.08);
+                gain.gain.setValueAtTime(0.05, now);
+                gain.gain.linearRampToValueAtTime(0.001, now + 0.08);
+                duration = 0.08;
+                break;
+            case 'pickup': // Eşya Toplama
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(600, now);
+                osc.frequency.linearRampToValueAtTime(900, now + 0.1);
+                gain.gain.setValueAtTime(0.03, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+                duration = 0.1;
+                break;
+            case 'gold': // Altın Kazanma
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(1200, now);
+                osc.frequency.linearRampToValueAtTime(1500, now + 0.05);
+                gain.gain.setValueAtTime(0.03, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+                duration = 0.1;
+                break;
+            case 'levelup': // Seviye Atlama
+                [0, 0.1, 0.2].forEach(delay => {
+                    const o = audioCtx.createOscillator();
+                    const g = audioCtx.createGain();
+                    o.connect(g); g.connect(audioCtx.destination);
+                    o.frequency.setValueAtTime(440 + delay*1000, now + delay);
+                    g.gain.setValueAtTime(0.08, now + delay);
+                    g.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.3);
+                    o.start(now + delay);
+                    o.stop(now + delay + 0.3);
+                    setTimeout(() => { o.disconnect(); g.disconnect(); }, 500);
+                });
+                return; // Levelup için kendi döngüsü var
+            case 'click': // Buton Tıklama
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, now);
+                gain.gain.setValueAtTime(0.03, now);
+                gain.gain.linearRampToValueAtTime(0.001, now + 0.05);
+                duration = 0.05;
+                break;
+            case 'death': // Karakter Ölümü
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(200, now);
+                osc.frequency.exponentialRampToValueAtTime(50, now + 0.5);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.linearRampToValueAtTime(0.001, now + 0.5);
+                duration = 0.5;
+                break;
+            case 'stomp': // Boss Adımı
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(80, now);
+                osc.frequency.exponentialRampToValueAtTime(30, now + 0.15);
+                gain.gain.setValueAtTime(0.08, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+                duration = 0.15;
+                break;
+        }
+
+        osc.start(now);
+        osc.stop(now + duration);
+        
+        // Bellek temizliği: İşlem bittikten sonra bağlantıları kes
+        setTimeout(() => {
+            osc.disconnect();
+            gain.disconnect();
+        }, (duration + 0.1) * 1000);
+    }
+
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const hpBar = document.getElementById('hp-bar');
+    const mpBar = document.getElementById('mp-bar');
+    const xpBar = document.getElementById('xp-bar');
+    const hpText = document.getElementById('hp-text');
+    const mpText = document.getElementById('mp-text');
+    const xpText = document.getElementById('xp-text');
+    const lvlText = document.getElementById('lvl-text');
+    const goldText = document.getElementById('gold-text');
+    const atkText = document.getElementById('atk-text');
+    const overlay = document.getElementById('overlay');
+    const inventoryUI = document.getElementById('inventory-ui');
+    const shopUI = document.getElementById('shop-ui');
+    const statUI = document.getElementById('stat-ui');
+    const shopMsg = document.getElementById('shop-trigger-msg');
+    const invGrid = document.getElementById('inv-grid');
+    const tooltip = document.getElementById('tooltip');
+    const statPointsText = document.getElementById('stat-points');
+    const joystickContainer = document.getElementById('joystick-container');
+    const joystickKnob = document.getElementById('joystick-knob');
+
+    // Ayarlar
+    canvas.width = 800; canvas.height = 600;
+    const WORLD_WIDTH = 3200; const WORLD_HEIGHT = 2400;
+    const TILE_SIZE = 64;
+
+    // Joystick State
+    let joystickData = { active: false, x: 0, y: 0, angle: 0, distance: 0 };
+
+    // Eşya Veritabanı
+    const ITEM_DB = {
+        potion: { id: 'potion', name: 'HP Potion', icon: '🧪', type: 'consumable', hp: 50, cost: 50, desc: 'Canı 50 yeniler.' },
+        mana_potion: { id: 'mana_potion', name: 'MP Potion', icon: '💧', type: 'consumable', mp: 50, cost: 50, desc: 'Manayı 50 yeniler.' },
+        speed: { id: 'speed', name: 'Speed Scroll', icon: '📜', type: 'consumable', speedBonus: 1, cost: 150, desc: 'Hızı kalıcı olarak 1 artırır.' },
+        
+        // Silahlar (Weapon)
+        fire_staff: { id: 'fire_staff', name: 'Fire Staff', icon: '🔥', type: 'weapon', damage: 40, intBonus: 5, dexBonus: 2, cost: 300, desc: 'Güçlü bir ateş asası.' },
+        ice_staff: { id: 'ice_staff', name: 'Ice Staff', icon: '❄️', type: 'weapon', damage: 65, intBonus: 12, hpBonus: 5, cost: 800, desc: 'Dondurucu soğuklukta bir asa.' },
+        lightning_staff: { id: 'lightning_staff', name: 'Lightning Staff', icon: '⚡', type: 'weapon', damage: 110, intBonus: 25, dexBonus: 10, cost: 2500, desc: 'Yıldırımların gücünü barındırır.' },
+        
+        // Şapkalar / Zırhlar (Hat)
+        wizard_hat: { id: 'wizard_hat', name: 'Wizard Hat', icon: '🧙', type: 'hat', maxHp: 50, intBonus: 3, cost: 250, desc: 'Kadim bir büyücü şapkası.' },
+        apprentice_robe: { id: 'apprentice_robe', name: 'Apprentice Robe', icon: '🧥', type: 'hat', maxHp: 120, intBonus: 8, hpBonus: 10, cost: 600, desc: 'Çırak büyücü cübbesi.' },
+        mystic_crown: { id: 'mystic_crown', name: 'Mystic Crown', icon: '👑', type: 'hat', maxHp: 300, intBonus: 20, dexBonus: 5, hpBonus: 20, cost: 2000, desc: 'Mistik güçlerle dövülmüş bir taç.' }
+    };
+
+    // Yetenek Veritabanı
+    const BASIC_ATTACK = { name: 'Fireball', icon: '🔥', color: '#ff4d00', damageMult: 0.8, cd: 45, speed: 9, size: 7, effect: 'burn', manaCost: 0 };
+    
+    const SKILL_DB = [
+        { name: 'Frostbolt', icon: '❄️', color: '#00d2ff', damageMult: 1.0, cd: 60, speed: 12, size: 6, effect: 'slow', manaCost: 15 },
+        { name: 'Lightning Bolt', icon: '⚡', color: '#f1c40f', damageMult: 1.8, cd: 120, speed: 15, size: 4, effect: 'shock', manaCost: 35 }
+    ];
+
+    let camera = { x: 0, y: 0 };
+    let player = {
+        x: WORLD_WIDTH / 2, y: WORLD_HEIGHT / 2,
+        size: 24, speed: 5, 
+        hp: 100, maxHp: 100, 
+        mp: 100, maxMp: 100, mpRegen: 0.1,
+        xp: 0, maxXp: 100, lvl: 1, gold: 100,
+        color: '#4ecca3', 
+        basicAttackCooldown: 0,
+        skillCooldowns: [0, 0],
+        statPoints: 0,
+        stats: { int: 0, hp: 0, dex: 0 },
+        quests: [
+            { id: 'kill_slimes', name: 'Slime Temizliği', target: 'Slime', count: 0, goal: 5, reward: 200, completed: false },
+            { id: 'kill_orcs', name: 'Orc Avcısı', target: 'Orc', count: 0, goal: 3, reward: 500, completed: false }
+        ],
+        inventory: [
+            { ...ITEM_DB.potion, count: 1 },
+            { ...ITEM_DB.mana_potion, count: 1 },
+            null, null, null, null, null, null, null, null,
+            null, null, null, null, null, null, null, null, null, null,
+            null, null, null, null, null, null, null, null
+        ],
+        equipment: {
+            weapon: { ...ITEM_DB.fire_staff },
+            hat: { ...ITEM_DB.wizard_hat }
+        }
+    };
+
+    let shopKeeper = { x: WORLD_WIDTH / 2 + 200, y: WORLD_HEIGHT / 2 - 200, size: 32 };
+    let enemies = [];
+    let projectiles = [];
+    let droppedItems = [];
+    let terrain = [];
+    let worldObjects = [];
+    let paths = []; // Yeni: Toprak yollar
+    let particles = []; // Yeni: Atmosferik tozlar
+    let damageNumbers = []; // Yeni: Hasar rakamları
+    let keys = {};
+    let gameActive = true;
+    let isInventoryOpen = false;
+    let isShopOpen = false;
+    let isStatsOpen = false;
+    let frameCount = 0; // Animasyonlar için
+    let screenShake = 0; // Ekran sarsıntısı şiddeti
+
+    // Gün-Gece Döngüsü Ayarları
+    let gameTime = 720; // 0-1440 dakika (12:00 öğlen başlar)
+    const DAY_LENGTH = 1440; // Bir tam gün
+    const TIME_SPEED = 0.2; // Zamanın akış hızı (dakika/frame)
+    const clockTime = document.getElementById('clock-time');
+    const clockIcon = document.getElementById('clock-icon');
+
+    // Performans için ışık maskesi kanvası
+    const lightCanvas = document.createElement('canvas');
+    const lctx = lightCanvas.getContext('2d');
+
+    // Görsel Güzelleştirme için yardımcı fonksiyonlar
+    function drawGrass(ctx, x, y, size, color = '#2d4a3e') {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        for(let i=0; i<3; i++) {
+            const off = (i-1) * 3;
+            const h = size * (0.8 + Math.random()*0.4);
+            ctx.moveTo(x + off, y);
+            ctx.lineTo(x + off + Math.sin(frameCount/20 + x)*2, y - h);
+        }
+        ctx.stroke();
+    }
+
+    function drawWizard(ctx, x, y, size, color, isMoving, equipment) {
+        const bounce = isMoving ? Math.sin(frameCount / 5) * 3 : Math.sin(frameCount / 15) * 2;
+        const breath = Math.sin(frameCount / 25) * 1.5;
+        const walkCycle = isMoving ? Math.sin(frameCount * 0.2) : 0;
+
+        // 1. Gölge (Gelişmiş)
+        const shadowGrad = ctx.createRadialGradient(x, y + size/2, 0, x, y + size/2, size);
+        shadowGrad.addColorStop(0, 'rgba(0,0,0,0.4)');
+        shadowGrad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = shadowGrad;
+        ctx.beginPath(); ctx.ellipse(x, y + size/2, size/1.2, size/4, 0, 0, Math.PI*2); ctx.fill();
+
+        // Ayaklar (Yürüme)
+        if (isMoving) {
+            ctx.fillStyle = '#2c3e50';
+            ctx.beginPath();
+            ctx.arc(x - 8 - walkCycle*5, y + size/2 + 2, 4, 0, Math.PI*2);
+            ctx.arc(x + 8 + walkCycle*5, y + size/2 + 2, 4, 0, Math.PI*2);
+            ctx.fill();
+        }
+
+        // 2. Cübbe (Alt kısım - Gradient ile)
+        const robeGrad = ctx.createLinearGradient(x - size, y, x + size, y);
+        robeGrad.addColorStop(0, '#1a252f');
+        robeGrad.addColorStop(0.5, '#2c3e50');
+        robeGrad.addColorStop(1, '#1a252f');
+        ctx.fillStyle = robeGrad;
+        ctx.beginPath();
+        ctx.moveTo(x - size/1.5, y + size/2);
+        ctx.lineTo(x + size/1.5, y + size/2);
+        ctx.lineTo(x + size/2.5, y - size/3 + bounce);
+        ctx.lineTo(x - size/2.5, y - size/3 + bounce);
+        ctx.closePath(); ctx.fill();
+
+        // 3. Gövde (Üst cübbe)
+        const upperRobeGrad = ctx.createLinearGradient(x, y - size, x, y);
+        upperRobeGrad.addColorStop(0, '#34495e');
+        upperRobeGrad.addColorStop(1, '#2c3e50');
+        ctx.fillStyle = upperRobeGrad;
+        ctx.beginPath();
+        ctx.moveTo(x - size/2.2, y - size/3 + bounce);
+        ctx.lineTo(x + size/2.2, y - size/3 + bounce);
+        ctx.lineTo(x + size/3, y - size + bounce + breath);
+        ctx.lineTo(x - size/3, y - size + bounce + breath);
+        ctx.closePath(); ctx.fill();
+
+        // 4. Kafa
+        ctx.fillStyle = '#ffdbac';
+        ctx.beginPath(); ctx.arc(x, y - size - 5 + bounce + breath, 10, 0, Math.PI*2); ctx.fill();
+        
+        // Sakal (Gradient ile)
+        const beardGrad = ctx.createLinearGradient(x, y - size, x, y - size + 15);
+        beardGrad.addColorStop(0, '#ffffff');
+        beardGrad.addColorStop(1, '#bdc3c7');
+        ctx.fillStyle = beardGrad;
+        ctx.beginPath();
+        ctx.moveTo(x - 6, y - size - 2 + bounce + breath);
+        ctx.lineTo(x + 6, y - size - 2 + bounce + breath);
+        ctx.lineTo(x, y - size + 18 + bounce + breath);
+        ctx.closePath(); ctx.fill();
+
+        // Gözler (Parlayan)
+        ctx.fillStyle = '#222';
+        ctx.beginPath(); ctx.arc(x - 3.5, y - size - 7 + bounce + breath, 1.8, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(x + 3.5, y - size - 7 + bounce + breath, 1.8, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#fff'; // Göz parlaması
+        ctx.beginPath(); ctx.arc(x - 4, y - size - 7.5 + bounce + breath, 0.6, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(x + 3, y - size - 7.5 + bounce + breath, 0.6, 0, Math.PI*2); ctx.fill();
+
+        // 5. Asâ
+        if (equipment.weapon) {
+            const staffX = x + 20;
+            const staffY = y - 10 + bounce;
+            
+            // Asâ gövdesi
+            ctx.strokeStyle = '#4e342e';
+            ctx.lineWidth = 5;
+            ctx.beginPath(); ctx.moveTo(staffX, staffY + 25); ctx.lineTo(staffX, staffY - 45); ctx.stroke();
+            
+            // Asâ kristali (Gelişmiş Parlama)
+            const glow = Math.abs(Math.sin(frameCount / 10)) * 12;
+            const crystalGrad = ctx.createRadialGradient(staffX, staffY - 50, 0, staffX, staffY - 50, 12);
+            crystalGrad.addColorStop(0, '#fff');
+            crystalGrad.addColorStop(0.3, '#00d2ff');
+            crystalGrad.addColorStop(1, 'rgba(0, 210, 255, 0)');
+            
+            ctx.globalAlpha = 0.5;
+            ctx.fillStyle = '#00d2ff';
+            ctx.beginPath(); ctx.arc(staffX, staffY - 50, 10 + glow/2, 0, Math.PI*2); ctx.fill();
+            ctx.globalAlpha = 1.0;
+            
+            ctx.fillStyle = crystalGrad;
+            ctx.beginPath(); ctx.arc(staffX, staffY - 50, 10, 0, Math.PI*2); ctx.fill();
+        }
+
+        // 6. Şapka
+        if (equipment.hat) {
+            const hatColor = '#1a1a2e';
+            ctx.fillStyle = hatColor;
+            // Şapka kenarı
+            ctx.beginPath(); ctx.ellipse(x, y - size - 12 + bounce + breath, 24, 7, 0, 0, Math.PI*2); ctx.fill();
+            
+            // Şapka ucu
+            const hatSway = Math.sin(frameCount/20) * 6;
+            const hatGrad = ctx.createLinearGradient(x, y - size - 60, x, y - size - 15);
+            hatGrad.addColorStop(0, '#2c3e50');
+            hatGrad.addColorStop(1, '#1a1a2e');
+            ctx.fillStyle = hatGrad;
+            ctx.beginPath();
+            ctx.moveTo(x - 16, y - size - 15 + bounce + breath);
+            ctx.lineTo(x + 16, y - size - 15 + bounce + breath);
+            ctx.quadraticCurveTo(x + hatSway, y - size - 40 + bounce + breath, x + hatSway, y - size - 55 + bounce + breath);
+            ctx.closePath(); ctx.fill();
+            
+            // Şapka bandı
+            ctx.fillStyle = '#f1c40f';
+            ctx.fillRect(x - 9, y - size - 22 + bounce + breath, 18, 5);
+        }
+    }
+
+    function drawMonster(ctx, e) {
+        const bounce = Math.sin(frameCount / 7 + e.x) * (e.isBoss ? 8 : 4);
+        const wiggle = Math.sin(frameCount / 5 + e.y) * (e.isBoss ? 4 : 2);
+        const isBoss = e.isBoss;
+
+        // 1. Gölge (Gelişmiş)
+        const shadowGrad = ctx.createRadialGradient(e.x, e.y + e.size/2, 0, e.x, e.y + e.size/2, e.size * (isBoss ? 1.5 : 1.2));
+        shadowGrad.addColorStop(0, 'rgba(0,0,0,0.4)');
+        shadowGrad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = shadowGrad;
+        ctx.beginPath(); ctx.ellipse(e.x, e.y + e.size/2, e.size * (isBoss ? 1.5 : 1.2), e.size/3, 0, 0, Math.PI*2); ctx.fill();
+
+        ctx.save();
+        
+        // Canavar Tipi Çizimi
+        switch(e.name) {
+            case 'Slime':
+                drawSlime(ctx, e, bounce);
+                break;
+            case 'Orc':
+                drawOrc(ctx, e, bounce, wiggle);
+                break;
+            case 'Void Walker':
+                drawVoidWalker(ctx, e, bounce);
+                break;
+            case 'Kekurikekukaka':
+                drawKekuri(ctx, e, bounce, wiggle);
+                break;
+            case 'Talos':
+                drawTalos(ctx, e, bounce);
+                break;
+            case 'Samma':
+                drawSamma(ctx, e, bounce, wiggle);
+                break;
+            default:
+                // Varsayılan çizim
+                ctx.fillStyle = e.color;
+                ctx.beginPath(); ctx.arc(e.x, e.y + bounce, e.size, 0, Math.PI*2); ctx.fill();
+        }
+        
+        ctx.restore();
+        drawMonsterUI(ctx, e, bounce);
+    }
+
+    function drawSlime(ctx, e, bounce) {
+        // Sıçrama Efekti (Squash and Stretch)
+        const walkCycle = Math.abs(Math.sin(frameCount * 0.1 * e.speed));
+        const stretch = 1 + walkCycle * 0.3;
+        const width = e.size * (1/stretch);
+        const height = e.size * stretch;
+
+        const slimeGrad = ctx.createRadialGradient(e.x - e.size/3, e.y + bounce - e.size/3, 0, e.x, e.y + bounce, e.size * 1.5);
+        slimeGrad.addColorStop(0, '#fff');
+        slimeGrad.addColorStop(0.2, e.color);
+        slimeGrad.addColorStop(1, '#1b4332');
+        
+        ctx.fillStyle = slimeGrad;
+        ctx.globalAlpha = 0.8;
+        ctx.beginPath();
+        ctx.moveTo(e.x - width, e.y + e.size + bounce);
+        ctx.bezierCurveTo(e.x - width * 1.2, e.y - height + bounce, e.x + width * 1.2, e.y - height + bounce, e.x + width, e.y + e.size + bounce);
+        ctx.fill();
+        
+        ctx.fillStyle = '#fff'; ctx.globalAlpha = 0.4;
+        for(let i=0; i<3; i++) {
+            let bx = e.x + Math.sin(frameCount/20 + i) * (e.size/2);
+            let by = e.y + bounce + Math.cos(frameCount/20 + i) * (e.size/2);
+            ctx.beginPath(); ctx.arc(bx, by, 2, 0, Math.PI*2); ctx.fill();
+        }
+        ctx.globalAlpha = 1.0;
+        
+        ctx.fillStyle = '#222';
+        ctx.beginPath(); ctx.arc(e.x - 5, e.y + bounce - 2, 2, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(e.x + 5, e.y + bounce - 2, 2, 0, Math.PI*2); ctx.fill();
+    }
+
+    function drawOrc(ctx, e, bounce, wiggle) {
+        // Yürüme Animasyonu (Daha gerçekçi bacak hareketleri)
+        const walkCycle = Math.sin(frameCount * 0.15 * e.speed);
+        const stepEffect = e.isBoss ? (Math.sin(frameCount * 0.05 * e.speed) > 0.5 ? 1 : 0) : 1;
+        const currentWalk = walkCycle * stepEffect;
+        const legOff = e.size / 2;
+        
+        ctx.strokeStyle = '#5d4037';
+        ctx.lineWidth = 6;
+        ctx.lineCap = 'round';
+        
+        // Sol Bacak
+        ctx.beginPath();
+        ctx.moveTo(e.x - legOff/2, e.y + e.size);
+        ctx.lineTo(e.x - legOff - (currentWalk * 12), e.y + e.size + 15 + (Math.abs(currentWalk) * 6));
+        ctx.stroke();
+        
+        // Sağ Bacak
+        ctx.beginPath();
+        ctx.moveTo(e.x + legOff/2, e.y + e.size);
+        ctx.lineTo(e.x + legOff + (currentWalk * 12), e.y + e.size + 15 + (Math.abs(-currentWalk) * 6));
+        ctx.stroke();
+
+        const bodyGrad = ctx.createLinearGradient(e.x, e.y - e.size, e.x, e.y + e.size);
+        bodyGrad.addColorStop(0, '#a67c52');
+        bodyGrad.addColorStop(1, '#5d4037');
+        ctx.fillStyle = bodyGrad;
+        
+        ctx.beginPath();
+        ctx.moveTo(e.x - e.size/1.2, e.y + e.size + bounce);
+        ctx.lineTo(e.x - e.size, e.y - e.size/2 + bounce);
+        ctx.quadraticCurveTo(e.x, e.y - e.size * 1.2 + bounce, e.x + e.size, e.y - e.size/2 + bounce);
+        ctx.lineTo(e.x + e.size/1.2, e.y + e.size + bounce);
+        ctx.fill();
+
+        ctx.fillStyle = '#455a64';
+        ctx.fillRect(e.x - e.size - 2, e.y - e.size/2 + bounce, 8, 8);
+        ctx.fillRect(e.x + e.size - 6, e.y - e.size/2 + bounce, 8, 8);
+
+        ctx.fillStyle = '#8b4513';
+        ctx.beginPath(); ctx.arc(e.x, e.y - e.size + bounce, 12, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.moveTo(e.x-4, e.y-e.size+5+bounce); ctx.lineTo(e.x-6, e.y-e.size-2+bounce); ctx.lineTo(e.x-2, e.y-e.size+2+bounce); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(e.x+4, e.y-e.size+5+bounce); ctx.lineTo(e.x+6, e.y-e.size-2+bounce); ctx.lineTo(e.x+2, e.y-e.size+2+bounce); ctx.fill();
+
+        ctx.strokeStyle = '#3e2723'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(e.x + e.size, e.y + bounce); ctx.lineTo(e.x + e.size + 15, e.y - 15 + bounce + wiggle); ctx.stroke();
+        ctx.fillStyle = '#90a4ae';
+        ctx.beginPath(); 
+        ctx.moveTo(e.x + e.size + 10, e.y - 15 + bounce + wiggle);
+        ctx.lineTo(e.x + e.size + 25, e.y - 25 + bounce + wiggle);
+        ctx.lineTo(e.x + e.size + 20, e.y - 5 + bounce + wiggle);
+        ctx.fill();
+    }
+
+    function drawVoidWalker(ctx, e, bounce) {
+        ctx.save();
+        ctx.globalAlpha = 0.7 + Math.sin(frameCount/10) * 0.2;
+        
+        // Boşluk İzi (Trail)
+        for(let i=0; i<3; i++) {
+            const trailOff = Math.sin(frameCount * 0.1 + i) * 10;
+            ctx.fillStyle = '#4b0082';
+            ctx.beginPath();
+            ctx.arc(e.x + trailOff, e.y + e.size + (i * 10), e.size/(i+2), 0, Math.PI*2);
+            ctx.fill();
+        }
+
+        const voidGrad = ctx.createRadialGradient(e.x, e.y + bounce, 0, e.x, e.y + bounce, e.size * 1.5);
+        voidGrad.addColorStop(0, '#4b0082');
+        voidGrad.addColorStop(0.6, '#1a1a2e');
+        voidGrad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = voidGrad;
+        ctx.beginPath(); ctx.arc(e.x, e.y + bounce, e.size, 0, Math.PI*2); ctx.fill();
+        ctx.shadowBlur = 15; ctx.shadowColor = '#e040fb';
+        ctx.fillStyle = '#e040fb';
+        ctx.fillRect(e.x - 8, e.y + bounce - 5, 6, 2);
+        ctx.fillRect(e.x + 2, e.y + bounce - 5, 6, 2);
+        ctx.restore();
+    }
+
+    function drawKekuri(ctx, e, bounce, wiggle) {
+        const size = e.size;
+        
+        // Bacaklar
+        const walkCycle = Math.sin(frameCount * 0.1 * e.speed);
+        const stepEffect = Math.sin(frameCount * 0.05 * e.speed) > 0.5 ? 1 : 0.2;
+        const currentWalk = walkCycle * stepEffect;
+
+        ctx.strokeStyle = '#3e2723';
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.moveTo(e.x - 10, e.y + size); ctx.lineTo(e.x - 15 - currentWalk*12, e.y + size + 15);
+        ctx.moveTo(e.x + 10, e.y + size); ctx.lineTo(e.x + 15 + currentWalk*12, e.y + size + 15);
+        ctx.stroke();
+
+        ctx.fillStyle = '#b71c1c';
+        ctx.beginPath();
+        ctx.moveTo(e.x - size, e.y + size + bounce);
+        ctx.lineTo(e.x, e.y - size + bounce);
+        ctx.lineTo(e.x + size, e.y + size + bounce);
+        ctx.fill();
+        ctx.fillStyle = '#5d4037';
+        ctx.fillRect(e.x - 20, e.y + bounce - 30, 40, 50);
+        ctx.strokeStyle = '#f1c40f'; ctx.lineWidth = 2;
+        ctx.strokeRect(e.x - 18, e.y + bounce - 28, 36, 46);
+        ctx.fillStyle = '#ffeb3b';
+        ctx.shadowBlur = 10; ctx.shadowColor = '#ffeb3b';
+        ctx.beginPath(); ctx.arc(e.x - 8, e.y + bounce - 5, 5, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(e.x + 8, e.y + bounce - 5, 5, 0, Math.PI*2); ctx.fill();
+        ctx.shadowBlur = 0;
+    }
+
+    function drawTalos(ctx, e, bounce) {
+        const size = e.size;
+        
+        // Ağır Bacaklar (Taş Golem)
+        const walkCycle = Math.sin(frameCount * 0.05 * e.speed);
+        const isStepping = walkCycle > 0.5;
+        
+        ctx.fillStyle = '#37474f';
+        // Sol Taş Ayak (Adım atarken kalkar ve ileri gider)
+        const leftStep = isStepping ? Math.sin(frameCount * 0.1) * 15 : 0;
+        const leftLift = isStepping ? -8 : 0;
+        ctx.fillRect(e.x - size/2 + leftStep, e.y + size/2 + leftLift, size/2.5, size/2);
+        
+        // Sağ Taş Ayak
+        const rightStep = !isStepping ? Math.sin(frameCount * 0.1) * 15 : 0;
+        const rightLift = !isStepping ? -8 : 0;
+        ctx.fillRect(e.x + 5 + rightStep, e.y + size/2 + rightLift, size/2.5, size/2);
+
+        ctx.fillStyle = '#455a64';
+        ctx.fillRect(e.x - size/1.5, e.y + bounce - size/2, size * 1.3, size);
+        ctx.strokeStyle = '#e040fb'; ctx.lineWidth = 2;
+        ctx.shadowBlur = 8; ctx.shadowColor = '#e040fb';
+        ctx.beginPath();
+        ctx.moveTo(e.x - 20, e.y + bounce); ctx.lineTo(e.x + 20, e.y + bounce + 10);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = '#263238';
+        ctx.fillRect(e.x - 15, e.y + bounce - size - 5, 30, 25);
+        ctx.fillStyle = '#e040fb';
+        ctx.beginPath(); ctx.arc(e.x, e.y + bounce - size + 5, 6, 0, Math.PI*2); ctx.fill();
+    }
+
+    function drawSamma(ctx, e, bounce, wiggle) {
+        const size = e.size;
+        
+        // Zırhlı Bacaklar (Samma - Karanlık Şövalye)
+        const walkCycle = Math.sin(frameCount * 0.12 * e.speed);
+        const isStepping = Math.sin(frameCount * 0.05 * e.speed) > 0.4;
+        const currentWalk = walkCycle * (isStepping ? 1 : 0.2);
+        
+        ctx.fillStyle = '#1a1a1a';
+        ctx.fillRect(e.x - 18 - currentWalk*15, e.y + size, 12, 25);
+        ctx.fillRect(e.x + 6 + currentWalk*15, e.y + size, 12, 25);
+
+        const armorGrad = ctx.createLinearGradient(e.x, e.y - size, e.x, e.y + size);
+        armorGrad.addColorStop(0, '#212121');
+        armorGrad.addColorStop(1, '#000000');
+        ctx.fillStyle = armorGrad;
+        ctx.beginPath();
+        ctx.moveTo(e.x - size/2, e.y + size + bounce);
+        ctx.lineTo(e.x - size/1.2, e.y - size/2 + bounce);
+        ctx.lineTo(e.x + size/1.2, e.y - size/2 + bounce);
+        ctx.lineTo(e.x + size/2, e.y + size + bounce);
+        ctx.fill();
+        ctx.fillStyle = '#00ff00';
+        ctx.shadowBlur = 10; ctx.shadowColor = '#00ff00';
+        ctx.fillRect(e.x - 8, e.y + bounce - size + 5, 4, 2);
+        ctx.fillRect(e.x + 4, e.y + bounce - size + 5, 4, 2);
+        ctx.shadowBlur = 0;
+    }
+
+    function drawMonsterUI(ctx, e, bounce) {
+        const isBoss = e.isBoss;
+        const hpPercent = e.hp / e.maxHp;
+        const barWidth = isBoss ? 120 : 45;
+        const barY = e.y - (isBoss ? 85 : 55);
+        ctx.fillStyle = 'rgba(0,0,0,0.6)';
+        ctx.fillRect(e.x - barWidth/2, barY, barWidth, isBoss ? 10 : 6);
+        const hpColor = hpPercent > 0.5 ? '#2ecc71' : (hpPercent > 0.2 ? '#f1c40f' : '#e74c3c');
+        ctx.fillStyle = hpColor;
+        ctx.fillRect(e.x - barWidth/2, barY, Math.max(0, barWidth * hpPercent), isBoss ? 10 : 6);
+        if (isBoss) {
+            ctx.fillStyle = '#f1c40f';
+            ctx.font = 'bold 16px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(e.name.toUpperCase(), e.x, e.y - 100);
+            ctx.textAlign = 'left';
+        }
+    }
+
+    function initWorld() {
+        terrain = []; worldObjects = []; enemies = []; droppedItems = []; paths = []; particles = []; damageNumbers = [];
+        
+        // Yollar (Daha doğal görünüm için)
+        for (let i = 0; i < 5; i++) {
+            paths.push({
+                x1: Math.random() * WORLD_WIDTH,
+                y1: Math.random() * WORLD_HEIGHT,
+                x2: Math.random() * WORLD_WIDTH,
+                y2: Math.random() * WORLD_HEIGHT,
+                width: 40 + Math.random() * 40
+            });
+        }
+
+        // Toz zerreleri (Atmosfer)
+        for (let i = 0; i < 50; i++) {
+            particles.push({
+                x: Math.random() * WORLD_WIDTH,
+                y: Math.random() * WORLD_HEIGHT,
+                size: Math.random() * 2,
+                speed: 0.1 + Math.random() * 0.3,
+                opacity: 0.1 + Math.random() * 0.4
+            });
+        }
+        for (let i = 0; i < 20; i++) {
+            terrain.push({ 
+                x: Math.random() * WORLD_WIDTH, 
+                y: Math.random() * WORLD_HEIGHT, 
+                type: 'lake', 
+                radius: 100 + Math.random() * 150 
+            });
+        }
+
+        for (let i = 0; i < 200; i++) {
+            worldObjects.push({ 
+                x: Math.random() * WORLD_WIDTH, y: Math.random() * WORLD_HEIGHT, 
+                type: Math.random() > 0.4 ? 'tree' : 'rock', 
+                size: 25 + Math.random() * 45,
+                variant: Math.random()
+            });
+        }
+        spawnEnemies();
+        spawnBosses();
+        updateShopUI();
+        
+        // Optimizasyon: Objeleri bir kez Y eksenine göre sırala
+        worldObjects.sort((a, b) => a.y - b.y);
+    }
+
+    function spawnBosses() {
+        const bosses = [
+            { name: 'Kekurikekukaka', color: '#ff4d00', size: 60, hp: 5000, speed: 1.0 },
+            { name: 'Talos', color: '#4b0082', size: 75, hp: 12000, speed: 0.8 },
+            { name: 'Samma', color: '#1b4332', size: 65, hp: 8500, speed: 1.2 }
+        ];
+
+        bosses.forEach((b, i) => {
+            const pos = [
+                { x: 600, y: 600 },
+                { x: WORLD_WIDTH - 600, y: WORLD_HEIGHT - 600 },
+                { x: WORLD_WIDTH / 2, y: WORLD_HEIGHT / 2 - 800 }
+            ][i];
+
+            enemies.push({
+                ...b,
+                x: pos.x, y: pos.y,
+                maxHp: b.hp,
+                isBoss: true,
+                damage: 10 + (i * 5)
+            });
+        });
+    }
+
+    function spawnEnemies() {
+        const monsterTypes = [
+            { name: 'Slime', color: '#4ade80', size: 18, speed: 1.2 },
+            { name: 'Orc', color: '#8b4513', size: 24, speed: 1.5 },
+            { name: 'Void Walker', color: '#4b0082', size: 22, speed: 1.8 }
+        ];
+
+        for (let i = 0; i < 12; i++) {
+            let gx = Math.random() * WORLD_WIDTH;
+            let gy = Math.random() * WORLD_HEIGHT;
+            if (Math.hypot(gx - player.x, gy - player.y) < 600) continue;
+            
+            const type = monsterTypes[Math.floor(Math.random() * monsterTypes.length)];
+            
+            for (let j = 0; j < 4; j++) {
+                enemies.push({
+                    x: gx + (Math.random()-0.5)*200, y: gy + (Math.random()-0.5)*200,
+                    size: type.size, 
+                    hp: (60 + player.lvl * 20) * (type.size / 20), 
+                    maxHp: (60 + player.lvl * 20) * (type.size / 20),
+                    speed: type.speed, 
+                    color: type.color, 
+                    damage: 0.5 * (type.size / 20),
+                    name: type.name
+                });
+            }
+        }
+    }
+
+    window.addEventListener('keydown', e => {
+        keys[e.code] = true;
+        if (e.code === 'KeyI') toggleInventory();
+        if (e.code === 'KeyU') toggleStats();
+        if (e.code === 'KeyE') checkShopInteract();
+        if (e.code === 'Digit1') castSpecificSkill(0);
+        if (e.code === 'Digit2') castSpecificSkill(1);
+        if (e.code === 'Digit3') useQuickPotion('potion');
+        if (e.code === 'Digit4') useQuickPotion('mana_potion');
+    });
+    window.addEventListener('keyup', e => keys[e.code] = false);
+
+    // Joystick Eventleri
+    joystickContainer.addEventListener('touchstart', (e) => {
+        joystickData.active = true;
+        handleJoystickMove(e.touches[0]);
+    });
+
+    window.addEventListener('touchmove', (e) => {
+        if (joystickData.active) {
+            handleJoystickMove(e.touches[0]);
+            e.preventDefault();
+        }
+    }, { passive: false });
+
+    window.addEventListener('touchend', () => {
+        joystickData.active = false;
+        joystickData.x = 0;
+        joystickData.y = 0;
+        joystickKnob.style.transform = `translate(-50%, -50%)`;
+    });
+
+    function handleJoystickMove(touch) {
+        const rect = joystickContainer.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        
+        let dx = touch.clientX - centerX;
+        let dy = touch.clientY - centerY;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        const maxDist = rect.width / 2;
+        
+        if (dist > maxDist) {
+            dx = (dx / dist) * maxDist;
+            dy = (dy / dist) * maxDist;
+        }
+        
+        joystickData.x = dx / maxDist;
+        joystickData.y = dy / maxDist;
+        joystickData.distance = Math.min(dist / maxDist, 1);
+        joystickData.angle = Math.atan2(dy, dx);
+        
+        joystickKnob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+    }
+
+    function selectSkill(index) {
+        // Bu fonksiyon artık kullanılmıyor, yerine castSpecificSkill geldi
+    }
+
+    function castSpecificSkill(index) {
+        const skill = SKILL_DB[index];
+        const currentCd = player.skillCooldowns[index];
+
+        if (currentCd <= 0 && player.mp >= skill.manaCost && enemies.length > 0) {
+            let nearestTarget = null;
+            let minDist = 500; 
+
+            enemies.forEach(e => {
+                const d = Math.hypot(player.x - e.x, player.y - e.y);
+                if (d < minDist) {
+                    minDist = d;
+                    nearestTarget = e;
+                }
+            });
+
+            if (nearestTarget) {
+                spawnProjectile(nearestTarget, skill);
+                playSound('cast');
+                player.mp -= skill.manaCost;
+                const totalDex = player.stats.dex + (player.equipment.weapon?.dexBonus || 0) + (player.equipment.hat?.dexBonus || 0);
+                player.skillCooldowns[index] = Math.max(10, skill.cd - totalDex);
+            }
+        }
+    }
+
+    function spawnProjectile(target, skill) {
+        const angle = Math.atan2(target.y - player.y, target.x - player.x);
+        
+        let baseDamage = 30 + (player.lvl * 10) + (player.stats.int * 5);
+        Object.values(player.equipment).forEach(item => {
+            if (item) {
+                if (item.damage) baseDamage += item.damage;
+                if (item.intBonus) baseDamage += item.intBonus * 5;
+            }
+        });
+        
+        const finalDamage = baseDamage * skill.damageMult;
+        
+        projectiles.push({ 
+            x: player.x, y: player.y, 
+            vx: Math.cos(angle) * skill.speed, 
+            vy: Math.sin(angle) * skill.speed, 
+            damage: finalDamage,
+            color: skill.color,
+            size: skill.size,
+            effect: skill.effect
+        });
+    }
+
+    function castActiveSkill() {
+        // Normal Vuruş (Ateş Topu) - Otomatik ve Manasız
+        if (player.basicAttackCooldown <= 0 && enemies.length > 0) {
+            let nearestTarget = null;
+            let minDist = 500; 
+            enemies.forEach(e => {
+                const d = Math.hypot(player.x - e.x, player.y - e.y);
+                if (d < minDist) { minDist = d; nearestTarget = e; }
+            });
+
+            if (nearestTarget) {
+                spawnProjectile(nearestTarget, BASIC_ATTACK);
+                playSound('cast');
+                const totalDex = player.stats.dex + (player.equipment.weapon?.dexBonus || 0) + (player.equipment.hat?.dexBonus || 0);
+                player.basicAttackCooldown = Math.max(15, BASIC_ATTACK.cd - totalDex);
+            }
+        }
+        if (player.basicAttackCooldown > 0) player.basicAttackCooldown--;
+    }
+
+    function toggleInventory() {
+        isInventoryOpen = !isInventoryOpen;
+        playSound('click');
+        inventoryUI.style.display = isInventoryOpen ? 'block' : 'none';
+        if (isInventoryOpen) updateInventoryUI();
+        else hideTooltip();
+    }
+
+    function updateInventoryUI() {
+        invGrid.innerHTML = '';
+        player.inventory.forEach((item, index) => {
+            const slot = document.createElement('div');
+            slot.className = 'grid-slot';
+            if (item) {
+                slot.innerHTML = `<span class="item-icon">${item.icon}</span><span class="item-count">${item.count > 1 ? item.count : ''}</span>`;
+                slot.onclick = () => handleItemAction(index);
+                slot.onmouseenter = (e) => showTooltip(item, e);
+                slot.onmouseleave = hideTooltip;
+            }
+            invGrid.appendChild(slot);
+        });
+
+        const weaponSlot = document.getElementById('slot-weapon');
+        const hatSlot = document.getElementById('slot-hat');
+        weaponSlot.innerHTML = player.equipment.weapon ? player.equipment.weapon.icon : '🪄';
+        weaponSlot.className = 'equip-slot' + (player.equipment.weapon ? ' active' : '');
+        if (player.equipment.weapon) {
+            weaponSlot.onmouseenter = (e) => showTooltip(player.equipment.weapon, e);
+            weaponSlot.onmouseleave = hideTooltip;
+        }
+        hatSlot.innerHTML = player.equipment.hat ? player.equipment.hat.icon : '👒';
+        hatSlot.className = 'equip-slot' + (player.equipment.hat ? ' active' : '');
+        if (player.equipment.hat) {
+            hatSlot.onmouseenter = (e) => showTooltip(player.equipment.hat, e);
+            hatSlot.onmouseleave = hideTooltip;
+        }
+    }
+
+    function handleItemAction(index) {
+        const item = player.inventory[index];
+        if (!item) return;
+        playSound('click');
+        if (item.type === 'consumable') {
+            if (item.id === 'potion') { player.hp = Math.min(player.maxHp, player.hp + item.hp); item.count--; }
+            else if (item.id === 'mana_potion') { player.mp = Math.min(player.maxMp, player.mp + item.mp); item.count--; }
+            else if (item.id === 'speed') { player.speed += item.speedBonus; item.count--; }
+            if (item.count <= 0) player.inventory[index] = null;
+        } else if (item.type === 'weapon' || item.type === 'hat') {
+            const oldEquip = player.equipment[item.type];
+            player.equipment[item.type] = item;
+            player.inventory[index] = oldEquip;
+        }
+        updateInventoryUI();
+        updateStatsUI();
+    }
+
+    function unequip(type) {
+        if (!player.equipment[type]) return;
+        let empty = player.inventory.indexOf(null);
+        if (empty !== -1) {
+            player.inventory[empty] = player.equipment[type];
+            player.equipment[type] = null;
+            updateInventoryUI();
+            updateStatsUI();
+        }
+    }
+
+    function showTooltip(item, e) {
+        tooltip.innerHTML = `<div class="tooltip-title">${item.name}</div>`;
+        if (item.damage) tooltip.innerHTML += `<div class="stat-bonus">Attack: +${item.damage}</div>`;
+        if (item.intBonus) tooltip.innerHTML += `<div class="stat-bonus">Intelligence: +${item.intBonus}</div>`;
+        if (item.dexBonus) tooltip.innerHTML += `<div class="stat-bonus">Dexterity: +${item.dexBonus}</div>`;
+        if (item.hpBonus) tooltip.innerHTML += `<div class="stat-bonus">HP Bonus: +${item.hpBonus}</div>`;
+        if (item.maxHp) tooltip.innerHTML += `<div class="stat-bonus">Max HP: +${item.maxHp}</div>`;
+        if (item.hp) tooltip.innerHTML += `<div class="stat-bonus">HP Recovery: ${item.hp}</div>`;
+        if (item.mp) tooltip.innerHTML += `<div class="stat-bonus" style="color:#3498db;">MP Recovery: ${item.mp}</div>`;
+        if (item.speedBonus) tooltip.innerHTML += `<div class="stat-bonus">Movement Speed: +${item.speedBonus}</div>`;
+        tooltip.innerHTML += `<div style="margin-top:5px; color:#aaa;">${item.desc}</div>`;
+        tooltip.style.display = 'block';
+        tooltip.style.left = (e.clientX + 15) + 'px';
+        tooltip.style.top = (e.clientY + 15) + 'px';
+    }
+
+    function hideTooltip() { tooltip.style.display = 'none'; }
+
+    function updateShopUI() {
+        const container = document.getElementById('shop-items');
+        container.innerHTML = '';
+        Object.values(ITEM_DB).forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'shop-item';
+            div.innerHTML = `<div><div style="font-weight:bold;">${item.icon} ${item.name}</div><div style="font-size:10px; color:#f1c40f;">${item.cost} Noah</div></div><button class="btn" onclick="buyItem('${item.id}')">BUY</button>`;
+            div.onmouseenter = (e) => showTooltip(item, e);
+            div.onmouseleave = hideTooltip;
+            container.appendChild(div);
+        });
+    }
+
+    function buyItem(id) {
+        const item = ITEM_DB[id];
+        if (player.gold >= item.cost) {
+            player.gold -= item.cost;
+            addItemToInventory(item);
+            updateStatsUI();
+            if (isInventoryOpen) updateInventoryUI();
+        }
+    }
+
+    function addItemToInventory(item) {
+        playSound('pickup');
+        let existingItem = player.inventory.find(i => i && i.id === item.id && i.type === 'consumable');
+        if (existingItem) { existingItem.count++; }
+        else { let empty = player.inventory.indexOf(null); if (empty !== -1) player.inventory[empty] = { ...item, count: 1 }; }
+    }
+
+    function checkShopInteract() { if (Math.hypot(player.x - shopKeeper.x, player.y - shopKeeper.y) < 130) toggleShop(); }
+    function toggleShop() {
+        isShopOpen = !isShopOpen;
+        playSound('click');
+        shopUI.style.display = isShopOpen ? 'block' : 'none'; if (!isShopOpen) hideTooltip(); }
+
+    function dropLoot(x, y, isBoss = false) {
+        if (isBoss) {
+            // Boss öldüğünde birden fazla ve değerli eşya düşer
+            for (let i = 0; i < 3; i++) {
+                const rand = Math.random();
+                let loot = null;
+                if (rand < 0.3) loot = ITEM_DB.mystic_crown;
+                else if (rand < 0.6) loot = ITEM_DB.lightning_staff;
+                else if (rand < 0.8) loot = ITEM_DB.ice_staff;
+                else loot = ITEM_DB.mana_potion;
+                
+                if (loot) droppedItems.push({ ...loot, x: x + (Math.random()-0.5)*50, y: y + (Math.random()-0.5)*50, size: 20 });
+            }
+            player.gold += 1000;
+            player.xp += 2000;
+            playSound('gold');
+        } else {
+            const rand = Math.random();
+            let loot = null;
+            if (rand < 0.15) loot = ITEM_DB.potion;
+            else if (rand < 0.3) loot = ITEM_DB.mana_potion;
+            else if (rand < 0.35) loot = ITEM_DB.speed;
+            else if (rand < 0.37) loot = ITEM_DB.fire_staff;
+            else if (rand < 0.39) loot = ITEM_DB.wizard_hat;
+            if (loot) droppedItems.push({ ...loot, x: x, y: y, size: 20 });
+        }
+    }
+
+    function updateTime() {
+        gameTime = (gameTime + TIME_SPEED) % DAY_LENGTH;
+        
+        const hours = Math.floor(gameTime / 60);
+        const mins = Math.floor(gameTime % 60);
+        const timeStr = `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+        if (clockTime.innerText !== timeStr) {
+            clockTime.innerText = timeStr;
+            
+            // Simge Güncelleme
+            if (hours >= 6 && hours < 18) clockIcon.innerText = '☀️'; // Gündüz
+            else if (hours >= 18 && hours < 21) clockIcon.innerText = '🌅'; // Akşam
+            else if (hours >= 21 || hours < 5) clockIcon.innerText = '🌙'; // Gece
+            else clockIcon.innerText = '🌇'; // Şafak
+        }
+    }
+
+    function update() {
+        if (!gameActive || isInventoryOpen || isShopOpen) return;
+        
+        updateTime();
+        frameCount++;
+        let mx = 0, my = 0;
+        if (keys['KeyW']) my -= player.speed; if (keys['KeyS']) my += player.speed;
+        if (keys['KeyA']) mx -= player.speed; if (keys['KeyD']) mx += player.speed;
+        
+        // Joystick Hareketi
+        if (joystickData.active) {
+            mx = joystickData.x * player.speed;
+            my = joystickData.y * player.speed;
+        }
+
+        if (mx !== 0 && my !== 0 && !joystickData.active) { mx *= 0.707; my *= 0.707; }
+        player.x += mx; player.y += my;
+        player.x = Math.max(player.size, Math.min(WORLD_WIDTH - player.size, player.x));
+        player.y = Math.max(player.size, Math.min(WORLD_HEIGHT - player.size, player.y));
+        camera.x = Math.max(0, Math.min(WORLD_WIDTH - canvas.width, player.x - canvas.width / 2));
+        camera.y = Math.max(0, Math.min(WORLD_HEIGHT - canvas.height, player.y - canvas.height / 2));
+        shopMsg.style.display = Math.hypot(player.x - shopKeeper.x, player.y - shopKeeper.y) < 130 ? 'block' : 'none';
+
+        // Toz Hareketi
+        particles.forEach(p => {
+            p.y -= p.speed;
+            p.x += Math.sin(frameCount / 30) * 0.1;
+            if (p.y < 0) p.y = WORLD_HEIGHT;
+        });
+
+        // Hasar Rakamları Hareketi
+        for (let i = damageNumbers.length - 1; i >= 0; i--) {
+            let d = damageNumbers[i];
+            d.y -= 0.8; // Yukarı yükselme
+            d.life--;
+            if (d.life <= 0) damageNumbers.splice(i, 1);
+        }
+
+        // Yerden Eşya Toplama
+        for (let i = droppedItems.length - 1; i >= 0; i--) {
+            let item = droppedItems[i];
+            if (Math.hypot(player.x - item.x, player.y - item.y) < player.size + item.size) {
+                addItemToInventory(item);
+                droppedItems.splice(i, 1);
+                updateStatsUI();
+                if (isInventoryOpen) updateInventoryUI();
+            }
+        }
+
+        // Yetenek Cooldownları ve UI Güncelleme
+        player.mp = Math.min(player.maxMp, player.mp + player.mpRegen); // Mana Yenilenmesi
+        
+        player.skillCooldowns.forEach((cd, i) => {
+            if (cd > 0) {
+                player.skillCooldowns[i]--;
+                const skill = SKILL_DB[i];
+                const totalCd = skill.cd - (player.stats.dex + (player.equipment.weapon?.dexBonus || 0) + (player.equipment.hat?.dexBonus || 0));
+                const percent = (cd / Math.max(10, totalCd)) * 100;
+                const cdElement = document.getElementById(`cd-${i+1}`);
+                if (cdElement) cdElement.style.height = percent + '%';
+            } else {
+                const cdElement = document.getElementById(`cd-${i+1}`);
+                if (cdElement) cdElement.style.height = '0%';
+            }
+        });
+
+        // Ateş Etme Mantığı (Aktif Yeteneğe Göre)
+        castActiveSkill();
+
+        // Mermi ve Düşman Çarpışmaları
+        for (let pi = projectiles.length - 1; pi >= 0; pi--) {
+            let p = projectiles[pi];
+            p.x += p.vx; p.y += p.vy;
+            
+            let projectileRemoved = false;
+            for (let ei = enemies.length - 1; ei >= 0; ei--) {
+                let e = enemies[ei];
+                if (Math.hypot(p.x - e.x, p.y - e.y) < 30) {
+                    const dmg = Math.floor(p.damage);
+                    e.hp -= dmg; 
+                    playSound('hit');
+                    
+                    // Hasar Rakamı Oluştur
+                    damageNumbers.push({
+                        x: e.x, y: e.y - 20,
+                        value: dmg,
+                        life: 60, // 1 saniye (60 fps)
+                        color: p.color
+                    });
+
+                    projectiles.splice(pi, 1);
+                    projectileRemoved = true;
+                    
+                    if (e.hp <= 0) { 
+                        player.xp += 50; 
+                        player.gold += 35; 
+                        
+                        // Görev İlerlemesi
+                        player.quests.forEach(q => {
+                            if (!q.completed && q.target === e.name) {
+                                q.count++;
+                                if (q.count >= q.goal) completeQuest(q);
+                            }
+                        });
+                        updateQuestUI();
+
+                        dropLoot(e.x, e.y, e.isBoss); 
+                        enemies.splice(ei, 1); 
+                        checkLevelUp(); 
+                    }
+                    break; // Mermi bir düşmana çarptığında yok olur
+                }
+            }
+            if (!projectileRemoved && (p.x < 0 || p.x > WORLD_WIDTH || p.y < 0 || p.y > WORLD_HEIGHT)) {
+                projectiles.splice(pi, 1);
+            }
+        }
+
+        // Ekran Sarsıntısı Azaltma
+        if (screenShake > 0) screenShake *= 0.9;
+        if (screenShake < 0.1) screenShake = 0;
+
+        enemies.forEach(e => {
+            let d = Math.hypot(player.x - e.x, player.y - e.y);
+            
+            if (d < 500) { 
+                if (e.isBoss) {
+                    // Boss Hareketi (Adım Adım)
+                    const walkCycle = Math.sin(frameCount * 0.05 * e.speed);
+                    // Sadece walkCycle belirli bir yöne giderken hareket et (adım atma anı)
+                    if (walkCycle > 0.5) {
+                        e.x += (player.x - e.x) / d * (e.speed * 2); 
+                        e.y += (player.y - e.y) / d * (e.speed * 2);
+                        
+                        // Adım atma anında sarsıntı ve ses (Her döngüde bir kez)
+                        if (!e.stepped) {
+                            screenShake = 5;
+                            playSound('stomp');
+                            e.stepped = true;
+                        }
+                    } else if (walkCycle < -0.5) {
+                        e.stepped = false; // Diğer adım için sıfırla
+                    }
+                } else if (e.name === 'Slime') {
+                    // Slime Hareketi (Sıçrayarak)
+                    const jumpPhase = Math.abs(Math.sin(frameCount * 0.1 * e.speed));
+                    if (jumpPhase > 0.4) {
+                        const angle = Math.atan2(player.y - e.y, player.x - e.x);
+                        e.x += Math.cos(angle) * (e.speed * 2);
+                        e.y += Math.sin(angle) * (e.speed * 2);
+                    }
+                } else if (e.name === 'Orc') {
+                    // Orc Hareketi (Ağır ve kararlı adımlar)
+                    const walkCycle = Math.sin(frameCount * 0.1 * e.speed);
+                    if (walkCycle > 0) { // Sadece adım atarken ilerle
+                        const angle = Math.atan2(player.y - e.y, player.x - e.x);
+                        e.x += Math.cos(angle) * (e.speed * 1.5);
+                        e.y += Math.sin(angle) * (e.speed * 1.5);
+                    }
+                } else {
+                    // Normal Canavar Hareketi (Daha doğal rastgelelik ile)
+                    const angle = Math.atan2(player.y - e.y, player.x - e.x);
+                    const wobble = Math.sin(frameCount * 0.1 + e.x) * 0.3;
+                    e.x += Math.cos(angle + wobble) * e.speed;
+                    e.y += Math.sin(angle + wobble) * e.speed;
+                }
+            }
+            
+            if (d < player.size + e.size) { 
+                player.hp -= e.damage; 
+                if (player.hp <= 0) gameOver(); 
+            }
+        });
+
+        if (enemies.length < 10) spawnEnemies();
+        updateStatsUI();
+    }
+
+    function checkLevelUp() {
+        if (player.xp >= player.maxXp) { 
+            player.lvl++; 
+            player.xp = 0; 
+            player.maxXp += 150; 
+            player.statPoints += 3; // Her seviyede 3 puan
+            playSound('levelup');
+            updateStatsUI();
+            updateStatWindow();
+        }
+    }
+
+    function updateStatsUI() {
+        let bonusHp = 0;
+        let bonusMaxHp = 0;
+        let bonusInt = 0;
+        let bonusDex = 0;
+        
+        // Ekipman bonuslarını topla
+        Object.values(player.equipment).forEach(item => {
+            if (item) {
+                if (item.maxHp) bonusMaxHp += item.maxHp;
+                if (item.hpBonus) bonusMaxHp += item.hpBonus * 15; // HP stat bonusu gibi
+                if (item.intBonus) bonusInt += item.intBonus;
+                if (item.dexBonus) bonusDex += item.dexBonus;
+            }
+        });
+
+        let currentMax = 100 + (player.lvl * 20) + (player.stats.hp * 15) + bonusMaxHp;
+        player.maxHp = currentMax;
+
+        let currentMaxMp = 100 + (player.lvl * 15) + (player.stats.int * 10);
+        player.maxMp = currentMaxMp;
+        
+        hpBar.style.width = (player.hp / player.maxHp * 100) + '%';
+        mpBar.style.width = (player.mp / player.maxMp * 100) + '%';
+        xpBar.style.width = (player.xp / player.maxXp * 100) + '%';
+        hpText.innerText = `${Math.floor(player.hp)} / ${Math.floor(player.maxHp)}`;
+        mpText.innerText = `${Math.floor(player.mp)} / ${Math.floor(player.maxMp)}`;
+        xpText.innerText = `${Math.floor(player.xp)} / ${Math.floor(player.maxXp)}`;
+        lvlText.innerText = player.lvl; goldText.innerText = player.gold;
+        
+        let currentAtk = 30 + (player.lvl * 10) + (player.stats.int * 5) + (bonusInt * 5);
+        if (player.equipment.weapon) currentAtk += player.equipment.weapon.damage;
+        atkText.innerText = currentAtk;
+
+        // Hızlı İksir Sayılarını Güncelle
+        const hpPot = player.inventory.find(i => i && i.id === 'potion');
+        const mpPot = player.inventory.find(i => i && i.id === 'mana_potion');
+        document.getElementById('hp-potion-count').innerText = hpPot ? hpPot.count : 0;
+        document.getElementById('mp-potion-count').innerText = mpPot ? mpPot.count : 0;
+    }
+
+    function useQuickPotion(id) {
+        const index = player.inventory.findIndex(i => i && i.id === id);
+        if (index !== -1) {
+            handleItemAction(index);
+        }
+    }
+
+    function toggleStats() {
+        isStatsOpen = !isStatsOpen;
+        playSound('click');
+        statUI.style.display = isStatsOpen ? 'block' : 'none';
+        if (isStatsOpen) updateStatWindow();
+    }
+
+    function updateStatWindow() {
+        document.getElementById('stat-int').innerText = player.stats.int;
+        document.getElementById('stat-hp').innerText = player.stats.hp;
+        document.getElementById('stat-dex').innerText = player.stats.dex;
+        statPointsText.innerText = player.statPoints;
+    }
+
+    function addStat(type) {
+        if (player.statPoints > 0) {
+            playSound('click');
+            player.statPoints--;
+            player.stats[type]++;
+            updateStatWindow();
+            updateStatsUI();
+        }
+    }
+
+    function updateQuestUI() {
+        const questList = document.getElementById('quest-list');
+        if (!questList) return;
+        questList.innerHTML = '';
+        player.quests.forEach(q => {
+            if (q.completed) return;
+            const div = document.createElement('div');
+            div.className = 'quest-item';
+            div.innerHTML = `<div>${q.name}</div><div class="quest-progress">${q.count} / ${q.goal}</div>`;
+            questList.appendChild(div);
+        });
+        if (questList.innerHTML === '') {
+            questList.innerHTML = '<div style="color:#aaa;">Tüm görevler tamamlandı!</div>';
+        }
+    }
+
+    function completeQuest(q) {
+        q.completed = true;
+        player.gold += q.reward;
+        player.xp += q.reward / 2;
+        playSound('gold');
+        updateStatsUI();
+    }
+
+    function draw() {
+        const hour = gameTime / 60;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Ekran Sarsıntısı Uygula
+        const shakeX = (Math.random() - 0.5) * screenShake * 2;
+        const shakeY = (Math.random() - 0.5) * screenShake * 2;
+        
+        ctx.save(); ctx.translate(-camera.x + shakeX, -camera.y + shakeY);
+        
+        const viewMargin = 100;
+        const isVisible = (x, y, size = 0) => {
+            return x + size > camera.x - viewMargin && 
+                   x - size < camera.x + canvas.width + viewMargin &&
+                   y + size > camera.y - viewMargin && 
+                   y - size < camera.y + canvas.height + viewMargin;
+        };
+
+        // --- 1. Zemin ve Yollar ---
+        // Ana zemin rengi
+        ctx.fillStyle = '#1b3022';
+        ctx.fillRect(camera.x, camera.y, canvas.width, canvas.height);
+        
+        // Zemin varyasyonu (Daha doğal görünüm)
+        ctx.globalAlpha = 0.3;
+        const patchSize = 300;
+        const startX = Math.floor(camera.x / patchSize) * patchSize;
+        const startY = Math.floor(camera.y / patchSize) * patchSize;
+        for (let i = startX; i < camera.x + canvas.width + patchSize; i += patchSize) {
+            for (let j = startY; j < camera.y + canvas.height + patchSize; j += patchSize) {
+                if ((i+j) % (patchSize*2) === 0) {
+                    ctx.fillStyle = '#16291d';
+                    ctx.fillRect(i, j, patchSize, patchSize);
+                }
+            }
+        }
+        ctx.globalAlpha = 1.0;
+        
+        // Yollar (Yumuşak kenarlar ile)
+        ctx.lineCap = 'round';
+        paths.forEach(p => {
+            const pathGrad = ctx.createLinearGradient(p.x1, p.y1, p.x2, p.y2);
+            pathGrad.addColorStop(0, '#3e2723');
+            pathGrad.addColorStop(0.5, '#4e342e');
+            pathGrad.addColorStop(1, '#3e2723');
+            
+            ctx.strokeStyle = pathGrad;
+            ctx.lineWidth = p.width;
+            ctx.globalAlpha = 0.5;
+            ctx.beginPath(); ctx.moveTo(p.x1, p.y1); ctx.lineTo(p.x2, p.y2); ctx.stroke();
+            
+            // Yol kenarı detayları
+            ctx.lineWidth = p.width * 0.8;
+            ctx.globalAlpha = 0.2;
+            ctx.strokeStyle = '#2c1e14';
+            ctx.stroke();
+            ctx.globalAlpha = 1.0;
+        });
+
+        // Çimenler
+        const grassSpacing = 120;
+        const gStartX = Math.floor(camera.x / grassSpacing) * grassSpacing;
+        const gStartY = Math.floor(camera.y / grassSpacing) * grassSpacing;
+        for (let i = gStartX; i < camera.x + canvas.width + grassSpacing; i += grassSpacing) {
+            for (let j = gStartY; j < camera.y + canvas.height + grassSpacing; j += grassSpacing) {
+                let offX = (i * 17) % 50;
+                let offY = (j * 11) % 50;
+                drawGrass(ctx, i + offX, j + offY, 5 + Math.sin(frameCount/20 + i)*2, '#2d4a3e');
+            }
+        }
+
+        // --- 2. Su Efektleri ---
+        terrain.forEach(t => {
+            if (t.type === 'lake' && isVisible(t.x, t.y, t.radius + 50)) {
+                // Kıyı
+                ctx.fillStyle = '#2c1e14';
+                ctx.beginPath(); ctx.arc(t.x, t.y, t.radius + 15, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = '#c2b280';
+                ctx.beginPath(); ctx.arc(t.x, t.y, t.radius + 8, 0, Math.PI*2); ctx.fill();
+                
+                // Su (Gelişmiş Gradient)
+                const ripple = Math.sin(frameCount / 40) * 12;
+                const waterGrad = ctx.createRadialGradient(t.x, t.y, 0, t.x, t.y, t.radius + ripple/2);
+                waterGrad.addColorStop(0, '#48cae4');
+                waterGrad.addColorStop(0.5, '#00b4d8');
+                waterGrad.addColorStop(1, '#0077b6');
+                ctx.fillStyle = waterGrad;
+                ctx.beginPath(); ctx.arc(t.x, t.y, t.radius + ripple/4, 0, Math.PI*2); ctx.fill();
+                
+                // Parıltılar
+                ctx.globalAlpha = 0.3;
+                ctx.fillStyle = 'white';
+                for(let k=0; k<5; k++) {
+                    let angle = (frameCount / 60) + (k * Math.PI * 2 / 5);
+                    let dist = (t.radius * 0.6) + Math.sin(frameCount/30 + k) * 10;
+                    let rx = t.x + Math.cos(angle) * dist;
+                    let ry = t.y + Math.sin(angle) * dist;
+                    ctx.beginPath(); ctx.ellipse(rx, ry, 15, 5, angle, 0, Math.PI*2); ctx.fill();
+                }
+                ctx.globalAlpha = 1.0;
+            }
+        });
+
+        // --- 3. Statik Objeler ---
+        worldObjects.forEach(o => {
+            if (!isVisible(o.x, o.y, o.size + 100)) return;
+
+            // Gölge
+            const shadowGrad = ctx.createRadialGradient(o.x, o.y + o.size/4, 0, o.x, o.y + o.size/4, o.size);
+            shadowGrad.addColorStop(0, 'rgba(0,0,0,0.3)');
+            shadowGrad.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = shadowGrad;
+            ctx.beginPath(); ctx.ellipse(o.x, o.y + o.size/4, o.size, o.size/3, 0, 0, Math.PI*2); ctx.fill();
+
+            if (o.type === 'tree') {
+                // Gövde
+                const trunkGrad = ctx.createLinearGradient(o.x - 5, o.y, o.x + 5, o.y);
+                trunkGrad.addColorStop(0, '#3e2723');
+                trunkGrad.addColorStop(0.5, '#5d4037');
+                trunkGrad.addColorStop(1, '#3e2723');
+                ctx.fillStyle = trunkGrad;
+                ctx.fillRect(o.x - 5, o.y - 10, 10, 35);
+
+                // Yapraklar (Katmanlı)
+                const sway = Math.sin(frameCount/40 + o.x) * 4;
+                const leafColors = ['#1b4332', '#2d6a4f', '#40916c', '#52b788'];
+                
+                leafColors.forEach((c, i) => {
+                    ctx.fillStyle = c;
+                    const s = o.size * (1 - i*0.2);
+                    const yOff = i * 15;
+                    ctx.beginPath();
+                    ctx.arc(o.x + sway * (1 + i*0.2), o.y - 20 - yOff, s/2, 0, Math.PI*2);
+                    ctx.fill();
+                    // Küçük detaylar
+                    ctx.beginPath();
+                    ctx.arc(o.x + sway - s/2.5, o.y - 15 - yOff, s/3, 0, Math.PI*2);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.arc(o.x + sway + s/2.5, o.y - 15 - yOff, s/3, 0, Math.PI*2);
+                    ctx.fill();
+                });
+            } else {
+                // Kaya
+                const rockGrad = ctx.createRadialGradient(o.x - o.size/4, o.y - o.size/4, 0, o.x, o.y, o.size);
+                rockGrad.addColorStop(0, '#90a4ae');
+                rockGrad.addColorStop(1, '#455a64');
+                ctx.fillStyle = rockGrad;
+                ctx.beginPath();
+                ctx.moveTo(o.x - o.size/2, o.y + o.size/4);
+                ctx.lineTo(o.x - o.size/2.5, o.y - o.size/3);
+                ctx.lineTo(o.x + o.size/4, o.y - o.size/2.2);
+                ctx.lineTo(o.x + o.size/2, o.y + o.size/4);
+                ctx.closePath(); ctx.fill();
+                
+                // Çatlaklar
+                ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath(); ctx.moveTo(o.x - 5, o.y - 10); ctx.lineTo(o.x + 8, o.y + 5); ctx.stroke();
+            }
+        });
+
+        // --- 4. Karakterler ve Efektler ---
+        // Shopkeeper
+        if (isVisible(shopKeeper.x, shopKeeper.y, shopKeeper.size)) {
+            ctx.fillStyle = '#f1c40f'; ctx.beginPath(); ctx.arc(shopKeeper.x, shopKeeper.y, shopKeeper.size, 0, Math.PI*2); ctx.fill();
+        }
+
+        // Dropped Items
+        droppedItems.forEach(item => {
+            if (!isVisible(item.x, item.y, item.size + 50)) return;
+            const bounce = Math.sin(frameCount/15) * 8;
+            
+            // Parlama Efekti
+            const glowGrad = ctx.createRadialGradient(item.x, item.y + bounce, 0, item.x, item.y + bounce, item.size + 15);
+            glowGrad.addColorStop(0, 'rgba(255, 215, 0, 0.4)');
+            glowGrad.addColorStop(1, 'rgba(255, 215, 0, 0)');
+            ctx.fillStyle = glowGrad;
+            ctx.beginPath(); ctx.arc(item.x, item.y + bounce, item.size + 15, 0, Math.PI*2); ctx.fill();
+            
+            // Eşya İkonu
+            ctx.fillStyle = 'white'; ctx.font = "26px Arial";
+            ctx.textAlign = 'center';
+            ctx.fillText(item.icon, item.x, item.y + 10 + bounce);
+            ctx.textAlign = 'left';
+        });
+
+        // Projectiles (Gelişmiş Mermi Efektleri)
+        projectiles.forEach(p => {
+            // Trail (İz)
+            const trailGrad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 2);
+            trailGrad.addColorStop(0, p.color);
+            trailGrad.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = trailGrad;
+            ctx.globalAlpha = 0.4;
+            ctx.beginPath(); ctx.arc(p.x, p.y, p.size * 2, 0, Math.PI*2); ctx.fill();
+            ctx.globalAlpha = 1.0;
+
+            // Çekirdek
+            ctx.fillStyle = p.color;
+            ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#fff';
+            ctx.beginPath(); ctx.arc(p.x - p.size/4, p.y - p.size/4, p.size/2, 0, Math.PI*2); ctx.fill();
+        });
+
+        // Player (Daima görünür)
+        const isMoving = keys['KeyW'] || keys['KeyS'] || keys['KeyA'] || keys['KeyD'] || joystickData.active;
+        drawWizard(ctx, player.x, player.y, player.size, player.color, isMoving, player.equipment);
+
+        // Enemies
+        enemies.forEach(e => {
+            if (isVisible(e.x, e.y, e.size + 50)) drawMonster(ctx, e);
+        });
+
+        // Hasar Rakamlarını Çiz
+        ctx.textAlign = 'center';
+        ctx.font = 'bold 16px Arial';
+        damageNumbers.forEach(d => {
+            ctx.globalAlpha = d.life / 60;
+            ctx.fillStyle = d.color;
+            ctx.fillText(d.value, d.x, d.y);
+        });
+        ctx.globalAlpha = 1.0;
+        ctx.textAlign = 'left';
+
+        // --- 5. Atmosferik Efektler ---
+        // Toz zerreleri
+        ctx.fillStyle = 'white';
+        particles.forEach(p => {
+            if (isVisible(p.x, p.y)) {
+                ctx.globalAlpha = p.opacity;
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill();
+            }
+        });
+        ctx.globalAlpha = 1.0;
+
+        // Işık Hüzmeleri (Sadece Gündüz)
+        if (hour >= 6 && hour < 18) {
+            ctx.globalAlpha = 0.05;
+            ctx.fillStyle = '#fff9c4';
+            for(let i=0; i<3; i++) {
+                ctx.beginPath();
+                ctx.moveTo(camera.x + 100 + i*300, camera.y);
+                ctx.lineTo(camera.x + 400 + i*300, camera.y);
+                ctx.lineTo(camera.x + 200 + i*300, camera.y + 600);
+                ctx.lineTo(camera.x - 100 + i*300, camera.y + 600);
+                ctx.fill();
+            }
+            ctx.globalAlpha = 1.0;
+        }
+
+        // --- 6. Gece Işıklandırması ve Filtre ---
+        ctx.restore(); // Ana sahne bitti
+
+        // Günün saatine göre karanlık oranı hesaplama (0.0: tam aydınlık, 0.7: tam karanlık)
+        let ambientAlpha = 0;
+        let ambientColor = 'rgba(0, 0, 40, ';
+
+        if (hour >= 5 && hour < 7) { // Şafak
+            ambientAlpha = 0.5 * (1 - (hour - 5) / 2);
+            ambientColor = 'rgba(70, 0, 30, '; // Turuncumsu şafak
+        } else if (hour >= 18 && hour < 21) { // Akşam
+            ambientAlpha = 0.6 * ((hour - 18) / 3);
+            ambientColor = 'rgba(50, 0, 50, '; // Morumsu gün batımı
+        } else if (hour >= 21 || hour < 5) { // Gece
+            ambientAlpha = 0.7;
+            ambientColor = 'rgba(0, 0, 40, '; // Koyu gece
+        }
+
+        if (ambientAlpha > 0) {
+            // Işık Maskesini temizle ve ayarla
+            if (lightCanvas.width !== canvas.width) {
+                lightCanvas.width = canvas.width;
+                lightCanvas.height = canvas.height;
+            }
+            lctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Önce her yeri karart
+            lctx.fillStyle = `${ambientColor}${ambientAlpha})`;
+            lctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Player'ın etrafını "kes" (ışık alanı)
+            const lightX = player.x - camera.x;
+            const lightY = player.y - camera.y;
+            const lightRad = 250;
+            
+            lctx.globalCompositeOperation = 'destination-out';
+            const lightGrad = lctx.createRadialGradient(lightX, lightY, 0, lightX, lightY, lightRad);
+            lightGrad.addColorStop(0, 'rgba(0,0,0,1)');
+            lightGrad.addColorStop(1, 'rgba(0,0,0,0)');
+            lctx.fillStyle = lightGrad;
+            lctx.beginPath(); lctx.arc(lightX, lightY, lightRad, 0, Math.PI*2); lctx.fill();
+            
+            // Sahneye uygula
+            ctx.drawImage(lightCanvas, 0, 0);
+            
+            // Hafif bir sarı ışık halesi ekle
+            ctx.globalCompositeOperation = 'screen';
+            ctx.globalAlpha = 0.2 * ambientAlpha;
+            const glowGrad = ctx.createRadialGradient(lightX, lightY, 0, lightX, lightY, lightRad);
+            glowGrad.addColorStop(0, '#f1c40f');
+            glowGrad.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = glowGrad;
+            ctx.beginPath(); ctx.arc(lightX, lightY, lightRad, 0, Math.PI*2); ctx.fill();
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.globalAlpha = 1.0;
+        }
+
+        requestAnimationFrame(() => { update(); draw(); });
+    }
+
+    function gameOver() { 
+        gameActive = false; 
+        playSound('death');
+        overlay.style.display = 'flex'; 
+        document.getElementById('overlay-msg').innerText = `LVL ${player.lvl}`; 
+    }
+    function resetGame() { location.reload(); }
+    initWorld(); updateStatsUI(); updateQuestUI(); draw();
+</script>
+</body>
+</html>
