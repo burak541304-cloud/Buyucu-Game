@@ -465,6 +465,8 @@
     </div>
 
     <div id="mobile-menu-btns">
+        <div class="mobile-btn" onclick="adjustZoom(0.1)">🔍+</div>
+        <div class="mobile-btn" onclick="adjustZoom(-0.1)">🔍-</div>
         <div class="mobile-btn" onclick="toggleInventory()">🎒</div>
         <div class="mobile-btn" onclick="toggleStats()">👤</div>
         <div class="mobile-btn" id="mobile-shop-btn" style="display:none;" onclick="checkShopInteract()">🏪</div>
@@ -634,6 +636,18 @@
         }
     }
 
+    function adjustZoom(amount) {
+        zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom + amount));
+    }
+
+    // Fare Tekerleği ile Zoom
+    window.addEventListener('wheel', (e) => {
+        if (e.ctrlKey) {
+            e.preventDefault();
+            adjustZoom(e.deltaY > 0 ? -0.1 : 0.1);
+        }
+    }, { passive: false });
+
     // Dokunmatik Engelleme (Scroll ve Zoom)
     document.addEventListener('touchstart', (e) => {
         if (e.target.tagName !== 'BUTTON' && e.target.className !== 'grid-slot' && e.target.className !== 'mobile-btn') {
@@ -687,6 +701,9 @@
     ];
 
     let camera = { x: 0, y: 0 };
+    let zoom = 1.0;
+    const MIN_ZOOM = 0.5;
+    const MAX_ZOOM = 2.0;
     let player = {
         x: WORLD_WIDTH / 2, y: WORLD_HEIGHT / 2,
         size: 24, speed: 5, 
@@ -1586,8 +1603,13 @@
         player.x += mx; player.y += my;
         player.x = Math.max(player.size, Math.min(WORLD_WIDTH - player.size, player.x));
         player.y = Math.max(player.size, Math.min(WORLD_HEIGHT - player.size, player.y));
-        camera.x = Math.max(0, Math.min(WORLD_WIDTH - canvas.width, player.x - canvas.width / 2));
-        camera.y = Math.max(0, Math.min(WORLD_HEIGHT - canvas.height, player.y - canvas.height / 2));
+        
+        // Kamera takibi (Zoom uyumlu)
+        const viewW = canvas.width / zoom;
+        const viewH = canvas.height / zoom;
+        camera.x = Math.max(0, Math.min(WORLD_WIDTH - viewW, player.x - viewW / 2));
+        camera.y = Math.max(0, Math.min(WORLD_HEIGHT - viewH, player.y - viewH / 2));
+        
         const isNearShop = Math.hypot(player.x - shopKeeper.x, player.y - shopKeeper.y) < 130;
         shopMsg.style.display = isNearShop ? 'block' : 'none';
         document.getElementById('mobile-shop-btn').style.display = (isNearShop && window.innerWidth <= 900) ? 'flex' : 'none';
@@ -1863,14 +1885,18 @@
         const shakeX = (Math.random() - 0.5) * screenShake * 2;
         const shakeY = (Math.random() - 0.5) * screenShake * 2;
         
-        ctx.save(); ctx.translate(-camera.x + shakeX, -camera.y + shakeY);
+        ctx.save();
+        ctx.scale(zoom, zoom);
+        ctx.translate(-camera.x + shakeX, -camera.y + shakeY);
         
         const viewMargin = 100;
         const isVisible = (x, y, size = 0) => {
+            const viewW = canvas.width / zoom;
+            const viewH = canvas.height / zoom;
             return x + size > camera.x - viewMargin && 
-                   x - size < camera.x + canvas.width + viewMargin &&
+                   x - size < camera.x + viewW + viewMargin &&
                    y + size > camera.y - viewMargin && 
-                   y - size < camera.y + canvas.height + viewMargin;
+                   y - size < camera.y + viewH + viewMargin;
         };
 
         // --- 1. Zemin ve Yollar ---
@@ -2136,10 +2162,10 @@
             lctx.fillStyle = `${ambientColor}${ambientAlpha})`;
             lctx.fillRect(0, 0, canvas.width, canvas.height);
             
-            // Player'ın etrafını "kes" (ışık alanı)
-            const lightX = player.x - camera.x;
-            const lightY = player.y - camera.y;
-            const lightRad = 250;
+            // Player'ın etrafını "kes" (ışık alanı - Zoom uyumlu)
+            const lightX = (player.x - camera.x) * zoom;
+            const lightY = (player.y - camera.y) * zoom;
+            const lightRad = 250 * zoom;
             
             lctx.globalCompositeOperation = 'destination-out';
             const lightGrad = lctx.createRadialGradient(lightX, lightY, 0, lightX, lightY, lightRad);
@@ -2151,7 +2177,7 @@
             // Sahneye uygula
             ctx.drawImage(lightCanvas, 0, 0);
             
-            // Hafif bir sarı ışık halesi ekle
+            // Hafif bir sarı ışık halesi ekle (Zoom uyumlu)
             ctx.globalCompositeOperation = 'screen';
             ctx.globalAlpha = 0.2 * ambientAlpha;
             const glowGrad = ctx.createRadialGradient(lightX, lightY, 0, lightX, lightY, lightRad);
