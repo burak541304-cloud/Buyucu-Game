@@ -40,8 +40,8 @@
                 top: 10px; right: 10px;
             }
             #skill-bar {
-                bottom: 10px;
-                transform: translateX(-50%) scale(1.1);
+                bottom: 10px; right: 10px;
+                transform: scale(1.1);
             }
             #inventory-ui, #shop-ui, #stat-ui {
                 width: 90%;
@@ -59,7 +59,7 @@
 
         #mobile-menu-btns {
             position: absolute;
-            bottom: 80px;
+            top: 80px;
             right: 20px;
             display: none;
             flex-direction: column;
@@ -300,8 +300,7 @@
 
         /* Skill Bar */
         #skill-bar {
-            position: absolute; bottom: 20px; left: 50%;
-            transform: translateX(-50%);
+            position: absolute; bottom: 20px; right: 20px;
             display: flex; gap: 10px;
             background: rgba(0,0,0,0.6);
             padding: 8px; border-radius: 8px;
