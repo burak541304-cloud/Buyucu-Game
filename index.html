@@ -282,11 +282,13 @@
 
         /* Mobile Joystick */
         #joystick-container {
-            position: absolute; bottom: 40px; left: 40px;
+            position: absolute;
             width: 120px; height: 120px;
             background: rgba(255, 255, 255, 0.1);
             border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.2);
             display: none; touch-action: none; z-index: 1000;
+            pointer-events: none;
+            transition: opacity 0.2s;
         }
         #joystick-knob {
             position: absolute; top: 50%; left: 50%;
@@ -333,7 +335,7 @@
         }
 
         @media (max-width: 1024px) {
-            #joystick-container { display: block; }
+            #joystick-container { display: none; }
         }
         #clock {
             position: fixed; top: 20px; right: 20px;
@@ -1260,11 +1262,31 @@
     });
     window.addEventListener('keyup', e => keys[e.code] = false);
 
-    // Joystick Eventleri
-    joystickContainer.addEventListener('touchstart', (e) => {
-        joystickData.active = true;
-        handleJoystickMove(e.touches[0]);
-    });
+    // Joystick Eventleri (Dinamik)
+    window.addEventListener('touchstart', (e) => {
+        if (!gameActive || isInventoryOpen || isShopOpen) return;
+        
+        // UI elementlerine tıklanmıyorsa joystick'i başlat
+        const target = e.target;
+        if (target.tagName === 'BUTTON' || target.className.includes('grid-slot') || target.className.includes('mobile-btn') || target.className.includes('stat-btn')) return;
+
+        const touch = e.touches[0];
+        // Ekranın sol yarısında mı kontrol et (Dinamik Joystick için)
+        if (touch.clientX < window.innerWidth / 2) {
+            joystickData.active = true;
+            
+            // Joystick'i dokunulan yere taşı (Ekran sınırları kontrolü ile)
+            const joySize = 60; // radius
+            let posX = Math.max(joySize, Math.min(window.innerWidth / 2 - joySize, touch.clientX));
+            let posY = Math.max(joySize, Math.min(window.innerHeight - joySize, touch.clientY));
+
+            joystickContainer.style.display = 'block';
+            joystickContainer.style.left = (posX - joySize) + 'px';
+            joystickContainer.style.top = (posY - joySize) + 'px';
+            
+            handleJoystickMove(touch);
+        }
+    }, { passive: false });
 
     window.addEventListener('touchmove', (e) => {
         if (joystickData.active) {
@@ -1274,10 +1296,13 @@
     }, { passive: false });
 
     window.addEventListener('touchend', () => {
-        joystickData.active = false;
-        joystickData.x = 0;
-        joystickData.y = 0;
-        joystickKnob.style.transform = `translate(-50%, -50%)`;
+        if (joystickData.active) {
+            joystickData.active = false;
+            joystickData.x = 0;
+            joystickData.y = 0;
+            joystickKnob.style.transform = `translate(-50%, -50%)`;
+            joystickContainer.style.display = 'none';
+        }
     });
 
     function handleJoystickMove(touch) {
