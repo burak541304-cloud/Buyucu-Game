@@ -390,25 +390,25 @@
             <span class="stat-name">INT (Zeka)</span>
             <div style="display:flex; align-items:center; gap:10px;">
                 <span class="stat-value" id="stat-int">0</span>
-                <button class="stat-btn" onclick="addStat('int')">+</button>
+                <button class="stat-btn" onclick="addStat('int')" ontouchstart="addStat('int')">+</button>
             </div>
         </div>
         <div class="stat-row">
             <span class="stat-name">HP (Sağlık)</span>
             <div style="display:flex; align-items:center; gap:10px;">
                 <span class="stat-value" id="stat-hp">0</span>
-                <button class="stat-btn" onclick="addStat('hp')">+</button>
+                <button class="stat-btn" onclick="addStat('hp')" ontouchstart="addStat('hp')">+</button>
             </div>
         </div>
         <div class="stat-row">
             <span class="stat-name">DEX (Çeviklik)</span>
             <div style="display:flex; align-items:center; gap:10px;">
                 <span class="stat-value" id="stat-dex">0</span>
-                <button class="stat-btn" onclick="addStat('dex')">+</button>
+                <button class="stat-btn" onclick="addStat('dex')" ontouchstart="addStat('dex')">+</button>
             </div>
         </div>
         <div class="points-text">PUAN: <span id="stat-points">0</span></div>
-        <button class="btn" style="width: 100%; border-color: #3498db; color: #3498db;" onclick="toggleStats()">KAPAT</button>
+        <button class="btn" style="width: 100%; border-color: #3498db; color: #3498db;" onclick="toggleStats()" ontouchstart="toggleStats()">KAPAT</button>
     </div>
 
     <!-- Tooltip -->
@@ -419,7 +419,7 @@
         <div class="inv-header">INVENTORY [I]</div>
         
         <div class="character-preview">
-            <div style="grid-column: 1; grid-row: 1;" class="equip-slot" id="slot-hat" onclick="unequip('hat')">👒</div>
+            <div style="grid-column: 1; grid-row: 1;" class="equip-slot" id="slot-hat" onclick="unequip('hat')" ontouchstart="unequip('hat')">👒</div>
             <div style="grid-column: 1; grid-row: 2;" class="equip-slot">👕</div>
             <div style="grid-column: 1; grid-row: 3;" class="equip-slot">👖</div>
             
@@ -428,7 +428,7 @@
                 <div style="font-size: 50px; filter: drop-shadow(0 0 10px rgba(78, 204, 163, 0.3));">🧙‍♂️</div>
             </div>
             
-            <div style="grid-column: 3; grid-row: 1;" class="equip-slot" id="slot-weapon" onclick="unequip('weapon')">🪄</div>
+            <div style="grid-column: 3; grid-row: 1;" class="equip-slot" id="slot-weapon" onclick="unequip('weapon')" ontouchstart="unequip('weapon')">🪄</div>
             <div style="grid-column: 3; grid-row: 2;" class="equip-slot">🛡️</div>
             <div style="grid-column: 3; grid-row: 3;" class="equip-slot">💍</div>
         </div>
@@ -443,7 +443,7 @@
             </div>
             <div style="color: #aaa; font-size: 10px;">Weight: 12 / 100</div>
         </div>
-        <button class="btn" style="width: 100%; margin-top: 10px; border-color: #5a5e7a; color: #aaa;" onclick="toggleInventory()">CLOSE</button>
+        <button class="btn" style="width: 100%; margin-top: 10px; border-color: #5a5e7a; color: #aaa;" onclick="toggleInventory()" ontouchstart="toggleInventory()">CLOSE</button>
     </div>
 
     <div id="shop-ui">
@@ -451,13 +451,13 @@
         <div id="shop-items">
             <!-- Market Eşyaları JS ile Gelecek -->
         </div>
-        <button class="btn" style="width: 100%; margin-top: 15px;" onclick="toggleShop()">EXIT</button>
+        <button class="btn" style="width: 100%; margin-top: 15px;" onclick="toggleShop()" ontouchstart="toggleShop()">EXIT</button>
     </div>
 
     <div id="overlay">
         <h1 style="color: #c0392b; font-size: 40px;">YOU DIED</h1>
         <p id="overlay-msg" style="color: #aaa;"></p>
-        <button class="btn" style="padding: 10px 30px;" onclick="resetGame()">RESPAWN</button>
+        <button class="btn" style="padding: 10px 30px;" onclick="resetGame()" ontouchstart="resetGame()">RESPAWN</button>
     </div>
 
     <div id="joystick-container">
@@ -465,29 +465,29 @@
     </div>
 
     <div id="mobile-menu-btns">
-        <div class="mobile-btn" onclick="adjustZoom(0.1)">🔍+</div>
-        <div class="mobile-btn" onclick="adjustZoom(-0.1)">🔍-</div>
-        <div class="mobile-btn" onclick="toggleInventory()">🎒</div>
-        <div class="mobile-btn" onclick="toggleStats()">👤</div>
-        <div class="mobile-btn" id="mobile-shop-btn" style="display:none;" onclick="checkShopInteract()">🏪</div>
-        <div class="mobile-btn" onclick="toggleFullScreen()">📺</div>
+        <div class="mobile-btn" onclick="adjustZoom(0.1)" ontouchstart="adjustZoom(0.1)">🔍+</div>
+        <div class="mobile-btn" onclick="adjustZoom(-0.1)" ontouchstart="adjustZoom(-0.1)">🔍-</div>
+        <div class="mobile-btn" onclick="toggleInventory()" ontouchstart="toggleInventory()">🎒</div>
+        <div class="mobile-btn" onclick="toggleStats()" ontouchstart="toggleStats()">👤</div>
+        <div class="mobile-btn" id="mobile-shop-btn" style="display:none;" onclick="checkShopInteract()" ontouchstart="checkShopInteract()">🏪</div>
+        <div class="mobile-btn" onclick="toggleFullScreen()" ontouchstart="toggleFullScreen()">📺</div>
     </div>
 
     <div id="skill-bar">
-        <div class="skill-slot" id="skill-1" onclick="castSpecificSkill(0)">
+        <div class="skill-slot" id="skill-1" onclick="castSpecificSkill(0)" ontouchstart="castSpecificSkill(0)">
             <span class="key-hint">1</span>❄️
             <div class="skill-cooldown" id="cd-1"></div>
         </div>
-        <div class="skill-slot" id="skill-2" onclick="castSpecificSkill(1)">
+        <div class="skill-slot" id="skill-2" onclick="castSpecificSkill(1)" ontouchstart="castSpecificSkill(1)">
             <span class="key-hint">2</span>⚡
             <div class="skill-cooldown" id="cd-2"></div>
         </div>
         <!-- Hızlı İksir Slotları -->
-        <div class="skill-slot" id="quick-hp" onclick="useQuickPotion('potion')" style="margin-left: 20px;">
+        <div class="skill-slot" id="quick-hp" onclick="useQuickPotion('potion')" ontouchstart="useQuickPotion('potion')" style="margin-left: 20px;">
             <span class="key-hint">3</span>🧪
             <span class="item-count" id="hp-potion-count">0</span>
         </div>
-        <div class="skill-slot" id="quick-mp" onclick="useQuickPotion('mana_potion')">
+        <div class="skill-slot" id="quick-mp" onclick="useQuickPotion('mana_potion')" ontouchstart="useQuickPotion('mana_potion')">
             <span class="key-hint">4</span>💧
             <span class="item-count" id="mp-potion-count">0</span>
         </div>
@@ -650,9 +650,16 @@
 
     // Dokunmatik Engelleme (Scroll ve Zoom)
     document.addEventListener('touchstart', (e) => {
-        if (e.target.tagName !== 'BUTTON' && e.target.className !== 'grid-slot' && e.target.className !== 'mobile-btn') {
-            e.preventDefault();
+        const target = e.target;
+        if (target.tagName === 'BUTTON' || 
+            target.closest('.grid-slot') || 
+            target.closest('.mobile-btn') || 
+            target.closest('.skill-slot') || 
+            target.closest('.stat-btn') ||
+            target.closest('.equip-slot')) {
+            return;
         }
+        e.preventDefault();
     }, { passive: false });
 
     document.addEventListener('touchmove', (e) => {
@@ -1284,7 +1291,14 @@
         
         // UI elementlerine tıklanmıyorsa joystick'i başlat
         const target = e.target;
-        if (target.tagName === 'BUTTON' || target.className.includes('grid-slot') || target.className.includes('mobile-btn') || target.className.includes('stat-btn')) return;
+        if (target.tagName === 'BUTTON' || 
+            target.closest('.grid-slot') || 
+            target.closest('.mobile-btn') || 
+            target.closest('.skill-slot') || 
+            target.closest('.stat-btn') ||
+            target.closest('.equip-slot')) {
+            return;
+        }
 
         const touch = e.touches[0];
         // Ekranın sol yarısında mı kontrol et (Dinamik Joystick için)
@@ -1434,6 +1448,7 @@
             if (item) {
                 slot.innerHTML = `<span class="item-icon">${item.icon}</span><span class="item-count">${item.count > 1 ? item.count : ''}</span>`;
                 slot.onclick = () => handleItemAction(index);
+                slot.ontouchstart = (e) => { e.preventDefault(); handleItemAction(index); };
                 slot.onmouseenter = (e) => showTooltip(item, e);
                 slot.onmouseleave = hideTooltip;
             }
@@ -1444,12 +1459,16 @@
         const hatSlot = document.getElementById('slot-hat');
         weaponSlot.innerHTML = player.equipment.weapon ? player.equipment.weapon.icon : '🪄';
         weaponSlot.className = 'equip-slot' + (player.equipment.weapon ? ' active' : '');
+        weaponSlot.onclick = () => unequip('weapon');
+        weaponSlot.ontouchstart = (e) => { e.preventDefault(); unequip('weapon'); };
         if (player.equipment.weapon) {
             weaponSlot.onmouseenter = (e) => showTooltip(player.equipment.weapon, e);
             weaponSlot.onmouseleave = hideTooltip;
         }
         hatSlot.innerHTML = player.equipment.hat ? player.equipment.hat.icon : '👒';
         hatSlot.className = 'equip-slot' + (player.equipment.hat ? ' active' : '');
+        hatSlot.onclick = () => unequip('hat');
+        hatSlot.ontouchstart = (e) => { e.preventDefault(); unequip('hat'); };
         if (player.equipment.hat) {
             hatSlot.onmouseenter = (e) => showTooltip(player.equipment.hat, e);
             hatSlot.onmouseleave = hideTooltip;
@@ -1509,7 +1528,7 @@
         Object.values(ITEM_DB).forEach(item => {
             const div = document.createElement('div');
             div.className = 'shop-item';
-            div.innerHTML = `<div><div style="font-weight:bold;">${item.icon} ${item.name}</div><div style="font-size:10px; color:#f1c40f;">${item.cost} Noah</div></div><button class="btn" onclick="buyItem('${item.id}')">BUY</button>`;
+            div.innerHTML = `<div><div style="font-weight:bold;">${item.icon} ${item.name}</div><div style="font-size:10px; color:#f1c40f;">${item.cost} Noah</div></div><button class="btn" onclick="buyItem('${item.id}')" ontouchstart="buyItem('${item.id}')">BUY</button>`;
             div.onmouseenter = (e) => showTooltip(item, e);
             div.onmouseleave = hideTooltip;
             container.appendChild(div);
