@@ -1623,11 +1623,21 @@
         player.x = Math.max(player.size, Math.min(WORLD_WIDTH - player.size, player.x));
         player.y = Math.max(player.size, Math.min(WORLD_HEIGHT - player.size, player.y));
         
-        // Kamera takibi (Zoom uyumlu)
+        // Kamera takibi (Zoom uyumlu ve Dünyayı ortalayan)
         const viewW = canvas.width / zoom;
         const viewH = canvas.height / zoom;
-        camera.x = Math.max(0, Math.min(WORLD_WIDTH - viewW, player.x - viewW / 2));
-        camera.y = Math.max(0, Math.min(WORLD_HEIGHT - viewH, player.y - viewH / 2));
+        
+        if (viewW >= WORLD_WIDTH) {
+            camera.x = (WORLD_WIDTH - viewW) / 2;
+        } else {
+            camera.x = Math.max(0, Math.min(WORLD_WIDTH - viewW, player.x - viewW / 2));
+        }
+        
+        if (viewH >= WORLD_HEIGHT) {
+            camera.y = (WORLD_HEIGHT - viewH) / 2;
+        } else {
+            camera.y = Math.max(0, Math.min(WORLD_HEIGHT - viewH, player.y - viewH / 2));
+        }
         
         const isNearShop = Math.hypot(player.x - shopKeeper.x, player.y - shopKeeper.y) < 130;
         shopMsg.style.display = isNearShop ? 'block' : 'none';
@@ -1908,10 +1918,10 @@
         ctx.scale(zoom, zoom);
         ctx.translate(-camera.x + shakeX, -camera.y + shakeY);
         
+        const viewW = canvas.width / zoom;
+        const viewH = canvas.height / zoom;
         const viewMargin = 100;
         const isVisible = (x, y, size = 0) => {
-            const viewW = canvas.width / zoom;
-            const viewH = canvas.height / zoom;
             return x + size > camera.x - viewMargin && 
                    x - size < camera.x + viewW + viewMargin &&
                    y + size > camera.y - viewMargin && 
@@ -1921,15 +1931,16 @@
         // --- 1. Zemin ve Yollar ---
         // Ana zemin rengi
         ctx.fillStyle = '#1b3022';
-        ctx.fillRect(camera.x, camera.y, canvas.width, canvas.height);
+        // Ekran sarsıntısı ve zoom payı için geniş bir alanı boya
+        ctx.fillRect(camera.x - viewMargin, camera.y - viewMargin, viewW + viewMargin * 2, viewH + viewMargin * 2);
         
         // Zemin varyasyonu (Daha doğal görünüm)
         ctx.globalAlpha = 0.3;
         const patchSize = 300;
         const startX = Math.floor(camera.x / patchSize) * patchSize;
         const startY = Math.floor(camera.y / patchSize) * patchSize;
-        for (let i = startX; i < camera.x + canvas.width + patchSize; i += patchSize) {
-            for (let j = startY; j < camera.y + canvas.height + patchSize; j += patchSize) {
+        for (let i = startX; i < camera.x + viewW + patchSize; i += patchSize) {
+            for (let j = startY; j < camera.y + viewH + patchSize; j += patchSize) {
                 if ((i+j) % (patchSize*2) === 0) {
                     ctx.fillStyle = '#16291d';
                     ctx.fillRect(i, j, patchSize, patchSize);
@@ -1963,8 +1974,8 @@
         const grassSpacing = 120;
         const gStartX = Math.floor(camera.x / grassSpacing) * grassSpacing;
         const gStartY = Math.floor(camera.y / grassSpacing) * grassSpacing;
-        for (let i = gStartX; i < camera.x + canvas.width + grassSpacing; i += grassSpacing) {
-            for (let j = gStartY; j < camera.y + canvas.height + grassSpacing; j += grassSpacing) {
+        for (let i = gStartX; i < camera.x + viewW + grassSpacing; i += grassSpacing) {
+            for (let j = gStartY; j < camera.y + viewH + grassSpacing; j += grassSpacing) {
                 let offX = (i * 17) % 50;
                 let offY = (j * 11) % 50;
                 drawGrass(ctx, i + offX, j + offY, 5 + Math.sin(frameCount/20 + i)*2, '#2d4a3e');
@@ -2140,12 +2151,13 @@
         if (hour >= 6 && hour < 18) {
             ctx.globalAlpha = 0.05;
             ctx.fillStyle = '#fff9c4';
-            for(let i=0; i<3; i++) {
+            for(let i=0; i<10; i++) {
+                let startX = Math.floor(camera.x / 400) * 400 + (i * 400);
                 ctx.beginPath();
-                ctx.moveTo(camera.x + 100 + i*300, camera.y);
-                ctx.lineTo(camera.x + 400 + i*300, camera.y);
-                ctx.lineTo(camera.x + 200 + i*300, camera.y + 600);
-                ctx.lineTo(camera.x - 100 + i*300, camera.y + 600);
+                ctx.moveTo(startX + 100, camera.y);
+                ctx.lineTo(startX + 400, camera.y);
+                ctx.lineTo(startX + 200, camera.y + viewH);
+                ctx.lineTo(startX - 100, camera.y + viewH);
                 ctx.fill();
             }
             ctx.globalAlpha = 1.0;
