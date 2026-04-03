@@ -82,17 +82,17 @@
         canvas { display: block; }
 
         #ui {
-            position: absolute; top: 15px; left: 15px;
+            position: absolute; top: 10px; left: 10px;
             pointer-events: none; z-index: 10;
-            background: rgba(0, 0, 20, 0.7);
-            padding: 12px; border-radius: 4px;
-            border: 1px solid rgba(255, 215, 0, 0.3);
+            background: rgba(0, 0, 20, 0.6);
+            padding: 8px; border-radius: 4px;
+            border: 1px solid rgba(255, 215, 0, 0.2);
         }
 
         .stat-bar {
-            width: 150px; height: 12px;
+            width: 100px; height: 8px;
             background: #222; border-radius: 2px;
-            margin-bottom: 5px; border: 1px solid #444;
+            margin-bottom: 4px; border: 1px solid #444;
             position: relative; overflow: hidden;
         }
         #hp-bar { width: 100%; height: 100%; background: #c0392b; transition: width 0.3s; }
@@ -102,22 +102,23 @@
         .bar-text {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             display: flex; justify-content: center; align-items: center;
-            font-size: 9px; color: #fff; font-weight: bold; text-shadow: 1px 1px 1px #000;
+            font-size: 8px; color: #fff; font-weight: bold; text-shadow: 1px 1px 1px #000;
             pointer-events: none;
         }
 
         /* Quest UI */
         #quest-ui {
-            position: absolute; top: 120px; left: 15px;
-            width: 180px; background: rgba(0, 0, 20, 0.7);
-            border: 1px solid rgba(255, 215, 0, 0.3);
-            padding: 10px; border-radius: 4px;
-            color: #fff; font-size: 12px;
-            pointer-events: none;
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 240px; background: linear-gradient(135deg, #1e202e 0%, #11121a 100%);
+            border: 2px solid #f1c40f; border-radius: 4px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.9);
+            display: none; z-index: 70; padding: 15px;
+            user-select: none;
         }
-        .quest-title { color: #f1c40f; font-weight: bold; margin-bottom: 5px; border-bottom: 1px solid #444; }
-        .quest-item { margin-bottom: 8px; }
-        .quest-progress { color: #2ecc71; font-weight: bold; }
+        .quest-title { color: #f1c40f; font-weight: bold; margin-bottom: 10px; border-bottom: 1px solid #444; text-align: center; font-size: 14px; }
+        .quest-item { margin-bottom: 10px; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 4px; border: 1px solid rgba(255,215,0,0.1); }
+        .quest-progress { color: #2ecc71; font-weight: bold; margin-top: 4px; font-size: 11px; }
 
         /* Tooltip Style */
         #tooltip {
@@ -417,26 +418,29 @@
     <canvas id="gameCanvas"></canvas>
     
     <div id="ui">
-        <div style="font-size: 12px; color: #c0392b; font-weight: bold;">HP</div>
+        <div style="font-size: 10px; color: #c0392b; font-weight: bold; margin-bottom: 2px;">HP</div>
         <div class="stat-bar">
             <div id="hp-bar"></div>
             <div class="bar-text" id="hp-text">100 / 100</div>
         </div>
-        <div style="font-size: 12px; color: #2980b9; font-weight: bold;">MP</div>
+        <div style="font-size: 10px; color: #2980b9; font-weight: bold; margin-bottom: 2px;">MP</div>
         <div class="stat-bar">
             <div id="mp-bar"></div>
             <div class="bar-text" id="mp-text">100 / 100</div>
         </div>
-        <div style="font-size: 12px; color: #27ae60; font-weight: bold;">EXP</div>
+        <div style="font-size: 10px; color: #27ae60; font-weight: bold; margin-bottom: 2px;">EXP</div>
         <div class="stat-bar">
             <div id="xp-bar"></div>
             <div class="bar-text" id="xp-text">0 / 100</div>
         </div>
-        <div style="font-size: 14px; color: #f1c40f; margin-top: 5px;">LVL <span id="lvl-text">1</span> | ATK: <span id="atk-text">30</span></div>
+        <div style="font-size: 11px; color: #f1c40f; margin-top: 4px; display: flex; gap: 8px;">
+            <span>LVL <span id="lvl-text">1</span></span>
+            <span>ATK: <span id="atk-text">30</span></span>
+        </div>
     </div>
 
-    <div id="pet-ui" style="position: absolute; top: 15px; right: 15px; pointer-events: none; z-index: 10; background: rgba(0, 0, 20, 0.7); padding: 12px; border-radius: 4px; border: 1px solid rgba(255, 215, 0, 0.3);">
-        <div style="font-size: 12px; color: #9b59b6; font-weight: bold;">PET: <span id="pet-name"></span></div>
+    <div id="pet-ui" style="position: absolute; top: 10px; right: 10px; pointer-events: none; z-index: 10; background: rgba(0, 0, 20, 0.6); padding: 8px; border-radius: 4px; border: 1px solid rgba(255, 215, 0, 0.2);">
+        <div style="font-size: 10px; color: #9b59b6; font-weight: bold; margin-bottom: 2px;">PET: <span id="pet-name"></span></div>
         <div class="stat-bar">
             <div id="pet-hp-bar"></div>
             <div class="bar-text" id="pet-hp-text">100 / 100</div>
@@ -444,10 +448,11 @@
     </div>
 
     <div id="quest-ui">
-        <div class="quest-title">GÖREVLER</div>
+        <div class="quest-title">AKTİF GÖREVLER</div>
         <div id="quest-list">
             <!-- Görevler buraya gelecek -->
         </div>
+        <button class="btn" style="width: 100%; margin-top: 15px; border-color: #f1c40f; color: #f1c40f;" onclick="toggleQuests()" ontouchstart="event.preventDefault(); toggleQuests()">KAPAT</button>
     </div>
 
     <div id="shop-trigger-msg">SUNDRIES [E]</div>
@@ -557,6 +562,7 @@
     <div id="mobile-menu-btns">
         <div class="mobile-btn" onclick="adjustZoom(0.1)" ontouchstart="event.preventDefault(); adjustZoom(0.1)">🔍+</div>
         <div class="mobile-btn" onclick="adjustZoom(-0.1)" ontouchstart="event.preventDefault(); adjustZoom(-0.1)">🔍-</div>
+        <div class="mobile-btn" onclick="toggleQuests()" ontouchstart="event.preventDefault(); toggleQuests()">📜</div>
         <div class="mobile-btn" onclick="toggleInventory()" ontouchstart="event.preventDefault(); toggleInventory()">🎒</div>
         <div class="mobile-btn" onclick="toggleStats()" ontouchstart="event.preventDefault(); toggleStats()">👤</div>
         <div class="mobile-btn" id="mobile-shop-btn" style="display:none;" onclick="checkShopInteract()" ontouchstart="event.preventDefault(); checkShopInteract()">🏪</div>
@@ -702,6 +708,7 @@
     const inventoryUI = document.getElementById('inventory-ui');
     const shopUI = document.getElementById('shop-ui');
     const statUI = document.getElementById('stat-ui');
+    const questUI = document.getElementById('quest-ui');
     const shopMsg = document.getElementById('shop-trigger-msg');
     const invGrid = document.getElementById('inv-grid');
     const tooltip = document.getElementById('tooltip');
@@ -872,6 +879,7 @@
     let isInventoryOpen = false;
     let isShopOpen = false;
     let isStatsOpen = false;
+    let isQuestsOpen = false;
     let currentInventoryPage = 0;
     const INVENTORY_PAGE_SIZE = 28;
     let selectedItemIndex = -1; // -1: none, 0+: inventory index
@@ -1432,6 +1440,7 @@
         keys[e.code] = true;
         if (e.code === 'KeyI') toggleInventory();
         if (e.code === 'KeyU') toggleStats();
+        if (e.code === 'KeyQ') toggleQuests();
         if (e.code === 'KeyE') checkShopInteract();
         if (e.code === 'Digit1') castSpecificSkill(0);
         if (e.code === 'Digit2') castSpecificSkill(1);
@@ -1917,7 +1926,7 @@
     }
 
     function update() {
-        if (!gameActive || isShopOpen) return; // Envanter açıkken artık oyun durmayacak
+        if (!gameActive || isShopOpen || isQuestsOpen) return; // Envanter açıkken artık oyun durmayacak, ancak Market ve Görev ekranı durdurur
         
         frameCount++;
         
@@ -2318,6 +2327,13 @@
         }
     }
 
+    function toggleQuests() {
+        isQuestsOpen = !isQuestsOpen;
+        playSound('click');
+        questUI.style.display = isQuestsOpen ? 'block' : 'none';
+        if (isQuestsOpen) updateQuestUI();
+    }
+
     function updateQuestUI() {
         const questList = document.getElementById('quest-list');
         if (!questList) return;
@@ -2326,11 +2342,16 @@
             if (q.completed) return;
             const div = document.createElement('div');
             div.className = 'quest-item';
-            div.innerHTML = `<div>${q.name}</div><div class="quest-progress">${q.count} / ${q.goal}</div>`;
+            div.innerHTML = `
+                <div style="font-weight:bold; color:#f1c40f;">${q.name}</div>
+                <div style="font-size:10px; color:#aaa; margin:4px 0;">Hedef: ${q.target}</div>
+                <div class="quest-progress">İlerleme: ${q.count} / ${q.goal}</div>
+                <div style="font-size:10px; color:#2ecc71; margin-top:4px;">Ödül: ${q.reward} Noah</div>
+            `;
             questList.appendChild(div);
         });
         if (questList.innerHTML === '') {
-            questList.innerHTML = '<div style="color:#aaa;">Tüm görevler tamamlandı!</div>';
+            questList.innerHTML = '<div style="color:#aaa; text-align:center; padding:10px;">Şu an aktif göreviniz bulunmuyor.</div>';
         }
     }
 
