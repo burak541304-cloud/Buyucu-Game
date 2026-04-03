@@ -1645,23 +1645,18 @@
 
     function confirmItemAction() {
         if (selectedItemIndex !== -1) {
-            // Envanterden bir işlem
             const item = player.inventory[selectedItemIndex];
             if (!item) return;
 
-            playSound('click');
             if (item.type === 'consumable') {
-                if (item.id === 'potion') { player.hp = Math.min(player.maxHp, player.hp + item.hp); item.count--; }
-                else if (item.id === 'mana_potion') { player.mp = Math.min(player.maxMp, player.mp + item.mp); item.count--; }
-                else if (item.id === 'speed') { player.speed += item.speedBonus; item.count--; }
-                if (item.count <= 0) player.inventory[selectedItemIndex] = null;
+                useConsumable(selectedItemIndex);
             } else if (['weapon', 'hat', 'shield', 'ring', 'robe'].includes(item.type)) {
+                playSound('click');
                 const oldEquip = player.equipment[item.type];
                 player.equipment[item.type] = item;
                 player.inventory[selectedItemIndex] = oldEquip;
             }
         } else if (selectedEquipType !== null) {
-            // Ekipmandan çıkarma
             unequip(selectedEquipType);
         }
         
@@ -1669,6 +1664,18 @@
         updateInventoryUI();
         updateStatsUI();
         saveGame();
+    }
+
+    function useConsumable(index) {
+        const item = player.inventory[index];
+        if (!item || item.type !== 'consumable') return;
+
+        playSound('click');
+        if (item.id === 'potion') { player.hp = Math.min(player.maxHp, player.hp + item.hp); item.count--; }
+        else if (item.id === 'mana_potion') { player.mp = Math.min(player.maxMp, player.mp + item.mp); item.count--; }
+        else if (item.id === 'speed') { player.speed += item.speedBonus; item.count--; }
+        
+        if (item.count <= 0) player.inventory[index] = null;
     }
 
     function confirmItemDiscard() {
@@ -2180,7 +2187,10 @@
     function useQuickPotion(id) {
         const index = player.inventory.findIndex(i => i && i.id === id);
         if (index !== -1) {
-            handleItemAction(index);
+            useConsumable(index);
+            updateStatsUI();
+            if (isInventoryOpen) updateInventoryUI();
+            saveGame();
         }
     }
 
