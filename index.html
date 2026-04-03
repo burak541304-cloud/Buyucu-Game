@@ -970,7 +970,6 @@
     let terrain = [];
     let worldObjects = [];
     let rivers = []; // Yeni: Dere sistemi
-    let waterfalls = []; // Yeni: Şelale sistemi
     let paths = []; // Yeni: Toprak yollar
     let particles = []; // Yeni: Atmosferik tozlar
     let damageNumbers = []; // Yeni: Hasar rakamları
@@ -983,7 +982,7 @@
     let isSkillTreeOpen = false;
     let currentInventoryPage = 0;
     let currentShopPage = 0;
-    const INVENTORY_PAGE_SIZE = 28;
+    const INVENTORY_PAGE_SIZE = 16; // Her sayfa 16 slot (4x4)
     const SHOP_PAGE_SIZE = 12; // Market sayfası başına 12 eşya
     let selectedItemIndex = -1; // -1: none, 0+: inventory index
     let selectedEquipType = null; // null: none, 'weapon', 'hat', etc.
@@ -1434,7 +1433,7 @@
     }
 
     function initWorld() {
-        terrain = []; worldObjects = []; enemies = []; droppedItems = []; paths = []; rivers = []; waterfalls = []; particles = []; damageNumbers = [];
+        terrain = []; worldObjects = []; enemies = []; droppedItems = []; paths = []; rivers = []; particles = []; damageNumbers = [];
         
         // --- 1. Yollar (Daha detaylı ağ yapısı) ---
         for (let i = 0; i < 20; i++) {
@@ -1461,11 +1460,6 @@
                 curX += (Math.random() - 0.5) * 800;
                 curY += (Math.random() + 0.2) * 600; // Genelde aşağı doğru aksın
                 points.push({x: curX, y: curY});
-                
-                // Dere sonuna veya büyük kıvrımlara şelale ekle
-                if (j === segments - 1 || Math.random() > 0.7) {
-                    waterfalls.push({ x: curX, y: curY, width: 60 + Math.random() * 40 });
-                }
             }
             rivers.push({ points: points, width: 40 + Math.random() * 30 });
         }
@@ -2789,41 +2783,6 @@
         saveGame(); // Görev tamamlandığında kaydet
     }
 
-    function drawWaterfall(ctx, x, y, width) {
-        const height = 100;
-        const speed = 15;
-        const time = (frameCount * speed) % height;
-
-        // Su Birikintisi (Taban)
-        const poolGrad = ctx.createRadialGradient(x, y + height, 0, x, y + height, width);
-        poolGrad.addColorStop(0, 'rgba(255,255,255,0.8)');
-        poolGrad.addColorStop(0.5, 'rgba(72,202,228,0.4)');
-        poolGrad.addColorStop(1, 'rgba(0,119,182,0)');
-        ctx.fillStyle = poolGrad;
-        ctx.beginPath(); ctx.ellipse(x, y + height, width, width/3, 0, 0, Math.PI*2); ctx.fill();
-
-        // Şelale Akışı (Çizgiler)
-        ctx.strokeStyle = 'rgba(255,255,255,0.6)';
-        ctx.lineWidth = 2;
-        for (let i = 0; i < 8; i++) {
-            const offX = (i - 4) * (width / 4);
-            const lineH = 20 + Math.random() * 20;
-            const curY = y + ((time + i * 20) % height);
-            ctx.beginPath();
-            ctx.moveTo(x + offX, curY);
-            ctx.lineTo(x + offX, curY + lineH);
-            ctx.stroke();
-        }
-
-        // Köpük ve Sıçrama (Partiküller)
-        ctx.fillStyle = 'white';
-        for (let i = 0; i < 5; i++) {
-            const px = x + (Math.random() - 0.5) * width * 1.5;
-            const py = y + height + (Math.random() - 0.5) * 20;
-            ctx.beginPath(); ctx.arc(px, py, 2 + Math.random() * 3, 0, Math.PI * 2); ctx.fill();
-        }
-    }
-
     function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         
@@ -2893,13 +2852,6 @@
             ctx.lineDashOffset = -frameCount * 2;
             ctx.stroke();
             ctx.setLineDash([]);
-        });
-
-        // --- 3. Şelaleler (Waterfalls) ---
-        waterfalls.forEach(w => {
-            if (isVisible(w.x, w.y, 150)) {
-                drawWaterfall(ctx, w.x, w.y, w.width);
-            }
         });
 
         // --- 4. Yollar (Paths) ---
