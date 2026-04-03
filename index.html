@@ -540,6 +540,9 @@
 
     <div id="shop-ui">
         <div class="inv-header">SUNDRIES [E]</div>
+        <div class="inv-page-btns" id="shop-page-btns" style="margin-bottom: 10px;">
+            <!-- Market sayfa butonları JS ile gelecek -->
+        </div>
         <div id="shop-items">
             <!-- Market Eşyaları JS ile Gelecek -->
         </div>
@@ -789,25 +792,52 @@
         ice_staff: { id: 'ice_staff', name: 'Ice Staff', icon: '❄️', type: 'weapon', damage: 65, intBonus: 12, hpBonus: 5, cost: 800, desc: 'Dondurucu soğuklukta bir asa.' },
         lightning_staff: { id: 'lightning_staff', name: 'Lightning Staff', icon: '⚡', type: 'weapon', damage: 110, intBonus: 25, dexBonus: 10, cost: 2500, desc: 'Yıldırımların gücünü barındırır.' },
         
+        // Epik Silahlar
+        void_reaper: { id: 'void_reaper', name: 'Void Reaper (Epik)', icon: '🔮', type: 'weapon', damage: 180, intBonus: 45, hpBonus: 30, cost: 8000, desc: 'Boşluğun karanlık enerjisini taşır.' },
+        dragon_slayer: { id: 'dragon_slayer', name: 'Dragon Slayer (Epik)', icon: '⚔️', type: 'weapon', damage: 220, dexBonus: 35, hpBonus: 50, cost: 12000, desc: 'Ejderhaları dize getiren efsanevi kılıç.' },
+        
+        // Efsanevi Silahlar
+        staff_of_eternity: { id: 'staff_of_eternity', name: 'Staff of Eternity (L)', icon: '☄️', type: 'weapon', damage: 450, intBonus: 120, dexBonus: 50, cost: 50000, desc: 'Ebediyetin kadim gücünü barındıran asa.' },
+        chaos_bringer: { id: 'chaos_bringer', name: 'Chaos Bringer (L)', icon: '🌀', type: 'weapon', damage: 550, intBonus: 80, dexBonus: 80, hpBonus: 100, cost: 75000, desc: 'Kaosu dünyaya getiren efsanevi silah.' },
+
         // Şapkalar / Zırhlar (Hat)
         wizard_hat: { id: 'wizard_hat', name: 'Wizard Hat', icon: '🧙', type: 'hat', maxHp: 50, intBonus: 3, cost: 250, desc: 'Kadim bir büyücü şapkası.' },
         apprentice_robe: { id: 'apprentice_robe', name: 'Apprentice Robe', icon: '🧥', type: 'hat', maxHp: 120, intBonus: 8, hpBonus: 10, cost: 600, desc: 'Çırak büyücü cübbesi.' },
         mystic_crown: { id: 'mystic_crown', name: 'Mystic Crown', icon: '👑', type: 'hat', maxHp: 300, intBonus: 20, dexBonus: 5, hpBonus: 20, cost: 2000, desc: 'Mistik güçlerle dövülmüş bir taç.' },
         
+        // Epik Şapkalar
+        shadow_mask: { id: 'shadow_mask', name: 'Shadow Mask (Epik)', icon: '👺', type: 'hat', maxHp: 800, intBonus: 40, dexBonus: 25, cost: 10000, desc: 'Gölgeler arasında kaybolmanızı sağlar.' },
+        holy_halo: { id: 'holy_halo', name: 'Holy Halo (Epik)', icon: '👼', type: 'hat', maxHp: 1200, intBonus: 60, hpBonus: 100, cost: 15000, desc: 'Kutsal bir ışıkla korunursunuz.' },
+        
+        // Efsanevi Şapkalar
+        crown_of_gods: { id: 'crown_of_gods', name: 'Crown of Gods (L)', icon: '🌟', type: 'hat', maxHp: 3000, intBonus: 150, dexBonus: 60, cost: 60000, desc: 'Tanrıların tacı, her şeyi bilen ve koruyan.' },
+
         // Kalkanlar (Shield)
         wooden_shield: { id: 'wooden_shield', name: 'Wooden Shield', icon: '🛡️', type: 'shield', hpBonus: 10, cost: 200, desc: 'Basit bir tahta kalkan.' },
         iron_shield: { id: 'iron_shield', name: 'Iron Shield', icon: '🛡️', type: 'shield', hpBonus: 25, dexBonus: -2, cost: 500, desc: 'Dayanıklı demir kalkan.' },
         mystic_shield: { id: 'mystic_shield', name: 'Mystic Shield', icon: '✨', type: 'shield', hpBonus: 50, intBonus: 10, cost: 1500, desc: 'Büyülü bir koruma kalkanı.' },
         
+        // Epik Kalkanlar
+        dragon_scale_shield: { id: 'dragon_scale_shield', name: 'Dragon Scale (Epik)', icon: '🐲', type: 'shield', hpBonus: 150, dexBonus: 10, cost: 9000, desc: 'Ejderha pullarından yapılmış kalkan.' },
+        titan_wall: { id: 'titan_wall', name: 'Titan Wall (Epik)', icon: '🧱', type: 'shield', hpBonus: 300, cost: 18000, desc: 'Bir devin gücüyle dövülmüş devasa kalkan.' },
+
         // Yüzükler (Ring)
         silver_ring: { id: 'silver_ring', name: 'Silver Ring', icon: '💍', type: 'ring', intBonus: 2, cost: 300, desc: 'Gümüş bir yüzük.' },
         gold_ring: { id: 'gold_ring', name: 'Gold Ring', icon: '💍', type: 'ring', intBonus: 5, dexBonus: 2, cost: 800, desc: 'Altın bir yüzük.' },
         diamond_ring: { id: 'diamond_ring', name: 'Diamond Ring', icon: '💎', type: 'ring', intBonus: 15, hpBonus: 10, cost: 3000, desc: 'Elmaslarla süslü güçlü bir yüzük.' },
         
+        // Epik ve Efsanevi Yüzükler
+        phoenix_ring: { id: 'phoenix_ring', name: 'Phoenix Ring (Epik)', icon: '🔥', type: 'ring', intBonus: 35, hpBonus: 40, cost: 12000, desc: 'Zümrüdüanka ateşini taşır.' },
+        ring_of_power: { id: 'ring_of_power', name: 'Ring of Power (L)', icon: '🪐', type: 'ring', intBonus: 100, dexBonus: 50, hpBonus: 100, cost: 80000, desc: 'Hepsine hükmedecek tek yüzük.' },
+
         // Giysiler (Robe)
         apprentice_outfit: { id: 'apprentice_outfit', name: 'Apprentice Outfit', icon: '👕', type: 'robe', hpBonus: 15, cost: 350, desc: 'Büyücü çırağı giysisi.' },
         mystic_robe: { id: 'mystic_robe', name: 'Mystic Robe', icon: '🧥', type: 'robe', hpBonus: 40, intBonus: 5, cost: 1200, desc: 'Mistik güçlerle dokunmuş cübbe.' },
-        archmage_robe: { id: 'archmage_robe', name: 'Archmage Robe', icon: '🧙‍♂️', type: 'robe', hpBonus: 100, intBonus: 20, dexBonus: 10, cost: 5000, desc: 'Başbüyücü cübbesi.' }
+        archmage_robe: { id: 'archmage_robe', name: 'Archmage Robe', icon: '🧙‍♂️', type: 'robe', hpBonus: 100, intBonus: 20, dexBonus: 10, cost: 5000, desc: 'Başbüyücü cübbesi.' },
+        
+        // Epik ve Efsanevi Cübbeler
+        celestial_garb: { id: 'celestial_garb', name: 'Celestial Garb (Epik)', icon: '🌌', type: 'robe', hpBonus: 250, intBonus: 50, cost: 15000, desc: 'Yıldız tozuyla dokunmuş göksel giysi.' },
+        eternity_robe: { id: 'eternity_robe', name: 'Eternity Robe (L)', icon: '✨', type: 'robe', hpBonus: 1000, intBonus: 200, dexBonus: 80, cost: 100000, desc: 'Zamanın ötesinden gelen ebedi cübbe.' }
     };
 
     // Yetenek Veritabanı
@@ -881,7 +911,9 @@
     let isStatsOpen = false;
     let isQuestsOpen = false;
     let currentInventoryPage = 0;
+    let currentShopPage = 0;
     const INVENTORY_PAGE_SIZE = 28;
+    const SHOP_PAGE_SIZE = 12; // Market sayfası başına 12 eşya
     let selectedItemIndex = -1; // -1: none, 0+: inventory index
     let selectedEquipType = null; // null: none, 'weapon', 'hat', etc.
     let frameCount = 0; // Animasyonlar için
@@ -1824,12 +1856,38 @@
     function updateShopUI() {
         const container = document.getElementById('shop-items');
         const shopGold = document.getElementById('shop-gold');
+        const pageBtnContainer = document.getElementById('shop-page-btns');
+        
         if (shopGold) shopGold.innerText = player.gold;
         
+        const allItems = Object.values(ITEM_DB);
+        const totalPages = Math.ceil(allItems.length / SHOP_PAGE_SIZE);
+        
+        // Sayfa butonlarını güncelle
+        if (pageBtnContainer) {
+            pageBtnContainer.innerHTML = '';
+            for (let i = 0; i < totalPages; i++) {
+                const btn = document.createElement('button');
+                btn.className = 'page-btn' + (currentShopPage === i ? ' active' : '');
+                btn.innerText = `SAYFA ${i + 1}`;
+                btn.onclick = () => { currentShopPage = i; updateShopUI(); playSound('click'); };
+                btn.ontouchstart = (e) => { e.preventDefault(); currentShopPage = i; updateShopUI(); playSound('click'); };
+                pageBtnContainer.appendChild(btn);
+            }
+        }
+        
         container.innerHTML = '';
-        Object.values(ITEM_DB).forEach(item => {
+        const start = currentShopPage * SHOP_PAGE_SIZE;
+        const pageItems = allItems.slice(start, start + SHOP_PAGE_SIZE);
+        
+        pageItems.forEach(item => {
             const div = document.createElement('div');
             div.className = 'shop-item';
+            
+            // Efsanevi/Epik renkleri
+            if (item.name.includes('(L)')) div.style.borderColor = '#f1c40f';
+            else if (item.name.includes('(Epik)')) div.style.borderColor = '#9b59b6';
+            
             div.innerHTML = `
                 <span class="item-icon">${item.icon}</span>
                 <span class="item-price">${item.cost}</span>
