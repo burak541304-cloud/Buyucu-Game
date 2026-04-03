@@ -2638,11 +2638,15 @@
         return false;
     }
 
-    if (!loadGame()) {
-        initWorld(); // Kayıtlı oyun yoksa yeni dünya başlat
-    }
+    // Oyun Başlatma
+    initWorld(); // Dünyayı her zaman oluştur (zemin, ağaçlar vb.)
+    loadGame();  // Eğer kayıt varsa oyuncu verilerini üzerine yaz
+    
     updateStatsUI(); 
     updateQuestUI(); 
+    
+    // İlk karede her şeyin (özellikle kameranın) senkronize olması için
+    update(); 
     draw();
 </script>
 </body>
