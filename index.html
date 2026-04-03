@@ -337,13 +337,6 @@
         @media (max-width: 1024px) {
             #joystick-container { display: none; }
         }
-        #clock {
-            position: fixed; top: 20px; right: 20px;
-            background: rgba(0,0,0,0.7); border: 2px solid #f1c40f;
-            padding: 5px 15px; border-radius: 20px;
-            color: #f1c40f; font-weight: bold; font-family: 'Segoe UI', Arial;
-            display: flex; align-items: center; gap: 8px; z-index: 100;
-        }
 
         /* Item Info Panel (Context Menu) */
         #item-info-panel {
@@ -376,11 +369,6 @@
 <div id="game-container">
     <canvas id="gameCanvas"></canvas>
     
-    <div id="clock">
-        <span id="clock-icon">☀️</span>
-        <span id="clock-time">12:00</span>
-    </div>
-
     <div id="ui">
         <div style="font-size: 12px; color: #c0392b; font-weight: bold;">HP</div>
         <div class="stat-bar">
@@ -837,16 +825,9 @@
     let screenShake = 0; // Ekran sarsıntısı şiddeti
 
     // Gün-Gece Döngüsü Ayarları
-    let gameTime = 720; // 0-1440 dakika (12:00 öğlen başlar)
+    let gameTime = 720; // 0-1440 dakika (Her zaman 12:00 öğlen)
     const DAY_LENGTH = 1440; // Bir tam gün
-    const TIME_SPEED = 0.2; // Zamanın akış hızı (dakika/frame)
-    const clockTime = document.getElementById('clock-time');
-    const clockIcon = document.getElementById('clock-icon');
-
-    // Performans için ışık maskesi kanvası
-    const lightCanvas = document.createElement('canvas');
-    const lctx = lightCanvas.getContext('2d');
-
+    
     // Görsel Güzelleştirme için yardımcı fonksiyonlar
     function drawGrass(ctx, x, y, size, color = '#2d4a3e') {
         ctx.strokeStyle = color;
@@ -1816,27 +1797,9 @@
         }
     }
 
-    function updateTime() {
-        gameTime = (gameTime + TIME_SPEED) % DAY_LENGTH;
-        
-        const hours = Math.floor(gameTime / 60);
-        const mins = Math.floor(gameTime % 60);
-        const timeStr = `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
-        if (clockTime.innerText !== timeStr) {
-            clockTime.innerText = timeStr;
-            
-            // Simge Güncelleme
-            if (hours >= 6 && hours < 18) clockIcon.innerText = '☀️'; // Gündüz
-            else if (hours >= 18 && hours < 21) clockIcon.innerText = '🌅'; // Akşam
-            else if (hours >= 21 || hours < 5) clockIcon.innerText = '🌙'; // Gece
-            else clockIcon.innerText = '🌇'; // Şafak
-        }
-    }
-
     function update() {
         if (!gameActive || isInventoryOpen || isShopOpen) return;
         
-        updateTime();
         frameCount++;
         
         // Her 300 frame'de bir oyunu kaydet (yaklaşık 5 saniyede bir)
@@ -2222,7 +2185,6 @@
     }
 
     function draw() {
-        const hour = gameTime / 60;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         
         // Ekran Sarsıntısı Uygula
@@ -2469,78 +2431,7 @@
         });
         ctx.globalAlpha = 1.0;
 
-        // Işık Hüzmeleri (Sadece Gündüz)
-        if (hour >= 6 && hour < 18) {
-            ctx.globalAlpha = 0.05;
-            ctx.fillStyle = '#fff9c4';
-            for(let i=0; i<10; i++) {
-                let startX = Math.floor(camera.x / 400) * 400 + (i * 400);
-                ctx.beginPath();
-                ctx.moveTo(startX + 100, camera.y);
-                ctx.lineTo(startX + 400, camera.y);
-                ctx.lineTo(startX + 200, camera.y + viewH);
-                ctx.lineTo(startX - 100, camera.y + viewH);
-                ctx.fill();
-            }
-            ctx.globalAlpha = 1.0;
-        }
-
-        // --- 6. Gece Işıklandırması ve Filtre ---
         ctx.restore(); // Ana sahne bitti
-
-        // Günün saatine göre karanlık oranı hesaplama (0.0: tam aydınlık, 0.7: tam karanlık)
-        let ambientAlpha = 0;
-        let ambientColor = 'rgba(0, 0, 40, ';
-
-        if (hour >= 5 && hour < 7) { // Şafak
-            ambientAlpha = 0.5 * (1 - (hour - 5) / 2);
-            ambientColor = 'rgba(70, 0, 30, '; // Turuncumsu şafak
-        } else if (hour >= 18 && hour < 21) { // Akşam
-            ambientAlpha = 0.6 * ((hour - 18) / 3);
-            ambientColor = 'rgba(50, 0, 50, '; // Morumsu gün batımı
-        } else if (hour >= 21 || hour < 5) { // Gece
-            ambientAlpha = 0.7;
-            ambientColor = 'rgba(0, 0, 40, '; // Koyu gece
-        }
-
-        if (ambientAlpha > 0) {
-            // Işık Maskesini temizle ve ayarla
-            if (lightCanvas.width !== canvas.width) {
-                lightCanvas.width = canvas.width;
-                lightCanvas.height = canvas.height;
-            }
-            lctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            // Önce her yeri karart
-            lctx.fillStyle = `${ambientColor}${ambientAlpha})`;
-            lctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            // Player'ın etrafını "kes" (ışık alanı - Zoom uyumlu)
-            const lightX = (player.x - camera.x) * zoom;
-            const lightY = (player.y - camera.y) * zoom;
-            const lightRad = 250 * zoom;
-            
-            lctx.globalCompositeOperation = 'destination-out';
-            const lightGrad = lctx.createRadialGradient(lightX, lightY, 0, lightX, lightY, lightRad);
-            lightGrad.addColorStop(0, 'rgba(0,0,0,1)');
-            lightGrad.addColorStop(1, 'rgba(0,0,0,0)');
-            lctx.fillStyle = lightGrad;
-            lctx.beginPath(); lctx.arc(lightX, lightY, lightRad, 0, Math.PI*2); lctx.fill();
-            
-            // Sahneye uygula
-            ctx.drawImage(lightCanvas, 0, 0);
-            
-            // Hafif bir sarı ışık halesi ekle (Zoom uyumlu)
-            ctx.globalCompositeOperation = 'screen';
-            ctx.globalAlpha = 0.2 * ambientAlpha;
-            const glowGrad = ctx.createRadialGradient(lightX, lightY, 0, lightX, lightY, lightRad);
-            glowGrad.addColorStop(0, '#f1c40f');
-            glowGrad.addColorStop(1, 'rgba(0,0,0,0)');
-            ctx.fillStyle = glowGrad;
-            ctx.beginPath(); ctx.arc(lightX, lightY, lightRad, 0, Math.PI*2); ctx.fill();
-            ctx.globalCompositeOperation = 'source-over';
-            ctx.globalAlpha = 1.0;
-        }
 
         requestAnimationFrame(() => { update(); draw(); });
     }
