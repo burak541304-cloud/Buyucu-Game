@@ -260,7 +260,32 @@
             margin: 10px 0; border-top: 1px solid #444; padding-top: 10px;
         }
 
-        /* Knight Online Style Shop */
+        /* Skill Tree UI */
+        #skill-tree-ui {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 320px; background: linear-gradient(135deg, #1e202e 0%, #11121a 100%);
+            border: 2px solid #f1c40f; border-radius: 4px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.9);
+            display: none; z-index: 80; padding: 15px;
+            user-select: none;
+        }
+        .skill-tree-grid {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;
+            margin-top: 15px; max-height: 300px; overflow-y: auto;
+        }
+        .skill-node {
+            background: rgba(0,0,0,0.4); border: 2px solid #444; border-radius: 8px;
+            padding: 10px; text-align: center; cursor: pointer; transition: all 0.2s;
+            position: relative;
+        }
+        .skill-node.learned { border-color: #f1c40f; background: rgba(241, 196, 15, 0.1); }
+        .skill-node.locked { opacity: 0.5; filter: grayscale(1); cursor: not-allowed; }
+        .skill-node:hover:not(.locked) { transform: scale(1.05); border-color: #f1c40f; }
+        .skill-node .skill-icon { font-size: 24px; margin-bottom: 5px; }
+        .skill-node .skill-name { font-size: 10px; font-weight: bold; color: #fff; }
+        .skill-node .skill-cost { font-size: 9px; color: #f1c40f; margin-top: 3px; }
+
         #shop-ui {
             position: absolute; top: 50%; left: 50%;
             transform: translate(-50%, -50%);
@@ -457,6 +482,16 @@
 
     <div id="shop-trigger-msg">SUNDRIES [E]</div>
 
+    <!-- Skill Tree Window -->
+    <div id="skill-tree-ui">
+        <div class="inv-header" style="border-color: #f1c40f; color: #f1c40f;">SKILL TREE [K]</div>
+        <div style="text-align: center; color: #f1c40f; font-weight: bold; margin-bottom: 10px;">PUAN: <span id="skill-points-text">0</span></div>
+        <div class="skill-tree-grid" id="skill-tree-grid">
+            <!-- Skill nodelar JS ile gelecek -->
+        </div>
+        <button class="btn" style="width: 100%; margin-top: 15px; border-color: #f1c40f; color: #f1c40f;" onclick="toggleSkillTree()" ontouchstart="event.preventDefault(); toggleSkillTree()">KAPAT</button>
+    </div>
+
     <!-- Stat Window -->
     <div id="stat-ui">
         <div class="inv-header" style="border-color: #3498db; color: #3498db;">CHARACTER STATS [U]</div>
@@ -566,6 +601,7 @@
         <div class="mobile-btn" onclick="adjustZoom(0.1)" ontouchstart="event.preventDefault(); adjustZoom(0.1)">🔍+</div>
         <div class="mobile-btn" onclick="adjustZoom(-0.1)" ontouchstart="event.preventDefault(); adjustZoom(-0.1)">🔍-</div>
         <div class="mobile-btn" onclick="toggleQuests()" ontouchstart="event.preventDefault(); toggleQuests()">📜</div>
+        <div class="mobile-btn" onclick="toggleSkillTree()" ontouchstart="event.preventDefault(); toggleSkillTree()">🪄</div>
         <div class="mobile-btn" onclick="toggleInventory()" ontouchstart="event.preventDefault(); toggleInventory()">🎒</div>
         <div class="mobile-btn" onclick="toggleStats()" ontouchstart="event.preventDefault(); toggleStats()">👤</div>
         <div class="mobile-btn" id="mobile-shop-btn" style="display:none;" onclick="checkShopInteract()" ontouchstart="event.preventDefault(); checkShopInteract()">🏪</div>
@@ -580,13 +616,29 @@
             <span class="key-hint">2</span>⚡
             <div class="skill-cooldown" id="cd-2"></div>
         </div>
+        <div class="skill-slot" id="skill-3" onclick="castSpecificSkill(2)" ontouchstart="event.preventDefault(); castSpecificSkill(2)">
+            <span class="key-hint">3</span>☄️
+            <div class="skill-cooldown" id="cd-3"></div>
+        </div>
+        <div class="skill-slot" id="skill-4" onclick="castSpecificSkill(3)" ontouchstart="event.preventDefault(); castSpecificSkill(3)">
+            <span class="key-hint">4</span>🌨️
+            <div class="skill-cooldown" id="cd-4"></div>
+        </div>
+        <div class="skill-slot" id="skill-5" onclick="castSpecificSkill(4)" ontouchstart="event.preventDefault(); castSpecificSkill(4)">
+            <span class="key-hint">5</span>✨
+            <div class="skill-cooldown" id="cd-5"></div>
+        </div>
+        <div class="skill-slot" id="skill-6" onclick="castSpecificSkill(5)" ontouchstart="event.preventDefault(); castSpecificSkill(5)">
+            <span class="key-hint">6</span>🔥
+            <div class="skill-cooldown" id="cd-6"></div>
+        </div>
         <!-- Hızlı İksir Slotları -->
         <div class="skill-slot" id="quick-hp" onclick="useQuickPotion('potion')" ontouchstart="event.preventDefault(); useQuickPotion('potion')" style="margin-left: 20px;">
-            <span class="key-hint">3</span>🧪
+            <span class="key-hint">H</span>🧪
             <span class="item-count" id="hp-potion-count">0</span>
         </div>
         <div class="skill-slot" id="quick-mp" onclick="useQuickPotion('mana_potion')" ontouchstart="event.preventDefault(); useQuickPotion('mana_potion')">
-            <span class="key-hint">4</span>💧
+            <span class="key-hint">M</span>💧
             <span class="item-count" id="mp-potion-count">0</span>
         </div>
     </div>
@@ -711,6 +763,7 @@
     const inventoryUI = document.getElementById('inventory-ui');
     const shopUI = document.getElementById('shop-ui');
     const statUI = document.getElementById('stat-ui');
+    const skillTreeUI = document.getElementById('skill-tree-ui');
     const questUI = document.getElementById('quest-ui');
     const shopMsg = document.getElementById('shop-trigger-msg');
     const invGrid = document.getElementById('inv-grid');
@@ -841,12 +894,17 @@
     };
 
     // Yetenek Veritabanı
-    const BASIC_ATTACK = { name: 'Fireball', icon: '🔥', color: '#ff4d00', damageMult: 0.8, cd: 45, speed: 9, size: 7, effect: 'burn', manaCost: 0 };
-    
     const SKILL_DB = [
-        { name: 'Frostbolt', icon: '❄️', color: '#00d2ff', damageMult: 1.0, cd: 60, speed: 12, size: 6, effect: 'slow', manaCost: 15 },
-        { name: 'Lightning Bolt', icon: '⚡', color: '#f1c40f', damageMult: 1.8, cd: 120, speed: 15, size: 4, effect: 'shock', manaCost: 35 }
+        { id: 0, name: 'Frostbolt', icon: '❄️', color: '#00d2ff', damageMult: 1.0, cd: 60, speed: 12, size: 6, effect: 'slow', manaCost: 15, reqLevel: 1, cost: 0, learned: true },
+        { id: 1, name: 'Lightning', icon: '⚡', color: '#f1c40f', damageMult: 1.8, cd: 120, speed: 15, size: 4, effect: 'shock', manaCost: 35, reqLevel: 5, cost: 1, learned: false },
+        { id: 2, name: 'Meteor', icon: '☄️', color: '#ff4d00', damageMult: 3.5, cd: 300, speed: 8, size: 15, effect: 'burn', aoe: 150, manaCost: 80, reqLevel: 15, cost: 3, learned: false },
+        { id: 3, name: 'Blizzard', icon: '🌨️', color: '#a2d2ff', damageMult: 2.0, cd: 240, speed: 10, size: 12, effect: 'slow', aoe: 200, manaCost: 60, reqLevel: 10, cost: 2, learned: false },
+        { id: 4, name: 'Arcane Nova', icon: '✨', color: '#e040fb', damageMult: 2.5, cd: 180, speed: 0, size: 0, effect: 'nova', aoe: 250, manaCost: 50, reqLevel: 12, cost: 2, learned: false },
+        { id: 5, name: 'Fire Storm', icon: '🔥', color: '#ff9f43', damageMult: 4.0, cd: 400, speed: 6, size: 20, effect: 'burn', aoe: 300, manaCost: 100, reqLevel: 20, cost: 5, learned: false }
     ];
+
+    // Temel Saldırı
+    const BASIC_ATTACK = { name: 'Fireball', icon: '🔥', color: '#ff4d00', damageMult: 0.8, cd: 45, speed: 9, size: 7, effect: 'burn', manaCost: 0 };
 
     let camera = { x: 0, y: 0 };
     const MIN_ZOOM = 0.5;
@@ -860,7 +918,8 @@
         xp: 0, maxXp: 100, lvl: 1, gold: 100,
         color: '#4ecca3', 
         basicAttackCooldown: 0,
-        skillCooldowns: [0, 0],
+        skillCooldowns: Array(6).fill(0), // 6 yetenek için
+        skillPoints: 0,
         statPoints: 0,
         stats: { int: 0, hp: 0, dex: 0 },
         quests: [
@@ -879,6 +938,7 @@
             ring: null,
             robe: null
         },
+        skillTree: [], // Öğrenilen yeteneklerin ID'leri
         pet: { // Yeni Pet Özellikleri
             active: true,
             name: 'Dragon Hatchling',
@@ -910,6 +970,7 @@
     let isShopOpen = false;
     let isStatsOpen = false;
     let isQuestsOpen = false;
+    let isSkillTreeOpen = false;
     let currentInventoryPage = 0;
     let currentShopPage = 0;
     const INVENTORY_PAGE_SIZE = 28;
@@ -1473,11 +1534,16 @@
         if (e.code === 'KeyI') toggleInventory();
         if (e.code === 'KeyU') toggleStats();
         if (e.code === 'KeyQ') toggleQuests();
+        if (e.code === 'KeyK') toggleSkillTree();
         if (e.code === 'KeyE') checkShopInteract();
         if (e.code === 'Digit1') castSpecificSkill(0);
         if (e.code === 'Digit2') castSpecificSkill(1);
-        if (e.code === 'Digit3') useQuickPotion('potion');
-        if (e.code === 'Digit4') useQuickPotion('mana_potion');
+        if (e.code === 'Digit3') castSpecificSkill(2); // Meteor
+        if (e.code === 'Digit4') castSpecificSkill(3); // Blizzard
+        if (e.code === 'Digit5') castSpecificSkill(4); // Arcane Nova
+        if (e.code === 'Digit6') castSpecificSkill(5); // Fire Storm
+        if (e.code === 'KeyH') useQuickPotion('potion');
+        if (e.code === 'KeyM') useQuickPotion('mana_potion');
     });
     window.addEventListener('keyup', e => keys[e.code] = false);
 
@@ -1560,9 +1626,21 @@
 
     function castSpecificSkill(index) {
         const skill = SKILL_DB[index];
+        if (!skill.learned) return; // Öğrenilmemiş yetenek kullanılamaz
+
         const currentCd = player.skillCooldowns[index];
 
-        if (currentCd <= 0 && player.mp >= skill.manaCost && enemies.length > 0) {
+        if (currentCd <= 0 && player.mp >= skill.manaCost) {
+            if (skill.effect === 'nova') {
+                // Arcane Nova: Direkt oyuncu etrafında alan hasarı
+                applyAoEDamage(player.x, player.y, skill.aoe, skill.damageMult, skill.color);
+                player.mp -= skill.manaCost;
+                const totalDex = player.stats.dex + (player.equipment.weapon?.dexBonus || 0) + (player.equipment.hat?.dexBonus || 0);
+                player.skillCooldowns[index] = Math.max(10, skill.cd - totalDex);
+                playSound('cast');
+                return;
+            }
+
             let nearestTarget = null;
             let minDist = 500; 
 
@@ -1604,8 +1682,53 @@
             damage: finalDamage,
             color: skill.color,
             size: skill.size,
-            effect: skill.effect
+            effect: skill.effect,
+            aoe: skill.aoe || 0 // Alan hasarı yarıçapı
         });
+    }
+
+    function applyAoEDamage(x, y, radius, damageMult, color) {
+        // Görsel efekt için halka ekle
+        particles.push({
+            x: x, y: y, size: radius, vx: 0, vy: 0, life: 20, maxLife: 20, color: color, isNova: true
+        });
+
+        let baseDamage = 30 + (player.lvl * 10) + (player.stats.int * 5);
+        Object.values(player.equipment).forEach(item => {
+            if (item) {
+                if (item.damage) baseDamage += item.damage;
+                if (item.intBonus) baseDamage += item.intBonus * 5;
+            }
+        });
+        const finalDamage = baseDamage * damageMult;
+
+        for (let i = enemies.length - 1; i >= 0; i--) {
+            let e = enemies[i];
+            if (Math.hypot(x - e.x, y - e.y) < radius) {
+                e.hp -= finalDamage;
+                damageNumbers.push({
+                    x: e.x, y: e.y - 20,
+                    value: Math.floor(finalDamage),
+                    life: 60,
+                    color: color
+                });
+
+                if (e.hp <= 0) {
+                    player.xp += 50;
+                    player.gold += 35;
+                    player.quests.forEach(q => {
+                        if (!q.completed && q.target === e.name) {
+                            q.count++;
+                            if (q.count >= q.goal) completeQuest(q);
+                        }
+                    });
+                    updateQuestUI();
+                    dropLoot(e.x, e.y, e.isBoss);
+                    enemies.splice(i, 1);
+                    checkLevelUp();
+                }
+            }
+        }
     }
 
     function castActiveSkill() {
@@ -2112,13 +2235,25 @@
             if (cd > 0) {
                 player.skillCooldowns[i]--;
                 const skill = SKILL_DB[i];
+                if (!skill) return;
                 const totalCd = skill.cd - (player.stats.dex + (player.equipment.weapon?.dexBonus || 0) + (player.equipment.hat?.dexBonus || 0));
                 const percent = (cd / Math.max(10, totalCd)) * 100;
                 const cdElement = document.getElementById(`cd-${i+1}`);
-                if (cdElement) cdElement.style.height = percent + '%';
+                if (cdElement) {
+                    cdElement.style.height = percent + '%';
+                    cdElement.parentElement.style.opacity = '1';
+                }
             } else {
                 const cdElement = document.getElementById(`cd-${i+1}`);
-                if (cdElement) cdElement.style.height = '0%';
+                if (cdElement) {
+                    cdElement.style.height = '0%';
+                    // Yetenek öğrenilmemişse soluk göster
+                    if (SKILL_DB[i] && !SKILL_DB[i].learned) {
+                        cdElement.parentElement.style.opacity = '0.3';
+                    } else {
+                        cdElement.parentElement.style.opacity = '1';
+                    }
+                }
             }
         });
 
@@ -2148,6 +2283,11 @@
 
                     projectiles.splice(pi, 1);
                     projectileRemoved = true;
+
+                    // Alan Hasarı (AoE) Kontrolü
+                    if (p.aoe > 0) {
+                        applyAoEDamage(p.x, p.y, p.aoe, p.damage / (30 + player.lvl * 10 + player.stats.int * 5), p.color);
+                    }
                     
                     if (e.hp <= 0) { 
                         player.xp += 50; 
@@ -2291,10 +2431,12 @@
             player.lvl++; 
             player.xp = 0; 
             player.maxXp += 150; 
-            player.statPoints += 3; // Her seviyede 3 puan
+            player.statPoints += 3; // Her seviyede 3 stat puanı
+            player.skillPoints += 1; // Her seviyede 1 yetenek puanı
             playSound('levelup');
             updateStatsUI();
             updateStatWindow();
+            updateSkillTreeUI(); // Yetenek ağacını güncelle
             saveGame(); // Seviye atladığında kaydet
         }
     }
@@ -2382,6 +2524,54 @@
             updateStatWindow();
             updateStatsUI();
             saveGame(); // Stat puanı harcandığında kaydet
+        }
+    }
+
+    function toggleSkillTree() {
+        isSkillTreeOpen = !isSkillTreeOpen;
+        playSound('click');
+        skillTreeUI.style.display = isSkillTreeOpen ? 'block' : 'none';
+        if (isSkillTreeOpen) updateSkillTreeUI();
+    }
+
+    function updateSkillTreeUI() {
+        const grid = document.getElementById('skill-tree-grid');
+        const pointsText = document.getElementById('skill-points-text');
+        if (!grid) return;
+        
+        pointsText.innerText = player.skillPoints;
+        grid.innerHTML = '';
+        
+        SKILL_DB.forEach(skill => {
+            const node = document.createElement('div');
+            node.className = 'skill-node';
+            if (skill.learned) node.classList.add('learned');
+            if (player.lvl < skill.reqLevel) node.classList.add('locked');
+            
+            node.innerHTML = `
+                <div class="skill-icon">${skill.icon}</div>
+                <div class="skill-name">${skill.name}</div>
+                <div class="skill-cost">${skill.learned ? 'ÖĞRENİLDİ' : 'LVL ' + skill.reqLevel + ' | ' + skill.cost + ' PUAN'}</div>
+            `;
+            
+            if (!skill.learned && player.lvl >= skill.reqLevel) {
+                node.onclick = () => learnSkill(skill.id);
+            }
+            grid.appendChild(node);
+        });
+    }
+
+    function learnSkill(id) {
+        const skill = SKILL_DB[id];
+        if (player.skillPoints >= skill.cost && player.lvl >= skill.reqLevel) {
+            player.skillPoints -= skill.cost;
+            skill.learned = true;
+            playSound('levelup');
+            updateSkillTreeUI();
+            updateStatsUI();
+            saveGame();
+        } else {
+            alert('Yetersiz puan veya seviye!');
         }
     }
 
@@ -2659,11 +2849,22 @@
         ctx.textAlign = 'left';
 
         // --- 5. Atmosferik Efektler ---
-        // Toz zerreleri
-        ctx.fillStyle = 'white';
+        // Toz zerreleri ve Nova Efektleri
         particles.forEach(p => {
-            if (isVisible(p.x, p.y)) {
+            if (p.isNova) {
+                // Nova görsel efekti (Büyüyen halka)
+                ctx.save();
+                ctx.globalAlpha = p.life / p.maxLife;
+                ctx.strokeStyle = p.color;
+                ctx.lineWidth = 5;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size * (1 - p.life/p.maxLife), 0, Math.PI*2);
+                ctx.stroke();
+                ctx.restore();
+                p.life--;
+            } else if (isVisible(p.x, p.y)) {
                 ctx.globalAlpha = p.opacity;
+                ctx.fillStyle = 'white';
                 ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill();
             }
         });
@@ -2715,22 +2916,24 @@
     }
 
     function saveGame() {
+        // SKILL_DB'deki öğrenilen yetenekleri kaydet
+        player.skillTree = SKILL_DB.filter(s => s.learned).map(s => s.id);
+        
         const saveData = {
             player: {
                 x: player.x, y: player.y,
                 hp: player.hp, mp: player.mp, xp: player.xp, lvl: player.lvl, gold: player.gold,
                 speed: player.speed,
+                skillPoints: player.skillPoints,
                 statPoints: player.statPoints,
                 stats: player.stats,
                 quests: player.quests,
                 inventory: player.inventory,
                 equipment: player.equipment,
-                pet: player.pet
+                pet: player.pet,
+                skillTree: player.skillTree
             },
             gameTime: gameTime,
-            // Düşmanlar, mermiler, düşen eşyalar gibi dinamik verileri kaydetmiyoruz,
-            // çünkü bunlar her yüklendiğinde yeniden oluşturulacak.
-            // Sadece oyuncu ve kalıcı dünya durumu kaydedilir.
         };
         localStorage.setItem('rpgSaveData', JSON.stringify(saveData));
         console.log('Oyun kaydedildi!');
@@ -2742,15 +2945,22 @@
             try {
                 const data = JSON.parse(savedData);
                 
-                // Oyuncu verilerini güvenli bir şekilde yükle (Object.assign ile mevcut objeyi güncelliyoruz)
                 if (data.player) {
                     Object.assign(player, data.player);
+                    
+                    // Öğrenilen yetenekleri SKILL_DB'ye geri yükle
+                    if (player.skillTree) {
+                        SKILL_DB.forEach(s => {
+                            if (player.skillTree.includes(s.id)) {
+                                s.learned = true;
+                            }
+                        });
+                    }
                 }
                 
-                // Oyun zamanını yükle
                 if (data.gameTime !== undefined) gameTime = data.gameTime;
 
-                gameActive = true; // Oyunun aktif olduğundan emin ol
+                gameActive = true; 
                 console.log('Oyun yüklendi!');
                 return true;
             } catch (e) {
