@@ -466,7 +466,7 @@
     <div id="overlay">
         <h1 style="color: #c0392b; font-size: 40px;">YOU DIED</h1>
         <p id="overlay-msg" style="color: #aaa;"></p>
-        <button class="btn" style="padding: 10px 30px;" onclick="resetGame()" ontouchstart="resetGame()">RESPAWN</button>
+        <button class="btn" style="padding: 10px 30px;" onclick="respawnPlayer()" ontouchstart="respawnPlayer()">RESPAWN</button>
     </div>
 
     <div id="joystick-container">
@@ -2373,7 +2373,40 @@
         overlay.style.display = 'flex'; 
         document.getElementById('overlay-msg').innerText = `LVL ${player.lvl}`; 
     }
-    function resetGame() { location.reload(); }
+
+    function respawnPlayer() {
+        playSound('click');
+        // XP Kaybı (Mevcut seviyenin toplam XP'sinin %10'u)
+        const xpPenalty = player.maxXp * 0.1;
+        player.xp = Math.max(0, player.xp - xpPenalty);
+
+        // Can ve Mana Yenileme
+        player.hp = player.maxHp;
+        player.mp = player.maxMp;
+
+        // Oyuncuyu başlangıç konumuna ışınla
+        player.x = WORLD_WIDTH / 2;
+        player.y = WORLD_HEIGHT / 2;
+        
+        // Pet'i de oyuncunun yanına ışınla
+        player.pet.x = player.x - player.pet.followDistance;
+        player.pet.y = player.y;
+
+        // Düşmanları ve mermileri temizle (isteğe bağlı, daha temiz bir başlangıç için)
+        enemies = [];
+        projectiles = [];
+        droppedItems = [];
+        
+        // Yeni düşmanlar spawn et
+        spawnEnemies();
+        spawnBosses();
+
+        // UI'ı güncelle ve oyunu tekrar aktif hale getir
+        updateStatsUI();
+        overlay.style.display = 'none';
+        gameActive = true;
+    }
+
     initWorld(); updateStatsUI(); updateQuestUI(); draw();
 </script>
 </body>
