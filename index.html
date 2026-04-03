@@ -819,6 +819,56 @@
     const joystickKnob = document.getElementById('joystick-knob');
 
     // Ayarlar
+    // --- GÖRSEL VARLIKLAR (SPRITES) ---
+    const ASSETS = {
+        player: {
+            url: 'https://opengameart.org/sites/default/files/wizard_walk.png', // Örnek Büyücü Spritesheet
+            img: new Image(),
+            frameW: 64, frameH: 64,
+            animations: { idle: [0], walk: [0, 1, 2, 3], attack: [4, 5] }
+        },
+        slime: {
+            url: 'https://opengameart.org/sites/default/files/slime_spritesheet.png',
+            img: new Image(),
+            frameW: 32, frameH: 32,
+            animations: { idle: [0, 1], walk: [0, 1, 2, 3] }
+        },
+        orc: {
+            url: 'https://opengameart.org/sites/default/files/orc_walk.png',
+            img: new Image(),
+            frameW: 64, frameH: 64,
+            animations: { idle: [0], walk: [0, 1, 2, 3, 4, 5, 6, 7], attack: [8, 9, 10] }
+        },
+        boss: {
+            url: 'https://opengameart.org/sites/default/files/demon_boss.png',
+            img: new Image(),
+            frameW: 128, frameH: 128,
+            animations: { idle: [0, 1], walk: [0, 1, 2, 3], attack: [4, 5, 6] }
+        }
+    };
+
+    let assetsLoaded = 0;
+    const totalAssets = Object.keys(ASSETS).length;
+
+    function loadAssets(callback) {
+        Object.values(ASSETS).forEach(asset => {
+            asset.img.src = asset.url;
+            asset.img.onload = () => {
+                assetsLoaded++;
+                if (assetsLoaded === totalAssets) callback();
+            };
+            asset.img.onerror = () => {
+                console.error(`Görsel yüklenemedi: ${asset.url}`);
+                // Hata durumunda boş bir canvas oluşturup devam et (oyun çökmesin)
+                const dummy = document.createElement('canvas');
+                dummy.width = asset.frameW; dummy.height = asset.frameH;
+                asset.img = dummy;
+                assetsLoaded++;
+                if (assetsLoaded === totalAssets) callback();
+            };
+        });
+    }
+
     const WORLD_WIDTH = 6400; const WORLD_HEIGHT = 4800; // Harita boyutları iki katına çıkarıldı
     const TILE_SIZE = 64;
 
@@ -978,6 +1028,7 @@
         skillPoints: 0,
         statPoints: 0,
         stats: { int: 0, hp: 0, dex: 0 },
+        animState: 'idle', animFrame: 0, animTimer: 0, flipped: false, // Animasyon özellikleri
         quests: [
             { id: 'kill_slimes', name: 'Slime Temizliği', target: 'Slime', count: 0, goal: 5, reward: 200, completed: false },
             { id: 'kill_orcs', name: 'Orc Avcısı', target: 'Orc', count: 0, goal: 3, reward: 500, completed: false }
@@ -1044,6 +1095,31 @@
     let gameTime = 720; // 0-1440 dakika (Her zaman 12:00 öğlen)
     const DAY_LENGTH = 1440; // Bir tam gün
     
+    // --- GÖRSEL ANİMASYON SİSTEMİ ---
+    function drawAnimatedSprite(ctx, assetKey, x, y, size, state, frame, flipped) {
+        const asset = ASSETS[assetKey];
+        if (!asset || !asset.img.complete) return;
+
+        const anim = asset.animations[state] || asset.animations['idle'];
+        const frameIndex = anim[frame % anim.length];
+        
+        ctx.save();
+        ctx.translate(x, y);
+        if (flipped) ctx.scale(-1, 1);
+        
+        // Spritesheet'ten doğru kareyi kesip al
+        const sx = frameIndex * asset.frameW;
+        const sy = 0; // Şimdilik tek satır varsayıyoruz
+        
+        ctx.drawImage(
+            asset.img,
+            sx, sy, asset.frameW, asset.frameH,
+            -size, -size, size * 2, size * 2
+        );
+        
+        ctx.restore();
+    }
+
     // Görsel Güzelleştirme için yardımcı fonksiyonlar
     function drawGrass(ctx, x, y, size, color = '#2d4a3e') {
         ctx.strokeStyle = color;
@@ -1057,126 +1133,6 @@
             ctx.lineTo(x + off + Math.sin(frameCount/20 + x)*2, y - h);
         }
         ctx.stroke();
-    }
-
-    function drawWizard(ctx, x, y, size, color, isMoving, equipment) {
-        const bounce = isMoving ? Math.sin(frameCount / 5) * 3 : Math.sin(frameCount / 15) * 2;
-        const breath = Math.sin(frameCount / 25) * 1.5;
-        const walkCycle = isMoving ? Math.sin(frameCount * 0.2) : 0;
-
-        // 1. Gölge (Gelişmiş)
-        const shadowGrad = ctx.createRadialGradient(x, y + size/2, 0, x, y + size/2, size);
-        shadowGrad.addColorStop(0, 'rgba(0,0,0,0.4)');
-        shadowGrad.addColorStop(1, 'rgba(0,0,0,0)');
-        ctx.fillStyle = shadowGrad;
-        ctx.beginPath(); ctx.ellipse(x, y + size/2, size/1.2, size/4, 0, 0, Math.PI*2); ctx.fill();
-
-        // Ayaklar (Yürüme)
-        if (isMoving) {
-            ctx.fillStyle = '#2c3e50';
-            ctx.beginPath();
-            ctx.arc(x - 8 - walkCycle*5, y + size/2 + 2, 4, 0, Math.PI*2);
-            ctx.arc(x + 8 + walkCycle*5, y + size/2 + 2, 4, 0, Math.PI*2);
-            ctx.fill();
-        }
-
-        // 2. Cübbe (Alt kısım - Gradient ile)
-        const robeGrad = ctx.createLinearGradient(x - size, y, x + size, y);
-        robeGrad.addColorStop(0, '#1a252f');
-        robeGrad.addColorStop(0.5, '#2c3e50');
-        robeGrad.addColorStop(1, '#1a252f');
-        ctx.fillStyle = robeGrad;
-        ctx.beginPath();
-        ctx.moveTo(x - size/1.5, y + size/2);
-        ctx.lineTo(x + size/1.5, y + size/2);
-        ctx.lineTo(x + size/2.5, y - size/3 + bounce);
-        ctx.lineTo(x - size/2.5, y - size/3 + bounce);
-        ctx.closePath(); ctx.fill();
-
-        // 3. Gövde (Üst cübbe)
-        const upperRobeGrad = ctx.createLinearGradient(x, y - size, x, y);
-        upperRobeGrad.addColorStop(0, '#34495e');
-        upperRobeGrad.addColorStop(1, '#2c3e50');
-        ctx.fillStyle = upperRobeGrad;
-        ctx.beginPath();
-        ctx.moveTo(x - size/2.2, y - size/3 + bounce);
-        ctx.lineTo(x + size/2.2, y - size/3 + bounce);
-        ctx.lineTo(x + size/3, y - size + bounce + breath);
-        ctx.lineTo(x - size/3, y - size + bounce + breath);
-        ctx.closePath(); ctx.fill();
-
-        // 4. Kafa
-        ctx.fillStyle = '#ffdbac';
-        ctx.beginPath(); ctx.arc(x, y - size - 5 + bounce + breath, 10, 0, Math.PI*2); ctx.fill();
-        
-        // Sakal (Gradient ile)
-        const beardGrad = ctx.createLinearGradient(x, y - size, x, y - size + 15);
-        beardGrad.addColorStop(0, '#ffffff');
-        beardGrad.addColorStop(1, '#bdc3c7');
-        ctx.fillStyle = beardGrad;
-        ctx.beginPath();
-        ctx.moveTo(x - 6, y - size - 2 + bounce + breath);
-        ctx.lineTo(x + 6, y - size - 2 + bounce + breath);
-        ctx.lineTo(x, y - size + 18 + bounce + breath);
-        ctx.closePath(); ctx.fill();
-
-        // Gözler (Parlayan)
-        ctx.fillStyle = '#222';
-        ctx.beginPath(); ctx.arc(x - 3.5, y - size - 7 + bounce + breath, 1.8, 0, Math.PI*2); ctx.fill();
-        ctx.beginPath(); ctx.arc(x + 3.5, y - size - 7 + bounce + breath, 1.8, 0, Math.PI*2); ctx.fill();
-        ctx.fillStyle = '#fff'; // Göz parlaması
-        ctx.beginPath(); ctx.arc(x - 4, y - size - 7.5 + bounce + breath, 0.6, 0, Math.PI*2); ctx.fill();
-        ctx.beginPath(); ctx.arc(x + 3, y - size - 7.5 + bounce + breath, 0.6, 0, Math.PI*2); ctx.fill();
-
-        // 5. Asâ
-        if (equipment.weapon) {
-            const staffX = x + 20;
-            const staffY = y - 10 + bounce;
-            
-            // Asâ gövdesi
-            ctx.strokeStyle = '#4e342e';
-            ctx.lineWidth = 5;
-            ctx.beginPath(); ctx.moveTo(staffX, staffY + 25); ctx.lineTo(staffX, staffY - 45); ctx.stroke();
-            
-            // Asâ kristali (Gelişmiş Parlama)
-            const glow = Math.abs(Math.sin(frameCount / 10)) * 12;
-            const crystalGrad = ctx.createRadialGradient(staffX, staffY - 50, 0, staffX, staffY - 50, 12);
-            crystalGrad.addColorStop(0, '#fff');
-            crystalGrad.addColorStop(0.3, '#00d2ff');
-            crystalGrad.addColorStop(1, 'rgba(0, 210, 255, 0)');
-            
-            ctx.globalAlpha = 0.5;
-            ctx.fillStyle = '#00d2ff';
-            ctx.beginPath(); ctx.arc(staffX, staffY - 50, 10 + glow/2, 0, Math.PI*2); ctx.fill();
-            ctx.globalAlpha = 1.0;
-            
-            ctx.fillStyle = crystalGrad;
-            ctx.beginPath(); ctx.arc(staffX, staffY - 50, 10, 0, Math.PI*2); ctx.fill();
-        }
-
-        // 6. Şapka
-        if (equipment.hat) {
-            const hatColor = '#1a1a2e';
-            ctx.fillStyle = hatColor;
-            // Şapka kenarı
-            ctx.beginPath(); ctx.ellipse(x, y - size - 12 + bounce + breath, 24, 7, 0, 0, Math.PI*2); ctx.fill();
-            
-            // Şapka ucu
-            const hatSway = Math.sin(frameCount/20) * 6;
-            const hatGrad = ctx.createLinearGradient(x, y - size - 60, x, y - size - 15);
-            hatGrad.addColorStop(0, '#2c3e50');
-            hatGrad.addColorStop(1, '#1a1a2e');
-            ctx.fillStyle = hatGrad;
-            ctx.beginPath();
-            ctx.moveTo(x - 16, y - size - 15 + bounce + breath);
-            ctx.lineTo(x + 16, y - size - 15 + bounce + breath);
-            ctx.quadraticCurveTo(x + hatSway, y - size - 40 + bounce + breath, x + hatSway, y - size - 55 + bounce + breath);
-            ctx.closePath(); ctx.fill();
-            
-            // Şapka bandı
-            ctx.fillStyle = '#f1c40f';
-            ctx.fillRect(x - 9, y - size - 22 + bounce + breath, 18, 5);
-        }
     }
 
     function drawPet(ctx, pet) {
@@ -1212,256 +1168,6 @@
         ctx.fillRect(x - barWidth/2, barY, barWidth, barHeight);
         ctx.fillStyle = '#2ecc71';
         ctx.fillRect(x - barWidth/2, barY, barWidth * hpPercent, barHeight);
-    }
-
-    function drawMonster(ctx, e) {
-        const bounce = Math.sin(frameCount / 7 + e.x) * (e.isBoss ? 8 : 4);
-        const wiggle = Math.sin(frameCount / 5 + e.y) * (e.isBoss ? 4 : 2);
-        const isBoss = e.isBoss;
-
-        // 1. Gölge (Gelişmiş)
-        const shadowGrad = ctx.createRadialGradient(e.x, e.y + e.size/2, 0, e.x, e.y + e.size/2, e.size * (isBoss ? 1.5 : 1.2));
-        shadowGrad.addColorStop(0, 'rgba(0,0,0,0.4)');
-        shadowGrad.addColorStop(1, 'rgba(0,0,0,0)');
-        ctx.fillStyle = shadowGrad;
-        ctx.beginPath(); ctx.ellipse(e.x, e.y + e.size/2, e.size * (isBoss ? 1.5 : 1.2), e.size/3, 0, 0, Math.PI*2); ctx.fill();
-
-        ctx.save();
-        
-        // Canavar Tipi Çizimi
-        switch(e.name) {
-            case 'Slime':
-                drawSlime(ctx, e, bounce);
-                break;
-            case 'Orc':
-                drawOrc(ctx, e, bounce, wiggle);
-                break;
-            case 'Void Walker':
-                drawVoidWalker(ctx, e, bounce);
-                break;
-            case 'Kekurikekukaka':
-                drawKekuri(ctx, e, bounce, wiggle);
-                break;
-            case 'Talos':
-                drawTalos(ctx, e, bounce);
-                break;
-            case 'Samma':
-                drawSamma(ctx, e, bounce, wiggle);
-                break;
-            default:
-                // Varsayılan çizim
-                ctx.fillStyle = e.color;
-                ctx.beginPath(); ctx.arc(e.x, e.y + bounce, e.size, 0, Math.PI*2); ctx.fill();
-        }
-        
-        ctx.restore();
-        drawMonsterUI(ctx, e, bounce);
-    }
-
-    function drawSlime(ctx, e, bounce) {
-        // Sıçrama Efekti (Squash and Stretch)
-        const walkCycle = Math.abs(Math.sin(frameCount * 0.1 * e.speed));
-        const stretch = 1 + walkCycle * 0.3;
-        const width = e.size * (1/stretch);
-        const height = e.size * stretch;
-
-        const slimeGrad = ctx.createRadialGradient(e.x - e.size/3, e.y + bounce - e.size/3, 0, e.x, e.y + bounce, e.size * 1.5);
-        slimeGrad.addColorStop(0, '#fff');
-        slimeGrad.addColorStop(0.2, e.color);
-        slimeGrad.addColorStop(1, '#1b4332');
-        
-        ctx.fillStyle = slimeGrad;
-        ctx.globalAlpha = 0.8;
-        ctx.beginPath();
-        ctx.moveTo(e.x - width, e.y + e.size + bounce);
-        ctx.bezierCurveTo(e.x - width * 1.2, e.y - height + bounce, e.x + width * 1.2, e.y - height + bounce, e.x + width, e.y + e.size + bounce);
-        ctx.fill();
-        
-        ctx.fillStyle = '#fff'; ctx.globalAlpha = 0.4;
-        for(let i=0; i<3; i++) {
-            let bx = e.x + Math.sin(frameCount/20 + i) * (e.size/2);
-            let by = e.y + bounce + Math.cos(frameCount/20 + i) * (e.size/2);
-            ctx.beginPath(); ctx.arc(bx, by, 2, 0, Math.PI*2); ctx.fill();
-        }
-        ctx.globalAlpha = 1.0;
-        
-        ctx.fillStyle = '#222';
-        ctx.beginPath(); ctx.arc(e.x - 5, e.y + bounce - 2, 2, 0, Math.PI*2); ctx.fill();
-        ctx.beginPath(); ctx.arc(e.x + 5, e.y + bounce - 2, 2, 0, Math.PI*2); ctx.fill();
-    }
-
-    function drawOrc(ctx, e, bounce, wiggle) {
-        // Yürüme Animasyonu (Daha gerçekçi bacak hareketleri)
-        const walkCycle = Math.sin(frameCount * 0.15 * e.speed);
-        const stepEffect = e.isBoss ? (Math.sin(frameCount * 0.05 * e.speed) > 0.5 ? 1 : 0) : 1;
-        const currentWalk = walkCycle * stepEffect;
-        const legOff = e.size / 2;
-        
-        ctx.strokeStyle = '#5d4037';
-        ctx.lineWidth = 6;
-        ctx.lineCap = 'round';
-        
-        // Sol Bacak
-        ctx.beginPath();
-        ctx.moveTo(e.x - legOff/2, e.y + e.size);
-        ctx.lineTo(e.x - legOff - (currentWalk * 12), e.y + e.size + 15 + (Math.abs(currentWalk) * 6));
-        ctx.stroke();
-        
-        // Sağ Bacak
-        ctx.beginPath();
-        ctx.moveTo(e.x + legOff/2, e.y + e.size);
-        ctx.lineTo(e.x + legOff + (currentWalk * 12), e.y + e.size + 15 + (Math.abs(-currentWalk) * 6));
-        ctx.stroke();
-
-        const bodyGrad = ctx.createLinearGradient(e.x, e.y - e.size, e.x, e.y + e.size);
-        bodyGrad.addColorStop(0, '#a67c52');
-        bodyGrad.addColorStop(1, '#5d4037');
-        ctx.fillStyle = bodyGrad;
-        
-        ctx.beginPath();
-        ctx.moveTo(e.x - e.size/1.2, e.y + e.size + bounce);
-        ctx.lineTo(e.x - e.size, e.y - e.size/2 + bounce);
-        ctx.quadraticCurveTo(e.x, e.y - e.size * 1.2 + bounce, e.x + e.size, e.y - e.size/2 + bounce);
-        ctx.lineTo(e.x + e.size/1.2, e.y + e.size + bounce);
-        ctx.fill();
-
-        ctx.fillStyle = '#455a64';
-        ctx.fillRect(e.x - e.size - 2, e.y - e.size/2 + bounce, 8, 8);
-        ctx.fillRect(e.x + e.size - 6, e.y - e.size/2 + bounce, 8, 8);
-
-        ctx.fillStyle = '#8b4513';
-        ctx.beginPath(); ctx.arc(e.x, e.y - e.size + bounce, 12, 0, Math.PI*2); ctx.fill();
-        ctx.fillStyle = '#fff';
-        ctx.beginPath(); ctx.moveTo(e.x-4, e.y-e.size+5+bounce); ctx.lineTo(e.x-6, e.y-e.size-2+bounce); ctx.lineTo(e.x-2, e.y-e.size+2+bounce); ctx.fill();
-        ctx.beginPath(); ctx.moveTo(e.x+4, e.y-e.size+5+bounce); ctx.lineTo(e.x+6, e.y-e.size-2+bounce); ctx.lineTo(e.x+2, e.y-e.size+2+bounce); ctx.fill();
-
-        ctx.strokeStyle = '#3e2723'; ctx.lineWidth = 3;
-        ctx.beginPath(); ctx.moveTo(e.x + e.size, e.y + bounce); ctx.lineTo(e.x + e.size + 15, e.y - 15 + bounce + wiggle); ctx.stroke();
-        ctx.fillStyle = '#90a4ae';
-        ctx.beginPath(); 
-        ctx.moveTo(e.x + e.size + 10, e.y - 15 + bounce + wiggle);
-        ctx.lineTo(e.x + e.size + 25, e.y - 25 + bounce + wiggle);
-        ctx.lineTo(e.x + e.size + 20, e.y - 5 + bounce + wiggle);
-        ctx.fill();
-    }
-
-    function drawVoidWalker(ctx, e, bounce) {
-        ctx.save();
-        ctx.globalAlpha = 0.7 + Math.sin(frameCount/10) * 0.2;
-        
-        // Boşluk İzi (Trail)
-        for(let i=0; i<3; i++) {
-            const trailOff = Math.sin(frameCount * 0.1 + i) * 10;
-            ctx.fillStyle = '#4b0082';
-            ctx.beginPath();
-            ctx.arc(e.x + trailOff, e.y + e.size + (i * 10), e.size/(i+2), 0, Math.PI*2);
-            ctx.fill();
-        }
-
-        const voidGrad = ctx.createRadialGradient(e.x, e.y + bounce, 0, e.x, e.y + bounce, e.size * 1.5);
-        voidGrad.addColorStop(0, '#4b0082');
-        voidGrad.addColorStop(0.6, '#1a1a2e');
-        voidGrad.addColorStop(1, 'rgba(0,0,0,0)');
-        ctx.fillStyle = voidGrad;
-        ctx.beginPath(); ctx.arc(e.x, e.y + bounce, e.size, 0, Math.PI*2); ctx.fill();
-        ctx.shadowBlur = 15; ctx.shadowColor = '#e040fb';
-        ctx.fillStyle = '#e040fb';
-        ctx.fillRect(e.x - 8, e.y + bounce - 5, 6, 2);
-        ctx.fillRect(e.x + 2, e.y + bounce - 5, 6, 2);
-        ctx.restore();
-    }
-
-    function drawKekuri(ctx, e, bounce, wiggle) {
-        const size = e.size;
-        
-        // Bacaklar
-        const walkCycle = Math.sin(frameCount * 0.1 * e.speed);
-        const stepEffect = Math.sin(frameCount * 0.05 * e.speed) > 0.5 ? 1 : 0.2;
-        const currentWalk = walkCycle * stepEffect;
-
-        ctx.strokeStyle = '#3e2723';
-        ctx.lineWidth = 5;
-        ctx.beginPath();
-        ctx.moveTo(e.x - 10, e.y + size); ctx.lineTo(e.x - 15 - currentWalk*12, e.y + size + 15);
-        ctx.moveTo(e.x + 10, e.y + size); ctx.lineTo(e.x + 15 + currentWalk*12, e.y + size + 15);
-        ctx.stroke();
-
-        ctx.fillStyle = '#b71c1c';
-        ctx.beginPath();
-        ctx.moveTo(e.x - size, e.y + size + bounce);
-        ctx.lineTo(e.x, e.y - size + bounce);
-        ctx.lineTo(e.x + size, e.y + size + bounce);
-        ctx.fill();
-        ctx.fillStyle = '#5d4037';
-        ctx.fillRect(e.x - 20, e.y + bounce - 30, 40, 50);
-        ctx.strokeStyle = '#f1c40f'; ctx.lineWidth = 2;
-        ctx.strokeRect(e.x - 18, e.y + bounce - 28, 36, 46);
-        ctx.fillStyle = '#ffeb3b';
-        ctx.shadowBlur = 10; ctx.shadowColor = '#ffeb3b';
-        ctx.beginPath(); ctx.arc(e.x - 8, e.y + bounce - 5, 5, 0, Math.PI*2); ctx.fill();
-        ctx.beginPath(); ctx.arc(e.x + 8, e.y + bounce - 5, 5, 0, Math.PI*2); ctx.fill();
-        ctx.shadowBlur = 0;
-    }
-
-    function drawTalos(ctx, e, bounce) {
-        const size = e.size;
-        
-        // Ağır Bacaklar (Taş Golem)
-        const walkCycle = Math.sin(frameCount * 0.05 * e.speed);
-        const isStepping = walkCycle > 0.5;
-        
-        ctx.fillStyle = '#37474f';
-        // Sol Taş Ayak (Adım atarken kalkar ve ileri gider)
-        const leftStep = isStepping ? Math.sin(frameCount * 0.1) * 15 : 0;
-        const leftLift = isStepping ? -8 : 0;
-        ctx.fillRect(e.x - size/2 + leftStep, e.y + size/2 + leftLift, size/2.5, size/2);
-        
-        // Sağ Taş Ayak
-        const rightStep = !isStepping ? Math.sin(frameCount * 0.1) * 15 : 0;
-        const rightLift = !isStepping ? -8 : 0;
-        ctx.fillRect(e.x + 5 + rightStep, e.y + size/2 + rightLift, size/2.5, size/2);
-
-        ctx.fillStyle = '#455a64';
-        ctx.fillRect(e.x - size/1.5, e.y + bounce - size/2, size * 1.3, size);
-        ctx.strokeStyle = '#e040fb'; ctx.lineWidth = 2;
-        ctx.shadowBlur = 8; ctx.shadowColor = '#e040fb';
-        ctx.beginPath();
-        ctx.moveTo(e.x - 20, e.y + bounce); ctx.lineTo(e.x + 20, e.y + bounce + 10);
-        ctx.stroke();
-        ctx.shadowBlur = 0;
-        ctx.fillStyle = '#263238';
-        ctx.fillRect(e.x - 15, e.y + bounce - size - 5, 30, 25);
-        ctx.fillStyle = '#e040fb';
-        ctx.beginPath(); ctx.arc(e.x, e.y + bounce - size + 5, 6, 0, Math.PI*2); ctx.fill();
-    }
-
-    function drawSamma(ctx, e, bounce, wiggle) {
-        const size = e.size;
-        
-        // Zırhlı Bacaklar (Samma - Karanlık Şövalye)
-        const walkCycle = Math.sin(frameCount * 0.12 * e.speed);
-        const isStepping = Math.sin(frameCount * 0.05 * e.speed) > 0.4;
-        const currentWalk = walkCycle * (isStepping ? 1 : 0.2);
-        
-        ctx.fillStyle = '#1a1a1a';
-        ctx.fillRect(e.x - 18 - currentWalk*15, e.y + size, 12, 25);
-        ctx.fillRect(e.x + 6 + currentWalk*15, e.y + size, 12, 25);
-
-        const armorGrad = ctx.createLinearGradient(e.x, e.y - size, e.x, e.y + size);
-        armorGrad.addColorStop(0, '#212121');
-        armorGrad.addColorStop(1, '#000000');
-        ctx.fillStyle = armorGrad;
-        ctx.beginPath();
-        ctx.moveTo(e.x - size/2, e.y + size + bounce);
-        ctx.lineTo(e.x - size/1.2, e.y - size/2 + bounce);
-        ctx.lineTo(e.x + size/1.2, e.y - size/2 + bounce);
-        ctx.lineTo(e.x + size/2, e.y + size + bounce);
-        ctx.fill();
-        ctx.fillStyle = '#00ff00';
-        ctx.shadowBlur = 10; ctx.shadowColor = '#00ff00';
-        ctx.fillRect(e.x - 8, e.y + bounce - size + 5, 4, 2);
-        ctx.fillRect(e.x + 4, e.y + bounce - size + 5, 4, 2);
-        ctx.shadowBlur = 0;
     }
 
     function drawMonsterUI(ctx, e, bounce) {
@@ -1561,16 +1267,17 @@
                 x: pos.x, y: pos.y,
                 maxHp: b.hp,
                 isBoss: true,
-                damage: 10 + (i * 5)
+                damage: 10 + (i * 5),
+                animState: 'idle', animFrame: 0, animTimer: 0, flipped: false // Animasyon özellikleri
             });
         });
     }
 
     function spawnEnemies() {
         const monsterTypes = [
-            { name: 'Slime', color: '#4ade80', size: 18, speed: 1.2 },
-            { name: 'Orc', color: '#8b4513', size: 24, speed: 1.5 },
-            { name: 'Void Walker', color: '#4b0082', size: 22, speed: 1.8 }
+            { name: 'Slime', color: '#4ade80', size: 18, speed: 1.2, assetKey: 'slime' },
+            { name: 'Orc', color: '#8b4513', size: 24, speed: 1.5, assetKey: 'orc' },
+            { name: 'Void Walker', color: '#4b0082', size: 22, speed: 1.8, assetKey: 'orc' } // Void walker için de orc sprite'ı kullanalım (örnek olarak)
         ];
 
         for (let i = 0; i < 50; i++) { // Düşman sayısını artırdık
@@ -1590,7 +1297,9 @@
                     speed: type.speed, 
                     color: type.color, 
                     damage: 0.5 * (type.size / 20),
-                    name: type.name
+                    name: type.name,
+                    assetKey: type.assetKey,
+                    animState: 'idle', animFrame: 0, animTimer: 0, flipped: false // Animasyon özellikleri
                 });
             }
         }
@@ -2360,6 +2069,49 @@
         if (!gameActive || isShopOpen || isQuestsOpen) return; // Envanter açıkken artık oyun durmayacak, ancak Market ve Görev ekranı durdurur
         
         frameCount++;
+
+        // --- OYUNCU ANİMASYON GÜNCELLEME ---
+        const isMoving = keys['KeyW'] || keys['KeyS'] || keys['KeyA'] || keys['KeyD'] || joystickData.active;
+        
+        // Saldırı animasyonu önceliği
+        if (player.basicAttackCooldown > 30) { // Saldırı yeni başladıysa
+            player.animState = 'attack';
+        } else {
+            player.animState = isMoving ? 'walk' : 'idle';
+        }
+        
+        // Yön belirleme
+        if (keys['KeyA'] || (joystickData.active && joystickData.x < 0)) player.flipped = true;
+        if (keys['KeyD'] || (joystickData.active && joystickData.x > 0)) player.flipped = false;
+
+        player.animTimer++;
+        if (player.animTimer >= (player.animState === 'walk' ? 8 : 12)) { // Yürürken daha hızlı animasyon
+            player.animFrame++;
+            player.animTimer = 0;
+        }
+
+        // --- DÜŞMAN ANİMASYON GÜNCELLEME ---
+        enemies.forEach(e => {
+            let dist = Math.hypot(player.x - e.x, player.y - e.y);
+            
+            // Düşman durumu
+            if (dist < player.size + e.size + 10) {
+                e.animState = 'attack';
+            } else if (dist < 500) {
+                e.animState = 'walk';
+            } else {
+                e.animState = 'idle';
+            }
+
+            e.animTimer++;
+            if (e.animTimer >= 10) {
+                e.animFrame++;
+                e.animTimer = 0;
+            }
+            // Düşman yönü
+            if (player.x < e.x) e.flipped = true;
+            else e.flipped = false;
+        });
         
         // Her 300 frame'de bir oyunu kaydet (yaklaşık 5 saniyede bir)
         if (frameCount % 300 === 0) {
@@ -3060,16 +2812,19 @@
             ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill();
         });
 
-        // Player
-        const isMoving = keys['KeyW'] || keys['KeyS'] || keys['KeyA'] || keys['KeyD'] || joystickData.active;
-        drawWizard(ctx, player.x, player.y, player.size, player.color, isMoving, player.equipment);
+        // Player (Resim tabanlı)
+        drawAnimatedSprite(ctx, 'player', player.x, player.y, player.size * 1.5, player.animState, player.animFrame, player.flipped);
 
         // Pet
         if (player.pet.active) drawPet(ctx, player.pet);
 
-        // Enemies
+        // Enemies (Resim tabanlı)
         enemies.forEach(e => {
-            if (isVisible(e.x, e.y, e.size + 50)) drawMonster(ctx, e);
+            if (isVisible(e.x, e.y, e.size + 50)) {
+                const assetKey = e.isBoss ? 'boss' : (e.assetKey || 'slime');
+                drawAnimatedSprite(ctx, assetKey, e.x, e.y, e.size * 2, e.animState, e.animFrame, e.flipped);
+                drawMonsterUI(ctx, e, 0); // HP barı vb.
+            }
         });
 
         // Damage Numbers
@@ -3237,14 +2992,16 @@
     }
 
     // Oyun Başlatma
-    loadGame();  // Önce kaydı yükle (oyuncu konumu belirlensin)
-    initWorld(); // Dünyayı oluştur (yüklenen oyuncu konumuna göre güvenli bölgeleri ayarlar)
-    syncCamera(); // Kamerayı oyuncunun üzerine odakla
-    
-    updateStatsUI(); 
-    updateQuestUI(); 
-    
-    draw(); // Döngüyü başlat
+    loadAssets(() => {
+        loadGame();  // Önce kaydı yükle (oyuncu konumu belirlensin)
+        initWorld(); // Dünyayı oluştur (yüklenen oyuncu konumuna göre güvenli bölgeleri ayarlar)
+        syncCamera(); // Kamerayı oyuncunun üzerine odakla
+        
+        updateStatsUI(); 
+        updateQuestUI(); 
+        
+        draw(); // Döngüyü başlat
+    });
 </script>
 </body>
 </html>
