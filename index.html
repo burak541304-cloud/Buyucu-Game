@@ -21,6 +21,8 @@
             border-radius: 4px;
             overflow: hidden;
             background: #000;
+            transition: transform 0.3s ease;
+            transform-origin: center center;
         }
 
         /* Mobil Optimizasyonları */
@@ -85,7 +87,7 @@
                 bottom: 10px; right: 10px;
                 transform: scale(1.1);
             }
-            #inventory-ui, #shop-ui, #stat-ui {
+            #inventory-ui, #shop-ui, #stat-ui, #skill-tree-ui, #settings-ui {
                 width: 90%;
                 left: 5% !important;
                 right: auto !important;
@@ -98,6 +100,31 @@
                 display: flex !important;
             }
         }
+
+        #settings-ui {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 320px; background: #1a1c2c;
+            border: 2px solid #f1c40f; border-radius: 8px;
+            display: none; z-index: 80; padding: 20px;
+            box-shadow: 0 0 50px rgba(0,0,0,0.9);
+            color: #fff;
+        }
+        .settings-header {
+            text-align: center; font-size: 18px; font-weight: bold; color: #f1c40f;
+            margin-bottom: 20px; border-bottom: 2px solid #f1c40f; padding-bottom: 10px;
+        }
+        .setting-group {
+            margin-bottom: 20px; display: flex; flex-direction: column; gap: 10px;
+        }
+        .setting-label { font-size: 14px; color: #f1c40f; font-weight: bold; }
+        .setting-options { display: flex; gap: 10px; }
+        .setting-opt {
+            flex: 1; padding: 8px; background: #2d3436; border: 1px solid #444;
+            color: #fff; text-align: center; cursor: pointer; border-radius: 4px;
+            font-size: 12px; transition: all 0.2s;
+        }
+        .setting-opt.active { background: #f1c40f; color: #000; border-color: #f1c40f; }
 
         #mobile-menu-btns {
             position: absolute;
@@ -446,6 +473,20 @@
         <button class="btn" style="width: 100%; margin-top: 15px;" onclick="toggleSkillTree()" ontouchstart="toggleSkillTree()">KAPAT</button>
     </div>
 
+    <!-- Settings UI -->
+    <div id="settings-ui">
+        <div class="settings-header">OYUN AYARLARI</div>
+        <div class="setting-group">
+            <div class="setting-label">Ekran Görünümü (Mobil)</div>
+            <div class="setting-options" id="orientation-settings">
+                <div class="setting-opt active" onclick="setOrientation('auto')">OTOMATİK</div>
+                <div class="setting-opt" onclick="setOrientation('landscape')">YATAY</div>
+                <div class="setting-opt" onclick="setOrientation('portrait')">DİKEY</div>
+            </div>
+        </div>
+        <button class="btn" style="width: 100%; margin-top: 10px;" onclick="toggleSettings()" ontouchstart="toggleSettings()">KAPAT</button>
+    </div>
+
     <!-- Stat Window -->
     <div id="stat-ui">
         <div class="inv-header" style="border-color: #3498db; color: #3498db;">CHARACTER STATS [U]</div>
@@ -533,6 +574,7 @@
         <div class="mobile-btn" onclick="toggleInventory()" ontouchstart="toggleInventory()">🎒</div>
         <div class="mobile-btn" onclick="toggleStats()" ontouchstart="toggleStats()">👤</div>
         <div class="mobile-btn" onclick="toggleSkillTree()" ontouchstart="toggleSkillTree()">📜</div>
+        <div class="mobile-btn" onclick="toggleSettings()" ontouchstart="toggleSettings()">⚙️</div>
         <div class="mobile-btn" id="mobile-shop-btn" style="display:none;" onclick="checkShopInteract()" ontouchstart="checkShopInteract()">🏪</div>
         <div class="mobile-btn" onclick="toggleFullScreen()" ontouchstart="toggleFullScreen()">📺</div>
     </div>
@@ -733,16 +775,73 @@
 
     function resizeCanvas() {
         const isMobile = window.innerWidth <= 900;
+        const container = document.getElementById('game-container');
+        
         if (isMobile) {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+            let width = window.innerWidth;
+            let height = window.innerHeight;
+            
+            // Ayarlara göre zorla yönlendirme
+            if (orientationMode === 'landscape' && height > width) {
+                // Dikeydeyken yatay mod isteniyorsa (Simüle et)
+                container.style.transform = 'rotate(90deg)';
+                container.style.width = height + 'px';
+                container.style.height = width + 'px';
+                canvas.width = height;
+                canvas.height = width;
+            } else if (orientationMode === 'portrait' && width > height) {
+                // Yataydayken dikey mod isteniyorsa
+                container.style.transform = 'rotate(-90deg)';
+                container.style.width = height + 'px';
+                container.style.height = width + 'px';
+                canvas.width = height;
+                canvas.height = width;
+            } else {
+                // Normal mod veya doğru yönlendirme
+                container.style.transform = 'none';
+                container.style.width = '100vw';
+                container.style.height = '100vh';
+                canvas.width = width;
+                canvas.height = height;
+            }
         } else {
+            container.style.transform = 'none';
+            container.style.width = '800px';
+            container.style.height = '600px';
             canvas.width = 800;
             canvas.height = 600;
         }
     }
+
+    function toggleSettings() {
+        isSettingsOpen = !isSettingsOpen;
+        const settingsUI = document.getElementById('settings-ui');
+        settingsUI.style.display = isSettingsOpen ? 'block' : 'none';
+        playSound('click');
+        if (isSettingsOpen) updateSettingsUI();
+    }
+
+    function updateSettingsUI() {
+        const opts = document.querySelectorAll('#orientation-settings .setting-opt');
+        opts.forEach(opt => {
+            opt.classList.remove('active');
+            if (opt.getAttribute('onclick').includes(orientationMode)) {
+                opt.classList.add('active');
+            }
+        });
+    }
+
+    function setOrientation(mode) {
+        orientationMode = mode;
+        localStorage.setItem('orientationMode', mode);
+        updateSettingsUI();
+        resizeCanvas();
+        playSound('click');
+    }
+
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
+    updateSettingsUI(); // Ayarları yükle ve UI'yı güncelle
 
     // Joystick State
     let joystickData = { active: false, x: 0, y: 0, angle: 0, distance: 0 };
@@ -838,6 +937,8 @@
     let isInventoryOpen = false;
     let isShopOpen = false;
     let isStatsOpen = false;
+    let isSettingsOpen = false;
+    let orientationMode = localStorage.getItem('orientationMode') || 'auto'; // 'auto', 'landscape', 'portrait'
     let frameCount = 0; // Animasyonlar için
     let screenShake = 0; // Ekran sarsıntısı şiddeti
 
