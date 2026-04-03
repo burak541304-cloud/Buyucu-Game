@@ -458,25 +458,25 @@
             <span class="stat-name">INT (Zeka)</span>
             <div style="display:flex; align-items:center; gap:10px;">
                 <span class="stat-value" id="stat-int">0</span>
-                <button class="stat-btn" onclick="addStat('int')" ontouchstart="addStat('int')">+</button>
+                <button class="stat-btn" onclick="addStat('int')" ontouchstart="event.preventDefault(); addStat('int')">+</button>
             </div>
         </div>
         <div class="stat-row">
             <span class="stat-name">HP (Sağlık)</span>
             <div style="display:flex; align-items:center; gap:10px;">
                 <span class="stat-value" id="stat-hp">0</span>
-                <button class="stat-btn" onclick="addStat('hp')" ontouchstart="addStat('hp')">+</button>
+                <button class="stat-btn" onclick="addStat('hp')" ontouchstart="event.preventDefault(); addStat('hp')">+</button>
             </div>
         </div>
         <div class="stat-row">
             <span class="stat-name">DEX (Çeviklik)</span>
             <div style="display:flex; align-items:center; gap:10px;">
                 <span class="stat-value" id="stat-dex">0</span>
-                <button class="stat-btn" onclick="addStat('dex')" ontouchstart="addStat('dex')">+</button>
+                <button class="stat-btn" onclick="addStat('dex')" ontouchstart="event.preventDefault(); addStat('dex')">+</button>
             </div>
         </div>
         <div class="points-text">PUAN: <span id="stat-points">0</span></div>
-        <button class="btn" style="width: 100%; border-color: #3498db; color: #3498db;" onclick="toggleStats()" ontouchstart="toggleStats()">KAPAT</button>
+        <button class="btn" style="width: 100%; border-color: #3498db; color: #3498db;" onclick="toggleStats()" ontouchstart="event.preventDefault(); toggleStats()">KAPAT</button>
     </div>
 
     <!-- Tooltip -->
@@ -488,9 +488,9 @@
         <div id="info-stats"></div>
         <div class="item-info-desc" id="info-desc">Description here...</div>
         <div class="item-info-actions">
-            <button class="item-info-btn" id="info-action-btn" onclick="confirmItemAction()">GIYDIR</button>
-            <button class="item-info-btn danger" onclick="confirmItemDiscard()">ÇÖPE AT</button>
-            <button class="item-info-btn" onclick="closeItemInfo()">KAPAT</button>
+            <button class="item-info-btn" id="info-action-btn" onclick="confirmItemAction()" ontouchstart="event.preventDefault(); confirmItemAction()">GIYDIR</button>
+            <button class="item-info-btn danger" onclick="confirmItemDiscard()" ontouchstart="event.preventDefault(); confirmItemDiscard()">ÇÖPE AT</button>
+            <button class="item-info-btn" onclick="closeItemInfo()" ontouchstart="event.preventDefault(); closeItemInfo()">KAPAT</button>
         </div>
     </div>
 
@@ -501,8 +501,8 @@
         </div>
         
         <div class="character-preview">
-            <div style="grid-column: 1; grid-row: 1;" class="equip-slot" id="slot-hat" onclick="unequip('hat')" ontouchstart="unequip('hat')">👒</div>
-            <div style="grid-column: 1; grid-row: 2;" class="equip-slot" id="slot-robe" onclick="unequip('robe')" ontouchstart="unequip('robe')">👕</div>
+            <div style="grid-column: 1; grid-row: 1;" class="equip-slot" id="slot-hat" onclick="unequip('hat')">👒</div>
+            <div style="grid-column: 1; grid-row: 2;" class="equip-slot" id="slot-robe" onclick="unequip('robe')">👕</div>
             <div style="grid-column: 1; grid-row: 3;" class="equip-slot">👖</div>
             
             <!-- Karakter Silüeti (Orta Kısım) -->
@@ -510,9 +510,9 @@
                 <div style="font-size: 50px; filter: drop-shadow(0 0 10px rgba(78, 204, 163, 0.3));">🧙‍♂️</div>
             </div>
             
-            <div style="grid-column: 3; grid-row: 1;" class="equip-slot" id="slot-weapon" onclick="unequip('weapon')" ontouchstart="unequip('weapon')">🪄</div>
-            <div style="grid-column: 3; grid-row: 2;" class="equip-slot" id="slot-shield" onclick="unequip('shield')" ontouchstart="unequip('shield')">🛡️</div>
-            <div style="grid-column: 3; grid-row: 3;" class="equip-slot" id="slot-ring" onclick="unequip('ring')" ontouchstart="unequip('ring')">💍</div>
+            <div style="grid-column: 3; grid-row: 1;" class="equip-slot" id="slot-weapon" onclick="unequip('weapon')">🪄</div>
+            <div style="grid-column: 3; grid-row: 2;" class="equip-slot" id="slot-shield" onclick="unequip('shield')">🛡️</div>
+            <div style="grid-column: 3; grid-row: 3;" class="equip-slot" id="slot-ring" onclick="unequip('ring')">💍</div>
         </div>
 
         <div class="inv-page-btns">
@@ -530,7 +530,7 @@
             </div>
             <div style="color: #aaa; font-size: 10px;">Weight: 12 / 100</div>
         </div>
-        <button class="btn" style="width: 100%; margin-top: 10px; border-color: #5a5e7a; color: #aaa;" onclick="toggleInventory()" ontouchstart="toggleInventory()">CLOSE</button>
+        <button class="btn" style="width: 100%; margin-top: 10px; border-color: #5a5e7a; color: #aaa;" onclick="toggleInventory()" ontouchstart="event.preventDefault(); toggleInventory()">CLOSE</button>
     </div>
 
     <div id="shop-ui">
@@ -540,14 +540,14 @@
         </div>
         <div class="shop-footer">
             <div style="color:#f1c40f; font-weight:bold; font-size:14px;">Noah: <span id="shop-gold">0</span></div>
-            <button class="btn" style="border-color: #e74c3c; color: #e74c3c;" onclick="toggleShop()" ontouchstart="toggleShop()">KAPAT</button>
+            <button class="btn" style="border-color: #e74c3c; color: #e74c3c;" onclick="toggleShop()" ontouchstart="event.preventDefault(); toggleShop()">KAPAT</button>
         </div>
     </div>
 
     <div id="overlay">
         <h1 style="color: #c0392b; font-size: 40px;">YOU DIED</h1>
         <p id="overlay-msg" style="color: #aaa;"></p>
-        <button class="btn" style="padding: 10px 30px;" onclick="respawnPlayer()" ontouchstart="respawnPlayer()">RESPAWN</button>
+        <button class="btn" style="padding: 10px 30px;" onclick="respawnPlayer()">RESPAWN</button>
     </div>
 
     <div id="joystick-container">
@@ -555,29 +555,29 @@
     </div>
 
     <div id="mobile-menu-btns">
-        <div class="mobile-btn" onclick="adjustZoom(0.1)" ontouchstart="adjustZoom(0.1)">🔍+</div>
-        <div class="mobile-btn" onclick="adjustZoom(-0.1)" ontouchstart="adjustZoom(-0.1)">🔍-</div>
-        <div class="mobile-btn" onclick="toggleInventory()" ontouchstart="toggleInventory()">🎒</div>
-        <div class="mobile-btn" onclick="toggleStats()" ontouchstart="toggleStats()">👤</div>
-        <div class="mobile-btn" id="mobile-shop-btn" style="display:none;" onclick="checkShopInteract()" ontouchstart="checkShopInteract()">🏪</div>
-        <div class="mobile-btn" onclick="toggleFullScreen()" ontouchstart="toggleFullScreen()">📺</div>
+        <div class="mobile-btn" onclick="adjustZoom(0.1)" ontouchstart="event.preventDefault(); adjustZoom(0.1)">🔍+</div>
+        <div class="mobile-btn" onclick="adjustZoom(-0.1)" ontouchstart="event.preventDefault(); adjustZoom(-0.1)">🔍-</div>
+        <div class="mobile-btn" onclick="toggleInventory()" ontouchstart="event.preventDefault(); toggleInventory()">🎒</div>
+        <div class="mobile-btn" onclick="toggleStats()" ontouchstart="event.preventDefault(); toggleStats()">👤</div>
+        <div class="mobile-btn" id="mobile-shop-btn" style="display:none;" onclick="checkShopInteract()" ontouchstart="event.preventDefault(); checkShopInteract()">🏪</div>
+        <div class="mobile-btn" onclick="toggleFullScreen()" ontouchstart="event.preventDefault(); toggleFullScreen()">📺</div>
     </div>
 
     <div id="skill-bar">
-        <div class="skill-slot" id="skill-1" onclick="castSpecificSkill(0)" ontouchstart="castSpecificSkill(0)">
+        <div class="skill-slot" id="skill-1" onclick="castSpecificSkill(0)">
             <span class="key-hint">1</span>❄️
             <div class="skill-cooldown" id="cd-1"></div>
         </div>
-        <div class="skill-slot" id="skill-2" onclick="castSpecificSkill(1)" ontouchstart="castSpecificSkill(1)">
+        <div class="skill-slot" id="skill-2" onclick="castSpecificSkill(1)">
             <span class="key-hint">2</span>⚡
             <div class="skill-cooldown" id="cd-2"></div>
         </div>
         <!-- Hızlı İksir Slotları -->
-        <div class="skill-slot" id="quick-hp" onclick="useQuickPotion('potion')" ontouchstart="useQuickPotion('potion')" style="margin-left: 20px;">
+        <div class="skill-slot" id="quick-hp" onclick="useQuickPotion('potion')" style="margin-left: 20px;">
             <span class="key-hint">3</span>🧪
             <span class="item-count" id="hp-potion-count">0</span>
         </div>
-        <div class="skill-slot" id="quick-mp" onclick="useQuickPotion('mana_potion')" ontouchstart="useQuickPotion('mana_potion')">
+        <div class="skill-slot" id="quick-mp" onclick="useQuickPotion('mana_potion')">
             <span class="key-hint">4</span>💧
             <span class="item-count" id="mp-potion-count">0</span>
         </div>
