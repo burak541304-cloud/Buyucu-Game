@@ -2610,44 +2610,55 @@
     function loadGame() {
         const savedData = localStorage.getItem('rpgSaveData');
         if (savedData) {
-            const data = JSON.parse(savedData);
-            
-            // Oyuncu verilerini yükle
-            player.x = data.player.x;
-            player.y = data.player.y;
-            player.hp = data.player.hp;
-            player.mp = data.player.mp;
-            player.xp = data.player.xp;
-            player.lvl = data.player.lvl;
-            player.gold = data.player.gold;
-            player.speed = data.player.speed;
-            player.statPoints = data.player.statPoints;
-            player.stats = data.player.stats;
-            player.quests = data.player.quests;
-            player.inventory = data.player.inventory;
-            player.equipment = data.player.equipment;
-            player.pet = data.player.pet;
+            try {
+                const data = JSON.parse(savedData);
+                
+                // Oyuncu verilerini güvenli bir şekilde yükle (Object.assign ile mevcut objeyi güncelliyoruz)
+                if (data.player) {
+                    Object.assign(player, data.player);
+                }
+                
+                // Oyun zamanını yükle
+                if (data.gameTime !== undefined) gameTime = data.gameTime;
 
-            // Oyun zamanını yükle
-            gameTime = data.gameTime;
-
-            console.log('Oyun yüklendi!');
-            return true;
+                gameActive = true; // Oyunun aktif olduğundan emin ol
+                console.log('Oyun yüklendi!');
+                return true;
+            } catch (e) {
+                console.error('Yükleme hatası:', e);
+                return false;
+            }
         }
         console.log('Kayıtlı oyun bulunamadı, yeni oyun başlatılıyor.');
         return false;
     }
 
+    function syncCamera() {
+        const viewW = canvas.width / zoom;
+        const viewH = canvas.height / zoom;
+        
+        if (viewW >= WORLD_WIDTH) {
+            camera.x = (WORLD_WIDTH - viewW) / 2;
+        } else {
+            camera.x = Math.max(0, Math.min(WORLD_WIDTH - viewW, player.x - viewW / 2));
+        }
+        
+        if (viewH >= WORLD_HEIGHT) {
+            camera.y = (WORLD_HEIGHT - viewH) / 2;
+        } else {
+            camera.y = Math.max(0, Math.min(WORLD_HEIGHT - viewH, player.y - viewH / 2));
+        }
+    }
+
     // Oyun Başlatma
-    initWorld(); // Dünyayı her zaman oluştur (zemin, ağaçlar vb.)
-    loadGame();  // Eğer kayıt varsa oyuncu verilerini üzerine yaz
+    loadGame();  // Önce kaydı yükle (oyuncu konumu belirlensin)
+    initWorld(); // Dünyayı oluştur (yüklenen oyuncu konumuna göre güvenli bölgeleri ayarlar)
+    syncCamera(); // Kamerayı oyuncunun üzerine odakla
     
     updateStatsUI(); 
     updateQuestUI(); 
     
-    // İlk karede her şeyin (özellikle kameranın) senkronize olması için
-    update(); 
-    draw();
+    draw(); // Döngüyü başlat
 </script>
 </body>
 </html>
