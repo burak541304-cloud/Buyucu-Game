@@ -1577,6 +1577,7 @@
         }
         updateInventoryUI();
         updateStatsUI();
+        saveGame(); // Eşya kullanıldığında/takıldığında kaydet
     }
 
     function unequip(type) {
@@ -1587,6 +1588,7 @@
             player.equipment[type] = null;
             updateInventoryUI();
             updateStatsUI();
+            saveGame(); // Eşya çıkarıldığında kaydet
         }
     }
 
@@ -1628,6 +1630,7 @@
             addItemToInventory(item);
             updateStatsUI();
             if (isInventoryOpen) updateInventoryUI();
+            saveGame(); // Eşya satın alındığında kaydet
         }
     }
 
@@ -1636,6 +1639,7 @@
         let existingItem = player.inventory.find(i => i && i.id === item.id && i.type === 'consumable');
         if (existingItem) { existingItem.count++; }
         else { let empty = player.inventory.indexOf(null); if (empty !== -1) player.inventory[empty] = { ...item, count: 1 }; }
+        saveGame(); // Envantere eşya eklendiğinde kaydet
     }
 
     function checkShopInteract() { if (Math.hypot(player.x - shopKeeper.x, player.y - shopKeeper.y) < 130) toggleShop(); }
@@ -1703,6 +1707,12 @@
         
         updateTime();
         frameCount++;
+        
+        // Her 300 frame'de bir oyunu kaydet (yaklaşık 5 saniyede bir)
+        if (frameCount % 300 === 0) {
+            saveGame();
+        }
+
         let mx = 0, my = 0;
         if (keys['KeyW']) my -= player.speed; if (keys['KeyS']) my += player.speed;
         if (keys['KeyA']) mx -= player.speed; if (keys['KeyD']) mx += player.speed;
@@ -1968,6 +1978,7 @@
             playSound('levelup');
             updateStatsUI();
             updateStatWindow();
+            saveGame(); // Seviye atladığında kaydet
         }
     }
 
@@ -2050,6 +2061,7 @@
             player.stats[type]++;
             updateStatWindow();
             updateStatsUI();
+            saveGame(); // Stat puanı harcandığında kaydet
         }
     }
 
@@ -2075,6 +2087,7 @@
         player.xp += q.reward / 2;
         playSound('gold');
         updateStatsUI();
+        saveGame(); // Görev tamamlandığında kaydet
     }
 
     function draw() {
@@ -2441,7 +2454,65 @@
         gameActive = true;
     }
 
-    initWorld(); updateStatsUI(); updateQuestUI(); draw();
+    function saveGame() {
+        const saveData = {
+            player: {
+                x: player.x, y: player.y,
+                hp: player.hp, mp: player.mp, xp: player.xp, lvl: player.lvl, gold: player.gold,
+                speed: player.speed,
+                statPoints: player.statPoints,
+                stats: player.stats,
+                quests: player.quests,
+                inventory: player.inventory,
+                equipment: player.equipment,
+                pet: player.pet
+            },
+            gameTime: gameTime,
+            // Düşmanlar, mermiler, düşen eşyalar gibi dinamik verileri kaydetmiyoruz,
+            // çünkü bunlar her yüklendiğinde yeniden oluşturulacak.
+            // Sadece oyuncu ve kalıcı dünya durumu kaydedilir.
+        };
+        localStorage.setItem('rpgSaveData', JSON.stringify(saveData));
+        console.log('Oyun kaydedildi!');
+    }
+
+    function loadGame() {
+        const savedData = localStorage.getItem('rpgSaveData');
+        if (savedData) {
+            const data = JSON.parse(savedData);
+            
+            // Oyuncu verilerini yükle
+            player.x = data.player.x;
+            player.y = data.player.y;
+            player.hp = data.player.hp;
+            player.mp = data.player.mp;
+            player.xp = data.player.xp;
+            player.lvl = data.player.lvl;
+            player.gold = data.player.gold;
+            player.speed = data.player.speed;
+            player.statPoints = data.player.statPoints;
+            player.stats = data.player.stats;
+            player.quests = data.player.quests;
+            player.inventory = data.player.inventory;
+            player.equipment = data.player.equipment;
+            player.pet = data.player.pet;
+
+            // Oyun zamanını yükle
+            gameTime = data.gameTime;
+
+            console.log('Oyun yüklendi!');
+            return true;
+        }
+        console.log('Kayıtlı oyun bulunamadı, yeni oyun başlatılıyor.');
+        return false;
+    }
+
+    if (!loadGame()) {
+        initWorld(); // Kayıtlı oyun yoksa yeni dünya başlat
+    }
+    updateStatsUI(); 
+    updateQuestUI(); 
+    draw();
 </script>
 </body>
 </html>
