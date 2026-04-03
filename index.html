@@ -84,8 +84,47 @@
                 top: 10px; right: 10px;
             }
             #skill-bar {
-                bottom: 10px; right: 10px;
-                transform: scale(1.1);
+                bottom: 40px; right: 40px;
+                display: block !important;
+                width: 200px; height: 200px;
+                background: none;
+                border: none;
+                transform: none;
+                pointer-events: none;
+            }
+            .skill-slot {
+                position: absolute;
+                width: 60px; height: 60px;
+                font-size: 28px;
+                border-radius: 50% !important;
+                background: rgba(0,0,0,0.7) !important;
+                border: 2px solid #f1c40f !important;
+                box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+                display: flex; justify-content: center; align-items: center;
+                pointer-events: auto;
+            }
+            /* Ergonomik Yerleşim (Sağ El Baş Parmak) */
+            #skill-1 { bottom: 145px; right: 10px; }
+            #skill-2 { bottom: 110px; right: 90px; }
+            #skill-3 { bottom: 50px; right: 145px; }
+            #skill-4 { bottom: 0; right: 190px; display: none; }
+            #quick-hp { bottom: 190px; right: 90px; width: 50px; height: 45px; font-size: 20px; }
+            #quick-mp { bottom: 120px; right: 165px; width: 50px; height: 45px; font-size: 20px; }
+            #skill-main { 
+                bottom: -5px; right: -5px; 
+                width: 100px; height: 90px; 
+                font-size: 45px; 
+                background: rgba(241, 196, 15, 0.2) !important;
+                border-width: 4px !important;
+                z-index: 101;
+            }
+            .skill-slot:active {
+                transform: scale(0.85);
+                background: rgba(241, 196, 15, 0.5) !important;
+                box-shadow: 0 0 20px rgba(241, 196, 15, 0.4);
+            }
+            .skill-slot .key-hint {
+                display: none;
             }
             #inventory-ui, #shop-ui, #stat-ui, #skill-tree-ui, #settings-ui {
                 width: 90%;
@@ -401,6 +440,7 @@
             position: absolute; bottom: 0; left: 0; width: 100%; height: 0%;
             background: rgba(0,0,0,0.6); transition: height 0.1s linear;
         }
+        #skill-main { display: none; }
 
         @media (max-width: 1024px) {
             #joystick-container { display: none; }
@@ -588,14 +628,26 @@
             <span class="key-hint">2</span>⚡
             <div class="skill-cooldown" id="cd-2"></div>
         </div>
+        <div class="skill-slot" id="skill-3" onclick="castSpecificSkill(2)" ontouchstart="castSpecificSkill(2)">
+            <span class="key-hint">3</span>
+            <div class="skill-cooldown" id="cd-3"></div>
+        </div>
+        <div class="skill-slot" id="skill-4" onclick="castSpecificSkill(3)" ontouchstart="castSpecificSkill(3)">
+            <span class="key-hint">4</span>
+            <div class="skill-cooldown" id="cd-4"></div>
+        </div>
         <!-- Hızlı İksir Slotları -->
-        <div class="skill-slot" id="quick-hp" onclick="useQuickPotion('potion')" ontouchstart="useQuickPotion('potion')" style="margin-left: 20px;">
-            <span class="key-hint">3</span>🧪
+        <div class="skill-slot" id="quick-hp" onclick="useQuickPotion('potion')" ontouchstart="useQuickPotion('potion')">
+            <span class="key-hint">5</span>🧪
             <span class="item-count" id="hp-potion-count">0</span>
         </div>
         <div class="skill-slot" id="quick-mp" onclick="useQuickPotion('mana_potion')" ontouchstart="useQuickPotion('mana_potion')">
-            <span class="key-hint">4</span>💧
+            <span class="key-hint">6</span>💧
             <span class="item-count" id="mp-potion-count">0</span>
+        </div>
+        <!-- Ana Saldırı Butonu (Mobil için özel) -->
+        <div class="skill-slot" id="skill-main" onclick="forceBasicAttack()" ontouchstart="forceBasicAttack()">
+            🪄
         </div>
     </div>
 </div>
@@ -871,15 +923,15 @@
     const SKILL_TREE = {
         fire: [
             { id: 'fire_1', name: 'Fireball', icon: '🔥', level: 1, maxLevel: 5, color: '#ff4d00', damageMult: 0.8, cd: 45, speed: 9, size: 7, effect: 'burn', manaCost: 0, desc: 'Temel ateş büyüsü.' },
-            { id: 'fire_2', name: 'Explosion', icon: '💥', level: 0, maxLevel: 5, color: '#ff0000', damageMult: 2.5, cd: 180, speed: 6, size: 15, effect: 'aoe', manaCost: 50, req: 'fire_1', reqLevel: 3, desc: 'Büyük patlama yaratır.' }
+            { id: 'fire_2', name: 'Explosion', icon: '💥', level: 0, maxLevel: 5, color: '#ff0000', damageMult: 2.5, cd: 180, speed: 6, size: 15, effect: 'aoe', aoeRadius: 150, manaCost: 50, req: 'fire_1', reqLevel: 3, desc: 'Büyük patlama yaratır.' }
         ],
         ice: [
             { id: 'ice_1', name: 'Frostbolt', icon: '❄️', level: 0, maxLevel: 5, color: '#00d2ff', damageMult: 1.0, cd: 60, speed: 12, size: 6, effect: 'slow', manaCost: 15, desc: 'Düşmanı yavaşlatır.' },
-            { id: 'ice_2', name: 'Blizzard', icon: '🌨️', level: 0, maxLevel: 5, color: '#ffffff', damageMult: 1.5, cd: 240, speed: 4, size: 20, effect: 'freeze', manaCost: 80, req: 'ice_1', reqLevel: 3, desc: 'Alanı dondurur.' }
+            { id: 'ice_2', name: 'Blizzard', icon: '🌨️', level: 0, maxLevel: 5, color: '#ffffff', damageMult: 1.5, cd: 240, speed: 4, size: 20, effect: 'aoe', aoeRadius: 200, manaCost: 80, req: 'ice_1', reqLevel: 3, desc: 'Alanı dondurur.' }
         ],
         lightning: [
             { id: 'lightning_1', name: 'Lightning Bolt', icon: '⚡', level: 0, maxLevel: 5, color: '#f1c40f', damageMult: 1.8, cd: 120, speed: 15, size: 4, effect: 'shock', manaCost: 35, desc: 'Hızlı yıldırım saldırısı.' },
-            { id: 'lightning_2', name: 'Chain Lightning', icon: '🌩️', level: 0, maxLevel: 5, color: '#ffff00', damageMult: 1.2, cd: 150, speed: 18, size: 5, effect: 'chain', manaCost: 60, req: 'lightning_1', reqLevel: 3, desc: 'Birden fazla hedefe seker.' }
+            { id: 'lightning_2', name: 'Chain Lightning', icon: '🌩️', level: 0, maxLevel: 5, color: '#ffff00', damageMult: 1.2, cd: 150, speed: 18, size: 5, effect: 'chain', aoeRadius: 120, manaCost: 60, req: 'lightning_1', reqLevel: 3, desc: 'Birden fazla hedefe seker.' }
         ]
     };
 
@@ -939,6 +991,7 @@
     let paths = []; // Yeni: Toprak yollar
     let particles = []; // Yeni: Atmosferik tozlar
     let damageNumbers = []; // Yeni: Hasar rakamları
+    let explosions = []; // Yeni: Patlama efektleri
     let footprints = []; // Yeni: Ayak izleri
     let rainParticles = []; // Yeni: Yağmur damlaları
     let weather = { type: 'clear', intensity: 0, timer: 0 }; // Yeni: Hava durumu
@@ -1635,7 +1688,8 @@
             damage: finalDamage,
             color: skill.color,
             size: skill.size,
-            effect: skill.effect
+            effect: skill.effect,
+            aoeRadius: skill.aoeRadius || 0
         });
     }
 
@@ -1657,6 +1711,26 @@
             }
         }
         if (player.basicAttackCooldown > 0) player.basicAttackCooldown--;
+    }
+
+    function forceBasicAttack() {
+        if (!gameActive || isInventoryOpen || isShopOpen) return;
+        // Manuel basıldığında eğer cooldown bittiyse hemen vur
+        if (player.basicAttackCooldown <= 0 && enemies.length > 0) {
+            let nearestTarget = null;
+            let minDist = 500; 
+            enemies.forEach(e => {
+                const d = Math.hypot(player.x - e.x, player.y - e.y);
+                if (d < minDist) { minDist = d; nearestTarget = e; }
+            });
+
+            if (nearestTarget) {
+                spawnProjectile(nearestTarget, BASIC_ATTACK);
+                playSound('cast');
+                const totalDex = player.stats.dex + (player.equipment.weapon?.dexBonus || 0) + (player.equipment.hat?.dexBonus || 0);
+                player.basicAttackCooldown = Math.max(15, BASIC_ATTACK.cd - totalDex);
+            }
+        }
     }
 
     function toggleInventory() {
@@ -2048,6 +2122,12 @@
             if (d.life <= 0) damageNumbers.splice(i, 1);
         }
 
+        // Patlama Efektleri Hareketi
+        for (let i = explosions.length - 1; i >= 0; i--) {
+            explosions[i].life--;
+            if (explosions[i].life <= 0) explosions.splice(i, 1);
+        }
+
         // Yerden Eşya Toplama
         for (let i = droppedItems.length - 1; i >= 0; i--) {
             let item = droppedItems[i];
@@ -2089,38 +2169,68 @@
                 let e = enemies[ei];
                 if (Math.hypot(p.x - e.x, p.y - e.y) < 30) {
                     const dmg = Math.floor(p.damage);
-                    e.hp -= dmg; 
-                    playSound('hit');
                     
-                    // Hasar Rakamı Oluştur
-                    damageNumbers.push({
-                        x: e.x, y: e.y - 20,
-                        value: dmg,
-                        life: 60, // 1 saniye (60 fps)
-                        color: p.color
-                    });
+                    if (p.aoeRadius > 0) {
+                        // Alan Hasarı (AoE)
+                        explosions.push({
+                            x: p.x, y: p.y,
+                            radius: p.aoeRadius,
+                            life: 20,
+                            maxLife: 20,
+                            color: p.color
+                        });
+                        screenShake = p.aoeRadius / 20;
+                        playSound('stomp');
+
+                        enemies.forEach(target => {
+                            const dist = Math.hypot(p.x - target.x, p.y - target.y);
+                            if (dist < p.aoeRadius) {
+                                target.hp -= dmg;
+                                damageNumbers.push({
+                                    x: target.x, y: target.y - 20,
+                                    value: dmg,
+                                    life: 60,
+                                    color: p.color
+                                });
+                            }
+                        });
+                    } else {
+                        // Tekli Hedef Hasarı
+                        e.hp -= dmg; 
+                        playSound('hit');
+                        
+                        // Hasar Rakamı Oluştur
+                        damageNumbers.push({
+                            x: e.x, y: e.y - 20,
+                            value: dmg,
+                            life: 60, // 1 saniye (60 fps)
+                            color: p.color
+                        });
+                    }
 
                     projectiles.splice(pi, 1);
                     projectileRemoved = true;
                     
-                    if (e.hp <= 0) { 
-                        player.xp += 50; 
-                        player.gold += 35; 
-                        
-                        // Görev İlerlemesi
-                        player.quests.forEach(q => {
-                            if (!q.completed && q.target === e.name) {
-                                q.count++;
-                                if (q.count >= q.goal) completeQuest(q);
-                            }
-                        });
-                        updateQuestUI();
-
-                        dropLoot(e.x, e.y, e.isBoss); 
-                        enemies.splice(ei, 1); 
-                        checkLevelUp(); 
+                    // Ölen canavarları kontrol et (AoE'den sonra liste değişmiş olabilir)
+                    for (let i = enemies.length - 1; i >= 0; i--) {
+                        if (enemies[i].hp <= 0) {
+                            let deadE = enemies[i];
+                            player.xp += 50; 
+                            player.gold += 35; 
+                            
+                            player.quests.forEach(q => {
+                                if (!q.completed && q.target === deadE.name) {
+                                    q.count++;
+                                    if (q.count >= q.goal) completeQuest(q);
+                                }
+                            });
+                            updateQuestUI();
+                            dropLoot(deadE.x, deadE.y, deadE.isBoss); 
+                            enemies.splice(i, 1); 
+                            checkLevelUp();
+                        }
                     }
-                    break; // Mermi bir düşmana çarptığında yok olur
+                    break;
                 }
             }
             if (!projectileRemoved && (p.x < 0 || p.x > WORLD_WIDTH || p.y < 0 || p.y > WORLD_HEIGHT)) {
@@ -2279,9 +2389,10 @@
                 node.onclick = () => upgradeSkill(branch, skill.id);
                 node.onmouseenter = (e) => {
                     const reqText = skill.req ? `<br><span style="color:#e74c3c;">Gereksinim: ${SKILL_TREE[branch].find(s => s.id === skill.req).name} Lv.${skill.reqLevel}</span>` : '';
+                    const aoeText = skill.aoeRadius ? `<br><span style="color:#e040fb;">Alan Etkisi: ${skill.aoeRadius}m</span>` : '';
                     showTooltip({
                         name: skill.name,
-                        desc: `${skill.desc}${reqText}<br><span style="color:#f1c40f;">Hasar: x${skill.damageMult}</span>`
+                        desc: `${skill.desc}${reqText}${aoeText}<br><span style="color:#f1c40f;">Hasar: x${skill.damageMult}</span>`
                     }, e);
                 };
                 node.onmouseleave = hideTooltip;
@@ -2618,6 +2729,31 @@
 
         // Pet Çizimi
         drawPet(ctx);
+
+        // Patlama Efektlerini Çiz
+        explosions.forEach(exp => {
+            const alpha = exp.life / exp.maxLife;
+            const radius = exp.radius * (1 - alpha * 0.5);
+            
+            ctx.save();
+            ctx.globalAlpha = alpha * 0.6;
+            const grad = ctx.createRadialGradient(exp.x, exp.y, 0, exp.x, exp.y, radius);
+            grad.addColorStop(0, '#fff');
+            grad.addColorStop(0.4, exp.color);
+            grad.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(exp.x, exp.y, radius, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Ekstra parlama (Screen mode)
+            ctx.globalCompositeOperation = 'screen';
+            ctx.globalAlpha = alpha * 0.4;
+            ctx.beginPath();
+            ctx.arc(exp.x, exp.y, radius * 1.2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        });
 
         // --- 5. Atmosferik Efektler ---
         // Toz zerreleri
