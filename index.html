@@ -1161,6 +1161,9 @@
                     case 'Kekurikekukaka': drawKekuri(ctx, e, bounce, wiggle); break;
                     case 'Talos': drawTalos(ctx, e, bounce); break;
                     case 'Samma': drawSamma(ctx, e, bounce, wiggle); break;
+                    case 'Goblin': drawGoblin(ctx, e, bounce); break;
+                    case 'Stone Golem': drawStoneGolem(ctx, e, bounce); break;
+                    case 'Forest Spider': drawForestSpider(ctx, e, bounce); break;
                 }
                 ctx.restore();
             } catch (err) { /* Detaylı çizim hatası canavarı tamamen yok etmesin */ }
@@ -1377,6 +1380,113 @@
         ctx.shadowBlur = 0;
     }
 
+    function drawGoblin(ctx, e, bounce) {
+        const size = e.size;
+        const walkCycle = Math.sin(frameCount * 0.2 * e.speed);
+        
+        // Bacaklar
+        ctx.strokeStyle = '#2d5a27';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(e.x - 5, e.y + size); ctx.lineTo(e.x - 10 - walkCycle*8, e.y + size + 10);
+        ctx.moveTo(e.x + 5, e.y + size); ctx.lineTo(e.x + 10 + walkCycle*8, e.y + size + 10);
+        ctx.stroke();
+
+        // Gövde
+        ctx.fillStyle = e.color;
+        ctx.beginPath();
+        ctx.ellipse(e.x, e.y + bounce, size, size * 0.8, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Kulaklar
+        ctx.beginPath();
+        ctx.moveTo(e.x - size, e.y + bounce - 5);
+        ctx.lineTo(e.x - size - 10, e.y + bounce - 15);
+        ctx.lineTo(e.x - size + 5, e.y + bounce - 5);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(e.x + size, e.y + bounce - 5);
+        ctx.lineTo(e.x + size + 10, e.y + bounce - 15);
+        ctx.lineTo(e.x + size - 5, e.y + bounce - 5);
+        ctx.fill();
+
+        // Gözler
+        ctx.fillStyle = 'yellow';
+        ctx.beginPath(); ctx.arc(e.x - 4, e.y + bounce - 2, 2, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(e.x + 4, e.y + bounce - 2, 2, 0, Math.PI*2); ctx.fill();
+    }
+
+    function drawStoneGolem(ctx, e, bounce) {
+        const size = e.size;
+        const walkCycle = Math.sin(frameCount * 0.05 * e.speed);
+        
+        // Taş Ayaklar
+        ctx.fillStyle = '#4a4a4a';
+        ctx.fillRect(e.x - size/2 + (walkCycle > 0 ? 5 : 0), e.y + size/2, size/3, size/2);
+        ctx.fillRect(e.x + size/6 + (walkCycle < 0 ? -5 : 0), e.y + size/2, size/3, size/2);
+
+        // Gövde (Kayalık)
+        ctx.fillStyle = e.color;
+        ctx.beginPath();
+        ctx.moveTo(e.x - size, e.y + size/2 + bounce);
+        ctx.lineTo(e.x - size * 0.8, e.y - size/2 + bounce);
+        ctx.lineTo(e.x + size * 0.8, e.y - size/2 + bounce);
+        ctx.lineTo(e.x + size, e.y + size/2 + bounce);
+        ctx.closePath();
+        ctx.fill();
+
+        // Çatlaklar
+        ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(e.x - 10, e.y + bounce); ctx.lineTo(e.x + 5, e.y + bounce + 10);
+        ctx.stroke();
+
+        // Gözler (Parlayan Mavi)
+        ctx.fillStyle = '#00f2ff';
+        ctx.shadowBlur = 10; ctx.shadowColor = '#00f2ff';
+        ctx.fillRect(e.x - 12, e.y + bounce - 5, 6, 3);
+        ctx.fillRect(e.x + 6, e.y + bounce - 5, 6, 3);
+        ctx.shadowBlur = 0;
+    }
+
+    function drawForestSpider(ctx, e, bounce) {
+        const size = e.size;
+        const walkCycle = Math.sin(frameCount * 0.25 * e.speed);
+        
+        // Bacaklar (8 bacak)
+        ctx.strokeStyle = '#3e2723';
+        ctx.lineWidth = 2;
+        for(let i=0; i<4; i++) {
+            const angle = (i - 1.5) * 0.5;
+            const legX = Math.cos(angle) * size * 1.5;
+            const legY = Math.sin(angle) * size * 1.5;
+            const legMove = Math.sin(frameCount * 0.2 + i) * 10;
+            
+            ctx.beginPath();
+            ctx.moveTo(e.x, e.y + bounce);
+            ctx.lineTo(e.x + legX, e.y + bounce + legY + legMove);
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(e.x, e.y + bounce);
+            ctx.lineTo(e.x - legX, e.y + bounce + legY - legMove);
+            ctx.stroke();
+        }
+
+        // Gövde
+        ctx.fillStyle = e.color;
+        ctx.beginPath();
+        ctx.ellipse(e.x, e.y + bounce, size, size * 0.7, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Gözler (Kırmızı noktalar)
+        ctx.fillStyle = 'red';
+        for(let i=0; i<4; i++) {
+            ctx.beginPath(); ctx.arc(e.x - 6 + i*4, e.y + bounce - 4, 1.5, 0, Math.PI*2); ctx.fill();
+        }
+    }
+
     function drawMonsterUI(ctx, e, bounce) {
         const isBoss = e.isBoss;
         const hpPercent = e.hp / e.maxHp;
@@ -1404,9 +1514,9 @@
             { name: 'Skeleton', color: '#e0e0e0', size: 20, speed: 1.6 },
             { name: 'Fire Imp', color: '#ff4d00', size: 16, speed: 2.2 },
             { name: 'Earth Golem', color: '#795548', size: 35, speed: 0.8 },
-            { name: 'Goblin', color: '#32cd32', size: 17, speed: 2.0 }, // Yeni canavar
-            { name: 'Stone Golem', color: '#808080', size: 38, speed: 0.7 }, // Yeni canavar
-            { name: 'Forest Spider', color: '#654321', size: 25, speed: 1.7 } // Yeni canavar
+            { name: 'Goblin', color: '#32cd32', size: 17, speed: 2.0 },
+            { name: 'Stone Golem', color: '#808080', size: 38, speed: 0.7 },
+            { name: 'Forest Spider', color: '#654321', size: 25, speed: 1.7 }
         ];
 
         for (let i = 0; i < 40; i++) {
