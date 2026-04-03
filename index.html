@@ -533,6 +533,7 @@
         <div class="item-info-desc" id="info-desc">Description here...</div>
         <div class="item-info-actions">
             <button class="item-info-btn" id="info-action-btn" onclick="confirmItemAction()" ontouchstart="event.preventDefault(); confirmItemAction()">GIYDIR</button>
+            <button class="item-info-btn" id="info-sell-btn" style="background: #f1c40f; border-color: #f39c12; color: #000; display: none;" onclick="sellSelectedItem()" ontouchstart="event.preventDefault(); sellSelectedItem()">SAT</button>
             <button class="item-info-btn danger" onclick="confirmItemDiscard()" ontouchstart="event.preventDefault(); confirmItemDiscard()">ÇÖPE AT</button>
             <button class="item-info-btn" onclick="closeItemInfo()" ontouchstart="event.preventDefault(); closeItemInfo()">KAPAT</button>
         </div>
@@ -1897,6 +1898,18 @@
 
         actionBtn.innerText = actionText;
         
+        // Market açıksa ve envanterden bir eşya seçildiyse SAT butonunu göster
+        const sellBtn = document.getElementById('info-sell-btn');
+        if (sellBtn) {
+            if (isShopOpen && selectedItemIndex !== -1) {
+                const sellPrice = Math.floor(item.cost * 0.5);
+                sellBtn.innerText = `SAT (${sellPrice} Noah)`;
+                sellBtn.style.display = 'block';
+            } else {
+                sellBtn.style.display = 'none';
+            }
+        }
+        
         panel.style.display = 'block';
         const rect = inventoryUI.getBoundingClientRect();
         
@@ -1960,6 +1973,27 @@
         if (item.count <= 0) player.inventory[index] = null;
     }
 
+    function sellSelectedItem() {
+        if (selectedItemIndex === -1) return;
+        const item = player.inventory[selectedItemIndex];
+        if (!item) return;
+
+        const sellPrice = Math.floor(item.cost * 0.5);
+        player.gold += sellPrice;
+        
+        if (item.count > 1) {
+            item.count--;
+        } else {
+            player.inventory[selectedItemIndex] = null;
+        }
+
+        playSound('gold');
+        closeItemInfo();
+        updateInventoryUI();
+        updateShopUI();
+        saveGame();
+    }
+
     function confirmItemDiscard() {
         if (selectedItemIndex === -1 && selectedEquipType === null) return;
         
@@ -1984,7 +2018,7 @@
 
     function unequip(type) {
         if (!player.equipment[type]) return;
-        let empty = player.inventory.indexOf(null);
+        let empty = player.inventory.findIndex(i => i === null || i === undefined);
         if (empty !== -1) {
             player.inventory[empty] = player.equipment[type];
             player.equipment[type] = null;
@@ -2128,8 +2162,8 @@
             slotIndex = existingItemIndex;
             added = true;
         } else { 
-            // 2. Tüm sayfaları tara (1'den 8'e kadar) ve ilk boş slotu bul
-            let empty = player.inventory.indexOf(null); 
+            // 2. Tüm sayfaları tara (1'den 8'e kadar) ve ilk boş slotu bul (null veya undefined)
+            let empty = player.inventory.findIndex(i => i === null || i === undefined); 
             if (empty !== -1) {
                 player.inventory[empty] = { ...item, count: 1 }; 
                 slotIndex = empty;
