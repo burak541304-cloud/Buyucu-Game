@@ -344,6 +344,31 @@
             color: #f1c40f; font-weight: bold; font-family: 'Segoe UI', Arial;
             display: flex; align-items: center; gap: 8px; z-index: 100;
         }
+
+        /* Item Info Panel (Context Menu) */
+        #item-info-panel {
+            position: absolute;
+            background: rgba(10, 10, 30, 0.95);
+            border: 2px solid #5a5e7a;
+            border-radius: 4px;
+            padding: 10px;
+            z-index: 100;
+            display: none;
+            width: 160px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.8);
+            pointer-events: auto;
+        }
+        .item-info-title { color: #f1c40f; font-weight: bold; border-bottom: 1px solid #444; margin-bottom: 5px; padding-bottom: 3px; }
+        .item-info-stat { color: #2ecc71; font-size: 11px; margin-bottom: 2px; }
+        .item-info-desc { color: #aaa; font-size: 10px; margin-bottom: 8px; font-style: italic; }
+        .item-info-actions { display: flex; flex-direction: column; gap: 5px; }
+        .item-info-btn { 
+            padding: 5px; font-size: 10px; cursor: pointer; border-radius: 2px;
+            background: #2d3436; border: 1px solid #f1c40f; color: #f1c40f;
+            text-transform: uppercase; font-weight: bold;
+        }
+        .item-info-btn:hover { background: #3d4446; }
+        .item-info-btn.danger { border-color: #e74c3c; color: #e74c3c; }
     </style>
 </head>
 <body>
@@ -422,6 +447,18 @@
 
     <!-- Tooltip -->
     <div id="tooltip"></div>
+
+    <!-- Item Info Detail Panel -->
+    <div id="item-info-panel">
+        <div class="item-info-title" id="info-title">Item Name</div>
+        <div id="info-stats"></div>
+        <div class="item-info-desc" id="info-desc">Description here...</div>
+        <div class="item-info-actions">
+            <button class="item-info-btn" id="info-action-btn" onclick="confirmItemAction()">GIYDIR</button>
+            <button class="item-info-btn danger" onclick="confirmItemDiscard()">ÇÖPE AT</button>
+            <button class="item-info-btn" onclick="closeItemInfo()">KAPAT</button>
+        </div>
+    </div>
 
     <!-- Knight Online Style Envanter -->
     <div id="inventory-ui">
@@ -794,6 +831,8 @@
     let isInventoryOpen = false;
     let isShopOpen = false;
     let isStatsOpen = false;
+    let selectedItemIndex = -1; // -1: none, 0+: inventory index
+    let selectedEquipType = null; // null: none, 'weapon', 'hat', etc.
     let frameCount = 0; // Animasyonlar için
     let screenShake = 0; // Ekran sarsıntısı şiddeti
 
@@ -1517,7 +1556,10 @@
         playSound('click');
         inventoryUI.style.display = isInventoryOpen ? 'block' : 'none';
         if (isInventoryOpen) updateInventoryUI();
-        else hideTooltip();
+        else {
+            hideTooltip();
+            closeItemInfo();
+        }
     }
 
     function updateInventoryUI() {
@@ -1527,8 +1569,8 @@
             slot.className = 'grid-slot';
             if (item) {
                 slot.innerHTML = `<span class="item-icon">${item.icon}</span><span class="item-count">${item.count > 1 ? item.count : ''}</span>`;
-                slot.onclick = () => handleItemAction(index);
-                slot.ontouchstart = (e) => { e.preventDefault(); handleItemAction(index); };
+                slot.onclick = (e) => handleItemAction(index, e);
+                slot.ontouchstart = (e) => { e.preventDefault(); handleItemAction(index, e.touches[0]); };
                 slot.onmouseenter = (e) => showTooltip(item, e);
                 slot.onmouseleave = hideTooltip;
             }
@@ -1543,12 +1585,18 @@
 
         const updateSlot = (slot, type, defaultIcon) => {
             if (!slot) return;
-            slot.innerHTML = player.equipment[type] ? player.equipment[type].icon : defaultIcon;
-            slot.className = 'equip-slot' + (player.equipment[type] ? ' active' : '');
-            if (player.equipment[type]) {
-                slot.onmouseenter = (e) => showTooltip(player.equipment[type], e);
+            const item = player.equipment[type];
+            slot.innerHTML = item ? item.icon : defaultIcon;
+            slot.className = 'equip-slot' + (item ? ' active' : '');
+            
+            if (item) {
+                slot.onclick = (e) => showEquippedInfo(type, e);
+                slot.ontouchstart = (e) => { e.preventDefault(); showEquippedInfo(type, e.touches[0]); };
+                slot.onmouseenter = (e) => showTooltip(item, e);
                 slot.onmouseleave = hideTooltip;
             } else {
+                slot.onclick = null;
+                slot.ontouchstart = null;
                 slot.onmouseenter = null;
                 slot.onmouseleave = null;
             }
@@ -1561,23 +1609,107 @@
         updateSlot(robeSlot, 'robe', '👕');
     }
 
-    function handleItemAction(index) {
+    function handleItemAction(index, e) {
         const item = player.inventory[index];
         if (!item) return;
         playSound('click');
-        if (item.type === 'consumable') {
-            if (item.id === 'potion') { player.hp = Math.min(player.maxHp, player.hp + item.hp); item.count--; }
-            else if (item.id === 'mana_potion') { player.mp = Math.min(player.maxMp, player.mp + item.mp); item.count--; }
-            else if (item.id === 'speed') { player.speed += item.speedBonus; item.count--; }
-            if (item.count <= 0) player.inventory[index] = null;
-        } else if (['weapon', 'hat', 'shield', 'ring', 'robe'].includes(item.type)) {
-            const oldEquip = player.equipment[item.type];
-            player.equipment[item.type] = item;
-            player.inventory[index] = oldEquip;
+        
+        selectedItemIndex = index;
+        selectedEquipType = null;
+        updateItemInfoPanel(item, e, (item.type === 'consumable') ? 'KULLAN' : 'GIYDIR');
+    }
+
+    function showEquippedInfo(type, e) {
+        const item = player.equipment[type];
+        if (!item) return;
+        playSound('click');
+
+        selectedItemIndex = -1;
+        selectedEquipType = type;
+        updateItemInfoPanel(item, e, 'ÇIKAR');
+    }
+
+    function updateItemInfoPanel(item, e, actionText) {
+        const panel = document.getElementById('item-info-panel');
+        const title = document.getElementById('info-title');
+        const stats = document.getElementById('info-stats');
+        const desc = document.getElementById('info-desc');
+        const actionBtn = document.getElementById('info-action-btn');
+
+        title.innerText = item.name;
+        desc.innerText = item.desc;
+        stats.innerHTML = '';
+        
+        if (item.damage) stats.innerHTML += `<div class="item-info-stat">ATK: +${item.damage}</div>`;
+        if (item.intBonus) stats.innerHTML += `<div class="item-info-stat">INT: +${item.intBonus}</div>`;
+        if (item.dexBonus) stats.innerHTML += `<div class="item-info-stat">DEX: +${item.dexBonus}</div>`;
+        if (item.hpBonus) stats.innerHTML += `<div class="item-info-stat">HP: +${item.hpBonus}</div>`;
+        if (item.maxHp) stats.innerHTML += `<div class="item-info-stat">Max HP: +${item.maxHp}</div>`;
+
+        actionBtn.innerText = actionText;
+        
+        panel.style.display = 'block';
+        const rect = inventoryUI.getBoundingClientRect();
+        
+        // Sınır kontrolü (Panelin envanter dışına çıkmaması için)
+        let left = e.clientX - rect.left + 20;
+        let top = e.clientY - rect.top - 20;
+        
+        if (left + 160 > rect.width) left = e.clientX - rect.left - 170;
+        if (top + 150 > rect.height) top = rect.height - 160;
+
+        panel.style.left = left + 'px';
+        panel.style.top = top + 'px';
+    }
+
+    function confirmItemAction() {
+        if (selectedItemIndex !== -1) {
+            // Envanterden bir işlem
+            const item = player.inventory[selectedItemIndex];
+            if (!item) return;
+
+            playSound('click');
+            if (item.type === 'consumable') {
+                if (item.id === 'potion') { player.hp = Math.min(player.maxHp, player.hp + item.hp); item.count--; }
+                else if (item.id === 'mana_potion') { player.mp = Math.min(player.maxMp, player.mp + item.mp); item.count--; }
+                else if (item.id === 'speed') { player.speed += item.speedBonus; item.count--; }
+                if (item.count <= 0) player.inventory[selectedItemIndex] = null;
+            } else if (['weapon', 'hat', 'shield', 'ring', 'robe'].includes(item.type)) {
+                const oldEquip = player.equipment[item.type];
+                player.equipment[item.type] = item;
+                player.inventory[selectedItemIndex] = oldEquip;
+            }
+        } else if (selectedEquipType !== null) {
+            // Ekipmandan çıkarma
+            unequip(selectedEquipType);
         }
+        
+        closeItemInfo();
         updateInventoryUI();
         updateStatsUI();
-        saveGame(); // Eşya kullanıldığında/takıldığında kaydet
+        saveGame();
+    }
+
+    function confirmItemDiscard() {
+        if (selectedItemIndex === -1 && selectedEquipType === null) return;
+        
+        if (confirm('Bu eşyayı çöpe atmak istediğine emin misin?')) {
+            if (selectedItemIndex !== -1) {
+                player.inventory[selectedItemIndex] = null;
+            } else if (selectedEquipType !== null) {
+                player.equipment[selectedEquipType] = null;
+            }
+            closeItemInfo();
+            updateInventoryUI();
+            updateStatsUI();
+            saveGame();
+        }
+    }
+
+    function closeItemInfo() {
+        document.getElementById('item-info-panel').style.display = 'none';
+        selectedItemIndex = -1;
+        selectedEquipType = null;
     }
 
     function unequip(type) {
@@ -1586,9 +1718,8 @@
         if (empty !== -1) {
             player.inventory[empty] = player.equipment[type];
             player.equipment[type] = null;
-            updateInventoryUI();
-            updateStatsUI();
-            saveGame(); // Eşya çıkarıldığında kaydet
+        } else {
+            alert('Envanter dolu! Önce bir yer açmalısın.');
         }
     }
 
