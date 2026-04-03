@@ -429,7 +429,7 @@
         
         <div class="character-preview">
             <div style="grid-column: 1; grid-row: 1;" class="equip-slot" id="slot-hat" onclick="unequip('hat')" ontouchstart="unequip('hat')">👒</div>
-            <div style="grid-column: 1; grid-row: 2;" class="equip-slot">👕</div>
+            <div style="grid-column: 1; grid-row: 2;" class="equip-slot" id="slot-robe" onclick="unequip('robe')" ontouchstart="unequip('robe')">👕</div>
             <div style="grid-column: 1; grid-row: 3;" class="equip-slot">👖</div>
             
             <!-- Karakter Silüeti (Orta Kısım) -->
@@ -438,8 +438,8 @@
             </div>
             
             <div style="grid-column: 3; grid-row: 1;" class="equip-slot" id="slot-weapon" onclick="unequip('weapon')" ontouchstart="unequip('weapon')">🪄</div>
-            <div style="grid-column: 3; grid-row: 2;" class="equip-slot">🛡️</div>
-            <div style="grid-column: 3; grid-row: 3;" class="equip-slot">💍</div>
+            <div style="grid-column: 3; grid-row: 2;" class="equip-slot" id="slot-shield" onclick="unequip('shield')" ontouchstart="unequip('shield')">🛡️</div>
+            <div style="grid-column: 3; grid-row: 3;" class="equip-slot" id="slot-ring" onclick="unequip('ring')" ontouchstart="unequip('ring')">💍</div>
         </div>
 
         <div class="inventory-grid" id="inv-grid">
@@ -705,7 +705,22 @@
         // Şapkalar / Zırhlar (Hat)
         wizard_hat: { id: 'wizard_hat', name: 'Wizard Hat', icon: '🧙', type: 'hat', maxHp: 50, intBonus: 3, cost: 250, desc: 'Kadim bir büyücü şapkası.' },
         apprentice_robe: { id: 'apprentice_robe', name: 'Apprentice Robe', icon: '🧥', type: 'hat', maxHp: 120, intBonus: 8, hpBonus: 10, cost: 600, desc: 'Çırak büyücü cübbesi.' },
-        mystic_crown: { id: 'mystic_crown', name: 'Mystic Crown', icon: '👑', type: 'hat', maxHp: 300, intBonus: 20, dexBonus: 5, hpBonus: 20, cost: 2000, desc: 'Mistik güçlerle dövülmüş bir taç.' }
+        mystic_crown: { id: 'mystic_crown', name: 'Mystic Crown', icon: '👑', type: 'hat', maxHp: 300, intBonus: 20, dexBonus: 5, hpBonus: 20, cost: 2000, desc: 'Mistik güçlerle dövülmüş bir taç.' },
+        
+        // Kalkanlar (Shield)
+        wooden_shield: { id: 'wooden_shield', name: 'Wooden Shield', icon: '🛡️', type: 'shield', hpBonus: 10, cost: 200, desc: 'Basit bir tahta kalkan.' },
+        iron_shield: { id: 'iron_shield', name: 'Iron Shield', icon: '🛡️', type: 'shield', hpBonus: 25, dexBonus: -2, cost: 500, desc: 'Dayanıklı demir kalkan.' },
+        mystic_shield: { id: 'mystic_shield', name: 'Mystic Shield', icon: '✨', type: 'shield', hpBonus: 50, intBonus: 10, cost: 1500, desc: 'Büyülü bir koruma kalkanı.' },
+        
+        // Yüzükler (Ring)
+        silver_ring: { id: 'silver_ring', name: 'Silver Ring', icon: '💍', type: 'ring', intBonus: 2, cost: 300, desc: 'Gümüş bir yüzük.' },
+        gold_ring: { id: 'gold_ring', name: 'Gold Ring', icon: '💍', type: 'ring', intBonus: 5, dexBonus: 2, cost: 800, desc: 'Altın bir yüzük.' },
+        diamond_ring: { id: 'diamond_ring', name: 'Diamond Ring', icon: '💎', type: 'ring', intBonus: 15, hpBonus: 10, cost: 3000, desc: 'Elmaslarla süslü güçlü bir yüzük.' },
+        
+        // Giysiler (Robe)
+        apprentice_outfit: { id: 'apprentice_outfit', name: 'Apprentice Outfit', icon: '👕', type: 'robe', hpBonus: 15, cost: 350, desc: 'Büyücü çırağı giysisi.' },
+        mystic_robe: { id: 'mystic_robe', name: 'Mystic Robe', icon: '🧥', type: 'robe', hpBonus: 40, intBonus: 5, cost: 1200, desc: 'Mistik güçlerle dokunmuş cübbe.' },
+        archmage_robe: { id: 'archmage_robe', name: 'Archmage Robe', icon: '🧙‍♂️', type: 'robe', hpBonus: 100, intBonus: 20, dexBonus: 10, cost: 5000, desc: 'Başbüyücü cübbesi.' }
     };
 
     // Yetenek Veritabanı
@@ -744,7 +759,10 @@
         ],
         equipment: {
             weapon: { ...ITEM_DB.fire_staff },
-            hat: { ...ITEM_DB.wizard_hat }
+            hat: { ...ITEM_DB.wizard_hat },
+            shield: null,
+            ring: null,
+            robe: null
         },
         pet: { // Yeni Pet Özellikleri
             active: true,
@@ -1519,22 +1537,28 @@
 
         const weaponSlot = document.getElementById('slot-weapon');
         const hatSlot = document.getElementById('slot-hat');
-        weaponSlot.innerHTML = player.equipment.weapon ? player.equipment.weapon.icon : '🪄';
-        weaponSlot.className = 'equip-slot' + (player.equipment.weapon ? ' active' : '');
-        weaponSlot.onclick = () => unequip('weapon');
-        weaponSlot.ontouchstart = (e) => { e.preventDefault(); unequip('weapon'); };
-        if (player.equipment.weapon) {
-            weaponSlot.onmouseenter = (e) => showTooltip(player.equipment.weapon, e);
-            weaponSlot.onmouseleave = hideTooltip;
-        }
-        hatSlot.innerHTML = player.equipment.hat ? player.equipment.hat.icon : '👒';
-        hatSlot.className = 'equip-slot' + (player.equipment.hat ? ' active' : '');
-        hatSlot.onclick = () => unequip('hat');
-        hatSlot.ontouchstart = (e) => { e.preventDefault(); unequip('hat'); };
-        if (player.equipment.hat) {
-            hatSlot.onmouseenter = (e) => showTooltip(player.equipment.hat, e);
-            hatSlot.onmouseleave = hideTooltip;
-        }
+        const shieldSlot = document.getElementById('slot-shield');
+        const ringSlot = document.getElementById('slot-ring');
+        const robeSlot = document.getElementById('slot-robe');
+
+        const updateSlot = (slot, type, defaultIcon) => {
+            if (!slot) return;
+            slot.innerHTML = player.equipment[type] ? player.equipment[type].icon : defaultIcon;
+            slot.className = 'equip-slot' + (player.equipment[type] ? ' active' : '');
+            if (player.equipment[type]) {
+                slot.onmouseenter = (e) => showTooltip(player.equipment[type], e);
+                slot.onmouseleave = hideTooltip;
+            } else {
+                slot.onmouseenter = null;
+                slot.onmouseleave = null;
+            }
+        };
+
+        updateSlot(weaponSlot, 'weapon', '🪄');
+        updateSlot(hatSlot, 'hat', '👒');
+        updateSlot(shieldSlot, 'shield', '🛡️');
+        updateSlot(ringSlot, 'ring', '💍');
+        updateSlot(robeSlot, 'robe', '👕');
     }
 
     function handleItemAction(index) {
@@ -1546,7 +1570,7 @@
             else if (item.id === 'mana_potion') { player.mp = Math.min(player.maxMp, player.mp + item.mp); item.count--; }
             else if (item.id === 'speed') { player.speed += item.speedBonus; item.count--; }
             if (item.count <= 0) player.inventory[index] = null;
-        } else if (item.type === 'weapon' || item.type === 'hat') {
+        } else if (['weapon', 'hat', 'shield', 'ring', 'robe'].includes(item.type)) {
             const oldEquip = player.equipment[item.type];
             player.equipment[item.type] = item;
             player.inventory[index] = oldEquip;
@@ -1626,9 +1650,12 @@
             for (let i = 0; i < 3; i++) {
                 const rand = Math.random();
                 let loot = null;
-                if (rand < 0.3) loot = ITEM_DB.mystic_crown;
-                else if (rand < 0.6) loot = ITEM_DB.lightning_staff;
-                else if (rand < 0.8) loot = ITEM_DB.ice_staff;
+                if (rand < 0.1) loot = ITEM_DB.mystic_crown;
+                else if (rand < 0.2) loot = ITEM_DB.lightning_staff;
+                else if (rand < 0.3) loot = ITEM_DB.ice_staff;
+                else if (rand < 0.4) loot = ITEM_DB.mystic_shield;
+                else if (rand < 0.5) loot = ITEM_DB.diamond_ring;
+                else if (rand < 0.6) loot = ITEM_DB.archmage_robe;
                 else loot = ITEM_DB.mana_potion;
                 
                 if (loot) droppedItems.push({ ...loot, x: x + (Math.random()-0.5)*50, y: y + (Math.random()-0.5)*50, size: 20 });
@@ -1639,11 +1666,17 @@
         } else {
             const rand = Math.random();
             let loot = null;
-            if (rand < 0.15) loot = ITEM_DB.potion;
-            else if (rand < 0.3) loot = ITEM_DB.mana_potion;
-            else if (rand < 0.35) loot = ITEM_DB.speed;
-            else if (rand < 0.37) loot = ITEM_DB.fire_staff;
-            else if (rand < 0.39) loot = ITEM_DB.wizard_hat;
+            if (rand < 0.1) loot = ITEM_DB.potion;
+            else if (rand < 0.2) loot = ITEM_DB.mana_potion;
+            else if (rand < 0.25) loot = ITEM_DB.speed;
+            else if (rand < 0.28) loot = ITEM_DB.fire_staff;
+            else if (rand < 0.31) loot = ITEM_DB.wizard_hat;
+            else if (rand < 0.34) loot = ITEM_DB.wooden_shield;
+            else if (rand < 0.37) loot = ITEM_DB.iron_shield;
+            else if (rand < 0.40) loot = ITEM_DB.silver_ring;
+            else if (rand < 0.43) loot = ITEM_DB.gold_ring;
+            else if (rand < 0.46) loot = ITEM_DB.apprentice_outfit;
+            else if (rand < 0.49) loot = ITEM_DB.mystic_robe;
             if (loot) droppedItems.push({ ...loot, x: x, y: y, size: 20 });
         }
     }
@@ -1957,7 +1990,7 @@
         let currentMax = 100 + (player.lvl * 20) + (player.stats.hp * 15) + bonusMaxHp;
         player.maxHp = currentMax;
 
-        let currentMaxMp = 100 + (player.lvl * 15) + (player.stats.int * 10);
+        let currentMaxMp = 100 + (player.lvl * 15) + (player.stats.int * 10) + (bonusInt * 10);
         player.maxMp = currentMaxMp;
         
         hpBar.style.width = (player.hp / player.maxHp * 100) + '%';
@@ -1970,6 +2003,7 @@
         
         let currentAtk = 30 + (player.lvl * 10) + (player.stats.int * 5) + (bonusInt * 5);
         if (player.equipment.weapon) currentAtk += player.equipment.weapon.damage;
+        if (player.equipment.shield && player.equipment.shield.damage) currentAtk += player.equipment.shield.damage;
         atkText.innerText = currentAtk;
 
         // Hızlı İksir Sayılarını Güncelle
