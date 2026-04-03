@@ -621,7 +621,7 @@
     const joystickKnob = document.getElementById('joystick-knob');
 
     // Ayarlar
-    const WORLD_WIDTH = 3200; const WORLD_HEIGHT = 2400;
+    const WORLD_WIDTH = 6400; const WORLD_HEIGHT = 4800;
     const TILE_SIZE = 64;
 
     function toggleFullScreen() {
@@ -736,6 +736,15 @@
         equipment: {
             weapon: { ...ITEM_DB.fire_staff },
             hat: { ...ITEM_DB.wizard_hat }
+        },
+        pet: {
+            x: WORLD_WIDTH / 2 - 50,
+            y: WORLD_HEIGHT / 2,
+            size: 12,
+            color: '#f1c40f',
+            name: 'Phoenix',
+            targetDist: 60,
+            speed: 4
         }
     };
 
@@ -780,6 +789,63 @@
             ctx.lineTo(x + off + Math.sin(frameCount/20 + x)*2, y - h);
         }
         ctx.stroke();
+    }
+
+    function drawPet(ctx, pet) {
+        const bounce = Math.sin(frameCount / 10) * 5;
+        const x = pet.x;
+        const y = pet.y + bounce;
+        const size = pet.size;
+
+        // Gölge
+        const shadowGrad = ctx.createRadialGradient(x, pet.y + size, 0, x, pet.y + size, size);
+        shadowGrad.addColorStop(0, 'rgba(0,0,0,0.3)');
+        shadowGrad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = shadowGrad;
+        ctx.beginPath(); ctx.ellipse(x, pet.y + size, size, size/3, 0, 0, Math.PI*2); ctx.fill();
+
+        // Kanat Animasyonu
+        const wingSway = Math.sin(frameCount / 5) * 8;
+
+        // Gövde (Ateş Efekti)
+        const petGrad = ctx.createRadialGradient(x, y, 0, x, y, size * 1.5);
+        petGrad.addColorStop(0, '#fff');
+        petGrad.addColorStop(0.4, '#f1c40f');
+        petGrad.addColorStop(1, '#e67e22');
+        
+        ctx.fillStyle = petGrad;
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = '#f1c40f';
+        
+        // Kanatlar
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x - size * 2, y - size + wingSway);
+        ctx.lineTo(x - size, y + size/2);
+        ctx.closePath(); ctx.fill();
+        
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + size * 2, y - size + wingSway);
+        ctx.lineTo(x + size, y + size/2);
+        ctx.closePath(); ctx.fill();
+
+        // Kafa
+        ctx.beginPath(); ctx.arc(x, y - size/2, size, 0, Math.PI*2); ctx.fill();
+        
+        // Gözler
+        ctx.fillStyle = '#222';
+        ctx.beginPath(); ctx.arc(x - 3, y - size/2, 2, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(x + 3, y - size/2, 2, 0, Math.PI*2); ctx.fill();
+        
+        ctx.shadowBlur = 0;
+
+        // İsim etiketi
+        ctx.fillStyle = '#f1c40f';
+        ctx.font = 'bold 10px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(pet.name, x, y - size * 2.5);
+        ctx.textAlign = 'left';
     }
 
     function drawWizard(ctx, x, y, size, color, isMoving, equipment) {
@@ -927,6 +993,18 @@
             case 'Void Walker':
                 drawVoidWalker(ctx, e, bounce);
                 break;
+            case 'Dragonling':
+                drawDragonling(ctx, e, bounce);
+                break;
+            case 'Shadow Fiend':
+                drawShadowFiend(ctx, e, bounce);
+                break;
+            case 'Earth Golem':
+                drawEarthGolem(ctx, e, bounce);
+                break;
+            case 'Lich':
+                drawLich(ctx, e, bounce);
+                break;
             case 'Kekurikekukaka':
                 drawKekuri(ctx, e, bounce, wiggle);
                 break;
@@ -935,6 +1013,9 @@
                 break;
             case 'Samma':
                 drawSamma(ctx, e, bounce, wiggle);
+                break;
+            case 'Gorgon':
+                drawGorgon(ctx, e, bounce, wiggle);
                 break;
             default:
                 // Varsayılan çizim
@@ -1152,6 +1233,181 @@
         ctx.shadowBlur = 0;
     }
 
+    function drawDragonling(ctx, e, bounce) {
+        const size = e.size;
+        const wingSway = Math.sin(frameCount * 0.2) * 15;
+        
+        // Kanatlar
+        ctx.fillStyle = '#c62828';
+        ctx.beginPath();
+        ctx.moveTo(e.x, e.y + bounce);
+        ctx.lineTo(e.x - size * 2, e.y + bounce - 10 - wingSway);
+        ctx.lineTo(e.x - size, e.y + bounce + 10);
+        ctx.fill();
+        
+        ctx.beginPath();
+        ctx.moveTo(e.x, e.y + bounce);
+        ctx.lineTo(e.x + size * 2, e.y + bounce - 10 - wingSway);
+        ctx.lineTo(e.x + size, e.y + bounce + 10);
+        ctx.fill();
+
+        // Gövde
+        const dragGrad = ctx.createRadialGradient(e.x, e.y + bounce, 0, e.x, e.y + bounce, size);
+        dragGrad.addColorStop(0, '#ff5252');
+        dragGrad.addColorStop(1, '#b71c1c');
+        ctx.fillStyle = dragGrad;
+        ctx.beginPath(); ctx.arc(e.x, e.y + bounce, size, 0, Math.PI*2); ctx.fill();
+        
+        // Gözler
+        ctx.fillStyle = '#f1c40f';
+        ctx.beginPath(); ctx.arc(e.x - 5, e.y + bounce - 2, 3, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(e.x + 5, e.y + bounce - 2, 3, 0, Math.PI*2); ctx.fill();
+    }
+
+    function drawShadowFiend(ctx, e, bounce) {
+        ctx.save();
+        ctx.globalAlpha = 0.4 + Math.sin(frameCount/15) * 0.2;
+        ctx.shadowBlur = 20; ctx.shadowColor = '#000';
+        
+        // Gölgemsi Form
+        ctx.fillStyle = '#212121';
+        for(let i=0; i<5; i++) {
+            const offX = Math.sin(frameCount*0.1 + i) * 8;
+            const offY = Math.cos(frameCount*0.1 + i) * 8;
+            ctx.beginPath(); ctx.arc(e.x + offX, e.y + bounce + offY, e.size * (1 - i*0.1), 0, Math.PI*2); ctx.fill();
+        }
+        
+        // Parlayan Gözler
+        ctx.fillStyle = '#ff1744';
+        ctx.beginPath(); ctx.arc(e.x - 6, e.y + bounce, 2, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(e.x + 6, e.y + bounce, 2, 0, Math.PI*2); ctx.fill();
+        ctx.restore();
+    }
+
+    function drawEarthGolem(ctx, e, bounce) {
+        const size = e.size;
+        ctx.fillStyle = '#5d4037';
+        
+        // Taş Parçaları
+        ctx.fillRect(e.x - size, e.y + bounce - size, size * 0.8, size * 0.8);
+        ctx.fillRect(e.x + size * 0.2, e.y + bounce - size * 0.7, size * 0.7, size * 0.9);
+        ctx.fillRect(e.x - size * 0.4, e.y + bounce, size * 0.9, size * 0.6);
+        
+        // Çatlaklar
+        ctx.strokeStyle = '#3e2723';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(e.x - size/2, e.y + bounce - size/2); ctx.lineTo(e.x + size/2, e.y + bounce + size/2); ctx.stroke();
+        
+        // Göz (Tek Göz)
+        ctx.fillStyle = '#ff9800';
+        ctx.shadowBlur = 10; ctx.shadowColor = '#ff9800';
+        ctx.beginPath(); ctx.arc(e.x, e.y + bounce - size/3, 5, 0, Math.PI*2); ctx.fill();
+        ctx.shadowBlur = 0;
+    }
+
+    function drawLich(ctx, e, bounce) {
+        const size = e.size;
+        
+        // Cübbe
+        const robeGrad = ctx.createLinearGradient(e.x, e.y - size, e.x, e.y + size);
+        robeGrad.addColorStop(0, '#4a148c');
+        robeGrad.addColorStop(1, '#000000');
+        ctx.fillStyle = robeGrad;
+        ctx.beginPath();
+        ctx.moveTo(e.x - size, e.y + size + bounce);
+        ctx.lineTo(e.x, e.y - size * 1.5 + bounce);
+        ctx.lineTo(e.x + size, e.y + size + bounce);
+        ctx.fill();
+
+        // Kuru Kafa
+        ctx.fillStyle = '#e0e0e0';
+        ctx.beginPath(); ctx.arc(e.x, e.y - size + bounce, 10, 0, Math.PI*2); ctx.fill();
+        
+        // Asa
+        ctx.strokeStyle = '#3e2723';
+        ctx.lineWidth = 4;
+        ctx.beginPath(); ctx.moveTo(e.x + 15, e.y + bounce + 10); ctx.lineTo(e.x + 25, e.y + bounce - 30); ctx.stroke();
+        ctx.fillStyle = '#00e5ff';
+        ctx.shadowBlur = 15; ctx.shadowColor = '#00e5ff';
+        ctx.beginPath(); ctx.arc(e.x + 25, e.y + bounce - 35, 6, 0, Math.PI*2); ctx.fill();
+        ctx.shadowBlur = 0;
+    }
+
+    function drawGorgon(ctx, e, bounce, wiggle) {
+        const size = e.size;
+        
+        // Yılan Saçlar
+        ctx.strokeStyle = '#2e7d32';
+        ctx.lineWidth = 5;
+        for(let i=0; i<6; i++) {
+            const angle = (i / 6) * Math.PI * 2;
+            const sx = e.x + Math.cos(angle) * size;
+            const sy = e.y + bounce - size/2 + Math.sin(angle) * size;
+            const sWiggle = Math.sin(frameCount * 0.1 + i) * 15;
+            
+            ctx.beginPath();
+            ctx.moveTo(e.x, e.y + bounce - size/2);
+            ctx.quadraticCurveTo(sx, sy, sx + sWiggle, sy + sWiggle);
+            ctx.stroke();
+            
+            // Yılan kafası
+            ctx.fillStyle = '#1b5e20';
+            ctx.beginPath(); ctx.arc(sx + sWiggle, sy + sWiggle, 6, 0, Math.PI*2); ctx.fill();
+        }
+
+        // Gövde (Pullu)
+        const gorgonGrad = ctx.createRadialGradient(e.x, e.y + bounce, 0, e.x, e.y + bounce, size);
+        gorgonGrad.addColorStop(0, '#4caf50');
+        gorgonGrad.addColorStop(1, '#1b5e20');
+        ctx.fillStyle = gorgonGrad;
+        ctx.beginPath(); ctx.arc(e.x, e.y + bounce, size, 0, Math.PI*2); ctx.fill();
+        
+        // Gözler (Taşlaştıran Bakış)
+        ctx.fillStyle = '#ffff00';
+        ctx.shadowBlur = 20; ctx.shadowColor = '#ffff00';
+        ctx.beginPath(); ctx.arc(e.x - 12, e.y + bounce - 5, 5, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(e.x + 12, e.y + bounce - 5, 5, 0, Math.PI*2); ctx.fill();
+        ctx.shadowBlur = 0;
+    }
+
+    function drawMountain(ctx, o) {
+        const x = o.x; const y = o.y; const size = o.size;
+        
+        // Ana Dağ Kütlesi
+        const mtGrad = ctx.createLinearGradient(x - size, y, x + size, y);
+        mtGrad.addColorStop(0, '#37474f');
+        mtGrad.addColorStop(0.5, '#546e7a');
+        mtGrad.addColorStop(1, '#37474f');
+        
+        ctx.fillStyle = mtGrad;
+        ctx.beginPath();
+        ctx.moveTo(x - size, y + size/3);
+        ctx.lineTo(x, y - size);
+        ctx.lineTo(x + size, y + size/3);
+        ctx.closePath();
+        ctx.fill();
+
+        // Kar Şapkası
+        ctx.fillStyle = '#eceff1';
+        ctx.beginPath();
+        ctx.moveTo(x - size/3, y - size/3);
+        ctx.lineTo(x, y - size);
+        ctx.lineTo(x + size/3, y - size/3);
+        ctx.lineTo(x + size/6, y - size/4);
+        ctx.lineTo(x, y - size/3);
+        ctx.lineTo(x - size/6, y - size/4);
+        ctx.closePath();
+        ctx.fill();
+
+        // Detay Çizgileri
+        ctx.strokeStyle = 'rgba(0,0,0,0.1)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(x, y - size);
+        ctx.lineTo(x - size/4, y + size/4);
+        ctx.stroke();
+    }
+
     function drawMonsterUI(ctx, e, bounce) {
         const isBoss = e.isBoss;
         const hpPercent = e.hp / e.maxHp;
@@ -1174,19 +1430,87 @@
     function initWorld() {
         terrain = []; worldObjects = []; enemies = []; droppedItems = []; paths = []; particles = []; damageNumbers = [];
         
-        // Yollar (Daha doğal görünüm için)
-        for (let i = 0; i < 5; i++) {
-            paths.push({
-                x1: Math.random() * WORLD_WIDTH,
-                y1: Math.random() * WORLD_HEIGHT,
-                x2: Math.random() * WORLD_WIDTH,
-                y2: Math.random() * WORLD_HEIGHT,
-                width: 40 + Math.random() * 40
+        // 1. Yol Ağı (Daha Karmaşık)
+        const mainNodes = [
+            { x: WORLD_WIDTH / 2, y: WORLD_HEIGHT / 2 }, // Merkez (Başlangıç)
+            { x: 1000, y: 1000 }, { x: WORLD_WIDTH - 1000, y: 1000 },
+            { x: 1000, y: WORLD_HEIGHT - 1000 }, { x: WORLD_WIDTH - 1000, y: WORLD_HEIGHT - 1000 },
+            { x: WORLD_WIDTH / 2, y: 1000 }, { x: WORLD_WIDTH / 2, y: WORLD_HEIGHT - 1000 }
+        ];
+
+        // Düğüm noktalarını birbirine bağla
+        for (let i = 0; i < mainNodes.length; i++) {
+            for (let j = i + 1; j < mainNodes.length; j++) {
+                if (Math.random() > 0.6) {
+                    paths.push({
+                        x1: mainNodes[i].x, y1: mainNodes[i].y,
+                        x2: mainNodes[j].x, y2: mainNodes[j].y,
+                        width: 50 + Math.random() * 30
+                    });
+                }
+            }
+        }
+
+        // 2. Dağ Kümeleri (Kenarlara yakın)
+        for (let i = 0; i < 15; i++) {
+            const gx = Math.random() * WORLD_WIDTH;
+            const gy = Math.random() * WORLD_HEIGHT;
+            // Merkeze çok yakın olmasınlar
+            if (Math.hypot(gx - WORLD_WIDTH/2, gy - WORLD_HEIGHT/2) < 1000) continue;
+
+            for (let j = 0; j < 5; j++) {
+                worldObjects.push({
+                    x: gx + (Math.random()-0.5)*300,
+                    y: gy + (Math.random()-0.5)*300,
+                    type: 'mountain',
+                    size: 150 + Math.random() * 250
+                });
+            }
+        }
+
+        // 3. Göller
+        for (let i = 0; i < 30; i++) {
+            terrain.push({ 
+                x: Math.random() * WORLD_WIDTH, 
+                y: Math.random() * WORLD_HEIGHT, 
+                type: 'lake', 
+                radius: 120 + Math.random() * 180 
+            });
+        }
+
+        // 4. Ağaç Kümeleri (Ormanlar)
+        for (let i = 0; i < 40; i++) {
+            const gx = Math.random() * WORLD_WIDTH;
+            const gy = Math.random() * WORLD_HEIGHT;
+            // Yolların üzerinde olmasın
+            const isNearPath = paths.some(p => {
+                const d = Math.abs((p.y2-p.y1)*gx - (p.x2-p.x1)*gy + p.x2*p.y1 - p.y2*p.x1) / Math.hypot(p.y2-p.y1, p.x2-p.x1);
+                return d < p.width + 50;
+            });
+            if (isNearPath) continue;
+
+            for (let j = 0; j < 12; j++) {
+                worldObjects.push({ 
+                    x: gx + (Math.random()-0.5)*400, y: gy + (Math.random()-0.5)*400, 
+                    type: 'tree', 
+                    size: 30 + Math.random() * 50,
+                    variant: Math.random()
+                });
+            }
+        }
+
+        // 5. Kayalar (Serpme)
+        for (let i = 0; i < 300; i++) {
+            worldObjects.push({ 
+                x: Math.random() * WORLD_WIDTH, y: Math.random() * WORLD_HEIGHT, 
+                type: 'rock', 
+                size: 20 + Math.random() * 35,
+                variant: Math.random()
             });
         }
 
         // Toz zerreleri (Atmosfer)
-        for (let i = 0; i < 50; i++) {
+        for (let i = 0; i < 100; i++) {
             particles.push({
                 x: Math.random() * WORLD_WIDTH,
                 y: Math.random() * WORLD_HEIGHT,
@@ -1195,23 +1519,7 @@
                 opacity: 0.1 + Math.random() * 0.4
             });
         }
-        for (let i = 0; i < 20; i++) {
-            terrain.push({ 
-                x: Math.random() * WORLD_WIDTH, 
-                y: Math.random() * WORLD_HEIGHT, 
-                type: 'lake', 
-                radius: 100 + Math.random() * 150 
-            });
-        }
 
-        for (let i = 0; i < 200; i++) {
-            worldObjects.push({ 
-                x: Math.random() * WORLD_WIDTH, y: Math.random() * WORLD_HEIGHT, 
-                type: Math.random() > 0.4 ? 'tree' : 'rock', 
-                size: 25 + Math.random() * 45,
-                variant: Math.random()
-            });
-        }
         spawnEnemies();
         spawnBosses();
         updateShopUI();
@@ -1224,14 +1532,16 @@
         const bosses = [
             { name: 'Kekurikekukaka', color: '#ff4d00', size: 60, hp: 5000, speed: 1.0 },
             { name: 'Talos', color: '#4b0082', size: 75, hp: 12000, speed: 0.8 },
-            { name: 'Samma', color: '#1b4332', size: 65, hp: 8500, speed: 1.2 }
+            { name: 'Samma', color: '#1b4332', size: 65, hp: 8500, speed: 1.2 },
+            { name: 'Gorgon', color: '#2e7d32', size: 90, hp: 25000, speed: 0.7 }
         ];
 
         bosses.forEach((b, i) => {
             const pos = [
                 { x: 600, y: 600 },
                 { x: WORLD_WIDTH - 600, y: WORLD_HEIGHT - 600 },
-                { x: WORLD_WIDTH / 2, y: WORLD_HEIGHT / 2 - 800 }
+                { x: WORLD_WIDTH / 2, y: WORLD_HEIGHT / 2 - 800 },
+                { x: WORLD_WIDTH - 800, y: 800 }
             ][i];
 
             enemies.push({
@@ -1239,34 +1549,46 @@
                 x: pos.x, y: pos.y,
                 maxHp: b.hp,
                 isBoss: true,
-                damage: 10 + (i * 5)
+                damage: 10 + (i * 8)
             });
         });
     }
 
     function spawnEnemies() {
         const monsterTypes = [
-            { name: 'Slime', color: '#4ade80', size: 18, speed: 1.2 },
-            { name: 'Orc', color: '#8b4513', size: 24, speed: 1.5 },
-            { name: 'Void Walker', color: '#4b0082', size: 22, speed: 1.8 }
+            { name: 'Slime', color: '#4ade80', size: 18, speed: 1.2, minLvl: 1 },
+            { name: 'Orc', color: '#8b4513', size: 24, speed: 1.5, minLvl: 1 },
+            { name: 'Void Walker', color: '#4b0082', size: 22, speed: 1.8, minLvl: 3 },
+            { name: 'Dragonling', color: '#ff5252', size: 20, speed: 2.5, minLvl: 5 },
+            { name: 'Shadow Fiend', color: '#212121', size: 22, speed: 2.2, minLvl: 7 },
+            { name: 'Earth Golem', color: '#5d4037', size: 35, speed: 0.8, minLvl: 4 },
+            { name: 'Lich', color: '#4a148c', size: 26, speed: 1.4, minLvl: 10 }
         ];
 
-        for (let i = 0; i < 12; i++) {
+        // Seviyeye uygun canavarları filtrele
+        const availableTypes = monsterTypes.filter(t => player.lvl >= t.minLvl);
+
+        for (let i = 0; i < 35; i++) {
             let gx = Math.random() * WORLD_WIDTH;
             let gy = Math.random() * WORLD_HEIGHT;
-            if (Math.hypot(gx - player.x, gy - player.y) < 600) continue;
+            if (Math.hypot(gx - player.x, gy - player.y) < 800) continue;
             
-            const type = monsterTypes[Math.floor(Math.random() * monsterTypes.length)];
+            const type = availableTypes[Math.floor(Math.random() * availableTypes.length)];
             
-            for (let j = 0; j < 4; j++) {
+            const groupSize = type.name === 'Lich' || type.name === 'Earth Golem' ? 2 : 4;
+
+            for (let j = 0; j < groupSize; j++) {
+                const hpMult = type.name === 'Earth Golem' ? 2.5 : (type.name === 'Lich' ? 2.0 : 1.0);
+                const dmgMult = type.name === 'Shadow Fiend' ? 2.0 : (type.name === 'Dragonling' ? 1.5 : 1.0);
+
                 enemies.push({
                     x: gx + (Math.random()-0.5)*200, y: gy + (Math.random()-0.5)*200,
                     size: type.size, 
-                    hp: (60 + player.lvl * 20) * (type.size / 20), 
-                    maxHp: (60 + player.lvl * 20) * (type.size / 20),
+                    hp: (60 + player.lvl * 25) * (type.size / 20) * hpMult, 
+                    maxHp: (60 + player.lvl * 25) * (type.size / 20) * hpMult,
                     speed: type.speed, 
                     color: type.color, 
-                    damage: 0.5 * (type.size / 20),
+                    damage: 0.6 * (type.size / 20) * dmgMult * (1 + player.lvl * 0.1),
                     name: type.name
                 });
             }
@@ -1558,7 +1880,7 @@
         playSound('click');
         shopUI.style.display = isShopOpen ? 'block' : 'none'; if (!isShopOpen) hideTooltip(); }
 
-    function dropLoot(x, y, isBoss = false) {
+    function dropLoot(x, y, isBoss = false, monsterName = '') {
         if (isBoss) {
             // Boss öldüğünde birden fazla ve değerli eşya düşer
             for (let i = 0; i < 3; i++) {
@@ -1571,17 +1893,28 @@
                 
                 if (loot) droppedItems.push({ ...loot, x: x + (Math.random()-0.5)*50, y: y + (Math.random()-0.5)*50, size: 20 });
             }
-            player.gold += 1000;
-            player.xp += 2000;
             playSound('gold');
         } else {
             const rand = Math.random();
             let loot = null;
-            if (rand < 0.15) loot = ITEM_DB.potion;
-            else if (rand < 0.3) loot = ITEM_DB.mana_potion;
-            else if (rand < 0.35) loot = ITEM_DB.speed;
-            else if (rand < 0.37) loot = ITEM_DB.fire_staff;
-            else if (rand < 0.39) loot = ITEM_DB.wizard_hat;
+            
+            // Güçlü canavarların eşya düşürme şansı daha yüksektir
+            let dropChance = 0.4;
+            if (monsterName === 'Lich') dropChance = 0.8;
+            if (monsterName === 'Shadow Fiend' || monsterName === 'Dragonling') dropChance = 0.6;
+
+            if (rand < dropChance) {
+                const lootRand = Math.random();
+                if (monsterName === 'Lich' && lootRand < 0.2) loot = ITEM_DB.lightning_staff;
+                else if (monsterName === 'Lich' && lootRand < 0.5) loot = ITEM_DB.ice_staff;
+                else if (monsterName === 'Shadow Fiend' && lootRand < 0.1) loot = ITEM_DB.ice_staff;
+                else if (lootRand < 0.4) loot = ITEM_DB.potion;
+                else if (lootRand < 0.7) loot = ITEM_DB.mana_potion;
+                else if (lootRand < 0.85) loot = ITEM_DB.speed;
+                else if (lootRand < 0.95) loot = ITEM_DB.fire_staff;
+                else loot = ITEM_DB.wizard_hat;
+            }
+            
             if (loot) droppedItems.push({ ...loot, x: x, y: y, size: 20 });
         }
     }
@@ -1622,6 +1955,18 @@
         player.x += mx; player.y += my;
         player.x = Math.max(player.size, Math.min(WORLD_WIDTH - player.size, player.x));
         player.y = Math.max(player.size, Math.min(WORLD_HEIGHT - player.size, player.y));
+        
+        // Evcil Hayvan Takip Mantığı
+        const dx = player.x - player.pet.x;
+        const dy = player.y - player.pet.y;
+        const dist = Math.hypot(dx, dy);
+        
+        if (dist > player.pet.targetDist) {
+            const angle = Math.atan2(dy, dx);
+            const moveDist = (dist - player.pet.targetDist) * 0.1;
+            player.pet.x += Math.cos(angle) * moveDist;
+            player.pet.y += Math.sin(angle) * moveDist;
+        }
         
         // Kamera takibi (Zoom uyumlu ve Dünyayı ortalayan)
         const viewW = canvas.width / zoom;
@@ -1714,9 +2059,29 @@
                     projectileRemoved = true;
                     
                     if (e.hp <= 0) { 
-                        player.xp += 50; 
-                        player.gold += 35; 
+                        let xpGain = 50;
+                        let goldGain = 35;
+
+                        // Canavar tipine göre ödülleri ayarla
+                        if (e.isBoss) {
+                            xpGain = 2000;
+                            goldGain = 1000;
+                        } else {
+                            switch(e.name) {
+                                case 'Void Walker': xpGain = 80; goldGain = 50; break;
+                                case 'Earth Golem': xpGain = 120; goldGain = 80; break;
+                                case 'Dragonling': xpGain = 150; goldGain = 100; break;
+                                case 'Shadow Fiend': xpGain = 200; goldGain = 150; break;
+                                case 'Lich': xpGain = 400; goldGain = 300; break;
+                            }
+                        }
+
+                        player.xp += xpGain; 
+                        player.gold += goldGain; 
                         
+                        // Hasar rakamı olarak XP göster
+                        damageNumbers.push({ x: e.x, y: e.y - 20, value: `+${xpGain} XP`, color: '#3498db', life: 60 });
+
                         // Görev İlerlemesi
                         player.quests.forEach(q => {
                             if (!q.completed && q.target === e.name) {
@@ -1726,7 +2091,7 @@
                         });
                         updateQuestUI();
 
-                        dropLoot(e.x, e.y, e.isBoss); 
+                        dropLoot(e.x, e.y, e.isBoss, e.name); 
                         enemies.splice(ei, 1); 
                         checkLevelUp(); 
                     }
@@ -1771,14 +2136,20 @@
                         e.x += Math.cos(angle) * (e.speed * 2);
                         e.y += Math.sin(angle) * (e.speed * 2);
                     }
-                } else if (e.name === 'Orc') {
-                    // Orc Hareketi (Ağır ve kararlı adımlar)
+                } else if (e.name === 'Orc' || e.name === 'Earth Golem') {
+                    // Orc ve Golem Hareketi (Ağır ve kararlı adımlar)
                     const walkCycle = Math.sin(frameCount * 0.1 * e.speed);
                     if (walkCycle > 0) { // Sadece adım atarken ilerle
                         const angle = Math.atan2(player.y - e.y, player.x - e.x);
                         e.x += Math.cos(angle) * (e.speed * 1.5);
                         e.y += Math.sin(angle) * (e.speed * 1.5);
                     }
+                } else if (e.name === 'Dragonling') {
+                    // Dragonling Hareketi (Daha hızlı ve kavisli)
+                    const angle = Math.atan2(player.y - e.y, player.x - e.x);
+                    const sway = Math.sin(frameCount * 0.1) * 0.5;
+                    e.x += Math.cos(angle + sway) * e.speed;
+                    e.y += Math.sin(angle + sway) * e.speed;
                 } else {
                     // Normal Canavar Hareketi (Daha doğal rastgelelik ile)
                     const angle = Math.atan2(player.y - e.y, player.x - e.x);
@@ -2053,6 +2424,8 @@
                     ctx.arc(o.x + sway + s/2.5, o.y - 15 - yOff, s/3, 0, Math.PI*2);
                     ctx.fill();
                 });
+            } else if (o.type === 'mountain') {
+                drawMountain(ctx, o);
             } else {
                 // Kaya
                 const rockGrad = ctx.createRadialGradient(o.x - o.size/4, o.y - o.size/4, 0, o.x, o.y, o.size);
@@ -2119,6 +2492,9 @@
         // Player (Daima görünür)
         const isMoving = keys['KeyW'] || keys['KeyS'] || keys['KeyA'] || keys['KeyD'] || joystickData.active;
         drawWizard(ctx, player.x, player.y, player.size, player.color, isMoving, player.equipment);
+
+        // Evcil Hayvan
+        drawPet(ctx, player.pet);
 
         // Enemies
         enemies.forEach(e => {
