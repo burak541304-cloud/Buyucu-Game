@@ -624,27 +624,43 @@
     </div>
 
     <div id="skill-bar">
-        <div class="skill-slot" id="skill-1" onclick="castFromSlot(0)" ontouchstart="event.preventDefault(); castFromSlot(0)">
+        <div class="skill-slot" id="skill-1" onclick="castFromSlot(0)" 
+             ontouchstart="event.preventDefault(); touchStates['skill-0'] = true; castFromSlot(0)"
+             ontouchend="touchStates['skill-0'] = false"
+             ontouchcancel="touchStates['skill-0'] = false">
             <span class="key-hint">1</span>
             <span class="skill-icon-display"></span>
             <div class="skill-cooldown" id="cd-slot-1"></div>
         </div>
-        <div class="skill-slot" id="skill-2" onclick="castFromSlot(1)" ontouchstart="event.preventDefault(); castFromSlot(1)">
+        <div class="skill-slot" id="skill-2" onclick="castFromSlot(1)" 
+             ontouchstart="event.preventDefault(); touchStates['skill-1'] = true; castFromSlot(1)"
+             ontouchend="touchStates['skill-1'] = false"
+             ontouchcancel="touchStates['skill-1'] = false">
             <span class="key-hint">2</span>
             <span class="skill-icon-display"></span>
             <div class="skill-cooldown" id="cd-slot-2"></div>
         </div>
-        <div class="skill-slot" id="skill-3" onclick="castFromSlot(2)" ontouchstart="event.preventDefault(); castFromSlot(2)">
+        <div class="skill-slot" id="skill-3" onclick="castFromSlot(2)" 
+             ontouchstart="event.preventDefault(); touchStates['skill-2'] = true; castFromSlot(2)"
+             ontouchend="touchStates['skill-2'] = false"
+             ontouchcancel="touchStates['skill-2'] = false">
             <span class="key-hint">3</span>
             <span class="skill-icon-display"></span>
             <div class="skill-cooldown" id="cd-slot-3"></div>
         </div>
         <!-- Hızlı İksir Slotları -->
-        <div class="skill-slot" id="quick-hp" onclick="useQuickPotion('potion')" ontouchstart="event.preventDefault(); useQuickPotion('potion')" style="margin-left: 20px;">
+        <div class="skill-slot" id="quick-hp" onclick="useQuickPotion('potion')" 
+             ontouchstart="event.preventDefault(); touchStates['pot-hp'] = true; useQuickPotion('potion')"
+             ontouchend="touchStates['pot-hp'] = false"
+             ontouchcancel="touchStates['pot-hp'] = false"
+             style="margin-left: 20px;">
             <span class="key-hint">H</span>🧪
             <span class="item-count" id="hp-potion-count">0</span>
         </div>
-        <div class="skill-slot" id="quick-mp" onclick="useQuickPotion('mana_potion')" ontouchstart="event.preventDefault(); useQuickPotion('mana_potion')">
+        <div class="skill-slot" id="quick-mp" onclick="useQuickPotion('mana_potion')" 
+             ontouchstart="event.preventDefault(); touchStates['pot-mp'] = true; useQuickPotion('mana_potion')"
+             ontouchend="touchStates['pot-mp'] = false"
+             ontouchcancel="touchStates['pot-mp'] = false">
             <span class="key-hint">M</span>💧
             <span class="item-count" id="mp-potion-count">0</span>
         </div>
@@ -839,7 +855,7 @@
     resizeCanvas();
 
     // Joystick State
-    let joystickData = { active: false, x: 0, y: 0, angle: 0, distance: 0 };
+    let joystickData = { active: false, x: 0, y: 0, distance: 0, angle: 0, identifier: null };
 
     // Eşya Veritabanı
     const ITEM_DB = {
@@ -974,6 +990,7 @@
     let particles = []; // Yeni: Atmosferik tozlar
     let damageNumbers = []; // Yeni: Hasar rakamları
     let keys = {};
+    let touchStates = {}; // Yeni: Buton basılı tutma durumu
     let gameActive = true;
     let isInventoryOpen = false;
     let isShopOpen = false;
@@ -1560,56 +1577,65 @@
     });
     window.addEventListener('keyup', e => keys[e.code] = false);
 
-    // Joystick Eventleri (Dinamik)
+    // Joystick Eventleri (Multi-touch Destekli)
     window.addEventListener('touchstart', (e) => {
-        if (!gameActive || isShopOpen) return; // Envanter açıkken artık joystick çalışabilecek
+        if (!gameActive || isShopOpen) return;
         
-        // UI elementlerine tıklanmıyorsa joystick'i başlat
-        const target = e.target;
-        if (target.tagName === 'BUTTON' || 
-            target.closest('.grid-slot') || 
-            target.closest('.mobile-btn') || 
-            target.closest('.skill-slot') || 
-            target.closest('.stat-btn') ||
-            target.closest('.equip-slot') ||
-            target.closest('#inventory-ui') ||
-            target.closest('#skill-tree-ui') ||
-            target.closest('#quest-ui')) {
-            return;
-        }
-
-        const touch = e.touches[0];
-        // Ekranın sol yarısında mı kontrol et (Dinamik Joystick için)
-        if (touch.clientX < window.innerWidth / 2) {
-            joystickData.active = true;
+        for (let i = 0; i < e.changedTouches.length; i++) {
+            const touch = e.changedTouches[i];
+            const target = touch.target;
             
-            // Joystick'i dokunulan yere taşı (Ekran sınırları kontrolü ile)
-            const joySize = 60; // radius
-            let posX = Math.max(joySize, Math.min(window.innerWidth / 2 - joySize, touch.clientX));
-            let posY = Math.max(joySize, Math.min(window.innerHeight - joySize, touch.clientY));
+            if (target.tagName === 'BUTTON' || 
+                target.closest('.grid-slot') || 
+                target.closest('.mobile-btn') || 
+                target.closest('.skill-slot') || 
+                target.closest('.stat-btn') ||
+                target.closest('.equip-slot') ||
+                target.closest('#inventory-ui') ||
+                target.closest('#skill-tree-ui') ||
+                target.closest('#quest-ui')) {
+                continue;
+            }
 
-            joystickContainer.style.display = 'block';
-            joystickContainer.style.left = (posX - joySize) + 'px';
-            joystickContainer.style.top = (posY - joySize) + 'px';
-            
-            handleJoystickMove(touch);
+            if (!joystickData.active && touch.clientX < window.innerWidth / 2) {
+                joystickData.active = true;
+                joystickData.identifier = touch.identifier;
+                
+                const joySize = 60;
+                let posX = Math.max(joySize, Math.min(window.innerWidth / 2 - joySize, touch.clientX));
+                let posY = Math.max(joySize, Math.min(window.innerHeight - joySize, touch.clientY));
+
+                joystickContainer.style.display = 'block';
+                joystickContainer.style.left = (posX - joySize) + 'px';
+                joystickContainer.style.top = (posY - joySize) + 'px';
+                handleJoystickMove(touch);
+            }
         }
     }, { passive: false });
 
     window.addEventListener('touchmove', (e) => {
         if (joystickData.active) {
-            handleJoystickMove(e.touches[0]);
-            e.preventDefault();
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                const touch = e.changedTouches[i];
+                if (touch.identifier === joystickData.identifier) {
+                    handleJoystickMove(touch);
+                    e.preventDefault();
+                }
+            }
         }
     }, { passive: false });
 
-    window.addEventListener('touchend', () => {
-        if (joystickData.active) {
-            joystickData.active = false;
-            joystickData.x = 0;
-            joystickData.y = 0;
-            joystickKnob.style.transform = `translate(-50%, -50%)`;
-            joystickContainer.style.display = 'none';
+    window.addEventListener('touchend', (e) => {
+        for (let i = 0; i < e.changedTouches.length; i++) {
+            const touch = e.changedTouches[i];
+            if (joystickData.active && touch.identifier === joystickData.identifier) {
+                joystickData.active = false;
+                joystickData.identifier = null;
+                joystickData.x = 0;
+                joystickData.y = 0;
+                joystickKnob.style.transform = `translate(-50%, -50%)`;
+                joystickContainer.style.display = 'none';
+            }
         }
     });
 
@@ -2359,6 +2385,13 @@
         // Yetenek Cooldownları ve UI Güncelleme
         player.mp = Math.min(player.maxMp, player.mp + player.mpRegen); // Mana Yenilenmesi
         
+        // Basılı tutulan yetenekleri/iksirleri tetikle
+        if (touchStates['skill-0']) castFromSlot(0);
+        if (touchStates['skill-1']) castFromSlot(1);
+        if (touchStates['skill-2']) castFromSlot(2);
+        if (touchStates['pot-hp']) useQuickPotion('potion');
+        if (touchStates['pot-mp']) useQuickPotion('mana_potion');
+
         // Global SKILL_DB cooldownlarını düşür
         player.skillCooldowns.forEach((cd, i) => {
             if (cd > 0) player.skillCooldowns[i]--;
