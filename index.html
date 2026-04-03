@@ -535,6 +535,18 @@
         </div>
     </div>
 
+    <!-- Shop Item Info Panel -->
+    <div id="shop-info-panel" style="position: absolute; background: rgba(10, 10, 30, 0.95); border: 2px solid #f1c40f; border-radius: 4px; padding: 10px; z-index: 100; display: none; width: 160px; box-shadow: 0 4px 15px rgba(0,0,0,0.8); pointer-events: auto;">
+        <div class="item-info-title" id="shop-info-title" style="color: #f1c40f; font-weight: bold; border-bottom: 1px solid #444; margin-bottom: 5px; padding-bottom: 3px;">Item Name</div>
+        <div id="shop-info-stats"></div>
+        <div class="item-info-desc" id="shop-info-desc" style="color: #aaa; font-size: 10px; margin-bottom: 8px; font-style: italic;">Description here...</div>
+        <div style="color: #f1c40f; font-weight: bold; font-size: 12px; margin-bottom: 10px;">Fiyat: <span id="shop-info-price">0</span> Noah</div>
+        <div class="item-info-actions" style="display: flex; flex-direction: column; gap: 5px;">
+            <button class="item-info-btn" id="shop-buy-btn" style="background: #27ae60; border-color: #2ecc71; color: #fff;">SATIN AL</button>
+            <button class="item-info-btn" onclick="closeShopInfo()" ontouchstart="event.preventDefault(); closeShopInfo()">VAZGEÇ</button>
+        </div>
+    </div>
+
     <!-- Knight Online Style Envanter -->
     <div id="inventory-ui">
         <div class="inv-header">
@@ -1993,8 +2005,8 @@
                 const btn = document.createElement('button');
                 btn.className = 'page-btn' + (currentShopPage === i ? ' active' : '');
                 btn.innerText = `SAYFA ${i + 1}`;
-                btn.onclick = () => { currentShopPage = i; updateShopUI(); playSound('click'); };
-                btn.ontouchstart = (e) => { e.preventDefault(); currentShopPage = i; updateShopUI(); playSound('click'); };
+                btn.onclick = () => { currentShopPage = i; updateShopUI(); playSound('click'); closeShopInfo(); };
+                btn.ontouchstart = (e) => { e.preventDefault(); currentShopPage = i; updateShopUI(); playSound('click'); closeShopInfo(); };
                 pageBtnContainer.appendChild(btn);
             }
         }
@@ -2015,12 +2027,55 @@
                 <span class="item-icon">${item.icon}</span>
                 <span class="item-price">${item.cost}</span>
             `;
-            div.onclick = () => buyItem(item.id);
-            div.ontouchstart = (e) => { e.preventDefault(); buyItem(item.id); };
+            div.onclick = (e) => showShopItemInfo(item.id, e);
+            div.ontouchstart = (e) => { e.preventDefault(); showShopItemInfo(item.id, e.touches[0]); };
             div.onmouseenter = (e) => showTooltip(item, e);
             div.onmouseleave = hideTooltip;
             container.appendChild(div);
         });
+    }
+
+    function showShopItemInfo(id, e) {
+        const item = ITEM_DB[id];
+        if (!item) return;
+        playSound('click');
+
+        const panel = document.getElementById('shop-info-panel');
+        const title = document.getElementById('shop-info-title');
+        const stats = document.getElementById('shop-info-stats');
+        const desc = document.getElementById('shop-info-desc');
+        const price = document.getElementById('shop-info-price');
+        const buyBtn = document.getElementById('shop-buy-btn');
+
+        title.innerText = item.name;
+        desc.innerText = item.desc;
+        price.innerText = item.cost;
+        stats.innerHTML = '';
+        
+        if (item.damage) stats.innerHTML += `<div class="item-info-stat" style="color: #2ecc71; font-size: 11px; margin-bottom: 2px;">ATK: +${item.damage}</div>`;
+        if (item.intBonus) stats.innerHTML += `<div class="item-info-stat" style="color: #2ecc71; font-size: 11px; margin-bottom: 2px;">INT: +${item.intBonus}</div>`;
+        if (item.dexBonus) stats.innerHTML += `<div class="item-info-stat" style="color: #2ecc71; font-size: 11px; margin-bottom: 2px;">DEX: +${item.dexBonus}</div>`;
+        if (item.hpBonus) stats.innerHTML += `<div class="item-info-stat" style="color: #2ecc71; font-size: 11px; margin-bottom: 2px;">HP: +${item.hpBonus}</div>`;
+        if (item.maxHp) stats.innerHTML += `<div class="item-info-stat" style="color: #2ecc71; font-size: 11px; margin-bottom: 2px;">Max HP: +${item.maxHp}</div>`;
+
+        buyBtn.onclick = () => { buyItem(item.id); closeShopInfo(); };
+        buyBtn.ontouchstart = (ev) => { ev.preventDefault(); buyItem(item.id); closeShopInfo(); };
+        
+        panel.style.display = 'block';
+        const rect = shopUI.getBoundingClientRect();
+        
+        let left = e.clientX - rect.left + 20;
+        let top = e.clientY - rect.top - 20;
+        
+        if (left + 160 > rect.width) left = e.clientX - rect.left - 170;
+        if (top + 180 > rect.height) top = rect.height - 190;
+
+        panel.style.left = left + 'px';
+        panel.style.top = top + 'px';
+    }
+
+    function closeShopInfo() {
+        document.getElementById('shop-info-panel').style.display = 'none';
     }
 
     function buyItem(id) {
@@ -2066,7 +2121,10 @@
         playSound('click');
         shopUI.style.display = isShopOpen ? 'block' : 'none'; 
         if (isShopOpen) updateShopUI();
-        if (!isShopOpen) hideTooltip(); 
+        if (!isShopOpen) {
+            hideTooltip(); 
+            closeShopInfo();
+        }
     }
 
     function dropLoot(x, y, isBoss = false) {
