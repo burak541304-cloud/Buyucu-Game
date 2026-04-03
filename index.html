@@ -623,29 +623,20 @@
     </div>
 
     <div id="skill-bar">
-        <div class="skill-slot" id="skill-1" onclick="castSpecificSkill(0)" ontouchstart="event.preventDefault(); castSpecificSkill(0)">
-            <span class="key-hint">1</span>❄️
-            <div class="skill-cooldown" id="cd-1"></div>
+        <div class="skill-slot" id="skill-1" onclick="castFromSlot(0)" ontouchstart="event.preventDefault(); castFromSlot(0)">
+            <span class="key-hint">1</span>
+            <span class="skill-icon-display"></span>
+            <div class="skill-cooldown" id="cd-slot-1"></div>
         </div>
-        <div class="skill-slot" id="skill-2" onclick="castSpecificSkill(1)" ontouchstart="event.preventDefault(); castSpecificSkill(1)">
-            <span class="key-hint">2</span>⚡
-            <div class="skill-cooldown" id="cd-2"></div>
+        <div class="skill-slot" id="skill-2" onclick="castFromSlot(1)" ontouchstart="event.preventDefault(); castFromSlot(1)">
+            <span class="key-hint">2</span>
+            <span class="skill-icon-display"></span>
+            <div class="skill-cooldown" id="cd-slot-2"></div>
         </div>
-        <div class="skill-slot" id="skill-3" onclick="castSpecificSkill(2)" ontouchstart="event.preventDefault(); castSpecificSkill(2)">
-            <span class="key-hint">3</span>☄️
-            <div class="skill-cooldown" id="cd-3"></div>
-        </div>
-        <div class="skill-slot" id="skill-4" onclick="castSpecificSkill(3)" ontouchstart="event.preventDefault(); castSpecificSkill(3)">
-            <span class="key-hint">4</span>🌨️
-            <div class="skill-cooldown" id="cd-4"></div>
-        </div>
-        <div class="skill-slot" id="skill-5" onclick="castSpecificSkill(4)" ontouchstart="event.preventDefault(); castSpecificSkill(4)">
-            <span class="key-hint">5</span>✨
-            <div class="skill-cooldown" id="cd-5"></div>
-        </div>
-        <div class="skill-slot" id="skill-6" onclick="castSpecificSkill(5)" ontouchstart="event.preventDefault(); castSpecificSkill(5)">
-            <span class="key-hint">6</span>🔥
-            <div class="skill-cooldown" id="cd-6"></div>
+        <div class="skill-slot" id="skill-3" onclick="castFromSlot(2)" ontouchstart="event.preventDefault(); castFromSlot(2)">
+            <span class="key-hint">3</span>
+            <span class="skill-icon-display"></span>
+            <div class="skill-cooldown" id="cd-slot-3"></div>
         </div>
         <!-- Hızlı İksir Slotları -->
         <div class="skill-slot" id="quick-hp" onclick="useQuickPotion('potion')" ontouchstart="event.preventDefault(); useQuickPotion('potion')" style="margin-left: 20px;">
@@ -954,6 +945,7 @@
             robe: null
         },
         skillTree: [], // Öğrenilen yeteneklerin ID'leri
+        equippedSkills: [0, -1, -1], // 3 slot için seçili yetenek ID'leri (-1: boş)
         pet: { // Yeni Pet Özellikleri
             active: true,
             name: 'Dragon Hatchling',
@@ -1565,12 +1557,9 @@
         if (e.code === 'KeyQ') toggleQuests();
         if (e.code === 'KeyK') toggleSkillTree();
         if (e.code === 'KeyE') checkShopInteract();
-        if (e.code === 'Digit1') castSpecificSkill(0);
-        if (e.code === 'Digit2') castSpecificSkill(1);
-        if (e.code === 'Digit3') castSpecificSkill(2); // Meteor
-        if (e.code === 'Digit4') castSpecificSkill(3); // Blizzard
-        if (e.code === 'Digit5') castSpecificSkill(4); // Arcane Nova
-        if (e.code === 'Digit6') castSpecificSkill(5); // Fire Storm
+        if (e.code === 'Digit1') castFromSlot(0);
+        if (e.code === 'Digit2') castFromSlot(1);
+        if (e.code === 'Digit3') castFromSlot(2);
         if (e.code === 'KeyH') useQuickPotion('potion');
         if (e.code === 'KeyM') useQuickPotion('mana_potion');
     });
@@ -1656,19 +1645,19 @@
         // Bu fonksiyon artık kullanılmıyor, yerine castSpecificSkill geldi
     }
 
-    function castSpecificSkill(index) {
-        const skill = SKILL_DB[index];
-        if (!skill.learned) return; // Öğrenilmemiş yetenek kullanılamaz
-
-        const currentCd = player.skillCooldowns[index];
+    function castFromSlot(slotIndex) {
+        const skillId = player.equippedSkills[slotIndex];
+        if (skillId === -1) return; // Slot boşsa bir şey yapma
+        
+        const skill = SKILL_DB[skillId];
+        const currentCd = player.skillCooldowns[skillId];
 
         if (currentCd <= 0 && player.mp >= skill.manaCost) {
             if (skill.effect === 'nova') {
-                // Arcane Nova: Direkt oyuncu etrafında alan hasarı
                 applyAoEDamage(player.x, player.y, skill.aoe, skill.damageMult, skill.color);
                 player.mp -= skill.manaCost;
                 const totalDex = player.stats.dex + (player.equipment.weapon?.dexBonus || 0) + (player.equipment.hat?.dexBonus || 0);
-                player.skillCooldowns[index] = Math.max(10, skill.cd - totalDex);
+                player.skillCooldowns[skillId] = Math.max(10, skill.cd - totalDex);
                 playSound('cast');
                 return;
             }
@@ -1689,7 +1678,7 @@
                 playSound('cast');
                 player.mp -= skill.manaCost;
                 const totalDex = player.stats.dex + (player.equipment.weapon?.dexBonus || 0) + (player.equipment.hat?.dexBonus || 0);
-                player.skillCooldowns[index] = Math.max(10, skill.cd - totalDex);
+                player.skillCooldowns[skillId] = Math.max(10, skill.cd - totalDex);
             }
         }
     }
@@ -2342,29 +2331,28 @@
         // Yetenek Cooldownları ve UI Güncelleme
         player.mp = Math.min(player.maxMp, player.mp + player.mpRegen); // Mana Yenilenmesi
         
+        // Global SKILL_DB cooldownlarını düşür
         player.skillCooldowns.forEach((cd, i) => {
-            if (cd > 0) {
-                player.skillCooldowns[i]--;
-                const skill = SKILL_DB[i];
-                if (!skill) return;
-                const totalCd = skill.cd - (player.stats.dex + (player.equipment.weapon?.dexBonus || 0) + (player.equipment.hat?.dexBonus || 0));
-                const percent = (cd / Math.max(10, totalCd)) * 100;
-                const cdElement = document.getElementById(`cd-${i+1}`);
-                if (cdElement) {
+            if (cd > 0) player.skillCooldowns[i]--;
+        });
+
+        // Slotlardaki cooldown görsellerini güncelle
+        player.equippedSkills.forEach((skillId, slotIdx) => {
+            const cdElement = document.getElementById(`cd-slot-${slotIdx + 1}`);
+            if (!cdElement) return;
+
+            if (skillId !== -1) {
+                const cd = player.skillCooldowns[skillId];
+                const skill = SKILL_DB[skillId];
+                if (cd > 0) {
+                    const totalCd = skill.cd - (player.stats.dex + (player.equipment.weapon?.dexBonus || 0) + (player.equipment.hat?.dexBonus || 0));
+                    const percent = (cd / Math.max(10, totalCd)) * 100;
                     cdElement.style.height = percent + '%';
-                    cdElement.parentElement.style.opacity = '1';
+                } else {
+                    cdElement.style.height = '0%';
                 }
             } else {
-                const cdElement = document.getElementById(`cd-${i+1}`);
-                if (cdElement) {
-                    cdElement.style.height = '0%';
-                    // Yetenek öğrenilmemişse soluk göster
-                    if (SKILL_DB[i] && !SKILL_DB[i].learned) {
-                        cdElement.parentElement.style.opacity = '0.3';
-                    } else {
-                        cdElement.parentElement.style.opacity = '1';
-                    }
-                }
+                cdElement.style.height = '0%';
             }
         });
 
@@ -2593,6 +2581,21 @@
         document.getElementById('hp-potion-count').innerText = hpPot ? hpPot.count : 0;
         document.getElementById('mp-potion-count').innerText = mpPot ? mpPot.count : 0;
 
+        // Yetenek Barı İkonlarını Güncelle
+        player.equippedSkills.forEach((skillId, index) => {
+            const slot = document.getElementById(`skill-${index + 1}`);
+            if (!slot) return;
+            const iconDisplay = slot.querySelector('.skill-icon-display');
+            if (skillId !== -1) {
+                const skill = SKILL_DB[skillId];
+                iconDisplay.innerText = skill.icon;
+                slot.style.opacity = '1';
+            } else {
+                iconDisplay.innerText = '';
+                slot.style.opacity = '0.3';
+            }
+        });
+
         // Pet UI Güncelleme
         if (player.pet.active) {
             document.getElementById('pet-name').innerText = player.pet.name;
@@ -2665,11 +2668,40 @@
                 <div class="skill-cost">${skill.learned ? 'ÖĞRENİLDİ' : 'LVL ' + skill.reqLevel + ' | ' + skill.cost + ' PUAN'}</div>
             `;
             
-            if (!skill.learned && player.lvl >= skill.reqLevel) {
+            if (skill.learned) {
+                // Eğer öğrenilmişse slot seçme butonu ekle
+                const assignBtn = document.createElement('button');
+                assignBtn.innerText = 'SLOT SEÇ';
+                assignBtn.className = 'btn';
+                assignBtn.style.fontSize = '8px';
+                assignBtn.style.padding = '2px 5px';
+                assignBtn.style.marginTop = '5px';
+                assignBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    const slot = prompt('Hangi slota koyulsun? (1, 2 veya 3)');
+                    if (slot >= 1 && slot <= 3) {
+                        assignSkillToSlot(skill.id, slot - 1);
+                    }
+                };
+                node.appendChild(assignBtn);
+            } else if (player.lvl >= skill.reqLevel) {
                 node.onclick = () => learnSkill(skill.id);
             }
             grid.appendChild(node);
         });
+    }
+
+    function assignSkillToSlot(skillId, slotIndex) {
+        // Aynı yeteneğin başka bir slotta olup olmadığını kontrol et
+        const existingSlot = player.equippedSkills.indexOf(skillId);
+        if (existingSlot !== -1) {
+            player.equippedSkills[existingSlot] = -1;
+        }
+        
+        player.equippedSkills[slotIndex] = skillId;
+        playSound('click');
+        updateStatsUI();
+        saveGame();
     }
 
     function learnSkill(id) {
@@ -3016,7 +3048,8 @@
                 inventory: player.inventory,
                 equipment: player.equipment,
                 pet: player.pet,
-                skillTree: player.skillTree
+                skillTree: player.skillTree,
+                equippedSkills: player.equippedSkills
             },
             gameTime: gameTime,
         };
@@ -3041,6 +3074,11 @@
                     }
                     
                     Object.assign(player, data.player);
+                    
+                    // Geriye dönük uyumluluk: equippedSkills yoksa varsayılanı ata
+                    if (!player.equippedSkills) {
+                        player.equippedSkills = [0, -1, -1];
+                    }
                     
                     // Öğrenilen yetenekleri SKILL_DB'ye geri yükle
                     if (player.skillTree) {
