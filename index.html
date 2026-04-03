@@ -1018,13 +1018,14 @@
 
     // Görsel Görünürlük Kontrolü (Global)
     function isVisible(x, y, size = 0) {
-        const viewW = canvas.width / zoom;
-        const viewH = canvas.height / zoom;
-        const viewMargin = 150; // Biraz daha geniş bir marj
-        return x + size > camera.x - viewMargin && 
-               x - size < camera.x + viewW + viewMargin &&
-               y + size > camera.y - viewMargin && 
-               y - size < camera.y + viewH + viewMargin;
+        if (isNaN(x) || isNaN(y) || isNaN(zoom) || isNaN(camera.x)) return true; // Hata durumunda çiz
+        const viewW = (canvas.width || 800) / (zoom || 1);
+        const viewH = (canvas.height || 600) / (zoom || 1);
+        const viewMargin = 200; 
+        return x + size > (camera.x || 0) - viewMargin && 
+               x - size < (camera.x || 0) + viewW + viewMargin &&
+               y + size > (camera.y || 0) - viewMargin && 
+               y - size < (camera.y || 0) + viewH + viewMargin;
     }
 
     // Görsel Güzelleştirme için yardımcı fonksiyonlar
@@ -1511,7 +1512,8 @@
     }
 
     function initWorld() {
-        terrain = []; worldObjects = []; enemies = []; droppedItems = []; paths = []; particles = []; damageNumbers = [];
+        terrain = []; worldObjects = []; enemies = []; droppedItems = []; paths = []; 
+        particles = []; damageNumbers = []; explosions = []; footprints = []; rainParticles = [];
         
         // Yollar (Daha doğal görünüm için)
         for (let i = 0; i < 15; i++) { // Sayı arttı
@@ -2497,413 +2499,423 @@
     }
 
     function draw() {
-        const hour = gameTime / 60;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
-        // Ekran Sarsıntısı Uygula
-        const shakeX = (Math.random() - 0.5) * screenShake * 2;
-        const shakeY = (Math.random() - 0.5) * screenShake * 2;
-        
-        ctx.save();
-        ctx.scale(zoom, zoom);
-        ctx.translate(-camera.x + shakeX, -camera.y + shakeY);
-        
-        const viewW = canvas.width / zoom;
-        const viewH = canvas.height / zoom;
-        const viewMargin = 150;
+        try {
+            if (!canvas.width || !canvas.height) {
+                resizeCanvas();
+                if (!canvas.width || !canvas.height) return;
+            }
 
-        // --- 1. Zemin ve Yollar ---
-        // Ana zemin rengi (Daha parlak ve canlı yeşil)
-        ctx.fillStyle = '#2d5a27';
-        // Ekran sarsıntısı ve zoom payı için geniş bir alanı boya
-        ctx.fillRect(camera.x - viewMargin, camera.y - viewMargin, viewW + viewMargin * 2, viewH + viewMargin * 2);
-        
-        // Zemin varyasyonu (Daha doğal görünüm)
-        ctx.globalAlpha = 0.4;
-        const patchSize = 300;
-        const startX = Math.floor(camera.x / patchSize) * patchSize;
-        const startY = Math.floor(camera.y / patchSize) * patchSize;
-        for (let i = startX; i < camera.x + viewW + patchSize; i += patchSize) {
-            for (let j = startY; j < camera.y + viewH + patchSize; j += patchSize) {
-                if ((i+j) % (patchSize*2) === 0) {
-                    ctx.fillStyle = '#244820';
-                    ctx.fillRect(i, j, patchSize, patchSize);
+            const hour = gameTime / 60;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Ekran Sarsıntısı Uygula
+            const shakeX = (Math.random() - 0.5) * screenShake * 2;
+            const shakeY = (Math.random() - 0.5) * screenShake * 2;
+            
+            ctx.save();
+            ctx.scale(zoom || 0.5, zoom || 0.5);
+            ctx.translate(-(camera.x || 0) + shakeX, -(camera.y || 0) + shakeY);
+            
+            const viewW = canvas.width / (zoom || 0.5);
+            const viewH = canvas.height / (zoom || 0.5);
+            const viewMargin = 200;
+
+            // --- 1. Zemin ve Yollar ---
+            // Ana zemin rengi (Daha parlak ve canlı yeşil)
+            ctx.fillStyle = '#2d5a27';
+            // Ekran sarsıntısı ve zoom payı için geniş bir alanı boya
+            ctx.fillRect((camera.x || 0) - viewMargin, (camera.y || 0) - viewMargin, viewW + viewMargin * 2, viewH + viewMargin * 2);
+            
+            // Zemin varyasyonu (Daha doğal görünüm)
+            ctx.globalAlpha = 0.4;
+            const patchSize = 300;
+            const startX = Math.floor((camera.x || 0) / patchSize) * patchSize;
+            const startY = Math.floor((camera.y || 0) / patchSize) * patchSize;
+            for (let i = startX; i < (camera.x || 0) + viewW + patchSize; i += patchSize) {
+                for (let j = startY; j < (camera.y || 0) + viewH + patchSize; j += patchSize) {
+                    if ((i+j) % (patchSize*2) === 0) {
+                        ctx.fillStyle = '#244820';
+                        ctx.fillRect(i, j, patchSize, patchSize);
+                    }
                 }
             }
-        }
-        ctx.globalAlpha = 1.0;
-
-        // Ayak İzleri
-        footprints.forEach(f => {
-            ctx.globalAlpha = f.life / 200;
-            ctx.fillStyle = 'rgba(0,0,0,0.2)';
-            ctx.beginPath();
-            ctx.ellipse(f.x, f.y, 8, 4, 0, 0, Math.PI * 2);
-            ctx.fill();
-        });
-        ctx.globalAlpha = 1.0;
-        
-        // Yollar (Yumuşak kenarlar ile)
-        ctx.lineCap = 'round';
-        paths.forEach(p => {
-            const pathGrad = ctx.createLinearGradient(p.x1, p.y1, p.x2, p.y2);
-            pathGrad.addColorStop(0, '#3e2723');
-            pathGrad.addColorStop(0.5, '#4e342e');
-            pathGrad.addColorStop(1, '#3e2723');
-            
-            ctx.strokeStyle = pathGrad;
-            ctx.lineWidth = p.width;
-            ctx.globalAlpha = 0.5;
-            ctx.beginPath(); ctx.moveTo(p.x1, p.y1); ctx.lineTo(p.x2, p.y2); ctx.stroke();
-            
-            // Yol kenarı detayları
-            ctx.lineWidth = p.width * 0.8;
-            ctx.globalAlpha = 0.2;
-            ctx.strokeStyle = '#2c1e14';
-            ctx.stroke();
             ctx.globalAlpha = 1.0;
-        });
 
-        // Çimenler
-        const grassSpacing = 120;
-        const gStartX = Math.floor(camera.x / grassSpacing) * grassSpacing;
-        const gStartY = Math.floor(camera.y / grassSpacing) * grassSpacing;
-        for (let i = gStartX; i < camera.x + viewW + grassSpacing; i += grassSpacing) {
-            for (let j = gStartY; j < camera.y + viewH + grassSpacing; j += grassSpacing) {
-                let offX = (i * 17) % 50;
-                let offY = (j * 11) % 50;
-                drawGrass(ctx, i + offX, j + offY, 5 + Math.sin(frameCount/20 + i)*2, '#2d4a3e');
+            // Ayak İzleri
+            footprints.forEach(f => {
+                ctx.globalAlpha = f.life / 200;
+                ctx.fillStyle = 'rgba(0,0,0,0.2)';
+                ctx.beginPath();
+                ctx.ellipse(f.x, f.y, 8, 4, 0, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            ctx.globalAlpha = 1.0;
+            
+            // Yollar (Yumuşak kenarlar ile)
+            ctx.lineCap = 'round';
+            paths.forEach(p => {
+                const pathGrad = ctx.createLinearGradient(p.x1, p.y1, p.x2, p.y2);
+                pathGrad.addColorStop(0, '#3e2723');
+                pathGrad.addColorStop(0.5, '#4e342e');
+                pathGrad.addColorStop(1, '#3e2723');
+                
+                ctx.strokeStyle = pathGrad;
+                ctx.lineWidth = p.width;
+                ctx.globalAlpha = 0.5;
+                ctx.beginPath(); ctx.moveTo(p.x1, p.y1); ctx.lineTo(p.x2, p.y2); ctx.stroke();
+                
+                // Yol kenarı detayları
+                ctx.lineWidth = p.width * 0.8;
+                ctx.globalAlpha = 0.2;
+                ctx.strokeStyle = '#2c1e14';
+                ctx.stroke();
+                ctx.globalAlpha = 1.0;
+            });
+
+            // Çimenler
+            const grassSpacing = 120;
+            const gStartX = Math.floor((camera.x || 0) / grassSpacing) * grassSpacing;
+            const gStartY = Math.floor((camera.y || 0) / grassSpacing) * grassSpacing;
+            for (let i = gStartX; i < (camera.x || 0) + viewW + grassSpacing; i += grassSpacing) {
+                for (let j = gStartY; j < (camera.y || 0) + viewH + grassSpacing; j += grassSpacing) {
+                    let offX = (i * 17) % 50;
+                    let offY = (j * 11) % 50;
+                    drawGrass(ctx, i + offX, j + offY, 5 + Math.sin(frameCount/20 + i)*2, '#2d4a3e');
+                }
             }
-        }
 
-        // --- 2. Su Efektleri ---
-        terrain.forEach(t => {
-            if (t.type === 'lake' && isVisible(t.x, t.y, t.radius + 50)) {
-                // Kıyı
-                ctx.fillStyle = '#2c1e14';
-                ctx.beginPath(); ctx.arc(t.x, t.y, t.radius + 15, 0, Math.PI*2); ctx.fill();
-                ctx.fillStyle = '#c2b280';
-                ctx.beginPath(); ctx.arc(t.x, t.y, t.radius + 8, 0, Math.PI*2); ctx.fill();
+            // --- 2. Su Efektleri ---
+            terrain.forEach(t => {
+                if (t.type === 'lake' && isVisible(t.x, t.y, t.radius + 50)) {
+                    // Kıyı
+                    ctx.fillStyle = '#2c1e14';
+                    ctx.beginPath(); ctx.arc(t.x, t.y, t.radius + 15, 0, Math.PI*2); ctx.fill();
+                    ctx.fillStyle = '#c2b280';
+                    ctx.beginPath(); ctx.arc(t.x, t.y, t.radius + 8, 0, Math.PI*2); ctx.fill();
+                    
+                    // Su (Gelişmiş Gradient)
+                    const ripple = Math.sin(frameCount / 40) * 12;
+                    const waterGrad = ctx.createRadialGradient(t.x, t.y, 0, t.x, t.y, t.radius + ripple/2);
+                    waterGrad.addColorStop(0, '#48cae4');
+                    waterGrad.addColorStop(0.5, '#00b4d8');
+                    waterGrad.addColorStop(1, '#0077b6');
+                    ctx.fillStyle = waterGrad;
+                    ctx.beginPath(); ctx.arc(t.x, t.y, t.radius + ripple/4, 0, Math.PI*2); ctx.fill();
+                    
+                    // Parıltılar
+                    ctx.globalAlpha = 0.3;
+                    ctx.fillStyle = 'white';
+                    for(let k=0; k<5; k++) {
+                        let angle = (frameCount / 60) + (k * Math.PI * 2 / 5);
+                        let dist = (t.radius * 0.6) + Math.sin(frameCount/30 + k) * 10;
+                        let rx = t.x + Math.cos(angle) * dist;
+                        let ry = t.y + Math.sin(angle) * dist;
+                        ctx.beginPath(); ctx.ellipse(rx, ry, 15, 5, angle, 0, Math.PI*2); ctx.fill();
+                    }
+                    ctx.globalAlpha = 1.0;
+                }
+            });
+
+            // --- 3. Statik Objeler ---
+            worldObjects.forEach(o => {
+                if (!isVisible(o.x, o.y, o.size + 100)) return;
+
+                // Gölge
+                const shadowGrad = ctx.createRadialGradient(o.x, o.y + o.size/4, 0, o.x, o.y + o.size/4, o.size);
+                shadowGrad.addColorStop(0, 'rgba(0,0,0,0.3)');
+                shadowGrad.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle = shadowGrad;
+                ctx.beginPath(); ctx.ellipse(o.x, o.y + o.size/4, o.size, o.size/3, 0, 0, Math.PI*2); ctx.fill();
+
+                if (o.type === 'tree') {
+                    // Gövde
+                    const trunkGrad = ctx.createLinearGradient(o.x - 5, o.y, o.x + 5, o.y);
+                    trunkGrad.addColorStop(0, '#3e2723');
+                    trunkGrad.addColorStop(0.5, '#5d4037');
+                    trunkGrad.addColorStop(1, '#3e2723');
+                    ctx.fillStyle = trunkGrad;
+                    ctx.fillRect(o.x - 5, o.y - 10, 10, 35);
+
+                    // Yapraklar (Katmanlı)
+                    const windSpeed = 40 - (weather.intensity * 20);
+                    const windPower = 4 + (weather.intensity * 8);
+                    const sway = Math.sin(frameCount/windSpeed + o.x) * windPower;
+                    const leafColors = ['#1b4332', '#2d6a4f', '#40916c', '#52b788'];
+                    
+                    leafColors.forEach((c, i) => {
+                        ctx.fillStyle = c;
+                        const s = o.size * (1 - i*0.2);
+                        const yOff = i * 15;
+                        ctx.beginPath();
+                        ctx.arc(o.x + sway * (1 + i*0.2), o.y - 20 - yOff, s/2, 0, Math.PI*2);
+                        ctx.fill();
+                        // Küçük detaylar
+                        ctx.beginPath();
+                        ctx.arc(o.x + sway - s/2.5, o.y - 15 - yOff, s/3, 0, Math.PI*2);
+                        ctx.fill();
+                        ctx.beginPath();
+                        ctx.arc(o.x + sway + s/2.5, o.y - 15 - yOff, s/3, 0, Math.PI*2);
+                        ctx.fill();
+                    });
+                } else {
+                    // Kaya
+                    const rockGrad = ctx.createRadialGradient(o.x - o.size/4, o.y - o.size/4, 0, o.x, o.y, o.size);
+                    rockGrad.addColorStop(0, '#90a4ae');
+                    rockGrad.addColorStop(1, '#455a64');
+                    ctx.fillStyle = rockGrad;
+                    ctx.beginPath();
+                    ctx.moveTo(o.x - o.size/2, o.y + o.size/4);
+                    ctx.lineTo(o.x - o.size/2.5, o.y - o.size/3);
+                    ctx.lineTo(o.x + o.size/4, o.y - o.size/2.2);
+                    ctx.lineTo(o.x + o.size/2, o.y + o.size/4);
+                    ctx.closePath(); ctx.fill();
+                    
+                    // Çatlaklar
+                    ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+                    ctx.lineWidth = 1.5;
+                    ctx.beginPath(); ctx.moveTo(o.x - 5, o.y - 10); ctx.lineTo(o.x + 8, o.y + 5); ctx.stroke();
+                }
+            });
+
+            // --- 4. Karakterler ve Efektler ---
+            // Shopkeeper
+            if (isVisible(shopKeeper.x, shopKeeper.y, shopKeeper.size)) {
+                ctx.fillStyle = '#f1c40f'; ctx.beginPath(); ctx.arc(shopKeeper.x, shopKeeper.y, shopKeeper.size, 0, Math.PI*2); ctx.fill();
+            }
+
+            // Dropped Items
+            droppedItems.forEach(item => {
+                if (!isVisible(item.x, item.y, item.size + 50)) return;
+                const bounce = Math.sin(frameCount/15) * 8;
                 
-                // Su (Gelişmiş Gradient)
-                const ripple = Math.sin(frameCount / 40) * 12;
-                const waterGrad = ctx.createRadialGradient(t.x, t.y, 0, t.x, t.y, t.radius + ripple/2);
-                waterGrad.addColorStop(0, '#48cae4');
-                waterGrad.addColorStop(0.5, '#00b4d8');
-                waterGrad.addColorStop(1, '#0077b6');
-                ctx.fillStyle = waterGrad;
-                ctx.beginPath(); ctx.arc(t.x, t.y, t.radius + ripple/4, 0, Math.PI*2); ctx.fill();
+                // Parlama Efekti
+                const glowGrad = ctx.createRadialGradient(item.x, item.y + bounce, 0, item.x, item.y + bounce, item.size + 15);
+                glowGrad.addColorStop(0, 'rgba(255, 215, 0, 0.4)');
+                glowGrad.addColorStop(1, 'rgba(255, 215, 0, 0)');
+                ctx.fillStyle = glowGrad;
+                ctx.beginPath(); ctx.arc(item.x, item.y + bounce, item.size + 15, 0, Math.PI*2); ctx.fill();
                 
-                // Parıltılar
-                ctx.globalAlpha = 0.3;
-                ctx.fillStyle = 'white';
-                for(let k=0; k<5; k++) {
-                    let angle = (frameCount / 60) + (k * Math.PI * 2 / 5);
-                    let dist = (t.radius * 0.6) + Math.sin(frameCount/30 + k) * 10;
-                    let rx = t.x + Math.cos(angle) * dist;
-                    let ry = t.y + Math.sin(angle) * dist;
-                    ctx.beginPath(); ctx.ellipse(rx, ry, 15, 5, angle, 0, Math.PI*2); ctx.fill();
+                // Eşya İkonu
+                ctx.fillStyle = 'white'; ctx.font = "26px Arial";
+                ctx.textAlign = 'center';
+                ctx.fillText(item.icon, item.x, item.y + 10 + bounce);
+                ctx.textAlign = 'left';
+            });
+
+            // Projectiles (Gelişmiş Mermi Efektleri)
+            projectiles.forEach(p => {
+                // Trail (İz)
+                const trailGrad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 2);
+                trailGrad.addColorStop(0, p.color);
+                trailGrad.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle = trailGrad;
+                ctx.globalAlpha = 0.4;
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.size * 2, 0, Math.PI*2); ctx.fill();
+                ctx.globalAlpha = 1.0;
+
+                // Çekirdek
+                ctx.fillStyle = p.color;
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = '#fff';
+                ctx.beginPath(); ctx.arc(p.x - p.size/4, p.y - p.size/4, p.size/2, 0, Math.PI*2); ctx.fill();
+            });
+
+            // Player (Daima görünür)
+            const isMoving = keys['KeyW'] || keys['KeyS'] || keys['KeyA'] || keys['KeyD'] || joystickData.active;
+            drawWizard(ctx, player.x, player.y, player.size, player.color, isMoving, player.equipment);
+
+            // Enemies
+            enemies.forEach(e => {
+                if (isVisible(e.x, e.y, e.size + 50)) drawMonster(ctx, e);
+            });
+
+            // Hasar Rakamlarını Çiz
+            ctx.textAlign = 'center';
+            ctx.font = 'bold 16px Arial';
+            damageNumbers.forEach(d => {
+                ctx.globalAlpha = d.life / 60;
+                ctx.fillStyle = d.color;
+                ctx.fillText(d.value, d.x, d.y);
+            });
+            ctx.globalAlpha = 1.0;
+            ctx.textAlign = 'left';
+
+            // Pet Çizimi
+            drawPet(ctx);
+
+            // Patlama Efektlerini Çiz
+            explosions.forEach(exp => {
+                const alpha = exp.life / exp.maxLife;
+                const radius = exp.radius * (1 - alpha * 0.5);
+                
+                ctx.save();
+                ctx.globalAlpha = alpha * 0.6;
+                const grad = ctx.createRadialGradient(exp.x, exp.y, 0, exp.x, exp.y, radius);
+                grad.addColorStop(0, '#fff');
+                grad.addColorStop(0.4, exp.color);
+                grad.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.arc(exp.x, exp.y, radius, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Ekstra parlama (Screen mode)
+                ctx.globalCompositeOperation = 'screen';
+                ctx.globalAlpha = alpha * 0.4;
+                ctx.beginPath();
+                ctx.arc(exp.x, exp.y, radius * 1.2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            });
+
+            // --- 5. Atmosferik Efektler ---
+            // Toz zerreleri
+            ctx.fillStyle = 'white';
+            particles.forEach(p => {
+                if (isVisible(p.x, p.y)) {
+                    ctx.globalAlpha = p.currentOpacity || p.opacity;
+                    ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill();
+                }
+            });
+            ctx.globalAlpha = 1.0;
+
+            // Yağmur Çizimi
+            drawWeather(ctx);
+
+            // Işık Hüzmeleri (Sadece Gündüz ve Açık Hava)
+            if (hour >= 6 && hour < 18 && weather.type === 'clear') {
+                ctx.globalAlpha = 0.05 * (1 - weather.intensity);
+                ctx.fillStyle = '#fff9c4';
+                for(let i=0; i<10; i++) {
+                    let startX = Math.floor((camera.x || 0) / 400) * 400 + (i * 400);
+                    ctx.beginPath();
+                    ctx.moveTo(startX + 100, (camera.y || 0));
+                    ctx.lineTo(startX + 400, (camera.y || 0));
+                    ctx.lineTo(startX + 200, (camera.y || 0) + viewH);
+                    ctx.lineTo(startX - 100, (camera.y || 0) + viewH);
+                    ctx.fill();
                 }
                 ctx.globalAlpha = 1.0;
             }
-        });
 
-        // --- 3. Statik Objeler ---
-        worldObjects.forEach(o => {
-            if (!isVisible(o.x, o.y, o.size + 100)) return;
+            // --- 6. Gece Işıklandırması ve Filtre ---
+            ctx.restore(); // Ana sahne bitti
 
-            // Gölge
-            const shadowGrad = ctx.createRadialGradient(o.x, o.y + o.size/4, 0, o.x, o.y + o.size/4, o.size);
-            shadowGrad.addColorStop(0, 'rgba(0,0,0,0.3)');
-            shadowGrad.addColorStop(1, 'rgba(0,0,0,0)');
-            ctx.fillStyle = shadowGrad;
-            ctx.beginPath(); ctx.ellipse(o.x, o.y + o.size/4, o.size, o.size/3, 0, 0, Math.PI*2); ctx.fill();
+            // Günün saatine göre karanlık oranı hesaplama (0.0: tam aydınlık, 0.7: tam karanlık)
+            let ambientAlpha = 0;
+            let ambientColor = 'rgba(0, 0, 40, ';
 
-            if (o.type === 'tree') {
-                // Gövde
-                const trunkGrad = ctx.createLinearGradient(o.x - 5, o.y, o.x + 5, o.y);
-                trunkGrad.addColorStop(0, '#3e2723');
-                trunkGrad.addColorStop(0.5, '#5d4037');
-                trunkGrad.addColorStop(1, '#3e2723');
-                ctx.fillStyle = trunkGrad;
-                ctx.fillRect(o.x - 5, o.y - 10, 10, 35);
-
-                // Yapraklar (Katmanlı)
-                const windSpeed = 40 - (weather.intensity * 20);
-                const windPower = 4 + (weather.intensity * 8);
-                const sway = Math.sin(frameCount/windSpeed + o.x) * windPower;
-                const leafColors = ['#1b4332', '#2d6a4f', '#40916c', '#52b788'];
-                
-                leafColors.forEach((c, i) => {
-                    ctx.fillStyle = c;
-                    const s = o.size * (1 - i*0.2);
-                    const yOff = i * 15;
-                    ctx.beginPath();
-                    ctx.arc(o.x + sway * (1 + i*0.2), o.y - 20 - yOff, s/2, 0, Math.PI*2);
-                    ctx.fill();
-                    // Küçük detaylar
-                    ctx.beginPath();
-                    ctx.arc(o.x + sway - s/2.5, o.y - 15 - yOff, s/3, 0, Math.PI*2);
-                    ctx.fill();
-                    ctx.beginPath();
-                    ctx.arc(o.x + sway + s/2.5, o.y - 15 - yOff, s/3, 0, Math.PI*2);
-                    ctx.fill();
-                });
-            } else {
-                // Kaya
-                const rockGrad = ctx.createRadialGradient(o.x - o.size/4, o.y - o.size/4, 0, o.x, o.y, o.size);
-                rockGrad.addColorStop(0, '#90a4ae');
-                rockGrad.addColorStop(1, '#455a64');
-                ctx.fillStyle = rockGrad;
-                ctx.beginPath();
-                ctx.moveTo(o.x - o.size/2, o.y + o.size/4);
-                ctx.lineTo(o.x - o.size/2.5, o.y - o.size/3);
-                ctx.lineTo(o.x + o.size/4, o.y - o.size/2.2);
-                ctx.lineTo(o.x + o.size/2, o.y + o.size/4);
-                ctx.closePath(); ctx.fill();
-                
-                // Çatlaklar
-                ctx.strokeStyle = 'rgba(0,0,0,0.15)';
-                ctx.lineWidth = 1.5;
-                ctx.beginPath(); ctx.moveTo(o.x - 5, o.y - 10); ctx.lineTo(o.x + 8, o.y + 5); ctx.stroke();
+            if (hour >= 5 && hour < 7) { // Şafak
+                ambientAlpha = 0.4 * (1 - (hour - 5) / 2);
+                ambientColor = 'rgba(70, 0, 30, '; // Turuncumsu şafak
+            } else if (hour >= 18 && hour < 21) { // Akşam
+                ambientAlpha = 0.5 * ((hour - 18) / 3);
+                ambientColor = 'rgba(50, 0, 50, '; // Morumsu gün batımı
+            } else if (hour >= 21 || hour < 5) { // Gece
+                ambientAlpha = 0.5; // Maksimum karanlık düşürüldü (0.7 -> 0.5)
+                ambientColor = 'rgba(0, 0, 40, '; // Koyu gece
             }
-        });
 
-        // --- 4. Karakterler ve Efektler ---
-        // Shopkeeper
-        if (isVisible(shopKeeper.x, shopKeeper.y, shopKeeper.size)) {
-            ctx.fillStyle = '#f1c40f'; ctx.beginPath(); ctx.arc(shopKeeper.x, shopKeeper.y, shopKeeper.size, 0, Math.PI*2); ctx.fill();
-        }
-
-        // Dropped Items
-        droppedItems.forEach(item => {
-            if (!isVisible(item.x, item.y, item.size + 50)) return;
-            const bounce = Math.sin(frameCount/15) * 8;
-            
-            // Parlama Efekti
-            const glowGrad = ctx.createRadialGradient(item.x, item.y + bounce, 0, item.x, item.y + bounce, item.size + 15);
-            glowGrad.addColorStop(0, 'rgba(255, 215, 0, 0.4)');
-            glowGrad.addColorStop(1, 'rgba(255, 215, 0, 0)');
-            ctx.fillStyle = glowGrad;
-            ctx.beginPath(); ctx.arc(item.x, item.y + bounce, item.size + 15, 0, Math.PI*2); ctx.fill();
-            
-            // Eşya İkonu
-            ctx.fillStyle = 'white'; ctx.font = "26px Arial";
-            ctx.textAlign = 'center';
-            ctx.fillText(item.icon, item.x, item.y + 10 + bounce);
-            ctx.textAlign = 'left';
-        });
-
-        // Projectiles (Gelişmiş Mermi Efektleri)
-        projectiles.forEach(p => {
-            // Trail (İz)
-            const trailGrad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 2);
-            trailGrad.addColorStop(0, p.color);
-            trailGrad.addColorStop(1, 'rgba(0,0,0,0)');
-            ctx.fillStyle = trailGrad;
-            ctx.globalAlpha = 0.4;
-            ctx.beginPath(); ctx.arc(p.x, p.y, p.size * 2, 0, Math.PI*2); ctx.fill();
-            ctx.globalAlpha = 1.0;
-
-            // Çekirdek
-            ctx.fillStyle = p.color;
-            ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill();
-            ctx.fillStyle = '#fff';
-            ctx.beginPath(); ctx.arc(p.x - p.size/4, p.y - p.size/4, p.size/2, 0, Math.PI*2); ctx.fill();
-        });
-
-        // Player (Daima görünür)
-        const isMoving = keys['KeyW'] || keys['KeyS'] || keys['KeyA'] || keys['KeyD'] || joystickData.active;
-        drawWizard(ctx, player.x, player.y, player.size, player.color, isMoving, player.equipment);
-
-        // Enemies
-        enemies.forEach(e => {
-            if (isVisible(e.x, e.y, e.size + 50)) drawMonster(ctx, e);
-        });
-
-        // Hasar Rakamlarını Çiz
-        ctx.textAlign = 'center';
-        ctx.font = 'bold 16px Arial';
-        damageNumbers.forEach(d => {
-            ctx.globalAlpha = d.life / 60;
-            ctx.fillStyle = d.color;
-            ctx.fillText(d.value, d.x, d.y);
-        });
-        ctx.globalAlpha = 1.0;
-        ctx.textAlign = 'left';
-
-        // Pet Çizimi
-        drawPet(ctx);
-
-        // Patlama Efektlerini Çiz
-        explosions.forEach(exp => {
-            const alpha = exp.life / exp.maxLife;
-            const radius = exp.radius * (1 - alpha * 0.5);
-            
-            ctx.save();
-            ctx.globalAlpha = alpha * 0.6;
-            const grad = ctx.createRadialGradient(exp.x, exp.y, 0, exp.x, exp.y, radius);
-            grad.addColorStop(0, '#fff');
-            grad.addColorStop(0.4, exp.color);
-            grad.addColorStop(1, 'rgba(0,0,0,0)');
-            ctx.fillStyle = grad;
-            ctx.beginPath();
-            ctx.arc(exp.x, exp.y, radius, 0, Math.PI * 2);
-            ctx.fill();
-            
-            // Ekstra parlama (Screen mode)
-            ctx.globalCompositeOperation = 'screen';
-            ctx.globalAlpha = alpha * 0.4;
-            ctx.beginPath();
-            ctx.arc(exp.x, exp.y, radius * 1.2, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.restore();
-        });
-
-        // --- 5. Atmosferik Efektler ---
-        // Toz zerreleri
-        ctx.fillStyle = 'white';
-        particles.forEach(p => {
-            if (isVisible(p.x, p.y)) {
-                ctx.globalAlpha = p.currentOpacity || p.opacity;
-                ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill();
+            // Yağmurda her zaman biraz karanlık ekle
+            if (weather.intensity > 0) {
+                ambientAlpha = Math.max(ambientAlpha, weather.intensity * 0.3);
+                // Yağmurda renk daha gri/mavi olsun
+                if (ambientAlpha === weather.intensity * 0.3) ambientColor = 'rgba(20, 20, 40, ';
             }
-        });
-        ctx.globalAlpha = 1.0;
 
-        // Yağmur Çizimi
-        drawWeather(ctx);
-
-        // Işık Hüzmeleri (Sadece Gündüz ve Açık Hava)
-        if (hour >= 6 && hour < 18 && weather.type === 'clear') {
-            ctx.globalAlpha = 0.05 * (1 - weather.intensity);
-            ctx.fillStyle = '#fff9c4';
-            for(let i=0; i<10; i++) {
-                let startX = Math.floor(camera.x / 400) * 400 + (i * 400);
-                ctx.beginPath();
-                ctx.moveTo(startX + 100, camera.y);
-                ctx.lineTo(startX + 400, camera.y);
-                ctx.lineTo(startX + 200, camera.y + viewH);
-                ctx.lineTo(startX - 100, camera.y + viewH);
-                ctx.fill();
-            }
-            ctx.globalAlpha = 1.0;
-        }
-
-        // --- 6. Gece Işıklandırması ve Filtre ---
-        ctx.restore(); // Ana sahne bitti
-
-        // Günün saatine göre karanlık oranı hesaplama (0.0: tam aydınlık, 0.7: tam karanlık)
-        let ambientAlpha = 0;
-        let ambientColor = 'rgba(0, 0, 40, ';
-
-        if (hour >= 5 && hour < 7) { // Şafak
-            ambientAlpha = 0.4 * (1 - (hour - 5) / 2);
-            ambientColor = 'rgba(70, 0, 30, '; // Turuncumsu şafak
-        } else if (hour >= 18 && hour < 21) { // Akşam
-            ambientAlpha = 0.5 * ((hour - 18) / 3);
-            ambientColor = 'rgba(50, 0, 50, '; // Morumsu gün batımı
-        } else if (hour >= 21 || hour < 5) { // Gece
-            ambientAlpha = 0.5; // Maksimum karanlık düşürüldü (0.7 -> 0.5)
-            ambientColor = 'rgba(0, 0, 40, '; // Koyu gece
-        }
-
-        // Yağmurda her zaman biraz karanlık ekle
-        if (weather.intensity > 0) {
-            ambientAlpha = Math.max(ambientAlpha, weather.intensity * 0.3);
-            // Yağmurda renk daha gri/mavi olsun
-            if (ambientAlpha === weather.intensity * 0.3) ambientColor = 'rgba(20, 20, 40, ';
-        }
-
-        if (ambientAlpha > 0) {
-            // Işık Maskesini temizle ve ayarla
-            if (lightCanvas.width !== canvas.width) {
-                lightCanvas.width = canvas.width;
-                lightCanvas.height = canvas.height;
-            }
-            lctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            // Önce her yeri karart
-            lctx.fillStyle = `${ambientColor}${ambientAlpha})`;
-            lctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            // 1. Player'ın etrafını "kes" (ışık alanı - Zoom uyumlu)
-            const playerX = (player.x - camera.x) * zoom;
-            const playerY = (player.y - camera.y) * zoom;
-            const playerRad = (250 + Math.sin(frameCount/10) * 10) * zoom; // Hafif titreme
-            
-            lctx.globalCompositeOperation = 'destination-out';
-            const playerGrad = lctx.createRadialGradient(playerX, playerY, 0, playerX, playerY, playerRad);
-            playerGrad.addColorStop(0, 'rgba(0,0,0,1)');
-            playerGrad.addColorStop(1, 'rgba(0,0,0,0)');
-            lctx.fillStyle = playerGrad;
-            lctx.beginPath(); lctx.arc(playerX, playerY, playerRad, 0, Math.PI*2); lctx.fill();
-            
-            // 2. Mermilerin ışığı
-            projectiles.forEach(p => {
-                const px = (p.x - camera.x) * zoom;
-                const py = (p.y - camera.y) * zoom;
-                const prad = p.size * 5 * zoom;
-                const pGrad = lctx.createRadialGradient(px, py, 0, px, py, prad);
-                pGrad.addColorStop(0, 'rgba(0,0,0,1)');
-                pGrad.addColorStop(1, 'rgba(0,0,0,0)');
-                lctx.fillStyle = pGrad;
-                lctx.beginPath(); lctx.arc(px, py, prad, 0, Math.PI*2); lctx.fill();
-            });
-
-            // 3. Canavarların ışığı (Özellikle Bosslar ve Void Walker)
-            enemies.forEach(e => {
-                if (e.isBoss || e.name === 'Void Walker') {
-                    const ex = (e.x - camera.x) * zoom;
-                    const ey = (e.y - camera.y) * zoom;
-                    const erad = e.size * 2 * zoom;
-                    const eGrad = lctx.createRadialGradient(ex, ey, 0, ex, ey, erad);
-                    eGrad.addColorStop(0, 'rgba(0,0,0,0.8)');
-                    eGrad.addColorStop(1, 'rgba(0,0,0,0)');
-                    lctx.fillStyle = eGrad;
-                    lctx.beginPath(); lctx.arc(ex, ey, erad, 0, Math.PI*2); lctx.fill();
+            if (ambientAlpha > 0) {
+                // Işık Maskesini temizle ve ayarla
+                if (lightCanvas.width !== canvas.width) {
+                    lightCanvas.width = canvas.width;
+                    lightCanvas.height = canvas.height;
                 }
-            });
+                lctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // Önce her yeri karart
+                lctx.fillStyle = `${ambientColor}${ambientAlpha})`;
+                lctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // 1. Player'ın etrafını "kes" (ışık alanı - Zoom uyumlu)
+                const playerX = (player.x - (camera.x || 0)) * (zoom || 0.5);
+                const playerY = (player.y - (camera.y || 0)) * (zoom || 0.5);
+                const playerRad = (250 + Math.sin(frameCount/10) * 10) * (zoom || 0.5); // Hafif titreme
+                
+                lctx.globalCompositeOperation = 'destination-out';
+                const playerGrad = lctx.createRadialGradient(playerX, playerY, 0, playerX, playerY, playerRad);
+                playerGrad.addColorStop(0, 'rgba(0,0,0,1)');
+                playerGrad.addColorStop(1, 'rgba(0,0,0,0)');
+                lctx.fillStyle = playerGrad;
+                lctx.beginPath(); lctx.arc(playerX, playerY, playerRad, 0, Math.PI*2); lctx.fill();
+                
+                // 2. Mermilerin ışığı
+                projectiles.forEach(p => {
+                    const px = (p.x - (camera.x || 0)) * (zoom || 0.5);
+                    const py = (p.y - (camera.y || 0)) * (zoom || 0.5);
+                    const prad = p.size * 5 * (zoom || 0.5);
+                    const pGrad = lctx.createRadialGradient(px, py, 0, px, py, prad);
+                    pGrad.addColorStop(0, 'rgba(0,0,0,1)');
+                    pGrad.addColorStop(1, 'rgba(0,0,0,0)');
+                    lctx.fillStyle = pGrad;
+                    lctx.beginPath(); lctx.arc(px, py, prad, 0, Math.PI*2); lctx.fill();
+                });
 
-            // Sahneye uygula
-            ctx.drawImage(lightCanvas, 0, 0);
-            
-            // Renkli ışık haleleri (Screen mode)
-            ctx.globalCompositeOperation = 'screen';
-            
-            // Player halesi
-            ctx.globalAlpha = 0.2 * ambientAlpha;
-            const glowGrad = ctx.createRadialGradient(playerX, playerY, 0, playerX, playerY, playerRad);
-            glowGrad.addColorStop(0, '#f1c40f');
-            glowGrad.addColorStop(1, 'rgba(0,0,0,0)');
-            ctx.fillStyle = glowGrad;
-            ctx.beginPath(); ctx.arc(playerX, playerY, playerRad, 0, Math.PI*2); ctx.fill();
+                // 3. Canavarların ışığı (Özellikle Bosslar ve Void Walker)
+                enemies.forEach(e => {
+                    if (e.isBoss || e.name === 'Void Walker') {
+                        const ex = (e.x - (camera.x || 0)) * (zoom || 0.5);
+                        const ey = (e.y - (camera.y || 0)) * (zoom || 0.5);
+                        const erad = e.size * 2 * (zoom || 0.5);
+                        const eGrad = lctx.createRadialGradient(ex, ey, 0, ex, ey, erad);
+                        eGrad.addColorStop(0, 'rgba(0,0,0,0.8)');
+                        eGrad.addColorStop(1, 'rgba(0,0,0,0)');
+                        lctx.fillStyle = eGrad;
+                        lctx.beginPath(); lctx.arc(ex, ey, erad, 0, Math.PI*2); lctx.fill();
+                    }
+                });
 
-            // Mermi haleleri
-            projectiles.forEach(p => {
-                const px = (p.x - camera.x) * zoom;
-                const py = (p.y - camera.y) * zoom;
-                const prad = p.size * 6 * zoom;
-                ctx.globalAlpha = 0.3;
-                const pGlow = ctx.createRadialGradient(px, py, 0, px, py, prad);
-                pGlow.addColorStop(0, p.color);
-                pGlow.addColorStop(1, 'rgba(0,0,0,0)');
-                ctx.fillStyle = pGlow;
-                ctx.beginPath(); ctx.arc(px, py, prad, 0, Math.PI*2); ctx.fill();
-            });
+                // Sahneye uygula
+                ctx.drawImage(lightCanvas, 0, 0);
+                
+                // Renkli ışık haleleri (Screen mode)
+                ctx.globalCompositeOperation = 'screen';
+                
+                // Player halesi
+                ctx.globalAlpha = 0.2 * ambientAlpha;
+                const glowGrad = ctx.createRadialGradient(playerX, playerY, 0, playerX, playerY, playerRad);
+                glowGrad.addColorStop(0, '#f1c40f');
+                glowGrad.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle = glowGrad;
+                ctx.beginPath(); ctx.arc(playerX, playerY, playerRad, 0, Math.PI*2); ctx.fill();
 
-            ctx.globalCompositeOperation = 'source-over';
-            ctx.globalAlpha = 1.0;
+                // Mermi haleleri
+                projectiles.forEach(p => {
+                    const px = (p.x - (camera.x || 0)) * (zoom || 0.5);
+                    const py = (p.y - (camera.y || 0)) * (zoom || 0.5);
+                    const prad = p.size * 6 * (zoom || 0.5);
+                    ctx.globalAlpha = 0.3;
+                    const pGlow = ctx.createRadialGradient(px, py, 0, px, py, prad);
+                    pGlow.addColorStop(0, p.color);
+                    pGlow.addColorStop(1, 'rgba(0,0,0,0)');
+                    ctx.fillStyle = pGlow;
+                    ctx.beginPath(); ctx.arc(px, py, prad, 0, Math.PI*2); ctx.fill();
+                });
+
+                ctx.globalCompositeOperation = 'source-over';
+                ctx.globalAlpha = 1.0;
+            }
+
+            // --- 7. Post-Processing: Vignette ---
+            const vignetteGrad = ctx.createRadialGradient(canvas.width/2, canvas.height/2, canvas.width/4, canvas.width/2, canvas.height/2, canvas.width/1.2);
+            vignetteGrad.addColorStop(0, 'rgba(0,0,0,0)');
+            vignetteGrad.addColorStop(1, 'rgba(0,0,0,0.2)'); // 0.4 -> 0.2 (Daha hafif)
+            ctx.fillStyle = vignetteGrad;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            requestAnimationFrame(() => { update(); draw(); });
+        } catch (err) {
+            console.error("Draw Loop Error:", err);
+            requestAnimationFrame(() => { update(); draw(); });
         }
-
-        // --- 7. Post-Processing: Vignette ---
-        const vignetteGrad = ctx.createRadialGradient(canvas.width/2, canvas.height/2, canvas.width/4, canvas.width/2, canvas.height/2, canvas.width/1.2);
-        vignetteGrad.addColorStop(0, 'rgba(0,0,0,0)');
-        vignetteGrad.addColorStop(1, 'rgba(0,0,0,0.2)'); // 0.4 -> 0.2 (Daha hafif)
-        ctx.fillStyle = vignetteGrad;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        requestAnimationFrame(() => { update(); draw(); });
     }
 
     function gameOver() { 
