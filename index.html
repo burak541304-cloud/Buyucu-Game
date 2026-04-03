@@ -375,14 +375,34 @@
         /* Skill Bar */
         #skill-bar {
             position: absolute; bottom: 20px; right: 20px;
-            display: flex; gap: 10px;
-            background: rgba(0,0,0,0.6);
-            padding: 8px; border-radius: 8px;
-            border: 1px solid rgba(255,215,0,0.3);
+            display: grid;
+            grid-template-areas: 
+                "s1 s2 s3"
+                "hp hp mp mp";
+            grid-template-columns: repeat(3, 50px);
+            grid-template-rows: 50px 40px;
+            gap: 10px;
+            background: rgba(0,0,0,0.4);
+            padding: 12px; border-radius: 12px;
+            border: 1px solid rgba(255,215,0,0.2);
             z-index: 100;
-            max-width: 60%;
-            flex-wrap: wrap;
-            justify-content: flex-end;
+            backdrop-filter: blur(5px);
+        }
+        #skill-1 { grid-area: s1; }
+        #skill-2 { grid-area: s2; }
+        #skill-3 { grid-area: s3; }
+        #quick-hp { grid-area: hp; width: 100% !important; margin-left: 0 !important; }
+        #quick-mp { grid-area: mp; width: 100% !important; }
+
+        @media (max-width: 768px) {
+            #skill-bar { 
+                bottom: 15px; right: 15px; 
+                grid-template-columns: repeat(3, 45px);
+                grid-template-rows: 45px 35px;
+                gap: 8px;
+                padding: 10px;
+            }
+            .skill-slot { width: 100% !important; height: 100% !important; font-size: 20px; }
         }
         .skill-slot {
             width: 45px; height: 45px;
@@ -618,8 +638,7 @@
     </div>
 
     <div id="mobile-menu-btns">
-        <div class="mobile-btn" onclick="adjustZoom(0.1)" ontouchstart="event.preventDefault(); adjustZoom(0.1)">🔍+</div>
-        <div class="mobile-btn" onclick="adjustZoom(-0.1)" ontouchstart="event.preventDefault(); adjustZoom(-0.1)">🔍-</div>
+        <div class="mobile-btn" onclick="cycleZoom()" ontouchstart="event.preventDefault(); cycleZoom()">🔍</div>
         <div class="mobile-btn" onclick="toggleQuests()" ontouchstart="event.preventDefault(); toggleQuests()">📜</div>
         <div class="mobile-btn" onclick="toggleSkillTree()" ontouchstart="event.preventDefault(); toggleSkillTree()">🪄</div>
         <div class="mobile-btn" onclick="toggleInventory()" ontouchstart="event.preventDefault(); toggleInventory()">🎒</div>
@@ -813,6 +832,16 @@
                 document.exitFullscreen();
             }
         }
+    }
+
+    function cycleZoom() {
+        // Zoom kademeleri: 0.5 (en uzak), 1.0 (orta), 1.5 (yakın), 2.0 (en yakın)
+        if (zoom < 1.0) zoom = 1.0;
+        else if (zoom < 1.5) zoom = 1.5;
+        else if (zoom < 2.0) zoom = 2.0;
+        else zoom = MIN_ZOOM; // 2.0'dan sonra en uzağa (0.5) dön
+        
+        playSound('click');
     }
 
     function adjustZoom(amount) {
