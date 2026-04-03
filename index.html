@@ -563,20 +563,20 @@
     </div>
 
     <div id="skill-bar">
-        <div class="skill-slot" id="skill-1" onclick="castSpecificSkill(0)">
+        <div class="skill-slot" id="skill-1" onclick="castSpecificSkill(0)" ontouchstart="event.preventDefault(); castSpecificSkill(0)">
             <span class="key-hint">1</span>❄️
             <div class="skill-cooldown" id="cd-1"></div>
         </div>
-        <div class="skill-slot" id="skill-2" onclick="castSpecificSkill(1)">
+        <div class="skill-slot" id="skill-2" onclick="castSpecificSkill(1)" ontouchstart="event.preventDefault(); castSpecificSkill(1)">
             <span class="key-hint">2</span>⚡
             <div class="skill-cooldown" id="cd-2"></div>
         </div>
         <!-- Hızlı İksir Slotları -->
-        <div class="skill-slot" id="quick-hp" onclick="useQuickPotion('potion')" style="margin-left: 20px;">
+        <div class="skill-slot" id="quick-hp" onclick="useQuickPotion('potion')" ontouchstart="event.preventDefault(); useQuickPotion('potion')" style="margin-left: 20px;">
             <span class="key-hint">3</span>🧪
             <span class="item-count" id="hp-potion-count">0</span>
         </div>
-        <div class="skill-slot" id="quick-mp" onclick="useQuickPotion('mana_potion')">
+        <div class="skill-slot" id="quick-mp" onclick="useQuickPotion('mana_potion')" ontouchstart="event.preventDefault(); useQuickPotion('mana_potion')">
             <span class="key-hint">4</span>💧
             <span class="item-count" id="mp-potion-count">0</span>
         </div>
@@ -1917,7 +1917,7 @@
     }
 
     function update() {
-        if (!gameActive || isInventoryOpen || isShopOpen) return;
+        if (!gameActive || isShopOpen) return; // Envanter açıkken artık oyun durmayacak
         
         frameCount++;
         
