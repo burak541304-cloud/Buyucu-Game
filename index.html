@@ -973,6 +973,8 @@
     let droppedItems = [];
     let terrain = [];
     let worldObjects = [];
+    let rivers = []; // Yeni: Dere sistemi
+    let waterfalls = []; // Yeni: Şelale sistemi
     let paths = []; // Yeni: Toprak yollar
     let particles = []; // Yeni: Atmosferik tozlar
     let damageNumbers = []; // Yeni: Hasar rakamları
@@ -1436,20 +1438,43 @@
     }
 
     function initWorld() {
-        terrain = []; worldObjects = []; enemies = []; droppedItems = []; paths = []; particles = []; damageNumbers = [];
+        terrain = []; worldObjects = []; enemies = []; droppedItems = []; paths = []; rivers = []; waterfalls = []; particles = []; damageNumbers = [];
         
-        // Yollar (Daha doğal görünüm için) - Sayı artırıldı
-        for (let i = 0; i < 15; i++) {
+        // --- 1. Yollar (Daha detaylı ağ yapısı) ---
+        for (let i = 0; i < 20; i++) {
             paths.push({
                 x1: Math.random() * WORLD_WIDTH,
                 y1: Math.random() * WORLD_HEIGHT,
                 x2: Math.random() * WORLD_WIDTH,
                 y2: Math.random() * WORLD_HEIGHT,
-                width: 40 + Math.random() * 40
+                width: 30 + Math.random() * 30
             });
         }
 
-        // Toz zerreleri (Atmosfer) - Sayı artırıldı
+        // --- 2. Dereler (River System) ---
+        for (let i = 0; i < 8; i++) {
+            let startX = Math.random() * WORLD_WIDTH;
+            let startY = Math.random() * WORLD_HEIGHT;
+            let points = [{x: startX, y: startY}];
+            let curX = startX;
+            let curY = startY;
+            
+            // Her dere 5-8 segmentten oluşsun
+            let segments = 5 + Math.floor(Math.random() * 4);
+            for (let j = 0; j < segments; j++) {
+                curX += (Math.random() - 0.5) * 800;
+                curY += (Math.random() + 0.2) * 600; // Genelde aşağı doğru aksın
+                points.push({x: curX, y: curY});
+                
+                // Dere sonuna veya büyük kıvrımlara şelale ekle
+                if (j === segments - 1 || Math.random() > 0.7) {
+                    waterfalls.push({ x: curX, y: curY, width: 60 + Math.random() * 40 });
+                }
+            }
+            rivers.push({ points: points, width: 40 + Math.random() * 30 });
+        }
+
+        // --- 3. Atmosferik Tozlar ---
         for (let i = 0; i < 150; i++) {
             particles.push({
                 x: Math.random() * WORLD_WIDTH,
@@ -1460,21 +1485,11 @@
             });
         }
         
-        // Göller - Sayı artırıldı
-        for (let i = 0; i < 60; i++) {
-            terrain.push({ 
-                x: Math.random() * WORLD_WIDTH, 
-                y: Math.random() * WORLD_HEIGHT, 
-                type: 'lake', 
-                radius: 100 + Math.random() * 150 
-            });
-        }
-
-        // Ağaçlar ve Kayalar - Sayı artırıldı
-        for (let i = 0; i < 800; i++) {
+        // --- 4. Ağaçlar ve Kayalar (Sayı artırıldı) ---
+        for (let i = 0; i < 1000; i++) {
             worldObjects.push({ 
                 x: Math.random() * WORLD_WIDTH, y: Math.random() * WORLD_HEIGHT, 
-                type: Math.random() > 0.4 ? 'tree' : 'rock', 
+                type: Math.random() > 0.3 ? 'tree' : 'rock', 
                 size: 25 + Math.random() * 45,
                 variant: Math.random()
             });
@@ -1483,7 +1498,6 @@
         spawnBosses();
         updateShopUI();
         
-        // Optimizasyon: Objeleri bir kez Y eksenine göre sırala
         worldObjects.sort((a, b) => a.y - b.y);
     }
 
@@ -2670,6 +2684,41 @@
         saveGame(); // Görev tamamlandığında kaydet
     }
 
+    function drawWaterfall(ctx, x, y, width) {
+        const height = 100;
+        const speed = 15;
+        const time = (frameCount * speed) % height;
+
+        // Su Birikintisi (Taban)
+        const poolGrad = ctx.createRadialGradient(x, y + height, 0, x, y + height, width);
+        poolGrad.addColorStop(0, 'rgba(255,255,255,0.8)');
+        poolGrad.addColorStop(0.5, 'rgba(72,202,228,0.4)');
+        poolGrad.addColorStop(1, 'rgba(0,119,182,0)');
+        ctx.fillStyle = poolGrad;
+        ctx.beginPath(); ctx.ellipse(x, y + height, width, width/3, 0, 0, Math.PI*2); ctx.fill();
+
+        // Şelale Akışı (Çizgiler)
+        ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+        ctx.lineWidth = 2;
+        for (let i = 0; i < 8; i++) {
+            const offX = (i - 4) * (width / 4);
+            const lineH = 20 + Math.random() * 20;
+            const curY = y + ((time + i * 20) % height);
+            ctx.beginPath();
+            ctx.moveTo(x + offX, curY);
+            ctx.lineTo(x + offX, curY + lineH);
+            ctx.stroke();
+        }
+
+        // Köpük ve Sıçrama (Partiküller)
+        ctx.fillStyle = 'white';
+        for (let i = 0; i < 5; i++) {
+            const px = x + (Math.random() - 0.5) * width * 1.5;
+            const py = y + height + (Math.random() - 0.5) * 20;
+            ctx.beginPath(); ctx.arc(px, py, 2 + Math.random() * 3, 0, Math.PI * 2); ctx.fill();
+        }
+    }
+
     function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         
@@ -2691,13 +2740,11 @@
                    y - size < camera.y + viewH + viewMargin;
         };
 
-        // --- 1. Zemin ve Yollar ---
-        // Ana zemin rengi
+        // --- 1. Zemin ---
         ctx.fillStyle = '#1b3022';
-        // Ekran sarsıntısı ve zoom payı için geniş bir alanı boya
         ctx.fillRect(camera.x - viewMargin, camera.y - viewMargin, viewW + viewMargin * 2, viewH + viewMargin * 2);
         
-        // Zemin varyasyonu (Daha doğal görünüm)
+        // Zemin varyasyonu
         ctx.globalAlpha = 0.3;
         const patchSize = 300;
         const startX = Math.floor(camera.x / patchSize) * patchSize;
@@ -2711,8 +2758,46 @@
             }
         }
         ctx.globalAlpha = 1.0;
-        
-        // Yollar (Yumuşak kenarlar ile)
+
+        // --- 2. Dereler (Rivers) ---
+        rivers.forEach(r => {
+            ctx.beginPath();
+            ctx.lineJoin = 'round';
+            ctx.lineCap = 'round';
+            
+            // Dere Kenarı (Toprak/Kıyı)
+            ctx.strokeStyle = '#2c1e14';
+            ctx.lineWidth = r.width + 15;
+            ctx.moveTo(r.points[0].x, r.points[0].y);
+            r.points.forEach(p => ctx.lineTo(p.x, p.y));
+            ctx.stroke();
+
+            // Su Katmanı
+            const flowOffset = Math.sin(frameCount * 0.05) * 10;
+            ctx.strokeStyle = '#0077b6';
+            ctx.lineWidth = r.width;
+            ctx.beginPath();
+            ctx.moveTo(r.points[0].x, r.points[0].y);
+            r.points.forEach(p => ctx.lineTo(p.x, p.y));
+            ctx.stroke();
+
+            // Su Akış Çizgileri
+            ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+            ctx.lineWidth = r.width / 4;
+            ctx.setLineDash([20, 40]);
+            ctx.lineDashOffset = -frameCount * 2;
+            ctx.stroke();
+            ctx.setLineDash([]);
+        });
+
+        // --- 3. Şelaleler (Waterfalls) ---
+        waterfalls.forEach(w => {
+            if (isVisible(w.x, w.y, 150)) {
+                drawWaterfall(ctx, w.x, w.y, w.width);
+            }
+        });
+
+        // --- 4. Yollar (Paths) ---
         ctx.lineCap = 'round';
         paths.forEach(p => {
             const pathGrad = ctx.createLinearGradient(p.x1, p.y1, p.x2, p.y2);
@@ -2724,12 +2809,6 @@
             ctx.lineWidth = p.width;
             ctx.globalAlpha = 0.5;
             ctx.beginPath(); ctx.moveTo(p.x1, p.y1); ctx.lineTo(p.x2, p.y2); ctx.stroke();
-            
-            // Yol kenarı detayları
-            ctx.lineWidth = p.width * 0.8;
-            ctx.globalAlpha = 0.2;
-            ctx.strokeStyle = '#2c1e14';
-            ctx.stroke();
             ctx.globalAlpha = 1.0;
         });
 
@@ -2745,39 +2824,7 @@
             }
         }
 
-        // --- 2. Su Efektleri ---
-        terrain.forEach(t => {
-            if (t.type === 'lake' && isVisible(t.x, t.y, t.radius + 50)) {
-                // Kıyı
-                ctx.fillStyle = '#2c1e14';
-                ctx.beginPath(); ctx.arc(t.x, t.y, t.radius + 15, 0, Math.PI*2); ctx.fill();
-                ctx.fillStyle = '#c2b280';
-                ctx.beginPath(); ctx.arc(t.x, t.y, t.radius + 8, 0, Math.PI*2); ctx.fill();
-                
-                // Su (Gelişmiş Gradient)
-                const ripple = Math.sin(frameCount / 40) * 12;
-                const waterGrad = ctx.createRadialGradient(t.x, t.y, 0, t.x, t.y, t.radius + ripple/2);
-                waterGrad.addColorStop(0, '#48cae4');
-                waterGrad.addColorStop(0.5, '#00b4d8');
-                waterGrad.addColorStop(1, '#0077b6');
-                ctx.fillStyle = waterGrad;
-                ctx.beginPath(); ctx.arc(t.x, t.y, t.radius + ripple/4, 0, Math.PI*2); ctx.fill();
-                
-                // Parıltılar
-                ctx.globalAlpha = 0.3;
-                ctx.fillStyle = 'white';
-                for(let k=0; k<5; k++) {
-                    let angle = (frameCount / 60) + (k * Math.PI * 2 / 5);
-                    let dist = (t.radius * 0.6) + Math.sin(frameCount/30 + k) * 10;
-                    let rx = t.x + Math.cos(angle) * dist;
-                    let ry = t.y + Math.sin(angle) * dist;
-                    ctx.beginPath(); ctx.ellipse(rx, ry, 15, 5, angle, 0, Math.PI*2); ctx.fill();
-                }
-                ctx.globalAlpha = 1.0;
-            }
-        });
-
-        // --- 3. Statik Objeler ---
+        // --- 5. Statik Objeler ---
         worldObjects.forEach(o => {
             if (!isVisible(o.x, o.y, o.size + 100)) return;
 
@@ -2790,53 +2837,22 @@
 
             if (o.type === 'tree') {
                 // Gövde
-                const trunkGrad = ctx.createLinearGradient(o.x - 5, o.y, o.x + 5, o.y);
-                trunkGrad.addColorStop(0, '#3e2723');
-                trunkGrad.addColorStop(0.5, '#5d4037');
-                trunkGrad.addColorStop(1, '#3e2723');
-                ctx.fillStyle = trunkGrad;
+                ctx.fillStyle = '#3e2723';
                 ctx.fillRect(o.x - 5, o.y - 10, 10, 35);
-
-                // Yapraklar (Katmanlı)
+                // Yapraklar
                 const sway = Math.sin(frameCount/40 + o.x) * 4;
-                const leafColors = ['#1b4332', '#2d6a4f', '#40916c', '#52b788'];
-                
-                leafColors.forEach((c, i) => {
-                    ctx.fillStyle = c;
-                    const s = o.size * (1 - i*0.2);
-                    const yOff = i * 15;
-                    ctx.beginPath();
-                    ctx.arc(o.x + sway * (1 + i*0.2), o.y - 20 - yOff, s/2, 0, Math.PI*2);
-                    ctx.fill();
-                    // Küçük detaylar
-                    ctx.beginPath();
-                    ctx.arc(o.x + sway - s/2.5, o.y - 15 - yOff, s/3, 0, Math.PI*2);
-                    ctx.fill();
-                    ctx.beginPath();
-                    ctx.arc(o.x + sway + s/2.5, o.y - 15 - yOff, s/3, 0, Math.PI*2);
-                    ctx.fill();
-                });
+                ctx.fillStyle = '#1b4332';
+                ctx.beginPath(); ctx.arc(o.x + sway, o.y - 20, o.size/2, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = '#2d6a4f';
+                ctx.beginPath(); ctx.arc(o.x + sway, o.y - 35, o.size/2.5, 0, Math.PI*2); ctx.fill();
             } else {
                 // Kaya
-                const rockGrad = ctx.createRadialGradient(o.x - o.size/4, o.y - o.size/4, 0, o.x, o.y, o.size);
-                rockGrad.addColorStop(0, '#90a4ae');
-                rockGrad.addColorStop(1, '#455a64');
-                ctx.fillStyle = rockGrad;
-                ctx.beginPath();
-                ctx.moveTo(o.x - o.size/2, o.y + o.size/4);
-                ctx.lineTo(o.x - o.size/2.5, o.y - o.size/3);
-                ctx.lineTo(o.x + o.size/4, o.y - o.size/2.2);
-                ctx.lineTo(o.x + o.size/2, o.y + o.size/4);
-                ctx.closePath(); ctx.fill();
-                
-                // Çatlaklar
-                ctx.strokeStyle = 'rgba(0,0,0,0.15)';
-                ctx.lineWidth = 1.5;
-                ctx.beginPath(); ctx.moveTo(o.x - 5, o.y - 10); ctx.lineTo(o.x + 8, o.y + 5); ctx.stroke();
+                ctx.fillStyle = '#455a64';
+                ctx.beginPath(); ctx.moveTo(o.x - o.size/2, o.y + o.size/4); ctx.lineTo(o.x, o.y - o.size/2); ctx.lineTo(o.x + o.size/2, o.y + o.size/4); ctx.closePath(); ctx.fill();
             }
         });
 
-        // --- 4. Karakterler ve Efektler ---
+        // --- 6. Karakterler ve Efektler ---
         // Shopkeeper
         if (isVisible(shopKeeper.x, shopKeeper.y, shopKeeper.size)) {
             ctx.fillStyle = '#f1c40f'; ctx.beginPath(); ctx.arc(shopKeeper.x, shopKeeper.y, shopKeeper.size, 0, Math.PI*2); ctx.fill();
@@ -2846,56 +2862,31 @@
         droppedItems.forEach(item => {
             if (!isVisible(item.x, item.y, item.size + 50)) return;
             const bounce = Math.sin(frameCount/15) * 8;
-            
-            // Parlama Efekti
-            const glowGrad = ctx.createRadialGradient(item.x, item.y + bounce, 0, item.x, item.y + bounce, item.size + 15);
-            glowGrad.addColorStop(0, 'rgba(255, 215, 0, 0.4)');
-            glowGrad.addColorStop(1, 'rgba(255, 215, 0, 0)');
-            ctx.fillStyle = glowGrad;
-            ctx.beginPath(); ctx.arc(item.x, item.y + bounce, item.size + 15, 0, Math.PI*2); ctx.fill();
-            
-            // Eşya İkonu
             ctx.fillStyle = 'white'; ctx.font = "26px Arial";
             ctx.textAlign = 'center';
             ctx.fillText(item.icon, item.x, item.y + 10 + bounce);
             ctx.textAlign = 'left';
         });
 
-        // Projectiles (Gelişmiş Mermi Efektleri)
+        // Projectiles
         projectiles.forEach(p => {
-            // Trail (İz)
-            const trailGrad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 2);
-            trailGrad.addColorStop(0, p.color);
-            trailGrad.addColorStop(1, 'rgba(0,0,0,0)');
-            ctx.fillStyle = trailGrad;
-            ctx.globalAlpha = 0.4;
-            ctx.beginPath(); ctx.arc(p.x, p.y, p.size * 2, 0, Math.PI*2); ctx.fill();
-            ctx.globalAlpha = 1.0;
-
-            // Çekirdek
             ctx.fillStyle = p.color;
             ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill();
-            ctx.fillStyle = '#fff';
-            ctx.beginPath(); ctx.arc(p.x - p.size/4, p.y - p.size/4, p.size/2, 0, Math.PI*2); ctx.fill();
         });
 
-        // Player (Daima görünür)
+        // Player
         const isMoving = keys['KeyW'] || keys['KeyS'] || keys['KeyA'] || keys['KeyD'] || joystickData.active;
         drawWizard(ctx, player.x, player.y, player.size, player.color, isMoving, player.equipment);
 
-        // Pet (Oyuncudan sonra çizilir)
-        if (player.pet.active) {
-            if (isVisible(player.pet.x, player.pet.y, player.pet.size + 50)) {
-                drawPet(ctx, player.pet);
-            }
-        }
+        // Pet
+        if (player.pet.active) drawPet(ctx, player.pet);
 
         // Enemies
         enemies.forEach(e => {
             if (isVisible(e.x, e.y, e.size + 50)) drawMonster(ctx, e);
         });
 
-        // Hasar Rakamlarını Çiz
+        // Damage Numbers
         ctx.textAlign = 'center';
         ctx.font = 'bold 16px Arial';
         damageNumbers.forEach(d => {
@@ -2906,11 +2897,9 @@
         ctx.globalAlpha = 1.0;
         ctx.textAlign = 'left';
 
-        // --- 5. Atmosferik Efektler ---
-        // Toz zerreleri ve Nova Efektleri
+        // Particles
         particles.forEach(p => {
             if (p.isNova) {
-                // Nova görsel efekti (Büyüyen halka)
                 ctx.save();
                 ctx.globalAlpha = p.life / p.maxLife;
                 ctx.strokeStyle = p.color;
@@ -2928,8 +2917,7 @@
         });
         ctx.globalAlpha = 1.0;
 
-        ctx.restore(); // Ana sahne bitti
-
+        ctx.restore();
         requestAnimationFrame(() => { update(); draw(); });
     }
 
