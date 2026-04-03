@@ -1747,11 +1747,24 @@
     }
 
     function addItemToInventory(item) {
-        playSound('pickup');
+        let added = false;
         let existingItem = player.inventory.find(i => i && i.id === item.id && i.type === 'consumable');
-        if (existingItem) { existingItem.count++; }
-        else { let empty = player.inventory.indexOf(null); if (empty !== -1) player.inventory[empty] = { ...item, count: 1 }; }
-        saveGame(); // Envantere eşya eklendiğinde kaydet
+        if (existingItem) { 
+            existingItem.count++; 
+            added = true;
+        } else { 
+            let empty = player.inventory.indexOf(null); 
+            if (empty !== -1) {
+                player.inventory[empty] = { ...item, count: 1 }; 
+                added = true;
+            }
+        }
+        
+        if (added) {
+            playSound('pickup');
+            saveGame(); // Envantere eşya eklendiğinde kaydet
+        }
+        return added;
     }
 
     function checkShopInteract() { if (Math.hypot(player.x - shopKeeper.x, player.y - shopKeeper.y) < 130) toggleShop(); }
@@ -1822,14 +1835,50 @@
         player.x = Math.max(player.size, Math.min(WORLD_WIDTH - player.size, player.x));
         player.y = Math.max(player.size, Math.min(WORLD_HEIGHT - player.size, player.y));
         
-        // Pet Hareketi (Oyuncuyu Takip Etme)
+        // Pet Hareketi ve Eşya Toplama Mantığı
         if (player.pet.active) {
             const pet = player.pet;
-            const dx = player.x - pet.x;
-            const dy = player.y - pet.y;
+            let targetX = player.x;
+            let targetY = player.y;
+            let isPickingUp = false;
+
+            // En yakın eşyayı bul (Menzil: 400)
+            if (droppedItems.length > 0) {
+                let nearestItem = null;
+                let minItemDist = 400; 
+
+                droppedItems.forEach(item => {
+                    const d = Math.hypot(pet.x - item.x, pet.y - item.y);
+                    if (d < minItemDist) {
+                        minItemDist = d;
+                        nearestItem = item;
+                    }
+                });
+
+                if (nearestItem) {
+                    targetX = nearestItem.x;
+                    targetY = nearestItem.y;
+                    isPickingUp = true;
+
+                    // Eşyayı toplama menzili
+                    if (minItemDist < pet.size + nearestItem.size + 10) {
+                        if (addItemToInventory(nearestItem)) {
+                            droppedItems.splice(droppedItems.indexOf(nearestItem), 1);
+                            updateStatsUI();
+                            if (isInventoryOpen) updateInventoryUI();
+                        }
+                    }
+                }
+            }
+
+            const dx = targetX - pet.x;
+            const dy = targetY - pet.y;
             const dist = Math.hypot(dx, dy);
 
-            if (dist > pet.followDistance) {
+            // Eşya toplarken daha yakına gider, oyuncuyu takip ederken mesafesini korur
+            const stopDist = isPickingUp ? 5 : pet.followDistance;
+
+            if (dist > stopDist) {
                 const angle = Math.atan2(dy, dx);
                 pet.x += Math.cos(angle) * pet.speed;
                 pet.y += Math.sin(angle) * pet.speed;
@@ -1871,14 +1920,15 @@
             if (d.life <= 0) damageNumbers.splice(i, 1);
         }
 
-        // Yerden Eşya Toplama
+        // Yerden Eşya Toplama (Oyuncu)
         for (let i = droppedItems.length - 1; i >= 0; i--) {
             let item = droppedItems[i];
             if (Math.hypot(player.x - item.x, player.y - item.y) < player.size + item.size) {
-                addItemToInventory(item);
-                droppedItems.splice(i, 1);
-                updateStatsUI();
-                if (isInventoryOpen) updateInventoryUI();
+                if (addItemToInventory(item)) {
+                    droppedItems.splice(i, 1);
+                    updateStatsUI();
+                    if (isInventoryOpen) updateInventoryUI();
+                }
             }
         }
 
