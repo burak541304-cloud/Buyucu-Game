@@ -591,6 +591,10 @@
 
     <div id="shop-ui">
         <div class="inv-header">SUNDRIES [E]</div>
+        <div style="display: flex; gap: 5px; margin-bottom: 10px;">
+            <button class="page-btn active" id="shop-buy-tab" style="flex: 1;" onclick="setShopMode('buy')" ontouchstart="event.preventDefault(); setShopMode('buy')">ALINACAKLAR</button>
+            <button class="page-btn" id="shop-sell-tab" style="flex: 1;" onclick="setShopMode('sell')" ontouchstart="event.preventDefault(); setShopMode('sell')">SATILACAKLAR</button>
+        </div>
         <div class="inv-page-btns" id="shop-page-btns" style="margin-bottom: 10px;">
             <!-- Market sayfa butonları JS ile gelecek -->
         </div>
@@ -999,6 +1003,7 @@
     let isSkillTreeOpen = false;
     let currentInventoryPage = 0;
     let currentShopPage = 0;
+    let shopMode = 'buy'; // 'buy' or 'sell'
     const INVENTORY_PAGE_SIZE = 16; // Her sayfa 16 slot (4x4)
     const SHOP_PAGE_SIZE = 12; // Market sayfası başına 12 eşya
     let selectedItemIndex = -1; // -1: none, 0+: inventory index
@@ -2065,6 +2070,16 @@
 
     function hideTooltip() { tooltip.style.display = 'none'; }
 
+    function setShopMode(mode) {
+        shopMode = mode;
+        currentShopPage = 0;
+        document.getElementById('shop-buy-tab').classList.toggle('active', mode === 'buy');
+        document.getElementById('shop-sell-tab').classList.toggle('active', mode === 'sell');
+        playSound('click');
+        updateShopUI();
+        closeShopInfo();
+    }
+
     function updateShopUI() {
         const container = document.getElementById('shop-items');
         const shopGold = document.getElementById('shop-gold');
@@ -2072,25 +2087,36 @@
         
         if (shopGold) shopGold.innerText = player.gold;
         
-        const allItems = Object.values(ITEM_DB);
-        const totalPages = Math.ceil(allItems.length / SHOP_PAGE_SIZE);
+        let displayItems = [];
+        if (shopMode === 'buy') {
+            displayItems = Object.values(ITEM_DB);
+        } else {
+            // Envanterdeki satılabilir eşyaları filtrele (null olmayanlar)
+            displayItems = player.inventory
+                .map((item, index) => item ? { ...item, invIndex: index } : null)
+                .filter(i => i !== null);
+        }
+
+        const totalPages = Math.ceil(displayItems.length / SHOP_PAGE_SIZE);
         
         // Sayfa butonlarını güncelle
         if (pageBtnContainer) {
             pageBtnContainer.innerHTML = '';
-            for (let i = 0; i < totalPages; i++) {
-                const btn = document.createElement('button');
-                btn.className = 'page-btn' + (currentShopPage === i ? ' active' : '');
-                btn.innerText = `SAYFA ${i + 1}`;
-                btn.onclick = () => { currentShopPage = i; updateShopUI(); playSound('click'); closeShopInfo(); };
-                btn.ontouchstart = (e) => { e.preventDefault(); currentShopPage = i; updateShopUI(); playSound('click'); closeShopInfo(); };
-                pageBtnContainer.appendChild(btn);
+            if (totalPages > 1) {
+                for (let i = 0; i < totalPages; i++) {
+                    const btn = document.createElement('button');
+                    btn.className = 'page-btn' + (currentShopPage === i ? ' active' : '');
+                    btn.innerText = `SAYFA ${i + 1}`;
+                    btn.onclick = () => { currentShopPage = i; updateShopUI(); playSound('click'); closeShopInfo(); };
+                    btn.ontouchstart = (e) => { e.preventDefault(); currentShopPage = i; updateShopUI(); playSound('click'); closeShopInfo(); };
+                    pageBtnContainer.appendChild(btn);
+                }
             }
         }
         
         container.innerHTML = '';
         const start = currentShopPage * SHOP_PAGE_SIZE;
-        const pageItems = allItems.slice(start, start + SHOP_PAGE_SIZE);
+        const pageItems = displayItems.slice(start, start + SHOP_PAGE_SIZE);
         
         pageItems.forEach(item => {
             const div = document.createElement('div');
@@ -2100,16 +2126,57 @@
             if (item.name.includes('(L)')) div.style.borderColor = '#f1c40f';
             else if (item.name.includes('(Epik)')) div.style.borderColor = '#9b59b6';
             
+            const displayPrice = shopMode === 'buy' ? item.cost : Math.floor(item.cost * 0.5);
+
             div.innerHTML = `
                 <span class="item-icon">${item.icon}</span>
-                <span class="item-price">${item.cost}</span>
+                <span class="item-price">${displayPrice}</span>
             `;
-            div.onclick = (e) => showShopItemInfo(item.id, e);
-            div.ontouchstart = (e) => { e.preventDefault(); showShopItemInfo(item.id, e.touches[0]); };
+            
+            if (shopMode === 'buy') {
+                div.onclick = (e) => showShopItemInfo(item.id, e);
+                div.ontouchstart = (e) => { e.preventDefault(); showShopItemInfo(item.id, e.touches[0]); };
+            } else {
+                div.onclick = (e) => {
+                    selectedItemIndex = item.invIndex;
+                    showShopSellInfo(item, e);
+                };
+                div.ontouchstart = (e) => {
+                    e.preventDefault();
+                    selectedItemIndex = item.invIndex;
+                    showShopSellInfo(item, e.touches[0]);
+                };
+            }
+
             div.onmouseenter = (e) => showTooltip(item, e);
             div.onmouseleave = hideTooltip;
             container.appendChild(div);
         });
+    }
+
+    function showShopSellInfo(item, e) {
+        playSound('click');
+        const panel = document.getElementById('shop-info-panel');
+        const title = document.getElementById('shop-info-title');
+        const stats = document.getElementById('shop-info-stats');
+        const desc = document.getElementById('shop-info-desc');
+        const price = document.getElementById('shop-info-price');
+        const buyBtn = document.getElementById('shop-buy-btn');
+
+        title.innerText = item.name + " (Satış)";
+        desc.innerText = item.desc;
+        const sellPrice = Math.floor(item.cost * 0.5);
+        price.innerText = sellPrice;
+        stats.innerHTML = '<div style="color: #f1c40f; margin-bottom: 5px;">Bu eşyayı satmak üzeresiniz.</div>';
+        
+        buyBtn.innerText = "SAT";
+        buyBtn.style.background = "#e67e22";
+        buyBtn.onclick = () => { sellSelectedItem(); closeShopInfo(); };
+        
+        panel.style.display = 'block';
+        const rect = shopUI.getBoundingClientRect();
+        panel.style.left = (e.clientX - rect.left + 20) + 'px';
+        panel.style.top = (e.clientY - rect.top - 20) + 'px';
     }
 
     function showShopItemInfo(id, e) {
