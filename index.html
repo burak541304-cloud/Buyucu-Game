@@ -158,6 +158,7 @@
 
         .inv-page-btns {
             display: flex; gap: 5px; justify-content: center; margin-bottom: 10px;
+            flex-wrap: wrap;
         }
         .page-btn {
             padding: 4px 8px; background: rgba(0,0,0,0.3); border: 1px solid #5a5e7a;
@@ -515,9 +516,8 @@
             <div style="grid-column: 3; grid-row: 3;" class="equip-slot" id="slot-ring" onclick="unequip('ring')">💍</div>
         </div>
 
-        <div class="inv-page-btns">
-            <button class="page-btn active" id="page-btn-0" onclick="changeInventoryPage(0)">SAYFA 1</button>
-            <button class="page-btn" id="page-btn-1" onclick="changeInventoryPage(1)">SAYFA 2</button>
+        <div class="inv-page-btns" id="inv-page-btns">
+            <!-- Sayfa butonları JS ile dolacak -->
         </div>
 
         <div class="inventory-grid" id="inv-grid">
@@ -560,7 +560,6 @@
         <div class="mobile-btn" onclick="toggleInventory()" ontouchstart="event.preventDefault(); toggleInventory()">🎒</div>
         <div class="mobile-btn" onclick="toggleStats()" ontouchstart="event.preventDefault(); toggleStats()">👤</div>
         <div class="mobile-btn" id="mobile-shop-btn" style="display:none;" onclick="checkShopInteract()" ontouchstart="event.preventDefault(); checkShopInteract()">🏪</div>
-        <div class="mobile-btn" onclick="toggleFullScreen()" ontouchstart="event.preventDefault(); toggleFullScreen()">📺</div>
     </div>
 
     <div id="skill-bar">
@@ -813,9 +812,9 @@
     ];
 
     let camera = { x: 0, y: 0 };
-    let zoom = 1.0;
     const MIN_ZOOM = 0.5;
     const MAX_ZOOM = 2.0;
+    let zoom = MIN_ZOOM; // En uzak seviyeden başlat (0.5)
     let player = {
         x: WORLD_WIDTH / 2, y: WORLD_HEIGHT / 2, // Yeni harita merkezine ayarlandı
         size: 24, speed: 5, 
@@ -831,7 +830,7 @@
             { id: 'kill_slimes', name: 'Slime Temizliği', target: 'Slime', count: 0, goal: 5, reward: 200, completed: false },
             { id: 'kill_orcs', name: 'Orc Avcısı', target: 'Orc', count: 0, goal: 3, reward: 500, completed: false }
         ],
-        inventory: Array(56).fill(null).map((_, i) => {
+        inventory: Array(224).fill(null).map((_, i) => {
             if (i === 0) return { ...ITEM_DB.potion, count: 1 };
             if (i === 1) return { ...ITEM_DB.mana_potion, count: 1 };
             return null;
@@ -1602,11 +1601,6 @@
     function changeInventoryPage(page) {
         currentInventoryPage = page;
         playSound('click');
-        
-        // Buton stillerini güncelle
-        document.getElementById('page-btn-0').classList.toggle('active', page === 0);
-        document.getElementById('page-btn-1').classList.toggle('active', page === 1);
-        
         updateInventoryUI();
         closeItemInfo();
     }
@@ -1614,6 +1608,21 @@
     function updateInventoryUI() {
         invGrid.innerHTML = '';
         
+        // Sayfa butonlarını güncelle
+        const pageBtnContainer = document.getElementById('inv-page-btns');
+        if (pageBtnContainer) {
+            pageBtnContainer.innerHTML = '';
+            const totalPages = Math.ceil(player.inventory.length / INVENTORY_PAGE_SIZE);
+            for (let i = 0; i < totalPages; i++) {
+                const btn = document.createElement('button');
+                btn.className = 'page-btn' + (currentInventoryPage === i ? ' active' : '');
+                btn.innerText = `SAYFA ${i + 1}`;
+                btn.onclick = () => changeInventoryPage(i);
+                btn.ontouchstart = (e) => { e.preventDefault(); changeInventoryPage(i); };
+                pageBtnContainer.appendChild(btn);
+            }
+        }
+
         const start = currentInventoryPage * INVENTORY_PAGE_SIZE;
         const end = start + INVENTORY_PAGE_SIZE;
         const pageItems = player.inventory.slice(start, end);
