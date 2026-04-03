@@ -380,6 +380,9 @@
             padding: 8px; border-radius: 8px;
             border: 1px solid rgba(255,215,0,0.3);
             z-index: 100;
+            max-width: 60%;
+            flex-wrap: wrap;
+            justify-content: flex-end;
         }
         .skill-slot {
             width: 45px; height: 45px;
@@ -1575,7 +1578,7 @@
 
     // Joystick Eventleri (Dinamik)
     window.addEventListener('touchstart', (e) => {
-        if (!gameActive || isInventoryOpen || isShopOpen) return;
+        if (!gameActive || isShopOpen) return; // Envanter açıkken artık joystick çalışabilecek
         
         // UI elementlerine tıklanmıyorsa joystick'i başlat
         const target = e.target;
@@ -1584,7 +1587,10 @@
             target.closest('.mobile-btn') || 
             target.closest('.skill-slot') || 
             target.closest('.stat-btn') ||
-            target.closest('.equip-slot')) {
+            target.closest('.equip-slot') ||
+            target.closest('#inventory-ui') ||
+            target.closest('#skill-tree-ui') ||
+            target.closest('#quest-ui')) {
             return;
         }
 
@@ -1943,6 +1949,20 @@
         const item = player.inventory[index];
         if (!item || item.type !== 'consumable') return;
 
+        // Görsel Geri Bildirim (Slot parlaması)
+        const slotId = item.id === 'potion' ? 'quick-hp' : (item.id === 'mana_potion' ? 'quick-mp' : null);
+        if (slotId) {
+            const slot = document.getElementById(slotId);
+            if (slot) {
+                slot.style.transform = 'scale(1.2)';
+                slot.style.borderColor = '#fff';
+                setTimeout(() => {
+                    slot.style.transform = 'scale(1)';
+                    slot.style.borderColor = '#444';
+                }, 100);
+            }
+        }
+
         playSound('click');
         if (item.id === 'potion') { player.hp = Math.min(player.maxHp, player.hp + item.hp); item.count--; }
         else if (item.id === 'mana_potion') { player.mp = Math.min(player.maxMp, player.mp + item.mp); item.count--; }
@@ -2110,21 +2130,40 @@
 
     function addItemToInventory(item) {
         let added = false;
-        let existingItem = player.inventory.find(i => i && i.id === item.id && i.type === 'consumable');
-        if (existingItem) { 
-            existingItem.count++; 
+        let slotIndex = -1;
+
+        // 1. Üst üste binen eşyaları (iksirler vb.) kontrol et
+        let existingItemIndex = player.inventory.findIndex(i => i && i.id === item.id && i.type === 'consumable');
+        if (existingItemIndex !== -1) { 
+            player.inventory[existingItemIndex].count++; 
+            slotIndex = existingItemIndex;
             added = true;
         } else { 
+            // 2. Tüm sayfaları tara (1'den 8'e kadar) ve ilk boş slotu bul
             let empty = player.inventory.indexOf(null); 
             if (empty !== -1) {
                 player.inventory[empty] = { ...item, count: 1 }; 
+                slotIndex = empty;
                 added = true;
             }
         }
         
         if (added) {
             playSound('pickup');
-            saveGame(); // Envantere eşya eklendiğinde kaydet
+            // Eğer envanter açıksa ve eşya farklı bir sayfaya gittiyse, o sayfayı göster
+            if (isInventoryOpen && slotIndex !== -1) {
+                const targetPage = Math.floor(slotIndex / INVENTORY_PAGE_SIZE);
+                if (currentInventoryPage !== targetPage) {
+                    changeInventoryPage(targetPage);
+                } else {
+                    updateInventoryUI();
+                }
+            }
+            saveGame(); 
+        } else {
+            // Envanter tamamen (224 slot) doluysa uyarı ver
+            console.log("Envanter tamamen dolu!");
+            // UI üzerinde bir uyarı mesajı eklenebilir
         }
         return added;
     }
@@ -2992,6 +3031,15 @@
                 const data = JSON.parse(savedData);
                 
                 if (data.player) {
+                    // Envanter boyutu kontrolü: Eğer kayıtlı envanter yeni boyuttan (224) küçükse, genişlet
+                    if (data.player.inventory && data.player.inventory.length < 224) {
+                        const newInventory = Array(224).fill(null);
+                        data.player.inventory.forEach((item, index) => {
+                            if (index < 224) newInventory[index] = item;
+                        });
+                        data.player.inventory = newInventory;
+                    }
+                    
                     Object.assign(player, data.player);
                     
                     // Öğrenilen yetenekleri SKILL_DB'ye geri yükle
