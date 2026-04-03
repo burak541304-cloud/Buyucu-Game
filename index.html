@@ -860,7 +860,11 @@
         // Şapkalar / Zırhlar (Hat)
         wizard_hat: { id: 'wizard_hat', name: 'Wizard Hat', icon: '🧙', type: 'hat', maxHp: 50, intBonus: 3, cost: 250, desc: 'Kadim bir büyücü şapkası.' },
         apprentice_robe: { id: 'apprentice_robe', name: 'Apprentice Robe', icon: '🧥', type: 'hat', maxHp: 120, intBonus: 8, hpBonus: 10, cost: 600, desc: 'Çırak büyücü cübbesi.' },
-        mystic_crown: { id: 'mystic_crown', name: 'Mystic Crown', icon: '👑', type: 'hat', maxHp: 300, intBonus: 20, dexBonus: 5, hpBonus: 20, cost: 2000, desc: 'Mistik güçlerle dövülmüş bir taç.' }
+        mystic_crown: { id: 'mystic_crown', name: 'Mystic Crown', icon: '👑', type: 'hat', maxHp: 300, intBonus: 20, dexBonus: 5, hpBonus: 20, cost: 2000, desc: 'Mistik güçlerle dövülmüş bir taç.' },
+        
+        // Petler
+        pet_cat: { id: 'pet_cat', name: 'Lucky Cat', icon: '🐱', type: 'pet', cost: 1000, desc: 'Eşyaları otomatik toplar.' },
+        pet_owl: { id: 'pet_owl', name: 'Wise Owl', icon: '🦉', type: 'pet', cost: 1500, desc: 'Eşyaları daha uzak mesafeden toplar.' }
     };
 
     // Yetenek Veritabanı
@@ -887,9 +891,9 @@
     ];
 
     let camera = { x: 0, y: 0 };
-    let zoom = 1.0;
-    const MIN_ZOOM = 0.5;
+    const MIN_ZOOM = 0.3; // Daha geniş açı (0.3)
     const MAX_ZOOM = 2.0;
+    let zoom = MIN_ZOOM; // En geniş açı ile başla
     let player = {
         x: WORLD_WIDTH / 2, y: WORLD_HEIGHT / 2,
         size: 24, speed: 5, 
@@ -917,6 +921,12 @@
         equipment: {
             weapon: { ...ITEM_DB.fire_staff },
             hat: { ...ITEM_DB.wizard_hat }
+        },
+        pet: {
+            x: WORLD_WIDTH / 2 - 50, y: WORLD_HEIGHT / 2 - 50,
+            type: 'dog', icon: '🐕', size: 16, speed: 4, 
+            lootRange: 150, // Eşyaları bu mesafeden çeker
+            idleTimer: 0
         }
     };
 
@@ -1705,6 +1715,13 @@
             const oldEquip = player.equipment[item.type];
             player.equipment[item.type] = item;
             player.inventory[index] = oldEquip;
+        } else if (item.type === 'pet') {
+            // Pet değiştirme
+            player.pet.icon = item.icon;
+            player.pet.type = item.id;
+            // Pet özelliklerini güncelle (Örn: Owl daha uzağı toplar)
+            if (item.id === 'pet_owl') player.pet.lootRange = 300;
+            else player.pet.lootRange = 150;
         }
         updateInventoryUI();
         updateStatsUI();
@@ -1882,11 +1899,90 @@
         }
     }
 
+    function updatePet() {
+        if (!player.pet) return;
+        const pet = player.pet;
+        
+        // 1. En yakın eşyayı bul
+        let nearestItem = null;
+        let minDist = pet.lootRange;
+        droppedItems.forEach(item => {
+            const d = Math.hypot(pet.x - item.x, pet.y - item.y);
+            if (d < minDist) {
+                minDist = d;
+                nearestItem = item;
+            }
+        });
+
+        if (nearestItem) {
+            // Eşyaya doğru hareket et
+            const angle = Math.atan2(nearestItem.y - pet.y, nearestItem.x - pet.x);
+            pet.x += Math.cos(angle) * pet.speed;
+            pet.y += Math.sin(angle) * pet.speed;
+
+            // Eşyayı topla (Pet dokununca)
+            if (minDist < pet.size + nearestItem.size) {
+                const itemIndex = droppedItems.indexOf(nearestItem);
+                if (itemIndex !== -1) {
+                    addItemToInventory(nearestItem);
+                    droppedItems.splice(itemIndex, 1);
+                    updateStatsUI();
+                    if (isInventoryOpen) updateInventoryUI();
+                }
+            }
+        } else {
+            // Player'ı takip et
+            const dToPlayer = Math.hypot(pet.x - player.x, pet.y - player.y);
+            if (dToPlayer > 80) { // Belirli bir mesafeden sonra takip et
+                const angle = Math.atan2(player.y - pet.y, player.x - pet.x);
+                // Mesafe çoksa daha hızlı takip et
+                const currentSpeed = dToPlayer > 300 ? pet.speed * 2 : pet.speed;
+                pet.x += Math.cos(angle) * currentSpeed;
+                pet.y += Math.sin(angle) * currentSpeed;
+            } else {
+                // Rastgele "idle" hareketi
+                pet.idleTimer++;
+                pet.x += Math.sin(pet.idleTimer / 20) * 0.2;
+                pet.y += Math.cos(pet.idleTimer / 25) * 0.2;
+            }
+        }
+    }
+
+    function drawPet(ctx) {
+        if (!player.pet) return;
+        const pet = player.pet;
+        if (!isVisible(pet.x, pet.y)) return;
+
+        const bounce = Math.abs(Math.sin(frameCount / 10)) * 5;
+        const scale = 1.0;
+
+        // Gölge
+        ctx.globalAlpha = 0.2;
+        ctx.fillStyle = '#000';
+        ctx.beginPath();
+        ctx.ellipse(pet.x, pet.y + 5, pet.size/1.5, pet.size/3, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1.0;
+
+        // Pet İkonu (Emoji)
+        ctx.font = `${pet.size * 2}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(pet.icon, pet.x, pet.y - bounce);
+
+        // İsim etiketi (Küçük)
+        ctx.font = 'bold 10px Arial';
+        ctx.fillStyle = '#f1c40f';
+        const petName = pet.type === 'pet_cat' ? 'Lucky Cat' : (pet.type === 'pet_owl' ? 'Wise Owl' : 'Loyal Friend');
+        ctx.fillText(petName, pet.x, pet.y - pet.size - bounce - 5);
+    }
+
     function update() {
         if (!gameActive || isInventoryOpen || isShopOpen) return;
         
         updateTime();
         updateWeather();
+        updatePet(); // Pet güncelleme
         frameCount++;
         let mx = 0, my = 0;
         if (keys['KeyW']) my -= player.speed; if (keys['KeyS']) my += player.speed;
@@ -2519,6 +2615,9 @@
         });
         ctx.globalAlpha = 1.0;
         ctx.textAlign = 'left';
+
+        // Pet Çizimi
+        drawPet(ctx);
 
         // --- 5. Atmosferik Efektler ---
         // Toz zerreleri
