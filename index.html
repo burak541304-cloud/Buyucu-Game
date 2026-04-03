@@ -2154,9 +2154,9 @@
         player.mp = Math.min(player.maxMp, player.mp + player.mpRegen); // Mana Yenilenmesi
         
         player.skillCooldowns.forEach((cd, i) => {
-            if (cd > 0) {
+            const skill = player.activeSkills[i];
+            if (cd > 0 && skill) {
                 player.skillCooldowns[i]--;
-                const skill = SKILL_DB[i];
                 const totalCd = skill.cd - (player.stats.dex + (player.equipment.weapon?.dexBonus || 0) + (player.equipment.hat?.dexBonus || 0));
                 const percent = (cd / Math.max(10, totalCd)) * 100;
                 const cdElement = document.getElementById(`cd-${i+1}`);
