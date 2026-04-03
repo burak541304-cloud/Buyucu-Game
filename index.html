@@ -21,6 +21,8 @@
             border-radius: 4px;
             overflow: hidden;
             background: #000;
+            transition: transform 0.3s ease;
+            transform-origin: center center;
         }
 
         /* Mobil Optimizasyonları */
@@ -35,15 +37,96 @@
                 transform: scale(0.9);
                 top: 5px; left: 5px;
             }
-            #clock {
+            /* Skill Tree UI */
+        #skill-tree-ui {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 600px; height: 450px;
+            background: linear-gradient(135deg, #1e202e 0%, #0d0e14 100%);
+            border: 3px solid #f1c40f; border-radius: 8px;
+            display: none; z-index: 70; padding: 20px;
+            box-shadow: 0 0 50px rgba(0,0,0,0.9);
+            color: #fff;
+        }
+        .skill-tree-header {
+            text-align: center; font-size: 20px; font-weight: bold; color: #f1c40f;
+            margin-bottom: 20px; text-transform: uppercase; border-bottom: 2px solid #f1c40f;
+            padding-bottom: 10px;
+        }
+        .skill-branches {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
+            height: 320px;
+        }
+        .skill-branch {
+            background: rgba(255,255,255,0.05); border-radius: 6px; padding: 10px;
+            display: flex; flex-direction: column; gap: 10px; align-items: center;
+        }
+        .branch-title { font-weight: bold; font-size: 14px; margin-bottom: 5px; }
+        .skill-node {
+            width: 50px; height: 50px; background: #2d3436; border: 2px solid #444;
+            border-radius: 4px; display: flex; justify-content: center; align-items: center;
+            font-size: 24px; cursor: pointer; position: relative; transition: all 0.2s;
+        }
+        .skill-node.unlocked { border-color: #f1c40f; box-shadow: 0 0 10px rgba(241,196,15,0.5); }
+        .skill-node.locked { opacity: 0.5; cursor: not-allowed; }
+        .skill-node:hover:not(.locked) { transform: scale(1.1); background: #3d4446; }
+        .skill-node .level {
+            position: absolute; bottom: -5px; right: -5px; background: #f1c40f;
+            color: #000; font-size: 10px; width: 16px; height: 16px; border-radius: 50%;
+            display: flex; justify-content: center; align-items: center; font-weight: bold;
+        }
+        .skill-points-display {
+            text-align: center; color: #f1c40f; font-weight: bold; margin-top: 15px;
+        }
+
+        #clock {
                 transform: scale(0.8);
                 top: 10px; right: 10px;
             }
             #skill-bar {
-                bottom: 10px; right: 10px;
-                transform: scale(1.1);
+                bottom: 40px; right: 40px;
+                display: block !important;
+                width: 200px; height: 200px;
+                background: none;
+                border: none;
+                transform: none;
+                pointer-events: none;
             }
-            #inventory-ui, #shop-ui, #stat-ui {
+            .skill-slot {
+                position: absolute;
+                width: 60px; height: 60px;
+                font-size: 28px;
+                border-radius: 50% !important;
+                background: rgba(0,0,0,0.7) !important;
+                border: 2px solid #f1c40f !important;
+                box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+                display: flex; justify-content: center; align-items: center;
+                pointer-events: auto;
+            }
+            /* Ergonomik Yerleşim (Sağ El Baş Parmak) */
+            #skill-1 { bottom: 145px; right: 10px; }
+            #skill-2 { bottom: 110px; right: 90px; }
+            #skill-3 { bottom: 50px; right: 145px; }
+            #skill-4 { bottom: 0; right: 190px; display: none; }
+            #quick-hp { bottom: 190px; right: 90px; width: 50px; height: 45px; font-size: 20px; }
+            #quick-mp { bottom: 120px; right: 165px; width: 50px; height: 45px; font-size: 20px; }
+            #skill-main { 
+                bottom: -5px; right: -5px; 
+                width: 100px; height: 90px; 
+                font-size: 45px; 
+                background: rgba(241, 196, 15, 0.2) !important;
+                border-width: 4px !important;
+                z-index: 101;
+            }
+            .skill-slot:active {
+                transform: scale(0.85);
+                background: rgba(241, 196, 15, 0.5) !important;
+                box-shadow: 0 0 20px rgba(241, 196, 15, 0.4);
+            }
+            .skill-slot .key-hint {
+                display: none;
+            }
+            #inventory-ui, #shop-ui, #stat-ui, #skill-tree-ui, #settings-ui {
                 width: 90%;
                 left: 5% !important;
                 right: auto !important;
@@ -56,6 +139,31 @@
                 display: flex !important;
             }
         }
+
+        #settings-ui {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 320px; background: #1a1c2c;
+            border: 2px solid #f1c40f; border-radius: 8px;
+            display: none; z-index: 80; padding: 20px;
+            box-shadow: 0 0 50px rgba(0,0,0,0.9);
+            color: #fff;
+        }
+        .settings-header {
+            text-align: center; font-size: 18px; font-weight: bold; color: #f1c40f;
+            margin-bottom: 20px; border-bottom: 2px solid #f1c40f; padding-bottom: 10px;
+        }
+        .setting-group {
+            margin-bottom: 20px; display: flex; flex-direction: column; gap: 10px;
+        }
+        .setting-label { font-size: 14px; color: #f1c40f; font-weight: bold; }
+        .setting-options { display: flex; gap: 10px; }
+        .setting-opt {
+            flex: 1; padding: 8px; background: #2d3436; border: 1px solid #444;
+            color: #fff; text-align: center; cursor: pointer; border-radius: 4px;
+            font-size: 12px; transition: all 0.2s;
+        }
+        .setting-opt.active { background: #f1c40f; color: #000; border-color: #f1c40f; }
 
         #mobile-menu-btns {
             position: absolute;
@@ -79,7 +187,7 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.5);
         }
 
-        canvas { display: block; }
+        canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
 
         #ui {
             position: absolute; top: 15px; left: 15px;
@@ -332,6 +440,7 @@
             position: absolute; bottom: 0; left: 0; width: 100%; height: 0%;
             background: rgba(0,0,0,0.6); transition: height 0.1s linear;
         }
+        #skill-main { display: none; }
 
         @media (max-width: 1024px) {
             #joystick-container { display: none; }
@@ -348,7 +457,7 @@
 <body>
 
 <div id="game-container">
-    <canvas id="gameCanvas"></canvas>
+    <canvas id="gameCanvas" style="background: #2d5a27;"></canvas>
     
     <div id="clock">
         <span id="clock-icon">☀️</span>
@@ -382,6 +491,41 @@
     </div>
 
     <div id="shop-trigger-msg">SUNDRIES [E]</div>
+
+    <!-- Skill Tree UI -->
+    <div id="skill-tree-ui">
+        <div class="skill-tree-header">YETENEK AĞACI [K]</div>
+        <div class="skill-branches">
+            <div class="skill-branch" id="branch-fire">
+                <div class="branch-title" style="color:#ff4d00;">ATEŞ DALI</div>
+                <!-- Nodes go here -->
+            </div>
+            <div class="skill-branch" id="branch-ice">
+                <div class="branch-title" style="color:#00d2ff;">BUZ DALI</div>
+                <!-- Nodes go here -->
+            </div>
+            <div class="skill-branch" id="branch-lightning">
+                <div class="branch-title" style="color:#f1c40f;">YILDIRIM DALI</div>
+                <!-- Nodes go here -->
+            </div>
+        </div>
+        <div class="skill-points-display">KALAN PUAN: <span id="skill-points-text">0</span></div>
+        <button class="btn" style="width: 100%; margin-top: 15px;" onclick="toggleSkillTree()" ontouchstart="toggleSkillTree()">KAPAT</button>
+    </div>
+
+    <!-- Settings UI -->
+    <div id="settings-ui">
+        <div class="settings-header">OYUN AYARLARI</div>
+        <div class="setting-group">
+            <div class="setting-label">Ekran Görünümü (Mobil)</div>
+            <div class="setting-options" id="orientation-settings">
+                <div class="setting-opt active" onclick="setOrientation('auto')">OTOMATİK</div>
+                <div class="setting-opt" onclick="setOrientation('landscape')">YATAY</div>
+                <div class="setting-opt" onclick="setOrientation('portrait')">DİKEY</div>
+            </div>
+        </div>
+        <button class="btn" style="width: 100%; margin-top: 10px;" onclick="toggleSettings()" ontouchstart="toggleSettings()">KAPAT</button>
+    </div>
 
     <!-- Stat Window -->
     <div id="stat-ui">
@@ -469,8 +613,20 @@
         <div class="mobile-btn" onclick="adjustZoom(-0.1)" ontouchstart="adjustZoom(-0.1)">🔍-</div>
         <div class="mobile-btn" onclick="toggleInventory()" ontouchstart="toggleInventory()">🎒</div>
         <div class="mobile-btn" onclick="toggleStats()" ontouchstart="toggleStats()">👤</div>
+        <div class="mobile-btn" onclick="toggleSkillTree()" ontouchstart="toggleSkillTree()">📜</div>
+        <div class="mobile-btn" onclick="toggleSettings()" ontouchstart="toggleSettings()">⚙️</div>
         <div class="mobile-btn" id="mobile-shop-btn" style="display:none;" onclick="checkShopInteract()" ontouchstart="checkShopInteract()">🏪</div>
         <div class="mobile-btn" onclick="toggleFullScreen()" ontouchstart="toggleFullScreen()">📺</div>
+    </div>
+
+    <!-- Hata Ayıklama Paneli -->
+    <div id="debug-log" style="position: absolute; top: 0; left: 0; width: 100%; background: rgba(0,0,0,0.7); color: #0f0; font-family: monospace; font-size: 10px; z-index: 10000; padding: 5px; pointer-events: none; display: flex; flex-wrap: wrap; gap: 10px;">
+        <span id="debug-fps">FPS: --</span>
+        <span id="debug-player">Player: --, --</span>
+        <span id="debug-camera">Cam: --, --</span>
+        <span id="debug-zoom">Zoom: --</span>
+        <span id="debug-enemies">Enemies: --</span>
+        <span id="debug-error" style="color: #f00; font-weight: bold;"></span>
     </div>
 
     <div id="skill-bar">
@@ -482,14 +638,26 @@
             <span class="key-hint">2</span>⚡
             <div class="skill-cooldown" id="cd-2"></div>
         </div>
+        <div class="skill-slot" id="skill-3" onclick="castSpecificSkill(2)" ontouchstart="castSpecificSkill(2)">
+            <span class="key-hint">3</span>
+            <div class="skill-cooldown" id="cd-3"></div>
+        </div>
+        <div class="skill-slot" id="skill-4" onclick="castSpecificSkill(3)" ontouchstart="castSpecificSkill(3)">
+            <span class="key-hint">4</span>
+            <div class="skill-cooldown" id="cd-4"></div>
+        </div>
         <!-- Hızlı İksir Slotları -->
-        <div class="skill-slot" id="quick-hp" onclick="useQuickPotion('potion')" ontouchstart="useQuickPotion('potion')" style="margin-left: 20px;">
-            <span class="key-hint">3</span>🧪
+        <div class="skill-slot" id="quick-hp" onclick="useQuickPotion('potion')" ontouchstart="useQuickPotion('potion')">
+            <span class="key-hint">5</span>🧪
             <span class="item-count" id="hp-potion-count">0</span>
         </div>
         <div class="skill-slot" id="quick-mp" onclick="useQuickPotion('mana_potion')" ontouchstart="useQuickPotion('mana_potion')">
-            <span class="key-hint">4</span>💧
+            <span class="key-hint">6</span>💧
             <span class="item-count" id="mp-potion-count">0</span>
+        </div>
+        <!-- Ana Saldırı Butonu (Mobil için özel) -->
+        <div class="skill-slot" id="skill-main" onclick="forceBasicAttack()" ontouchstart="forceBasicAttack()">
+            🪄
         </div>
     </div>
 </div>
@@ -613,6 +781,7 @@
     const inventoryUI = document.getElementById('inventory-ui');
     const shopUI = document.getElementById('shop-ui');
     const statUI = document.getElementById('stat-ui');
+    const skillTreeUI = document.getElementById('skill-tree-ui');
     const shopMsg = document.getElementById('shop-trigger-msg');
     const invGrid = document.getElementById('inv-grid');
     const tooltip = document.getElementById('tooltip');
@@ -621,7 +790,7 @@
     const joystickKnob = document.getElementById('joystick-knob');
 
     // Ayarlar
-    const WORLD_WIDTH = 3200; const WORLD_HEIGHT = 2400;
+    const WORLD_WIDTH = 6400; const WORLD_HEIGHT = 4800;
     const TILE_SIZE = 64;
 
     function toggleFullScreen() {
@@ -668,16 +837,73 @@
 
     function resizeCanvas() {
         const isMobile = window.innerWidth <= 900;
+        const container = document.getElementById('game-container');
+        
         if (isMobile) {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+            let width = window.innerWidth;
+            let height = window.innerHeight;
+            
+            // Ayarlara göre zorla yönlendirme
+            if (orientationMode === 'landscape' && height > width) {
+                // Dikeydeyken yatay mod isteniyorsa (Simüle et)
+                container.style.transform = 'rotate(90deg)';
+                container.style.width = height + 'px';
+                container.style.height = width + 'px';
+                canvas.width = height;
+                canvas.height = width;
+            } else if (orientationMode === 'portrait' && width > height) {
+                // Yataydayken dikey mod isteniyorsa
+                container.style.transform = 'rotate(-90deg)';
+                container.style.width = height + 'px';
+                container.style.height = width + 'px';
+                canvas.width = height;
+                canvas.height = width;
+            } else {
+                // Normal mod veya doğru yönlendirme
+                container.style.transform = 'none';
+                container.style.width = '100vw';
+                container.style.height = '100vh';
+                canvas.width = width;
+                canvas.height = height;
+            }
         } else {
+            container.style.transform = 'none';
+            container.style.width = '800px';
+            container.style.height = '600px';
             canvas.width = 800;
             canvas.height = 600;
         }
     }
+
+    function toggleSettings() {
+        isSettingsOpen = !isSettingsOpen;
+        const settingsUI = document.getElementById('settings-ui');
+        settingsUI.style.display = isSettingsOpen ? 'block' : 'none';
+        playSound('click');
+        if (isSettingsOpen) updateSettingsUI();
+    }
+
+    function updateSettingsUI() {
+        const opts = document.querySelectorAll('#orientation-settings .setting-opt');
+        opts.forEach(opt => {
+            opt.classList.remove('active');
+            if (opt.getAttribute('onclick').includes(orientationMode)) {
+                opt.classList.add('active');
+            }
+        });
+    }
+
+    function setOrientation(mode) {
+        orientationMode = mode;
+        localStorage.setItem('orientationMode', mode);
+        updateSettingsUI();
+        resizeCanvas();
+        playSound('click');
+    }
+
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
+    updateSettingsUI(); // Ayarları yükle ve UI'yı güncelle
 
     // Joystick State
     let joystickData = { active: false, x: 0, y: 0, angle: 0, distance: 0 };
@@ -696,11 +922,30 @@
         // Şapkalar / Zırhlar (Hat)
         wizard_hat: { id: 'wizard_hat', name: 'Wizard Hat', icon: '🧙', type: 'hat', maxHp: 50, intBonus: 3, cost: 250, desc: 'Kadim bir büyücü şapkası.' },
         apprentice_robe: { id: 'apprentice_robe', name: 'Apprentice Robe', icon: '🧥', type: 'hat', maxHp: 120, intBonus: 8, hpBonus: 10, cost: 600, desc: 'Çırak büyücü cübbesi.' },
-        mystic_crown: { id: 'mystic_crown', name: 'Mystic Crown', icon: '👑', type: 'hat', maxHp: 300, intBonus: 20, dexBonus: 5, hpBonus: 20, cost: 2000, desc: 'Mistik güçlerle dövülmüş bir taç.' }
+        mystic_crown: { id: 'mystic_crown', name: 'Mystic Crown', icon: '👑', type: 'hat', maxHp: 300, intBonus: 20, dexBonus: 5, hpBonus: 20, cost: 2000, desc: 'Mistik güçlerle dövülmüş bir taç.' },
+        
+        // Petler
+        pet_cat: { id: 'pet_cat', name: 'Lucky Cat', icon: '🐱', type: 'pet', cost: 1000, desc: 'Eşyaları otomatik toplar.' },
+        pet_owl: { id: 'pet_owl', name: 'Wise Owl', icon: '🦉', type: 'pet', cost: 1500, desc: 'Eşyaları daha uzak mesafeden toplar.' }
     };
 
     // Yetenek Veritabanı
-    const BASIC_ATTACK = { name: 'Fireball', icon: '🔥', color: '#ff4d00', damageMult: 0.8, cd: 45, speed: 9, size: 7, effect: 'burn', manaCost: 0 };
+    const SKILL_TREE = {
+        fire: [
+            { id: 'fire_1', name: 'Fireball', icon: '🔥', level: 1, maxLevel: 5, color: '#ff4d00', damageMult: 0.8, cd: 45, speed: 9, size: 7, effect: 'burn', manaCost: 0, desc: 'Temel ateş büyüsü.' },
+            { id: 'fire_2', name: 'Explosion', icon: '💥', level: 0, maxLevel: 5, color: '#ff0000', damageMult: 2.5, cd: 180, speed: 6, size: 15, effect: 'aoe', aoeRadius: 150, manaCost: 50, req: 'fire_1', reqLevel: 3, desc: 'Büyük patlama yaratır.' }
+        ],
+        ice: [
+            { id: 'ice_1', name: 'Frostbolt', icon: '❄️', level: 0, maxLevel: 5, color: '#00d2ff', damageMult: 1.0, cd: 60, speed: 12, size: 6, effect: 'slow', manaCost: 15, desc: 'Düşmanı yavaşlatır.' },
+            { id: 'ice_2', name: 'Blizzard', icon: '🌨️', level: 0, maxLevel: 5, color: '#ffffff', damageMult: 1.5, cd: 240, speed: 4, size: 20, effect: 'aoe', aoeRadius: 200, manaCost: 80, req: 'ice_1', reqLevel: 3, desc: 'Alanı dondurur.' }
+        ],
+        lightning: [
+            { id: 'lightning_1', name: 'Lightning Bolt', icon: '⚡', level: 0, maxLevel: 5, color: '#f1c40f', damageMult: 1.8, cd: 120, speed: 15, size: 4, effect: 'shock', manaCost: 35, desc: 'Hızlı yıldırım saldırısı.' },
+            { id: 'lightning_2', name: 'Chain Lightning', icon: '🌩️', level: 0, maxLevel: 5, color: '#ffff00', damageMult: 1.2, cd: 150, speed: 18, size: 5, effect: 'chain', aoeRadius: 120, manaCost: 60, req: 'lightning_1', reqLevel: 3, desc: 'Birden fazla hedefe seker.' }
+        ]
+    };
+
+    const BASIC_ATTACK = SKILL_TREE.fire[0];
     
     const SKILL_DB = [
         { name: 'Frostbolt', icon: '❄️', color: '#00d2ff', damageMult: 1.0, cd: 60, speed: 12, size: 6, effect: 'slow', manaCost: 15 },
@@ -708,9 +953,9 @@
     ];
 
     let camera = { x: 0, y: 0 };
-    let zoom = 1.0;
-    const MIN_ZOOM = 0.5;
+    const MIN_ZOOM = 0.3; // Daha geniş açı (0.3)
     const MAX_ZOOM = 2.0;
+    let zoom = 0.5; // Dengeli bir zoom ile başla (0.3 yerine 0.5)
     let player = {
         x: WORLD_WIDTH / 2, y: WORLD_HEIGHT / 2,
         size: 24, speed: 5, 
@@ -719,8 +964,10 @@
         xp: 0, maxXp: 100, lvl: 1, gold: 100,
         color: '#4ecca3', 
         basicAttackCooldown: 0,
-        skillCooldowns: [0, 0],
+        skillCooldowns: [0, 0, 0, 0], // Slot sayısını artırdık
         statPoints: 0,
+        skillPoints: 1, // Başlangıçta 1 puan
+        activeSkills: [SKILL_TREE.fire[0], null, null, null], // Aktif yetenekler
         stats: { int: 0, hp: 0, dex: 0 },
         quests: [
             { id: 'kill_slimes', name: 'Slime Temizliği', target: 'Slime', count: 0, goal: 5, reward: 200, completed: false },
@@ -736,6 +983,12 @@
         equipment: {
             weapon: { ...ITEM_DB.fire_staff },
             hat: { ...ITEM_DB.wizard_hat }
+        },
+        pet: {
+            x: WORLD_WIDTH / 2 - 50, y: WORLD_HEIGHT / 2 - 50,
+            type: 'dog', icon: '🐕', size: 16, speed: 4, 
+            lootRange: 150, // Eşyaları bu mesafeden çeker
+            idleTimer: 0
         }
     };
 
@@ -748,11 +1001,17 @@
     let paths = []; // Yeni: Toprak yollar
     let particles = []; // Yeni: Atmosferik tozlar
     let damageNumbers = []; // Yeni: Hasar rakamları
+    let explosions = []; // Yeni: Patlama efektleri
+    let footprints = []; // Yeni: Ayak izleri
+    let rainParticles = []; // Yeni: Yağmur damlaları
+    let weather = { type: 'clear', intensity: 0, timer: 0 }; // Yeni: Hava durumu
     let keys = {};
     let gameActive = true;
     let isInventoryOpen = false;
     let isShopOpen = false;
     let isStatsOpen = false;
+    let isSettingsOpen = false;
+    let orientationMode = localStorage.getItem('orientationMode') || 'auto'; // 'auto', 'landscape', 'portrait'
     let frameCount = 0; // Animasyonlar için
     let screenShake = 0; // Ekran sarsıntısı şiddeti
 
@@ -767,8 +1026,38 @@
     const lightCanvas = document.createElement('canvas');
     const lctx = lightCanvas.getContext('2d');
 
+    // Görsel Görünürlük Kontrolü (Global)
+    function isVisible(x, y, size = 0) {
+        try {
+            const z = Math.max(0.1, zoom || 0.5);
+            const vw = (canvas.width || 800) / z;
+            const vh = (canvas.height || 600) / z;
+            const cx = camera.x || 0;
+            const cy = camera.y || 0;
+            const margin = 500; // Marjı iyice artırdık
+            
+            if (!isFinite(cx) || !isFinite(cy) || !isFinite(vw) || !isFinite(vh)) return true;
+            
+            // Eğer koordinatlar mantıklı değilse (0,0,0,0 gibi) her şeyi göster
+            if (vw <= 0 || vh <= 0) return true;
+
+            return x + size > cx - margin && 
+                   x - size < cx + vw + margin &&
+                   y + size > cy - margin && 
+                   y - size < cy + vh + margin;
+        } catch(e) { return true; }
+    }
+
     // Görsel Güzelleştirme için yardımcı fonksiyonlar
     function drawGrass(ctx, x, y, size, color = '#2d4a3e') {
+        const windSpeed = 20 - (weather.intensity * 10);
+        const windPower = 2 + (weather.intensity * 5);
+        
+        // Oyuncu tepkisi
+        const distToPlayer = Math.hypot(x - player.x, y - player.y);
+        const playerReact = distToPlayer < 40 ? (40 - distToPlayer) / 10 : 0;
+        const playerDir = Math.atan2(y - player.y, x - player.x);
+
         ctx.strokeStyle = color;
         ctx.lineWidth = 2;
         ctx.lineCap = 'round';
@@ -776,174 +1065,110 @@
         for(let i=0; i<3; i++) {
             const off = (i-1) * 3;
             const h = size * (0.8 + Math.random()*0.4);
+            const sway = Math.sin(frameCount/windSpeed + x)*windPower;
+            
+            let targetX = x + off + sway;
+            let targetY = y - h;
+
+            // Oyuncu itme efekti
+            if (playerReact > 0) {
+                targetX += Math.cos(playerDir) * playerReact * 10;
+                targetY += Math.sin(playerDir) * playerReact * 5;
+            }
+
             ctx.moveTo(x + off, y);
-            ctx.lineTo(x + off + Math.sin(frameCount/20 + x)*2, y - h);
+            ctx.lineTo(targetX, targetY);
         }
         ctx.stroke();
     }
 
     function drawWizard(ctx, x, y, size, color, isMoving, equipment) {
-        const bounce = isMoving ? Math.sin(frameCount / 5) * 3 : Math.sin(frameCount / 15) * 2;
-        const breath = Math.sin(frameCount / 25) * 1.5;
-        const walkCycle = isMoving ? Math.sin(frameCount * 0.2) : 0;
+        try {
+            if (!isFinite(x) || !isFinite(y)) return;
+            const bounce = isMoving ? Math.sin(frameCount / 5) * 3 : Math.sin(frameCount / 15) * 2;
+            const breath = Math.sin(frameCount / 25) * 1.5;
+            const walkCycle = isMoving ? Math.sin(frameCount * 0.2) : 0;
 
-        // 1. Gölge (Gelişmiş)
-        const shadowGrad = ctx.createRadialGradient(x, y + size/2, 0, x, y + size/2, size);
-        shadowGrad.addColorStop(0, 'rgba(0,0,0,0.4)');
-        shadowGrad.addColorStop(1, 'rgba(0,0,0,0)');
-        ctx.fillStyle = shadowGrad;
-        ctx.beginPath(); ctx.ellipse(x, y + size/2, size/1.2, size/4, 0, 0, Math.PI*2); ctx.fill();
-
-        // Ayaklar (Yürüme)
-        if (isMoving) {
-            ctx.fillStyle = '#2c3e50';
-            ctx.beginPath();
-            ctx.arc(x - 8 - walkCycle*5, y + size/2 + 2, 4, 0, Math.PI*2);
-            ctx.arc(x + 8 + walkCycle*5, y + size/2 + 2, 4, 0, Math.PI*2);
+            // 1. Gölge
+            ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            ctx.beginPath(); 
+            ctx.arc(x, y + size/2, size/1.5, 0, Math.PI*2); 
             ctx.fill();
-        }
 
-        // 2. Cübbe (Alt kısım - Gradient ile)
-        const robeGrad = ctx.createLinearGradient(x - size, y, x + size, y);
-        robeGrad.addColorStop(0, '#1a252f');
-        robeGrad.addColorStop(0.5, '#2c3e50');
-        robeGrad.addColorStop(1, '#1a252f');
-        ctx.fillStyle = robeGrad;
-        ctx.beginPath();
-        ctx.moveTo(x - size/1.5, y + size/2);
-        ctx.lineTo(x + size/1.5, y + size/2);
-        ctx.lineTo(x + size/2.5, y - size/3 + bounce);
-        ctx.lineTo(x - size/2.5, y - size/3 + bounce);
-        ctx.closePath(); ctx.fill();
-
-        // 3. Gövde (Üst cübbe)
-        const upperRobeGrad = ctx.createLinearGradient(x, y - size, x, y);
-        upperRobeGrad.addColorStop(0, '#34495e');
-        upperRobeGrad.addColorStop(1, '#2c3e50');
-        ctx.fillStyle = upperRobeGrad;
-        ctx.beginPath();
-        ctx.moveTo(x - size/2.2, y - size/3 + bounce);
-        ctx.lineTo(x + size/2.2, y - size/3 + bounce);
-        ctx.lineTo(x + size/3, y - size + bounce + breath);
-        ctx.lineTo(x - size/3, y - size + bounce + breath);
-        ctx.closePath(); ctx.fill();
-
-        // 4. Kafa
-        ctx.fillStyle = '#ffdbac';
-        ctx.beginPath(); ctx.arc(x, y - size - 5 + bounce + breath, 10, 0, Math.PI*2); ctx.fill();
-        
-        // Sakal (Gradient ile)
-        const beardGrad = ctx.createLinearGradient(x, y - size, x, y - size + 15);
-        beardGrad.addColorStop(0, '#ffffff');
-        beardGrad.addColorStop(1, '#bdc3c7');
-        ctx.fillStyle = beardGrad;
-        ctx.beginPath();
-        ctx.moveTo(x - 6, y - size - 2 + bounce + breath);
-        ctx.lineTo(x + 6, y - size - 2 + bounce + breath);
-        ctx.lineTo(x, y - size + 18 + bounce + breath);
-        ctx.closePath(); ctx.fill();
-
-        // Gözler (Parlayan)
-        ctx.fillStyle = '#222';
-        ctx.beginPath(); ctx.arc(x - 3.5, y - size - 7 + bounce + breath, 1.8, 0, Math.PI*2); ctx.fill();
-        ctx.beginPath(); ctx.arc(x + 3.5, y - size - 7 + bounce + breath, 1.8, 0, Math.PI*2); ctx.fill();
-        ctx.fillStyle = '#fff'; // Göz parlaması
-        ctx.beginPath(); ctx.arc(x - 4, y - size - 7.5 + bounce + breath, 0.6, 0, Math.PI*2); ctx.fill();
-        ctx.beginPath(); ctx.arc(x + 3, y - size - 7.5 + bounce + breath, 0.6, 0, Math.PI*2); ctx.fill();
-
-        // 5. Asâ
-        if (equipment.weapon) {
-            const staffX = x + 20;
-            const staffY = y - 10 + bounce;
-            
-            // Asâ gövdesi
-            ctx.strokeStyle = '#4e342e';
-            ctx.lineWidth = 5;
-            ctx.beginPath(); ctx.moveTo(staffX, staffY + 25); ctx.lineTo(staffX, staffY - 45); ctx.stroke();
-            
-            // Asâ kristali (Gelişmiş Parlama)
-            const glow = Math.abs(Math.sin(frameCount / 10)) * 12;
-            const crystalGrad = ctx.createRadialGradient(staffX, staffY - 50, 0, staffX, staffY - 50, 12);
-            crystalGrad.addColorStop(0, '#fff');
-            crystalGrad.addColorStop(0.3, '#00d2ff');
-            crystalGrad.addColorStop(1, 'rgba(0, 210, 255, 0)');
-            
-            ctx.globalAlpha = 0.5;
-            ctx.fillStyle = '#00d2ff';
-            ctx.beginPath(); ctx.arc(staffX, staffY - 50, 10 + glow/2, 0, Math.PI*2); ctx.fill();
-            ctx.globalAlpha = 1.0;
-            
-            ctx.fillStyle = crystalGrad;
-            ctx.beginPath(); ctx.arc(staffX, staffY - 50, 10, 0, Math.PI*2); ctx.fill();
-        }
-
-        // 6. Şapka
-        if (equipment.hat) {
-            const hatColor = '#1a1a2e';
-            ctx.fillStyle = hatColor;
-            // Şapka kenarı
-            ctx.beginPath(); ctx.ellipse(x, y - size - 12 + bounce + breath, 24, 7, 0, 0, Math.PI*2); ctx.fill();
-            
-            // Şapka ucu
-            const hatSway = Math.sin(frameCount/20) * 6;
-            const hatGrad = ctx.createLinearGradient(x, y - size - 60, x, y - size - 15);
-            hatGrad.addColorStop(0, '#2c3e50');
-            hatGrad.addColorStop(1, '#1a1a2e');
-            ctx.fillStyle = hatGrad;
+            // 2. Basit Karakter Çizimi (Fallback her zaman çalışır)
+            ctx.fillStyle = color || '#4ecca3';
             ctx.beginPath();
-            ctx.moveTo(x - 16, y - size - 15 + bounce + breath);
-            ctx.lineTo(x + 16, y - size - 15 + bounce + breath);
-            ctx.quadraticCurveTo(x + hatSway, y - size - 40 + bounce + breath, x + hatSway, y - size - 55 + bounce + breath);
-            ctx.closePath(); ctx.fill();
-            
-            // Şapka bandı
-            ctx.fillStyle = '#f1c40f';
-            ctx.fillRect(x - 9, y - size - 22 + bounce + breath, 18, 5);
+            ctx.arc(x, y + bounce, size, 0, Math.PI*2);
+            ctx.fill();
+
+            // Detaylı çizim denemesi
+            try {
+                // Cübbe
+                ctx.fillStyle = '#2c3e50';
+                ctx.beginPath();
+                ctx.moveTo(x - size/1.5, y + size/2 + bounce);
+                ctx.lineTo(x + size/1.5, y + size/2 + bounce);
+                ctx.lineTo(x, y - size + bounce);
+                ctx.closePath(); ctx.fill();
+
+                // Kafa
+                ctx.fillStyle = '#ffdbac';
+                ctx.beginPath(); ctx.arc(x, y - size + bounce + breath, 8, 0, Math.PI*2); ctx.fill();
+
+                // Şapka
+                if (equipment && equipment.hat) {
+                    ctx.fillStyle = '#1a1a2e';
+                    ctx.beginPath(); ctx.arc(x, y - size - 5 + bounce, 15, 0, Math.PI, true); ctx.fill();
+                    ctx.beginPath();
+                    ctx.moveTo(x - 15, y - size - 5 + bounce);
+                    ctx.lineTo(x + 15, y - size - 5 + bounce);
+                    ctx.lineTo(x, y - size - 30 + bounce);
+                    ctx.closePath(); ctx.fill();
+                }
+            } catch (e) { console.warn("Wizard details failed", e); }
+        } catch (err) {
+            console.error("drawWizard error", err);
         }
     }
 
     function drawMonster(ctx, e) {
-        const bounce = Math.sin(frameCount / 7 + e.x) * (e.isBoss ? 8 : 4);
-        const wiggle = Math.sin(frameCount / 5 + e.y) * (e.isBoss ? 4 : 2);
-        const isBoss = e.isBoss;
+        try {
+            if (!e || !isFinite(e.x) || !isFinite(e.y)) return;
+            
+            const bounce = Math.sin(frameCount / 7 + e.x) * (e.isBoss ? 8 : 4);
+            const wiggle = Math.sin(frameCount / 5 + e.y) * (e.isBoss ? 4 : 2);
+            const isBoss = !!e.isBoss;
 
-        // 1. Gölge (Gelişmiş)
-        const shadowGrad = ctx.createRadialGradient(e.x, e.y + e.size/2, 0, e.x, e.y + e.size/2, e.size * (isBoss ? 1.5 : 1.2));
-        shadowGrad.addColorStop(0, 'rgba(0,0,0,0.4)');
-        shadowGrad.addColorStop(1, 'rgba(0,0,0,0)');
-        ctx.fillStyle = shadowGrad;
-        ctx.beginPath(); ctx.ellipse(e.x, e.y + e.size/2, e.size * (isBoss ? 1.5 : 1.2), e.size/3, 0, 0, Math.PI*2); ctx.fill();
+            // 1. Gölge
+            ctx.fillStyle = 'rgba(0,0,0,0.2)';
+            ctx.beginPath();
+            ctx.arc(e.x, e.y + e.size/2, e.size, 0, Math.PI*2);
+            ctx.fill();
 
-        ctx.save();
-        
-        // Canavar Tipi Çizimi
-        switch(e.name) {
-            case 'Slime':
-                drawSlime(ctx, e, bounce);
-                break;
-            case 'Orc':
-                drawOrc(ctx, e, bounce, wiggle);
-                break;
-            case 'Void Walker':
-                drawVoidWalker(ctx, e, bounce);
-                break;
-            case 'Kekurikekukaka':
-                drawKekuri(ctx, e, bounce, wiggle);
-                break;
-            case 'Talos':
-                drawTalos(ctx, e, bounce);
-                break;
-            case 'Samma':
-                drawSamma(ctx, e, bounce, wiggle);
-                break;
-            default:
-                // Varsayılan çizim
-                ctx.fillStyle = e.color;
-                ctx.beginPath(); ctx.arc(e.x, e.y + bounce, e.size, 0, Math.PI*2); ctx.fill();
+            // 2. Basit Çizim (Fallback)
+            ctx.fillStyle = e.color || '#ff0000';
+            ctx.beginPath();
+            ctx.arc(e.x, e.y + bounce, e.size, 0, Math.PI*2);
+            ctx.fill();
+
+            // Tipine göre detaylı çizim denemesi
+            try {
+                ctx.save();
+                switch(e.name) {
+                    case 'Slime': drawSlime(ctx, e, bounce); break;
+                    case 'Orc': drawOrc(ctx, e, bounce, wiggle); break;
+                    case 'Void Walker': drawVoidWalker(ctx, e, bounce); break;
+                    case 'Kekurikekukaka': drawKekuri(ctx, e, bounce, wiggle); break;
+                    case 'Talos': drawTalos(ctx, e, bounce); break;
+                    case 'Samma': drawSamma(ctx, e, bounce, wiggle); break;
+                }
+                ctx.restore();
+            } catch (err) { /* Detaylı çizim hatası canavarı tamamen yok etmesin */ }
+            
+            drawMonsterUI(ctx, e, bounce);
+        } catch (err) {
+            console.error("drawMonster error", err);
         }
-        
-        ctx.restore();
-        drawMonsterUI(ctx, e, bounce);
     }
 
     function drawSlime(ctx, e, bounce) {
@@ -1171,11 +1396,75 @@
         }
     }
 
+    function spawnEnemies() {
+        const monsterTypes = [
+            { name: 'Slime', color: '#4ade80', size: 18, speed: 1.2 },
+            { name: 'Orc', color: '#8b4513', size: 24, speed: 1.5 },
+            { name: 'Void Walker', color: '#4b0082', size: 22, speed: 1.8 },
+            { name: 'Skeleton', color: '#e0e0e0', size: 20, speed: 1.6 },
+            { name: 'Fire Imp', color: '#ff4d00', size: 16, speed: 2.2 },
+            { name: 'Earth Golem', color: '#795548', size: 35, speed: 0.8 },
+            { name: 'Goblin', color: '#32cd32', size: 17, speed: 2.0 }, // Yeni canavar
+            { name: 'Stone Golem', color: '#808080', size: 38, speed: 0.7 }, // Yeni canavar
+            { name: 'Forest Spider', color: '#654321', size: 25, speed: 1.7 } // Yeni canavar
+        ];
+
+        for (let i = 0; i < 40; i++) {
+            let gx = Math.random() * WORLD_WIDTH;
+            let gy = Math.random() * WORLD_HEIGHT;
+            if (Math.hypot(gx - player.x, gy - player.y) < 600) continue;
+            
+            const type = monsterTypes[Math.floor(Math.random() * monsterTypes.length)];
+            
+            for (let j = 0; j < 5; j++) {
+                enemies.push({
+                    x: gx + (Math.random()-0.5)*300, y: gy + (Math.random()-0.5)*300,
+                    size: type.size, 
+                    hp: (60 + player.lvl * 25) * (type.size / 20), 
+                    maxHp: (60 + player.lvl * 25) * (type.size / 20),
+                    speed: type.speed, 
+                    color: type.color, 
+                    damage: 0.6 * (type.size / 20),
+                    name: type.name
+                });
+            }
+        }
+    }
+
+    function spawnBosses() {
+        const bosses = [
+            { name: 'Kekurikekukaka', color: '#ff4d00', size: 60, hp: 5000, speed: 1.0 },
+            { name: 'Talos', color: '#4b0082', size: 75, hp: 12000, speed: 0.8 },
+            { name: 'Samma', color: '#1b4332', size: 65, hp: 8500, speed: 1.2 },
+            { name: 'Dragon Lord', color: '#d32f2f', size: 120, hp: 50000, speed: 0.7 },
+            { name: 'Lich King', color: '#00bcd4', size: 80, hp: 35000, speed: 1.1 }
+        ];
+
+        bosses.forEach((b, i) => {
+            const pos = [
+                { x: 1000, y: 1000 },
+                { x: WORLD_WIDTH - 1000, y: WORLD_HEIGHT - 1000 },
+                { x: WORLD_WIDTH / 2, y: WORLD_HEIGHT / 2 - 1500 },
+                { x: 1000, y: WORLD_HEIGHT - 1000 },
+                { x: WORLD_WIDTH - 1000, y: 1000 }
+            ][i];
+
+            enemies.push({
+                ...b,
+                x: pos.x, y: pos.y,
+                maxHp: b.hp,
+                isBoss: true,
+                damage: 15 + (i * 10)
+            });
+        });
+    }
+
     function initWorld() {
-        terrain = []; worldObjects = []; enemies = []; droppedItems = []; paths = []; particles = []; damageNumbers = [];
+        terrain = []; worldObjects = []; enemies = []; droppedItems = []; paths = []; 
+        particles = []; damageNumbers = []; explosions = []; footprints = []; rainParticles = [];
         
         // Yollar (Daha doğal görünüm için)
-        for (let i = 0; i < 5; i++) {
+        for (let i = 0; i < 15; i++) { // Sayı arttı
             paths.push({
                 x1: Math.random() * WORLD_WIDTH,
                 y1: Math.random() * WORLD_HEIGHT,
@@ -1186,7 +1475,7 @@
         }
 
         // Toz zerreleri (Atmosfer)
-        for (let i = 0; i < 50; i++) {
+        for (let i = 0; i < 150; i++) { // Sayı arttı
             particles.push({
                 x: Math.random() * WORLD_WIDTH,
                 y: Math.random() * WORLD_HEIGHT,
@@ -1195,7 +1484,7 @@
                 opacity: 0.1 + Math.random() * 0.4
             });
         }
-        for (let i = 0; i < 20; i++) {
+        for (let i = 0; i < 60; i++) { // Sayı arttı
             terrain.push({ 
                 x: Math.random() * WORLD_WIDTH, 
                 y: Math.random() * WORLD_HEIGHT, 
@@ -1204,7 +1493,7 @@
             });
         }
 
-        for (let i = 0; i < 200; i++) {
+        for (let i = 0; i < 600; i++) { // Sayı arttı
             worldObjects.push({ 
                 x: Math.random() * WORLD_WIDTH, y: Math.random() * WORLD_HEIGHT, 
                 type: Math.random() > 0.4 ? 'tree' : 'rock', 
@@ -1220,68 +1509,18 @@
         worldObjects.sort((a, b) => a.y - b.y);
     }
 
-    function spawnBosses() {
-        const bosses = [
-            { name: 'Kekurikekukaka', color: '#ff4d00', size: 60, hp: 5000, speed: 1.0 },
-            { name: 'Talos', color: '#4b0082', size: 75, hp: 12000, speed: 0.8 },
-            { name: 'Samma', color: '#1b4332', size: 65, hp: 8500, speed: 1.2 }
-        ];
-
-        bosses.forEach((b, i) => {
-            const pos = [
-                { x: 600, y: 600 },
-                { x: WORLD_WIDTH - 600, y: WORLD_HEIGHT - 600 },
-                { x: WORLD_WIDTH / 2, y: WORLD_HEIGHT / 2 - 800 }
-            ][i];
-
-            enemies.push({
-                ...b,
-                x: pos.x, y: pos.y,
-                maxHp: b.hp,
-                isBoss: true,
-                damage: 10 + (i * 5)
-            });
-        });
-    }
-
-    function spawnEnemies() {
-        const monsterTypes = [
-            { name: 'Slime', color: '#4ade80', size: 18, speed: 1.2 },
-            { name: 'Orc', color: '#8b4513', size: 24, speed: 1.5 },
-            { name: 'Void Walker', color: '#4b0082', size: 22, speed: 1.8 }
-        ];
-
-        for (let i = 0; i < 12; i++) {
-            let gx = Math.random() * WORLD_WIDTH;
-            let gy = Math.random() * WORLD_HEIGHT;
-            if (Math.hypot(gx - player.x, gy - player.y) < 600) continue;
-            
-            const type = monsterTypes[Math.floor(Math.random() * monsterTypes.length)];
-            
-            for (let j = 0; j < 4; j++) {
-                enemies.push({
-                    x: gx + (Math.random()-0.5)*200, y: gy + (Math.random()-0.5)*200,
-                    size: type.size, 
-                    hp: (60 + player.lvl * 20) * (type.size / 20), 
-                    maxHp: (60 + player.lvl * 20) * (type.size / 20),
-                    speed: type.speed, 
-                    color: type.color, 
-                    damage: 0.5 * (type.size / 20),
-                    name: type.name
-                });
-            }
-        }
-    }
-
     window.addEventListener('keydown', e => {
         keys[e.code] = true;
         if (e.code === 'KeyI') toggleInventory();
         if (e.code === 'KeyU') toggleStats();
+        if (e.code === 'KeyK') toggleSkillTree();
         if (e.code === 'KeyE') checkShopInteract();
         if (e.code === 'Digit1') castSpecificSkill(0);
         if (e.code === 'Digit2') castSpecificSkill(1);
-        if (e.code === 'Digit3') useQuickPotion('potion');
-        if (e.code === 'Digit4') useQuickPotion('mana_potion');
+        if (e.code === 'Digit3') castSpecificSkill(2);
+        if (e.code === 'Digit4') castSpecificSkill(3);
+        if (e.code === 'Digit5') useQuickPotion('potion');
+        if (e.code === 'Digit6') useQuickPotion('mana_potion');
     });
     window.addEventListener('keyup', e => keys[e.code] = false);
 
@@ -1363,12 +1602,14 @@
     }
 
     function castSpecificSkill(index) {
-        const skill = SKILL_DB[index];
+        const skill = player.activeSkills[index];
+        if (!skill) return;
+        
         const currentCd = player.skillCooldowns[index];
 
         if (currentCd <= 0 && player.mp >= skill.manaCost && enemies.length > 0) {
             let nearestTarget = null;
-            let minDist = 500; 
+            let minDist = 600; 
 
             enemies.forEach(e => {
                 const d = Math.hypot(player.x - e.x, player.y - e.y);
@@ -1408,7 +1649,8 @@
             damage: finalDamage,
             color: skill.color,
             size: skill.size,
-            effect: skill.effect
+            effect: skill.effect,
+            aoeRadius: skill.aoeRadius || 0
         });
     }
 
@@ -1430,6 +1672,26 @@
             }
         }
         if (player.basicAttackCooldown > 0) player.basicAttackCooldown--;
+    }
+
+    function forceBasicAttack() {
+        if (!gameActive || isInventoryOpen || isShopOpen) return;
+        // Manuel basıldığında eğer cooldown bittiyse hemen vur
+        if (player.basicAttackCooldown <= 0 && enemies.length > 0) {
+            let nearestTarget = null;
+            let minDist = 500; 
+            enemies.forEach(e => {
+                const d = Math.hypot(player.x - e.x, player.y - e.y);
+                if (d < minDist) { minDist = d; nearestTarget = e; }
+            });
+
+            if (nearestTarget) {
+                spawnProjectile(nearestTarget, BASIC_ATTACK);
+                playSound('cast');
+                const totalDex = player.stats.dex + (player.equipment.weapon?.dexBonus || 0) + (player.equipment.hat?.dexBonus || 0);
+                player.basicAttackCooldown = Math.max(15, BASIC_ATTACK.cd - totalDex);
+            }
+        }
     }
 
     function toggleInventory() {
@@ -1488,6 +1750,13 @@
             const oldEquip = player.equipment[item.type];
             player.equipment[item.type] = item;
             player.inventory[index] = oldEquip;
+        } else if (item.type === 'pet') {
+            // Pet değiştirme
+            player.pet.icon = item.icon;
+            player.pet.type = item.id;
+            // Pet özelliklerini güncelle (Örn: Owl daha uzağı toplar)
+            if (item.id === 'pet_owl') player.pet.lootRange = 300;
+            else player.pet.lootRange = 150;
         }
         updateInventoryUI();
         updateStatsUI();
@@ -1603,10 +1872,196 @@
         }
     }
 
+    function updateWeather() {
+        weather.timer--;
+        if (weather.timer <= 0) {
+            // Yeni hava durumu seç (Clear: %80, Rain: %20)
+            if (weather.type === 'clear') {
+                if (Math.random() < 0.2) {
+                    weather.type = 'rain';
+                    weather.timer = 1000 + Math.random() * 2000;
+                } else {
+                    weather.timer = 500 + Math.random() * 1000;
+                }
+            } else {
+                weather.type = 'clear';
+                weather.timer = 2000 + Math.random() * 3000;
+            }
+        }
+
+        // Yağmur şiddeti geçişi
+        if (weather.type === 'rain') {
+            weather.intensity = Math.min(1.0, weather.intensity + 0.005);
+            // Yağmur damlaları oluştur
+            if (Math.random() < weather.intensity * 0.5) {
+                rainParticles.push({
+                    x: camera.x + Math.random() * (canvas.width / zoom),
+                    y: camera.y - 20,
+                    vx: -2 - Math.random() * 2,
+                    vy: 10 + Math.random() * 10,
+                    length: 10 + Math.random() * 10
+                });
+            }
+        } else {
+            weather.intensity = Math.max(0, weather.intensity - 0.005);
+        }
+
+        // Yağmur damlalarını güncelle
+        for (let i = rainParticles.length - 1; i >= 0; i--) {
+            let r = rainParticles[i];
+            r.x += r.vx;
+            r.y += r.vy;
+            if (r.y > camera.y + (canvas.height / zoom) + 20) rainParticles.splice(i, 1);
+        }
+    }
+
+    function drawWeather(ctx) {
+        if (weather.intensity <= 0) return;
+        
+        ctx.strokeStyle = `rgba(174, 194, 224, ${weather.intensity * 0.4})`;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        rainParticles.forEach(r => {
+            ctx.moveTo(r.x, r.y);
+            ctx.lineTo(r.x + r.vx * 0.5, r.y + r.vy * 0.5);
+        });
+        ctx.stroke();
+
+        // Şimşek çakması (Rastgele)
+        if (weather.type === 'rain' && Math.random() < 0.002 * weather.intensity) {
+            ctx.fillStyle = `rgba(255, 255, 255, ${0.1 * weather.intensity})`;
+            ctx.fillRect(camera.x, camera.y, canvas.width / zoom, canvas.height / zoom);
+        }
+    }
+
+    function updatePet() {
+        if (!player.pet) return;
+        const pet = player.pet;
+        
+        // 1. En yakın eşyayı bul
+        let nearestItem = null;
+        let minDist = pet.lootRange;
+        droppedItems.forEach(item => {
+            const d = Math.hypot(pet.x - item.x, pet.y - item.y);
+            if (d < minDist) {
+                minDist = d;
+                nearestItem = item;
+            }
+        });
+
+        if (nearestItem) {
+            // Eşyaya doğru hareket et
+            const angle = Math.atan2(nearestItem.y - pet.y, nearestItem.x - pet.x);
+            pet.x += Math.cos(angle) * pet.speed;
+            pet.y += Math.sin(angle) * pet.speed;
+
+            // Eşyayı topla (Pet dokununca)
+            if (minDist < pet.size + nearestItem.size) {
+                const itemIndex = droppedItems.indexOf(nearestItem);
+                if (itemIndex !== -1) {
+                    addItemToInventory(nearestItem);
+                    droppedItems.splice(itemIndex, 1);
+                    updateStatsUI();
+                    if (isInventoryOpen) updateInventoryUI();
+                }
+            }
+        } else {
+            // Player'ı takip et
+            const dToPlayer = Math.hypot(pet.x - player.x, pet.y - player.y);
+            if (dToPlayer > 80) { // Belirli bir mesafeden sonra takip et
+                const angle = Math.atan2(player.y - pet.y, player.x - pet.x);
+                // Mesafe çoksa daha hızlı takip et
+                const currentSpeed = dToPlayer > 300 ? pet.speed * 2 : pet.speed;
+                pet.x += Math.cos(angle) * currentSpeed;
+                pet.y += Math.sin(angle) * currentSpeed;
+            } else {
+                // Rastgele "idle" hareketi
+                pet.idleTimer++;
+                pet.x += Math.sin(pet.idleTimer / 20) * 0.2;
+                pet.y += Math.cos(pet.idleTimer / 25) * 0.2;
+            }
+        }
+    }
+
+    function drawPet(ctx) {
+        if (!player.pet) return;
+        const pet = player.pet;
+        if (!isVisible(pet.x, pet.y)) return;
+
+        const bounce = Math.abs(Math.sin(frameCount / 10)) * 5;
+        const scale = 1.0;
+
+        // Gölge
+        ctx.globalAlpha = 0.2;
+        ctx.fillStyle = '#000';
+        ctx.beginPath();
+        ctx.ellipse(pet.x, pet.y + 5, pet.size/1.5, pet.size/3, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1.0;
+
+        // Pet İkonu (Emoji)
+        ctx.font = `${pet.size * 2}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(pet.icon, pet.x, pet.y - bounce);
+
+        // İsim etiketi (Küçük)
+        ctx.font = 'bold 10px Arial';
+        ctx.fillStyle = '#f1c40f';
+        const petName = pet.type === 'pet_cat' ? 'Lucky Cat' : (pet.type === 'pet_owl' ? 'Wise Owl' : 'Loyal Friend');
+        ctx.fillText(petName, pet.x, pet.y - pet.size - bounce - 5);
+    }
+
+    function sanitizeState() {
+        if (!player) player = {};
+        if (!isFinite(player.x)) player.x = WORLD_WIDTH / 2;
+        if (!isFinite(player.y)) player.y = WORLD_HEIGHT / 2;
+        if (!isFinite(player.size) || player.size <= 0) player.size = 24;
+        if (!isFinite(player.speed) || player.speed < 0) player.speed = 5;
+        if (!isFinite(player.hp)) player.hp = player.maxHp || 100;
+        if (!isFinite(player.lvl)) player.lvl = 1;
+        if (!isFinite(player.xp)) player.xp = 0;
+        if (!isFinite(player.gold)) player.gold = 0;
+        if (!isFinite(zoom) || zoom <= 0.1) zoom = 0.5;
+        if (!isFinite(camera.x)) camera.x = 0;
+        if (!isFinite(camera.y)) camera.y = 0;
+        if (!isFinite(screenShake)) screenShake = 0;
+        if (!isFinite(gameTime)) gameTime = 720;
+        if (!Array.isArray(enemies)) enemies = [];
+        if (!Array.isArray(projectiles)) projectiles = [];
+        if (!Array.isArray(droppedItems)) droppedItems = [];
+        if (!Array.isArray(footprints)) footprints = [];
+        if (!Array.isArray(damageNumbers)) damageNumbers = [];
+        if (!Array.isArray(explosions)) explosions = [];
+
+        // Düşmanları temizle
+        for (let i = enemies.length - 1; i >= 0; i--) {
+            let e = enemies[i];
+            if (!e || typeof e !== 'object' || !isFinite(e.x) || !isFinite(e.y) || !isFinite(e.hp) || !isFinite(e.size)) {
+                enemies.splice(i, 1);
+                continue;
+            }
+            if (!isFinite(e.speed)) e.speed = 1;
+            if (!e.name) e.name = "Monster";
+            if (!e.color) e.color = "#ff0000";
+        }
+
+        // Projectiles temizle
+        for (let i = projectiles.length - 1; i >= 0; i--) {
+            let p = projectiles[i];
+            if (!p || typeof p !== 'object' || !isFinite(p.x) || !isFinite(p.y) || !isFinite(p.vx) || !isFinite(p.vy)) {
+                projectiles.splice(i, 1);
+            }
+        }
+    }
+
     function update() {
         if (!gameActive || isInventoryOpen || isShopOpen) return;
         
+        sanitizeState();
         updateTime();
+        updateWeather();
+        updatePet(); // Pet güncelleme
         frameCount++;
         let mx = 0, my = 0;
         if (keys['KeyW']) my -= player.speed; if (keys['KeyS']) my += player.speed;
@@ -1619,6 +2074,12 @@
         }
 
         if (mx !== 0 && my !== 0 && !joystickData.active) { mx *= 0.707; my *= 0.707; }
+        
+        // Ayak izi bırakma (Sadece hareket ederken)
+        if ((Math.abs(mx) > 0.1 || Math.abs(my) > 0.1) && frameCount % 15 === 0) {
+            footprints.push({ x: player.x, y: player.y, life: 100 });
+        }
+
         player.x += mx; player.y += my;
         player.x = Math.max(player.size, Math.min(WORLD_WIDTH - player.size, player.x));
         player.y = Math.max(player.size, Math.min(WORLD_HEIGHT - player.size, player.y));
@@ -1643,12 +2104,20 @@
         shopMsg.style.display = isNearShop ? 'block' : 'none';
         document.getElementById('mobile-shop-btn').style.display = (isNearShop && window.innerWidth <= 900) ? 'flex' : 'none';
 
-        // Toz Hareketi
+        // Toz Hareketi (Yağmurda daha az)
+        const dustOpacityMult = 1 - weather.intensity;
         particles.forEach(p => {
             p.y -= p.speed;
             p.x += Math.sin(frameCount / 30) * 0.1;
             if (p.y < 0) p.y = WORLD_HEIGHT;
+            p.currentOpacity = p.opacity * dustOpacityMult;
         });
+
+        // Ayak İzleri Hareketi/Azalması
+        for (let i = footprints.length - 1; i >= 0; i--) {
+            footprints[i].life--;
+            if (footprints[i].life <= 0) footprints.splice(i, 1);
+        }
 
         // Hasar Rakamları Hareketi
         for (let i = damageNumbers.length - 1; i >= 0; i--) {
@@ -1656,6 +2125,12 @@
             d.y -= 0.8; // Yukarı yükselme
             d.life--;
             if (d.life <= 0) damageNumbers.splice(i, 1);
+        }
+
+        // Patlama Efektleri Hareketi
+        for (let i = explosions.length - 1; i >= 0; i--) {
+            explosions[i].life--;
+            if (explosions[i].life <= 0) explosions.splice(i, 1);
         }
 
         // Yerden Eşya Toplama
@@ -1673,9 +2148,9 @@
         player.mp = Math.min(player.maxMp, player.mp + player.mpRegen); // Mana Yenilenmesi
         
         player.skillCooldowns.forEach((cd, i) => {
-            if (cd > 0) {
+            const skill = player.activeSkills[i];
+            if (cd > 0 && skill) {
                 player.skillCooldowns[i]--;
-                const skill = SKILL_DB[i];
                 const totalCd = skill.cd - (player.stats.dex + (player.equipment.weapon?.dexBonus || 0) + (player.equipment.hat?.dexBonus || 0));
                 const percent = (cd / Math.max(10, totalCd)) * 100;
                 const cdElement = document.getElementById(`cd-${i+1}`);
@@ -1699,38 +2174,68 @@
                 let e = enemies[ei];
                 if (Math.hypot(p.x - e.x, p.y - e.y) < 30) {
                     const dmg = Math.floor(p.damage);
-                    e.hp -= dmg; 
-                    playSound('hit');
                     
-                    // Hasar Rakamı Oluştur
-                    damageNumbers.push({
-                        x: e.x, y: e.y - 20,
-                        value: dmg,
-                        life: 60, // 1 saniye (60 fps)
-                        color: p.color
-                    });
+                    if (p.aoeRadius > 0) {
+                        // Alan Hasarı (AoE)
+                        explosions.push({
+                            x: p.x, y: p.y,
+                            radius: p.aoeRadius,
+                            life: 20,
+                            maxLife: 20,
+                            color: p.color
+                        });
+                        screenShake = p.aoeRadius / 20;
+                        playSound('stomp');
+
+                        enemies.forEach(target => {
+                            const dist = Math.hypot(p.x - target.x, p.y - target.y);
+                            if (dist < p.aoeRadius) {
+                                target.hp -= dmg;
+                                damageNumbers.push({
+                                    x: target.x, y: target.y - 20,
+                                    value: dmg,
+                                    life: 60,
+                                    color: p.color
+                                });
+                            }
+                        });
+                    } else {
+                        // Tekli Hedef Hasarı
+                        e.hp -= dmg; 
+                        playSound('hit');
+                        
+                        // Hasar Rakamı Oluştur
+                        damageNumbers.push({
+                            x: e.x, y: e.y - 20,
+                            value: dmg,
+                            life: 60, // 1 saniye (60 fps)
+                            color: p.color
+                        });
+                    }
 
                     projectiles.splice(pi, 1);
                     projectileRemoved = true;
                     
-                    if (e.hp <= 0) { 
-                        player.xp += 50; 
-                        player.gold += 35; 
-                        
-                        // Görev İlerlemesi
-                        player.quests.forEach(q => {
-                            if (!q.completed && q.target === e.name) {
-                                q.count++;
-                                if (q.count >= q.goal) completeQuest(q);
-                            }
-                        });
-                        updateQuestUI();
-
-                        dropLoot(e.x, e.y, e.isBoss); 
-                        enemies.splice(ei, 1); 
-                        checkLevelUp(); 
+                    // Ölen canavarları kontrol et (AoE'den sonra liste değişmiş olabilir)
+                    for (let i = enemies.length - 1; i >= 0; i--) {
+                        if (enemies[i].hp <= 0) {
+                            let deadE = enemies[i];
+                            player.xp += 50; 
+                            player.gold += 35; 
+                            
+                            player.quests.forEach(q => {
+                                if (!q.completed && q.target === deadE.name) {
+                                    q.count++;
+                                    if (q.count >= q.goal) completeQuest(q);
+                                }
+                            });
+                            updateQuestUI();
+                            dropLoot(deadE.x, deadE.y, deadE.isBoss); 
+                            enemies.splice(i, 1); 
+                            checkLevelUp();
+                        }
                     }
-                    break; // Mermi bir düşmana çarptığında yok olur
+                    break;
                 }
             }
             if (!projectileRemoved && (p.x < 0 || p.x > WORLD_WIDTH || p.y < 0 || p.y > WORLD_HEIGHT)) {
@@ -1803,10 +2308,12 @@
             player.lvl++; 
             player.xp = 0; 
             player.maxXp += 150; 
-            player.statPoints += 3; // Her seviyede 3 puan
+            player.statPoints += 3; 
+            player.skillPoints += 1; // Her seviyede 1 yetenek puanı
             playSound('levelup');
             updateStatsUI();
             updateStatWindow();
+            updateSkillTreeUI();
         }
     }
 
@@ -1858,6 +2365,83 @@
         }
     }
 
+    let isSkillTreeOpen = false;
+    function toggleSkillTree() {
+        isSkillTreeOpen = !isSkillTreeOpen;
+        playSound('click');
+        skillTreeUI.style.display = isSkillTreeOpen ? 'block' : 'none';
+        if (isSkillTreeOpen) updateSkillTreeUI();
+    }
+
+    function updateSkillTreeUI() {
+        document.getElementById('skill-points-text').innerText = player.skillPoints;
+        
+        for (const branch in SKILL_TREE) {
+            const container = document.getElementById(`branch-${branch}`);
+            const title = container.querySelector('.branch-title');
+            container.innerHTML = '';
+            container.appendChild(title);
+
+            SKILL_TREE[branch].forEach(skill => {
+                const node = document.createElement('div');
+                const isLocked = skill.req && (SKILL_TREE[branch].find(s => s.id === skill.req).level < skill.reqLevel);
+                node.className = `skill-node ${skill.level > 0 ? 'unlocked' : (isLocked ? 'locked' : '')}`;
+                node.innerHTML = `
+                    ${skill.icon}
+                    <div class="level">${skill.level}/${skill.maxLevel}</div>
+                `;
+                
+                node.onclick = () => upgradeSkill(branch, skill.id);
+                node.onmouseenter = (e) => {
+                    const reqText = skill.req ? `<br><span style="color:#e74c3c;">Gereksinim: ${SKILL_TREE[branch].find(s => s.id === skill.req).name} Lv.${skill.reqLevel}</span>` : '';
+                    const aoeText = skill.aoeRadius ? `<br><span style="color:#e040fb;">Alan Etkisi: ${skill.aoeRadius}m</span>` : '';
+                    showTooltip({
+                        name: skill.name,
+                        desc: `${skill.desc}${reqText}${aoeText}<br><span style="color:#f1c40f;">Hasar: x${skill.damageMult}</span>`
+                    }, e);
+                };
+                node.onmouseleave = hideTooltip;
+                
+                container.appendChild(node);
+            });
+        }
+    }
+
+    function upgradeSkill(branch, skillId) {
+        const skill = SKILL_TREE[branch].find(s => s.id === skillId);
+        const isLocked = skill.req && (SKILL_TREE[branch].find(s => s.id === skill.req).level < skill.reqLevel);
+        
+        if (player.skillPoints > 0 && skill.level < skill.maxLevel && !isLocked) {
+            player.skillPoints--;
+            skill.level++;
+            playSound('levelup');
+            
+            // Eğer yeni bir yetenek açıldıysa ve slot boşsa ekle
+            if (skill.level === 1) {
+                let emptySlot = player.activeSkills.indexOf(null);
+                if (emptySlot !== -1) {
+                    player.activeSkills[emptySlot] = skill;
+                    updateSkillBarUI();
+                }
+            }
+            
+            updateSkillTreeUI();
+        }
+    }
+
+    function updateSkillBarUI() {
+        player.activeSkills.forEach((skill, i) => {
+            const slot = document.getElementById(`skill-${i+1}`);
+            if (slot) {
+                if (skill) {
+                    slot.innerHTML = `<span class="key-hint">${i+1}</span>${skill.icon}<div class="skill-cooldown" id="cd-${i+1}"></div>`;
+                } else {
+                    slot.innerHTML = `<span class="key-hint">${i+1}</span>`;
+                }
+            }
+        });
+    }
+
     function toggleStats() {
         isStatsOpen = !isStatsOpen;
         playSound('click');
@@ -1906,321 +2490,265 @@
         updateStatsUI();
     }
 
-    function draw() {
-        const hour = gameTime / 60;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
-        // Ekran Sarsıntısı Uygula
-        const shakeX = (Math.random() - 0.5) * screenShake * 2;
-        const shakeY = (Math.random() - 0.5) * screenShake * 2;
-        
-        ctx.save();
-        ctx.scale(zoom, zoom);
-        ctx.translate(-camera.x + shakeX, -camera.y + shakeY);
-        
-        const viewW = canvas.width / zoom;
-        const viewH = canvas.height / zoom;
-        const viewMargin = 100;
-        const isVisible = (x, y, size = 0) => {
-            return x + size > camera.x - viewMargin && 
-                   x - size < camera.x + viewW + viewMargin &&
-                   y + size > camera.y - viewMargin && 
-                   y - size < camera.y + viewH + viewMargin;
-        };
+    let lastFpsUpdate = 0;
+    let framesThisSecond = 0;
+    let currentFps = 0;
 
-        // --- 1. Zemin ve Yollar ---
-        // Ana zemin rengi
-        ctx.fillStyle = '#1b3022';
-        // Ekran sarsıntısı ve zoom payı için geniş bir alanı boya
-        ctx.fillRect(camera.x - viewMargin, camera.y - viewMargin, viewW + viewMargin * 2, viewH + viewMargin * 2);
-        
-        // Zemin varyasyonu (Daha doğal görünüm)
-        ctx.globalAlpha = 0.3;
-        const patchSize = 300;
-        const startX = Math.floor(camera.x / patchSize) * patchSize;
-        const startY = Math.floor(camera.y / patchSize) * patchSize;
-        for (let i = startX; i < camera.x + viewW + patchSize; i += patchSize) {
-            for (let j = startY; j < camera.y + viewH + patchSize; j += patchSize) {
-                if ((i+j) % (patchSize*2) === 0) {
-                    ctx.fillStyle = '#16291d';
-                    ctx.fillRect(i, j, patchSize, patchSize);
+    function updateDebugPanel() {
+        try {
+            const now = performance.now();
+            framesThisSecond++;
+            if (now > lastFpsUpdate + 1000) {
+                currentFps = Math.round((framesThisSecond * 1000) / (now - lastFpsUpdate));
+                lastFpsUpdate = now;
+                framesThisSecond = 0;
+                document.getElementById('debug-fps').innerText = `FPS: ${currentFps}`;
+            }
+            document.getElementById('debug-player').innerText = `P: ${Math.round(player.x)},${Math.round(player.y)} HP:${Math.round(player.hp)}`;
+            document.getElementById('debug-camera').innerText = `C: ${Math.round(camera.x)},${Math.round(camera.y)}`;
+            document.getElementById('debug-zoom').innerText = `Z: ${zoom.toFixed(2)}`;
+            document.getElementById('debug-enemies').innerText = `E: ${enemies.length} G:${gameActive}`;
+        } catch (e) {}
+    }
+
+    function showError(msg) {
+        const debug = document.getElementById('debug-error');
+        if (debug) {
+            debug.innerText = " ERROR: " + msg;
+            setTimeout(() => { debug.innerText = ""; }, 5000);
+        }
+        console.error(msg);
+    }
+
+    function draw() {
+        if (!gameActive) {
+            ctx.fillStyle = "black";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = "white";
+            ctx.textAlign = "center";
+            ctx.fillText("GAME OVER - Press Respawn", canvas.width/2, canvas.height/2);
+            return;
+        }
+
+        try {
+            // 1. Kanvas Boyut Kontrolü
+            if (!canvas.width || !canvas.height) {
+                resizeCanvas();
+                if (!canvas.width || !canvas.height) {
+                    requestAnimationFrame(() => draw());
+                    return;
                 }
             }
-        }
-        ctx.globalAlpha = 1.0;
-        
-        // Yollar (Yumuşak kenarlar ile)
-        ctx.lineCap = 'round';
-        paths.forEach(p => {
-            const pathGrad = ctx.createLinearGradient(p.x1, p.y1, p.x2, p.y2);
-            pathGrad.addColorStop(0, '#3e2723');
-            pathGrad.addColorStop(0.5, '#4e342e');
-            pathGrad.addColorStop(1, '#3e2723');
-            
-            ctx.strokeStyle = pathGrad;
-            ctx.lineWidth = p.width;
-            ctx.globalAlpha = 0.5;
-            ctx.beginPath(); ctx.moveTo(p.x1, p.y1); ctx.lineTo(p.x2, p.y2); ctx.stroke();
-            
-            // Yol kenarı detayları
-            ctx.lineWidth = p.width * 0.8;
-            ctx.globalAlpha = 0.2;
-            ctx.strokeStyle = '#2c1e14';
-            ctx.stroke();
-            ctx.globalAlpha = 1.0;
-        });
 
-        // Çimenler
-        const grassSpacing = 120;
-        const gStartX = Math.floor(camera.x / grassSpacing) * grassSpacing;
-        const gStartY = Math.floor(camera.y / grassSpacing) * grassSpacing;
-        for (let i = gStartX; i < camera.x + viewW + grassSpacing; i += grassSpacing) {
-            for (let j = gStartY; j < camera.y + viewH + grassSpacing; j += grassSpacing) {
-                let offX = (i * 17) % 50;
-                let offY = (j * 11) % 50;
-                drawGrass(ctx, i + offX, j + offY, 5 + Math.sin(frameCount/20 + i)*2, '#2d4a3e');
+            // 2. Temel Değişkenleri Hazırla (Fail-safe)
+            const currentZoom = Math.max(0.1, zoom || 0.5);
+            const camX = camera.x || 0;
+            const camY = camera.y || 0;
+            const viewW = canvas.width / currentZoom;
+            const viewH = canvas.height / currentZoom;
+            const viewMargin = 200;
+            const hour = (gameTime || 0) / 60;
+
+            // 3. Kanvası Temizle ve Ana Arkaplanı Doldur (Koordinatlardan Bağımsız)
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#2d5a27'; // Yeşil zemin
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 4. Sarsıntı ve Transformasyon
+            const shakeX = (Math.random() - 0.5) * (screenShake || 0) * 2;
+            const shakeY = (Math.random() - 0.5) * (screenShake || 0) * 2;
+            
+            ctx.save();
+            if (isFinite(currentZoom) && isFinite(camX) && isFinite(camY)) {
+                ctx.scale(currentZoom, currentZoom);
+                ctx.translate(-camX + shakeX, -camY + shakeY);
+            } else {
+                showError("Invalid transform values (Infinity/NaN)!");
             }
-        }
 
-        // --- 2. Su Efektleri ---
-        terrain.forEach(t => {
-            if (t.type === 'lake' && isVisible(t.x, t.y, t.radius + 50)) {
-                // Kıyı
-                ctx.fillStyle = '#2c1e14';
-                ctx.beginPath(); ctx.arc(t.x, t.y, t.radius + 15, 0, Math.PI*2); ctx.fill();
-                ctx.fillStyle = '#c2b280';
-                ctx.beginPath(); ctx.arc(t.x, t.y, t.radius + 8, 0, Math.PI*2); ctx.fill();
-                
-                // Su (Gelişmiş Gradient)
-                const ripple = Math.sin(frameCount / 40) * 12;
-                const waterGrad = ctx.createRadialGradient(t.x, t.y, 0, t.x, t.y, t.radius + ripple/2);
-                waterGrad.addColorStop(0, '#48cae4');
-                waterGrad.addColorStop(0.5, '#00b4d8');
-                waterGrad.addColorStop(1, '#0077b6');
-                ctx.fillStyle = waterGrad;
-                ctx.beginPath(); ctx.arc(t.x, t.y, t.radius + ripple/4, 0, Math.PI*2); ctx.fill();
-                
-                // Parıltılar
-                ctx.globalAlpha = 0.3;
-                ctx.fillStyle = 'white';
-                for(let k=0; k<5; k++) {
-                    let angle = (frameCount / 60) + (k * Math.PI * 2 / 5);
-                    let dist = (t.radius * 0.6) + Math.sin(frameCount/30 + k) * 10;
-                    let rx = t.x + Math.cos(angle) * dist;
-                    let ry = t.y + Math.sin(angle) * dist;
-                    ctx.beginPath(); ctx.ellipse(rx, ry, 15, 5, angle, 0, Math.PI*2); ctx.fill();
+            // --- A. Zemin ve Yollar (Hata korumalı) ---
+            try {
+                // Zemin varyasyonu
+                ctx.globalAlpha = 0.4;
+                const patchSize = 300;
+                const startX = Math.floor(camX / patchSize) * patchSize;
+                const startY = Math.floor(camY / patchSize) * patchSize;
+                for (let i = startX; i < camX + viewW + patchSize; i += patchSize) {
+                    for (let j = startY; j < camY + viewH + patchSize; j += patchSize) {
+                        if ((i+j) % (patchSize*2) === 0) {
+                            ctx.fillStyle = '#244820';
+                            ctx.fillRect(i, j, patchSize, patchSize);
+                        }
+                    }
                 }
                 ctx.globalAlpha = 1.0;
-            }
-        });
 
-        // --- 3. Statik Objeler ---
-        worldObjects.forEach(o => {
-            if (!isVisible(o.x, o.y, o.size + 100)) return;
-
-            // Gölge
-            const shadowGrad = ctx.createRadialGradient(o.x, o.y + o.size/4, 0, o.x, o.y + o.size/4, o.size);
-            shadowGrad.addColorStop(0, 'rgba(0,0,0,0.3)');
-            shadowGrad.addColorStop(1, 'rgba(0,0,0,0)');
-            ctx.fillStyle = shadowGrad;
-            ctx.beginPath(); ctx.ellipse(o.x, o.y + o.size/4, o.size, o.size/3, 0, 0, Math.PI*2); ctx.fill();
-
-            if (o.type === 'tree') {
-                // Gövde
-                const trunkGrad = ctx.createLinearGradient(o.x - 5, o.y, o.x + 5, o.y);
-                trunkGrad.addColorStop(0, '#3e2723');
-                trunkGrad.addColorStop(0.5, '#5d4037');
-                trunkGrad.addColorStop(1, '#3e2723');
-                ctx.fillStyle = trunkGrad;
-                ctx.fillRect(o.x - 5, o.y - 10, 10, 35);
-
-                // Yapraklar (Katmanlı)
-                const sway = Math.sin(frameCount/40 + o.x) * 4;
-                const leafColors = ['#1b4332', '#2d6a4f', '#40916c', '#52b788'];
-                
-                leafColors.forEach((c, i) => {
-                    ctx.fillStyle = c;
-                    const s = o.size * (1 - i*0.2);
-                    const yOff = i * 15;
+                // Ayak İzleri
+                footprints.forEach(f => {
+                    ctx.globalAlpha = f.life / 200;
+                    ctx.fillStyle = 'rgba(0,0,0,0.2)';
                     ctx.beginPath();
-                    ctx.arc(o.x + sway * (1 + i*0.2), o.y - 20 - yOff, s/2, 0, Math.PI*2);
-                    ctx.fill();
-                    // Küçük detaylar
-                    ctx.beginPath();
-                    ctx.arc(o.x + sway - s/2.5, o.y - 15 - yOff, s/3, 0, Math.PI*2);
-                    ctx.fill();
-                    ctx.beginPath();
-                    ctx.arc(o.x + sway + s/2.5, o.y - 15 - yOff, s/3, 0, Math.PI*2);
+                    ctx.ellipse(f.x, f.y, 8, 4, 0, 0, Math.PI * 2);
                     ctx.fill();
                 });
-            } else {
-                // Kaya
-                const rockGrad = ctx.createRadialGradient(o.x - o.size/4, o.y - o.size/4, 0, o.x, o.y, o.size);
-                rockGrad.addColorStop(0, '#90a4ae');
-                rockGrad.addColorStop(1, '#455a64');
-                ctx.fillStyle = rockGrad;
-                ctx.beginPath();
-                ctx.moveTo(o.x - o.size/2, o.y + o.size/4);
-                ctx.lineTo(o.x - o.size/2.5, o.y - o.size/3);
-                ctx.lineTo(o.x + o.size/4, o.y - o.size/2.2);
-                ctx.lineTo(o.x + o.size/2, o.y + o.size/4);
-                ctx.closePath(); ctx.fill();
+                ctx.globalAlpha = 1.0;
                 
-                // Çatlaklar
-                ctx.strokeStyle = 'rgba(0,0,0,0.15)';
-                ctx.lineWidth = 1.5;
-                ctx.beginPath(); ctx.moveTo(o.x - 5, o.y - 10); ctx.lineTo(o.x + 8, o.y + 5); ctx.stroke();
-            }
-        });
+                // Yollar
+                paths.forEach(p => {
+                    ctx.strokeStyle = '#4e342e';
+                    ctx.lineWidth = p.width;
+                    ctx.globalAlpha = 0.5;
+                    ctx.beginPath(); ctx.moveTo(p.x1, p.y1); ctx.lineTo(p.x2, p.y2); ctx.stroke();
+                    ctx.globalAlpha = 1.0;
+                });
+            } catch (e) { console.error("Ground Draw Error", e); }
 
-        // --- 4. Karakterler ve Efektler ---
-        // Shopkeeper
-        if (isVisible(shopKeeper.x, shopKeeper.y, shopKeeper.size)) {
-            ctx.fillStyle = '#f1c40f'; ctx.beginPath(); ctx.arc(shopKeeper.x, shopKeeper.y, shopKeeper.size, 0, Math.PI*2); ctx.fill();
+            // --- B. Nesneler ve Göller ---
+            try {
+                terrain.forEach(t => {
+                    if (t.type === 'lake' && isVisible(t.x, t.y, t.radius + 50)) {
+                        ctx.fillStyle = '#0077b6';
+                        ctx.beginPath(); ctx.arc(t.x, t.y, t.radius, 0, Math.PI*2); ctx.fill();
+                    }
+                });
+
+                worldObjects.forEach(o => {
+                    if (!isVisible(o.x, o.y, o.size + 100)) return;
+                    if (o.type === 'tree') {
+                        ctx.fillStyle = '#3e2723';
+                        ctx.fillRect(o.x - 5, o.y - 10, 10, 35);
+                        ctx.fillStyle = '#1b4332';
+                        ctx.beginPath(); ctx.arc(o.x, o.y - 25, o.size/2, 0, Math.PI*2); ctx.fill();
+                    } else {
+                        ctx.fillStyle = '#455a64';
+                        ctx.beginPath(); ctx.arc(o.x, o.y, o.size/2, 0, Math.PI*2); ctx.fill();
+                    }
+                });
+            } catch (e) { console.error("Object Draw Error", e); }
+
+            // --- C. Karakterler ve Düşmanlar ---
+            try {
+                // Shopkeeper
+                if (isVisible(shopKeeper.x, shopKeeper.y, shopKeeper.size)) {
+                    ctx.fillStyle = '#f1c40f'; ctx.beginPath(); ctx.arc(shopKeeper.x, shopKeeper.y, shopKeeper.size, 0, Math.PI*2); ctx.fill();
+                }
+
+                // Dropped Items
+                droppedItems.forEach(item => {
+                    if (isVisible(item.x, item.y, item.size + 50)) {
+                        ctx.fillStyle = 'white'; ctx.font = "20px Arial";
+                        ctx.textAlign = 'center';
+                        ctx.fillText(item.icon, item.x, item.y);
+                    }
+                });
+
+                // Projectiles
+                projectiles.forEach(p => {
+                    ctx.fillStyle = p.color;
+                    ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill();
+                });
+
+                // Player
+                const isMoving = keys['KeyW'] || keys['KeyS'] || keys['KeyA'] || keys['KeyD'] || (joystickData && joystickData.active);
+                drawWizard(ctx, player.x, player.y, player.size, player.color, isMoving, player.equipment);
+
+                // Enemies
+                enemies.forEach(e => {
+                    if (isVisible(e.x, e.y, e.size + 50)) drawMonster(ctx, e);
+                });
+
+                // Hasar Rakamları
+                ctx.textAlign = 'center';
+                damageNumbers.forEach(d => {
+                    ctx.globalAlpha = d.life / 60;
+                    ctx.fillStyle = d.color;
+                    ctx.fillText(d.value, d.x, d.y);
+                });
+                ctx.globalAlpha = 1.0;
+                ctx.textAlign = 'left';
+
+                // Pet
+                drawPet(ctx);
+
+                // Patlama Efektleri
+                explosions.forEach(exp => {
+                    ctx.globalAlpha = exp.life / exp.maxLife;
+                    ctx.fillStyle = exp.color;
+                    ctx.beginPath(); ctx.arc(exp.x, exp.y, exp.radius * (1 - exp.life/exp.maxLife*0.5), 0, Math.PI*2); ctx.fill();
+                });
+                ctx.globalAlpha = 1.0;
+            } catch (e) { console.error("Actor Draw Error", e); }
+
+            // --- D. Atmosfer ---
+            try {
+                particles.forEach(p => {
+                    if (isVisible(p.x, p.y)) {
+                        ctx.globalAlpha = p.currentOpacity || 0.2;
+                        ctx.fillStyle = 'white';
+                        ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill();
+                    }
+                });
+                ctx.globalAlpha = 1.0;
+                drawWeather(ctx);
+            } catch (e) { console.error("Atmosphere Draw Error", e); }
+
+            ctx.restore(); // Transformasyonu geri al
+
+            // --- E. Gece Işıklandırması (Gelişmiş Hata Kontrolü) ---
+            try {
+                let ambientAlpha = 0;
+                let ambientColor = 'rgba(0, 0, 40, ';
+
+                if (hour >= 5 && hour < 7) ambientAlpha = 0.4 * (1 - (hour - 5) / 2);
+                else if (hour >= 18 && hour < 21) ambientAlpha = 0.5 * ((hour - 18) / 3);
+                else if (hour >= 21 || hour < 5) ambientAlpha = 0.5;
+
+                if (weather.intensity > 0) ambientAlpha = Math.max(ambientAlpha, weather.intensity * 0.3);
+
+                if (ambientAlpha > 0) {
+                    if (lightCanvas.width !== canvas.width || lightCanvas.height !== canvas.height) {
+                        lightCanvas.width = canvas.width;
+                        lightCanvas.height = canvas.height;
+                    }
+                    lctx.clearRect(0, 0, canvas.width, canvas.height);
+                    lctx.fillStyle = `${ambientColor}${ambientAlpha})`;
+                    lctx.fillRect(0, 0, canvas.width, canvas.height);
+                    
+                    const pScrX = (player.x - camX) * currentZoom;
+                    const pScrY = (player.y - camY) * currentZoom;
+                    const pRad = 200 * currentZoom;
+                    
+                    if (!isNaN(pScrX) && !isNaN(pScrY) && !isNaN(pRad)) {
+                        lctx.globalCompositeOperation = 'destination-out';
+                        const pGrad = lctx.createRadialGradient(pScrX, pScrY, 0, pScrX, pScrY, pRad);
+                        pGrad.addColorStop(0, 'rgba(0,0,0,1)');
+                        pGrad.addColorStop(1, 'rgba(0,0,0,0)');
+                        lctx.fillStyle = pGrad;
+                        lctx.beginPath(); lctx.arc(pScrX, pScrY, pRad, 0, Math.PI*2); lctx.fill();
+                        lctx.globalCompositeOperation = 'source-over';
+                    }
+                    ctx.drawImage(lightCanvas, 0, 0);
+                }
+            } catch (e) { console.error("Lighting Draw Error", e); }
+
+            // --- F. Vignette ---
+            try {
+                const vGrad = ctx.createRadialGradient(canvas.width/2, canvas.height/2, canvas.width/4, canvas.width/2, canvas.height/2, canvas.width/1.2);
+                vGrad.addColorStop(0, 'rgba(0,0,0,0)');
+                vGrad.addColorStop(1, 'rgba(0,0,0,0.2)');
+                ctx.fillStyle = vGrad;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            } catch (e) { }
+
+        } catch (err) {
+            showError("Main Draw Loop Error: " + err.message);
+        } finally {
+            updateDebugPanel();
+            requestAnimationFrame(() => {
+                try { update(); } catch(e) { console.error("Update Error", e); }
+                draw();
+            });
         }
-
-        // Dropped Items
-        droppedItems.forEach(item => {
-            if (!isVisible(item.x, item.y, item.size + 50)) return;
-            const bounce = Math.sin(frameCount/15) * 8;
-            
-            // Parlama Efekti
-            const glowGrad = ctx.createRadialGradient(item.x, item.y + bounce, 0, item.x, item.y + bounce, item.size + 15);
-            glowGrad.addColorStop(0, 'rgba(255, 215, 0, 0.4)');
-            glowGrad.addColorStop(1, 'rgba(255, 215, 0, 0)');
-            ctx.fillStyle = glowGrad;
-            ctx.beginPath(); ctx.arc(item.x, item.y + bounce, item.size + 15, 0, Math.PI*2); ctx.fill();
-            
-            // Eşya İkonu
-            ctx.fillStyle = 'white'; ctx.font = "26px Arial";
-            ctx.textAlign = 'center';
-            ctx.fillText(item.icon, item.x, item.y + 10 + bounce);
-            ctx.textAlign = 'left';
-        });
-
-        // Projectiles (Gelişmiş Mermi Efektleri)
-        projectiles.forEach(p => {
-            // Trail (İz)
-            const trailGrad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 2);
-            trailGrad.addColorStop(0, p.color);
-            trailGrad.addColorStop(1, 'rgba(0,0,0,0)');
-            ctx.fillStyle = trailGrad;
-            ctx.globalAlpha = 0.4;
-            ctx.beginPath(); ctx.arc(p.x, p.y, p.size * 2, 0, Math.PI*2); ctx.fill();
-            ctx.globalAlpha = 1.0;
-
-            // Çekirdek
-            ctx.fillStyle = p.color;
-            ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill();
-            ctx.fillStyle = '#fff';
-            ctx.beginPath(); ctx.arc(p.x - p.size/4, p.y - p.size/4, p.size/2, 0, Math.PI*2); ctx.fill();
-        });
-
-        // Player (Daima görünür)
-        const isMoving = keys['KeyW'] || keys['KeyS'] || keys['KeyA'] || keys['KeyD'] || joystickData.active;
-        drawWizard(ctx, player.x, player.y, player.size, player.color, isMoving, player.equipment);
-
-        // Enemies
-        enemies.forEach(e => {
-            if (isVisible(e.x, e.y, e.size + 50)) drawMonster(ctx, e);
-        });
-
-        // Hasar Rakamlarını Çiz
-        ctx.textAlign = 'center';
-        ctx.font = 'bold 16px Arial';
-        damageNumbers.forEach(d => {
-            ctx.globalAlpha = d.life / 60;
-            ctx.fillStyle = d.color;
-            ctx.fillText(d.value, d.x, d.y);
-        });
-        ctx.globalAlpha = 1.0;
-        ctx.textAlign = 'left';
-
-        // --- 5. Atmosferik Efektler ---
-        // Toz zerreleri
-        ctx.fillStyle = 'white';
-        particles.forEach(p => {
-            if (isVisible(p.x, p.y)) {
-                ctx.globalAlpha = p.opacity;
-                ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill();
-            }
-        });
-        ctx.globalAlpha = 1.0;
-
-        // Işık Hüzmeleri (Sadece Gündüz)
-        if (hour >= 6 && hour < 18) {
-            ctx.globalAlpha = 0.05;
-            ctx.fillStyle = '#fff9c4';
-            for(let i=0; i<10; i++) {
-                let startX = Math.floor(camera.x / 400) * 400 + (i * 400);
-                ctx.beginPath();
-                ctx.moveTo(startX + 100, camera.y);
-                ctx.lineTo(startX + 400, camera.y);
-                ctx.lineTo(startX + 200, camera.y + viewH);
-                ctx.lineTo(startX - 100, camera.y + viewH);
-                ctx.fill();
-            }
-            ctx.globalAlpha = 1.0;
-        }
-
-        // --- 6. Gece Işıklandırması ve Filtre ---
-        ctx.restore(); // Ana sahne bitti
-
-        // Günün saatine göre karanlık oranı hesaplama (0.0: tam aydınlık, 0.7: tam karanlık)
-        let ambientAlpha = 0;
-        let ambientColor = 'rgba(0, 0, 40, ';
-
-        if (hour >= 5 && hour < 7) { // Şafak
-            ambientAlpha = 0.5 * (1 - (hour - 5) / 2);
-            ambientColor = 'rgba(70, 0, 30, '; // Turuncumsu şafak
-        } else if (hour >= 18 && hour < 21) { // Akşam
-            ambientAlpha = 0.6 * ((hour - 18) / 3);
-            ambientColor = 'rgba(50, 0, 50, '; // Morumsu gün batımı
-        } else if (hour >= 21 || hour < 5) { // Gece
-            ambientAlpha = 0.7;
-            ambientColor = 'rgba(0, 0, 40, '; // Koyu gece
-        }
-
-        if (ambientAlpha > 0) {
-            // Işık Maskesini temizle ve ayarla
-            if (lightCanvas.width !== canvas.width) {
-                lightCanvas.width = canvas.width;
-                lightCanvas.height = canvas.height;
-            }
-            lctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            // Önce her yeri karart
-            lctx.fillStyle = `${ambientColor}${ambientAlpha})`;
-            lctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            // Player'ın etrafını "kes" (ışık alanı - Zoom uyumlu)
-            const lightX = (player.x - camera.x) * zoom;
-            const lightY = (player.y - camera.y) * zoom;
-            const lightRad = 250 * zoom;
-            
-            lctx.globalCompositeOperation = 'destination-out';
-            const lightGrad = lctx.createRadialGradient(lightX, lightY, 0, lightX, lightY, lightRad);
-            lightGrad.addColorStop(0, 'rgba(0,0,0,1)');
-            lightGrad.addColorStop(1, 'rgba(0,0,0,0)');
-            lctx.fillStyle = lightGrad;
-            lctx.beginPath(); lctx.arc(lightX, lightY, lightRad, 0, Math.PI*2); lctx.fill();
-            
-            // Sahneye uygula
-            ctx.drawImage(lightCanvas, 0, 0);
-            
-            // Hafif bir sarı ışık halesi ekle (Zoom uyumlu)
-            ctx.globalCompositeOperation = 'screen';
-            ctx.globalAlpha = 0.2 * ambientAlpha;
-            const glowGrad = ctx.createRadialGradient(lightX, lightY, 0, lightX, lightY, lightRad);
-            glowGrad.addColorStop(0, '#f1c40f');
-            glowGrad.addColorStop(1, 'rgba(0,0,0,0)');
-            ctx.fillStyle = glowGrad;
-            ctx.beginPath(); ctx.arc(lightX, lightY, lightRad, 0, Math.PI*2); ctx.fill();
-            ctx.globalCompositeOperation = 'source-over';
-            ctx.globalAlpha = 1.0;
-        }
-
-        requestAnimationFrame(() => { update(); draw(); });
     }
 
     function gameOver() { 
@@ -2230,7 +2758,14 @@
         document.getElementById('overlay-msg').innerText = `LVL ${player.lvl}`; 
     }
     function resetGame() { location.reload(); }
-    initWorld(); updateStatsUI(); updateQuestUI(); draw();
+    try {
+        initWorld(); 
+        updateStatsUI(); 
+        updateQuestUI(); 
+        draw();
+    } catch (e) {
+        showError("Initialization Error: " + e.message);
+    }
 </script>
 </body>
 </html>
