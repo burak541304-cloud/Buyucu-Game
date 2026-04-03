@@ -945,7 +945,7 @@
     let camera = { x: 0, y: 0 };
     const MIN_ZOOM = 0.3; // Daha geniş açı (0.3)
     const MAX_ZOOM = 2.0;
-    let zoom = MIN_ZOOM; // En geniş açı ile başla
+    let zoom = 0.5; // Dengeli bir zoom ile başla (0.3 yerine 0.5)
     let player = {
         x: WORLD_WIDTH / 2, y: WORLD_HEIGHT / 2,
         size: 24, speed: 5, 
@@ -1015,6 +1015,17 @@
     // Performans için ışık maskesi kanvası
     const lightCanvas = document.createElement('canvas');
     const lctx = lightCanvas.getContext('2d');
+
+    // Görsel Görünürlük Kontrolü (Global)
+    function isVisible(x, y, size = 0) {
+        const viewW = canvas.width / zoom;
+        const viewH = canvas.height / zoom;
+        const viewMargin = 150; // Biraz daha geniş bir marj
+        return x + size > camera.x - viewMargin && 
+               x - size < camera.x + viewW + viewMargin &&
+               y + size > camera.y - viewMargin && 
+               y - size < camera.y + viewH + viewMargin;
+    }
 
     // Görsel Güzelleştirme için yardımcı fonksiyonlar
     function drawGrass(ctx, x, y, size, color = '#2d4a3e') {
@@ -2499,29 +2510,23 @@
         
         const viewW = canvas.width / zoom;
         const viewH = canvas.height / zoom;
-        const viewMargin = 100;
-        const isVisible = (x, y, size = 0) => {
-            return x + size > camera.x - viewMargin && 
-                   x - size < camera.x + viewW + viewMargin &&
-                   y + size > camera.y - viewMargin && 
-                   y - size < camera.y + viewH + viewMargin;
-        };
+        const viewMargin = 150;
 
         // --- 1. Zemin ve Yollar ---
-        // Ana zemin rengi
-        ctx.fillStyle = '#1b3022';
+        // Ana zemin rengi (Daha parlak ve canlı yeşil)
+        ctx.fillStyle = '#2d5a27';
         // Ekran sarsıntısı ve zoom payı için geniş bir alanı boya
         ctx.fillRect(camera.x - viewMargin, camera.y - viewMargin, viewW + viewMargin * 2, viewH + viewMargin * 2);
         
         // Zemin varyasyonu (Daha doğal görünüm)
-        ctx.globalAlpha = 0.3;
+        ctx.globalAlpha = 0.4;
         const patchSize = 300;
         const startX = Math.floor(camera.x / patchSize) * patchSize;
         const startY = Math.floor(camera.y / patchSize) * patchSize;
         for (let i = startX; i < camera.x + viewW + patchSize; i += patchSize) {
             for (let j = startY; j < camera.y + viewH + patchSize; j += patchSize) {
                 if ((i+j) % (patchSize*2) === 0) {
-                    ctx.fillStyle = '#16291d';
+                    ctx.fillStyle = '#244820';
                     ctx.fillRect(i, j, patchSize, patchSize);
                 }
             }
@@ -2793,21 +2798,21 @@
         let ambientColor = 'rgba(0, 0, 40, ';
 
         if (hour >= 5 && hour < 7) { // Şafak
-            ambientAlpha = 0.5 * (1 - (hour - 5) / 2);
+            ambientAlpha = 0.4 * (1 - (hour - 5) / 2);
             ambientColor = 'rgba(70, 0, 30, '; // Turuncumsu şafak
         } else if (hour >= 18 && hour < 21) { // Akşam
-            ambientAlpha = 0.6 * ((hour - 18) / 3);
+            ambientAlpha = 0.5 * ((hour - 18) / 3);
             ambientColor = 'rgba(50, 0, 50, '; // Morumsu gün batımı
         } else if (hour >= 21 || hour < 5) { // Gece
-            ambientAlpha = 0.7;
+            ambientAlpha = 0.5; // Maksimum karanlık düşürüldü (0.7 -> 0.5)
             ambientColor = 'rgba(0, 0, 40, '; // Koyu gece
         }
 
         // Yağmurda her zaman biraz karanlık ekle
         if (weather.intensity > 0) {
-            ambientAlpha = Math.max(ambientAlpha, weather.intensity * 0.4);
+            ambientAlpha = Math.max(ambientAlpha, weather.intensity * 0.3);
             // Yağmurda renk daha gri/mavi olsun
-            if (ambientAlpha === weather.intensity * 0.4) ambientColor = 'rgba(20, 20, 40, ';
+            if (ambientAlpha === weather.intensity * 0.3) ambientColor = 'rgba(20, 20, 40, ';
         }
 
         if (ambientAlpha > 0) {
@@ -2894,7 +2899,7 @@
         // --- 7. Post-Processing: Vignette ---
         const vignetteGrad = ctx.createRadialGradient(canvas.width/2, canvas.height/2, canvas.width/4, canvas.width/2, canvas.height/2, canvas.width/1.2);
         vignetteGrad.addColorStop(0, 'rgba(0,0,0,0)');
-        vignetteGrad.addColorStop(1, 'rgba(0,0,0,0.4)');
+        vignetteGrad.addColorStop(1, 'rgba(0,0,0,0.2)'); // 0.4 -> 0.2 (Daha hafif)
         ctx.fillStyle = vignetteGrad;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
