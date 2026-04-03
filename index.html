@@ -153,6 +153,18 @@
             color: #d1d5db; text-transform: uppercase; letter-spacing: 1px;
             font-size: 14px; text-shadow: 1px 1px 2px #000;
             background: rgba(255,255,255,0.05); margin: -12px -12px 15px -12px; padding: 10px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+
+        .inv-page-btns {
+            display: flex; gap: 5px; justify-content: center; margin-bottom: 10px;
+        }
+        .page-btn {
+            padding: 4px 8px; background: rgba(0,0,0,0.3); border: 1px solid #5a5e7a;
+            color: #aaa; font-size: 10px; cursor: pointer; border-radius: 2px;
+        }
+        .page-btn.active {
+            background: #f1c40f; color: #000; border-color: #f1c40f; font-weight: bold;
         }
 
         .character-preview {
@@ -484,7 +496,9 @@
 
     <!-- Knight Online Style Envanter -->
     <div id="inventory-ui">
-        <div class="inv-header">INVENTORY [I]</div>
+        <div class="inv-header">
+            <span>INVENTORY [I]</span>
+        </div>
         
         <div class="character-preview">
             <div style="grid-column: 1; grid-row: 1;" class="equip-slot" id="slot-hat" onclick="unequip('hat')" ontouchstart="unequip('hat')">👒</div>
@@ -499,6 +513,11 @@
             <div style="grid-column: 3; grid-row: 1;" class="equip-slot" id="slot-weapon" onclick="unequip('weapon')" ontouchstart="unequip('weapon')">🪄</div>
             <div style="grid-column: 3; grid-row: 2;" class="equip-slot" id="slot-shield" onclick="unequip('shield')" ontouchstart="unequip('shield')">🛡️</div>
             <div style="grid-column: 3; grid-row: 3;" class="equip-slot" id="slot-ring" onclick="unequip('ring')" ontouchstart="unequip('ring')">💍</div>
+        </div>
+
+        <div class="inv-page-btns">
+            <button class="page-btn active" id="page-btn-0" onclick="changeInventoryPage(0)">SAYFA 1</button>
+            <button class="page-btn" id="page-btn-1" onclick="changeInventoryPage(1)">SAYFA 2</button>
         </div>
 
         <div class="inventory-grid" id="inv-grid">
@@ -812,13 +831,11 @@
             { id: 'kill_slimes', name: 'Slime Temizliği', target: 'Slime', count: 0, goal: 5, reward: 200, completed: false },
             { id: 'kill_orcs', name: 'Orc Avcısı', target: 'Orc', count: 0, goal: 3, reward: 500, completed: false }
         ],
-        inventory: [
-            { ...ITEM_DB.potion, count: 1 },
-            { ...ITEM_DB.mana_potion, count: 1 },
-            null, null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null
-        ],
+        inventory: Array(56).fill(null).map((_, i) => {
+            if (i === 0) return { ...ITEM_DB.potion, count: 1 };
+            if (i === 1) return { ...ITEM_DB.mana_potion, count: 1 };
+            return null;
+        }),
         equipment: {
             weapon: { ...ITEM_DB.fire_staff },
             hat: { ...ITEM_DB.wizard_hat },
@@ -856,6 +873,8 @@
     let isInventoryOpen = false;
     let isShopOpen = false;
     let isStatsOpen = false;
+    let currentInventoryPage = 0;
+    const INVENTORY_PAGE_SIZE = 28;
     let selectedItemIndex = -1; // -1: none, 0+: inventory index
     let selectedEquipType = null; // null: none, 'weapon', 'hat', etc.
     let frameCount = 0; // Animasyonlar için
@@ -1580,9 +1599,27 @@
         }
     }
 
+    function changeInventoryPage(page) {
+        currentInventoryPage = page;
+        playSound('click');
+        
+        // Buton stillerini güncelle
+        document.getElementById('page-btn-0').classList.toggle('active', page === 0);
+        document.getElementById('page-btn-1').classList.toggle('active', page === 1);
+        
+        updateInventoryUI();
+        closeItemInfo();
+    }
+
     function updateInventoryUI() {
         invGrid.innerHTML = '';
-        player.inventory.forEach((item, index) => {
+        
+        const start = currentInventoryPage * INVENTORY_PAGE_SIZE;
+        const end = start + INVENTORY_PAGE_SIZE;
+        const pageItems = player.inventory.slice(start, end);
+
+        pageItems.forEach((item, i) => {
+            const index = start + i;
             const slot = document.createElement('div');
             slot.className = 'grid-slot';
             if (item) {
