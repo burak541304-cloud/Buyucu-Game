@@ -630,7 +630,7 @@
     const joystickKnob = document.getElementById('joystick-knob');
 
     // Ayarlar
-    const WORLD_WIDTH = 3200; const WORLD_HEIGHT = 2400;
+    const WORLD_WIDTH = 6400; const WORLD_HEIGHT = 4800; // Harita boyutları iki katına çıkarıldı
     const TILE_SIZE = 64;
 
     function toggleFullScreen() {
@@ -721,7 +721,7 @@
     const MIN_ZOOM = 0.5;
     const MAX_ZOOM = 2.0;
     let player = {
-        x: WORLD_WIDTH / 2, y: WORLD_HEIGHT / 2,
+        x: WORLD_WIDTH / 2, y: WORLD_HEIGHT / 2, // Yeni harita merkezine ayarlandı
         size: 24, speed: 5, 
         hp: 100, maxHp: 100, 
         mp: 100, maxMp: 100, mpRegen: 0.1,
@@ -750,7 +750,7 @@
             active: true,
             name: 'Dragon Hatchling',
             icon: '🐉',
-            x: WORLD_WIDTH / 2 - 50, y: WORLD_HEIGHT / 2, // Oyuncunun biraz gerisinde başlar
+            x: WORLD_WIDTH / 2 - 50, y: WORLD_HEIGHT / 2, // Oyuncunun yeni başlangıç konumuna göre ayarlandı
             size: 20,
             hp: 100, maxHp: 100,
             damage: 10,
@@ -762,7 +762,7 @@
         }
     };
 
-    let shopKeeper = { x: WORLD_WIDTH / 2 + 200, y: WORLD_HEIGHT / 2 - 200, size: 32 };
+    let shopKeeper = { x: WORLD_WIDTH / 2 + 200, y: WORLD_HEIGHT / 2 - 200, size: 32 }; // Yeni harita boyutlarına göre ayarlandı
     let enemies = [];
     let projectiles = [];
     let droppedItems = [];
@@ -1232,8 +1232,8 @@
     function initWorld() {
         terrain = []; worldObjects = []; enemies = []; droppedItems = []; paths = []; particles = []; damageNumbers = [];
         
-        // Yollar (Daha doğal görünüm için)
-        for (let i = 0; i < 5; i++) {
+        // Yollar (Daha doğal görünüm için) - Sayı artırıldı
+        for (let i = 0; i < 15; i++) {
             paths.push({
                 x1: Math.random() * WORLD_WIDTH,
                 y1: Math.random() * WORLD_HEIGHT,
@@ -1243,8 +1243,8 @@
             });
         }
 
-        // Toz zerreleri (Atmosfer)
-        for (let i = 0; i < 50; i++) {
+        // Toz zerreleri (Atmosfer) - Sayı artırıldı
+        for (let i = 0; i < 150; i++) {
             particles.push({
                 x: Math.random() * WORLD_WIDTH,
                 y: Math.random() * WORLD_HEIGHT,
@@ -1253,7 +1253,9 @@
                 opacity: 0.1 + Math.random() * 0.4
             });
         }
-        for (let i = 0; i < 20; i++) {
+        
+        // Göller - Sayı artırıldı
+        for (let i = 0; i < 60; i++) {
             terrain.push({ 
                 x: Math.random() * WORLD_WIDTH, 
                 y: Math.random() * WORLD_HEIGHT, 
@@ -1262,7 +1264,8 @@
             });
         }
 
-        for (let i = 0; i < 200; i++) {
+        // Ağaçlar ve Kayalar - Sayı artırıldı
+        for (let i = 0; i < 800; i++) {
             worldObjects.push({ 
                 x: Math.random() * WORLD_WIDTH, y: Math.random() * WORLD_HEIGHT, 
                 type: Math.random() > 0.4 ? 'tree' : 'rock', 
@@ -1287,9 +1290,9 @@
 
         bosses.forEach((b, i) => {
             const pos = [
-                { x: 600, y: 600 },
-                { x: WORLD_WIDTH - 600, y: WORLD_HEIGHT - 600 },
-                { x: WORLD_WIDTH / 2, y: WORLD_HEIGHT / 2 - 800 }
+                { x: WORLD_WIDTH * 0.2, y: WORLD_HEIGHT * 0.2 }, // Sol üst köşe
+                { x: WORLD_WIDTH * 0.8, y: WORLD_HEIGHT * 0.8 }, // Sağ alt köşe
+                { x: WORLD_WIDTH * 0.5, y: WORLD_HEIGHT * 0.2 }  // Üst orta
             ][i];
 
             enemies.push({
@@ -1309,10 +1312,11 @@
             { name: 'Void Walker', color: '#4b0082', size: 22, speed: 1.8 }
         ];
 
-        for (let i = 0; i < 12; i++) {
+        for (let i = 0; i < 50; i++) { // Düşman sayısını artırdık
             let gx = Math.random() * WORLD_WIDTH;
             let gy = Math.random() * WORLD_HEIGHT;
-            if (Math.hypot(gx - player.x, gy - player.y) < 600) continue;
+            // Oyuncunun başlangıç konumuna çok yakın düşman spawn etme
+            if (Math.hypot(gx - player.x, gy - player.y) < 800) continue; // Güvenli bölgeyi genişlettik
             
             const type = monsterTypes[Math.floor(Math.random() * monsterTypes.length)];
             
