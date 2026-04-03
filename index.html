@@ -35,7 +35,49 @@
                 transform: scale(0.9);
                 top: 5px; left: 5px;
             }
-            #clock {
+            /* Skill Tree UI */
+        #skill-tree-ui {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 600px; height: 450px;
+            background: linear-gradient(135deg, #1e202e 0%, #0d0e14 100%);
+            border: 3px solid #f1c40f; border-radius: 8px;
+            display: none; z-index: 70; padding: 20px;
+            box-shadow: 0 0 50px rgba(0,0,0,0.9);
+            color: #fff;
+        }
+        .skill-tree-header {
+            text-align: center; font-size: 20px; font-weight: bold; color: #f1c40f;
+            margin-bottom: 20px; text-transform: uppercase; border-bottom: 2px solid #f1c40f;
+            padding-bottom: 10px;
+        }
+        .skill-branches {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
+            height: 320px;
+        }
+        .skill-branch {
+            background: rgba(255,255,255,0.05); border-radius: 6px; padding: 10px;
+            display: flex; flex-direction: column; gap: 10px; align-items: center;
+        }
+        .branch-title { font-weight: bold; font-size: 14px; margin-bottom: 5px; }
+        .skill-node {
+            width: 50px; height: 50px; background: #2d3436; border: 2px solid #444;
+            border-radius: 4px; display: flex; justify-content: center; align-items: center;
+            font-size: 24px; cursor: pointer; position: relative; transition: all 0.2s;
+        }
+        .skill-node.unlocked { border-color: #f1c40f; box-shadow: 0 0 10px rgba(241,196,15,0.5); }
+        .skill-node.locked { opacity: 0.5; cursor: not-allowed; }
+        .skill-node:hover:not(.locked) { transform: scale(1.1); background: #3d4446; }
+        .skill-node .level {
+            position: absolute; bottom: -5px; right: -5px; background: #f1c40f;
+            color: #000; font-size: 10px; width: 16px; height: 16px; border-radius: 50%;
+            display: flex; justify-content: center; align-items: center; font-weight: bold;
+        }
+        .skill-points-display {
+            text-align: center; color: #f1c40f; font-weight: bold; margin-top: 15px;
+        }
+
+        #clock {
                 transform: scale(0.8);
                 top: 10px; right: 10px;
             }
@@ -383,6 +425,27 @@
 
     <div id="shop-trigger-msg">SUNDRIES [E]</div>
 
+    <!-- Skill Tree UI -->
+    <div id="skill-tree-ui">
+        <div class="skill-tree-header">YETENEK AĞACI [K]</div>
+        <div class="skill-branches">
+            <div class="skill-branch" id="branch-fire">
+                <div class="branch-title" style="color:#ff4d00;">ATEŞ DALI</div>
+                <!-- Nodes go here -->
+            </div>
+            <div class="skill-branch" id="branch-ice">
+                <div class="branch-title" style="color:#00d2ff;">BUZ DALI</div>
+                <!-- Nodes go here -->
+            </div>
+            <div class="skill-branch" id="branch-lightning">
+                <div class="branch-title" style="color:#f1c40f;">YILDIRIM DALI</div>
+                <!-- Nodes go here -->
+            </div>
+        </div>
+        <div class="skill-points-display">KALAN PUAN: <span id="skill-points-text">0</span></div>
+        <button class="btn" style="width: 100%; margin-top: 15px;" onclick="toggleSkillTree()" ontouchstart="toggleSkillTree()">KAPAT</button>
+    </div>
+
     <!-- Stat Window -->
     <div id="stat-ui">
         <div class="inv-header" style="border-color: #3498db; color: #3498db;">CHARACTER STATS [U]</div>
@@ -469,6 +532,7 @@
         <div class="mobile-btn" onclick="adjustZoom(-0.1)" ontouchstart="adjustZoom(-0.1)">🔍-</div>
         <div class="mobile-btn" onclick="toggleInventory()" ontouchstart="toggleInventory()">🎒</div>
         <div class="mobile-btn" onclick="toggleStats()" ontouchstart="toggleStats()">👤</div>
+        <div class="mobile-btn" onclick="toggleSkillTree()" ontouchstart="toggleSkillTree()">📜</div>
         <div class="mobile-btn" id="mobile-shop-btn" style="display:none;" onclick="checkShopInteract()" ontouchstart="checkShopInteract()">🏪</div>
         <div class="mobile-btn" onclick="toggleFullScreen()" ontouchstart="toggleFullScreen()">📺</div>
     </div>
@@ -613,6 +677,7 @@
     const inventoryUI = document.getElementById('inventory-ui');
     const shopUI = document.getElementById('shop-ui');
     const statUI = document.getElementById('stat-ui');
+    const skillTreeUI = document.getElementById('skill-tree-ui');
     const shopMsg = document.getElementById('shop-trigger-msg');
     const invGrid = document.getElementById('inv-grid');
     const tooltip = document.getElementById('tooltip');
@@ -621,7 +686,7 @@
     const joystickKnob = document.getElementById('joystick-knob');
 
     // Ayarlar
-    const WORLD_WIDTH = 3200; const WORLD_HEIGHT = 2400;
+    const WORLD_WIDTH = 6400; const WORLD_HEIGHT = 4800;
     const TILE_SIZE = 64;
 
     function toggleFullScreen() {
@@ -700,7 +765,22 @@
     };
 
     // Yetenek Veritabanı
-    const BASIC_ATTACK = { name: 'Fireball', icon: '🔥', color: '#ff4d00', damageMult: 0.8, cd: 45, speed: 9, size: 7, effect: 'burn', manaCost: 0 };
+    const SKILL_TREE = {
+        fire: [
+            { id: 'fire_1', name: 'Fireball', icon: '🔥', level: 1, maxLevel: 5, color: '#ff4d00', damageMult: 0.8, cd: 45, speed: 9, size: 7, effect: 'burn', manaCost: 0, desc: 'Temel ateş büyüsü.' },
+            { id: 'fire_2', name: 'Explosion', icon: '💥', level: 0, maxLevel: 5, color: '#ff0000', damageMult: 2.5, cd: 180, speed: 6, size: 15, effect: 'aoe', manaCost: 50, req: 'fire_1', reqLevel: 3, desc: 'Büyük patlama yaratır.' }
+        ],
+        ice: [
+            { id: 'ice_1', name: 'Frostbolt', icon: '❄️', level: 0, maxLevel: 5, color: '#00d2ff', damageMult: 1.0, cd: 60, speed: 12, size: 6, effect: 'slow', manaCost: 15, desc: 'Düşmanı yavaşlatır.' },
+            { id: 'ice_2', name: 'Blizzard', icon: '🌨️', level: 0, maxLevel: 5, color: '#ffffff', damageMult: 1.5, cd: 240, speed: 4, size: 20, effect: 'freeze', manaCost: 80, req: 'ice_1', reqLevel: 3, desc: 'Alanı dondurur.' }
+        ],
+        lightning: [
+            { id: 'lightning_1', name: 'Lightning Bolt', icon: '⚡', level: 0, maxLevel: 5, color: '#f1c40f', damageMult: 1.8, cd: 120, speed: 15, size: 4, effect: 'shock', manaCost: 35, desc: 'Hızlı yıldırım saldırısı.' },
+            { id: 'lightning_2', name: 'Chain Lightning', icon: '🌩️', level: 0, maxLevel: 5, color: '#ffff00', damageMult: 1.2, cd: 150, speed: 18, size: 5, effect: 'chain', manaCost: 60, req: 'lightning_1', reqLevel: 3, desc: 'Birden fazla hedefe seker.' }
+        ]
+    };
+
+    const BASIC_ATTACK = SKILL_TREE.fire[0];
     
     const SKILL_DB = [
         { name: 'Frostbolt', icon: '❄️', color: '#00d2ff', damageMult: 1.0, cd: 60, speed: 12, size: 6, effect: 'slow', manaCost: 15 },
@@ -719,8 +799,10 @@
         xp: 0, maxXp: 100, lvl: 1, gold: 100,
         color: '#4ecca3', 
         basicAttackCooldown: 0,
-        skillCooldowns: [0, 0],
+        skillCooldowns: [0, 0, 0, 0], // Slot sayısını artırdık
         statPoints: 0,
+        skillPoints: 1, // Başlangıçta 1 puan
+        activeSkills: [SKILL_TREE.fire[0], null, null, null], // Aktif yetenekler
         stats: { int: 0, hp: 0, dex: 0 },
         quests: [
             { id: 'kill_slimes', name: 'Slime Temizliği', target: 'Slime', count: 0, goal: 5, reward: 200, completed: false },
@@ -1193,11 +1275,71 @@
         }
     }
 
+    function spawnEnemies() {
+        const monsterTypes = [
+            { name: 'Slime', color: '#4ade80', size: 18, speed: 1.2 },
+            { name: 'Orc', color: '#8b4513', size: 24, speed: 1.5 },
+            { name: 'Void Walker', color: '#4b0082', size: 22, speed: 1.8 },
+            { name: 'Skeleton', color: '#e0e0e0', size: 20, speed: 1.6 },
+            { name: 'Fire Imp', color: '#ff4d00', size: 16, speed: 2.2 },
+            { name: 'Earth Golem', color: '#795548', size: 35, speed: 0.8 }
+        ];
+
+        for (let i = 0; i < 40; i++) {
+            let gx = Math.random() * WORLD_WIDTH;
+            let gy = Math.random() * WORLD_HEIGHT;
+            if (Math.hypot(gx - player.x, gy - player.y) < 600) continue;
+            
+            const type = monsterTypes[Math.floor(Math.random() * monsterTypes.length)];
+            
+            for (let j = 0; j < 5; j++) {
+                enemies.push({
+                    x: gx + (Math.random()-0.5)*300, y: gy + (Math.random()-0.5)*300,
+                    size: type.size, 
+                    hp: (60 + player.lvl * 25) * (type.size / 20), 
+                    maxHp: (60 + player.lvl * 25) * (type.size / 20),
+                    speed: type.speed, 
+                    color: type.color, 
+                    damage: 0.6 * (type.size / 20),
+                    name: type.name
+                });
+            }
+        }
+    }
+
+    function spawnBosses() {
+        const bosses = [
+            { name: 'Kekurikekukaka', color: '#ff4d00', size: 60, hp: 5000, speed: 1.0 },
+            { name: 'Talos', color: '#4b0082', size: 75, hp: 12000, speed: 0.8 },
+            { name: 'Samma', color: '#1b4332', size: 65, hp: 8500, speed: 1.2 },
+            { name: 'Dragon Lord', color: '#d32f2f', size: 120, hp: 50000, speed: 0.7 },
+            { name: 'Lich King', color: '#00bcd4', size: 80, hp: 35000, speed: 1.1 }
+        ];
+
+        bosses.forEach((b, i) => {
+            const pos = [
+                { x: 1000, y: 1000 },
+                { x: WORLD_WIDTH - 1000, y: WORLD_HEIGHT - 1000 },
+                { x: WORLD_WIDTH / 2, y: WORLD_HEIGHT / 2 - 1500 },
+                { x: 1000, y: WORLD_HEIGHT - 1000 },
+                { x: WORLD_WIDTH - 1000, y: 1000 }
+            ][i];
+
+            enemies.push({
+                ...b,
+                x: pos.x, y: pos.y,
+                maxHp: b.hp,
+                isBoss: true,
+                damage: 15 + (i * 10)
+            });
+        });
+    }
+
     function initWorld() {
         terrain = []; worldObjects = []; enemies = []; droppedItems = []; paths = []; particles = []; damageNumbers = [];
         
         // Yollar (Daha doğal görünüm için)
-        for (let i = 0; i < 5; i++) {
+        for (let i = 0; i < 15; i++) { // Sayı arttı
             paths.push({
                 x1: Math.random() * WORLD_WIDTH,
                 y1: Math.random() * WORLD_HEIGHT,
@@ -1208,7 +1350,7 @@
         }
 
         // Toz zerreleri (Atmosfer)
-        for (let i = 0; i < 50; i++) {
+        for (let i = 0; i < 150; i++) { // Sayı arttı
             particles.push({
                 x: Math.random() * WORLD_WIDTH,
                 y: Math.random() * WORLD_HEIGHT,
@@ -1217,7 +1359,7 @@
                 opacity: 0.1 + Math.random() * 0.4
             });
         }
-        for (let i = 0; i < 20; i++) {
+        for (let i = 0; i < 60; i++) { // Sayı arttı
             terrain.push({ 
                 x: Math.random() * WORLD_WIDTH, 
                 y: Math.random() * WORLD_HEIGHT, 
@@ -1226,7 +1368,7 @@
             });
         }
 
-        for (let i = 0; i < 200; i++) {
+        for (let i = 0; i < 600; i++) { // Sayı arttı
             worldObjects.push({ 
                 x: Math.random() * WORLD_WIDTH, y: Math.random() * WORLD_HEIGHT, 
                 type: Math.random() > 0.4 ? 'tree' : 'rock', 
@@ -1242,68 +1384,18 @@
         worldObjects.sort((a, b) => a.y - b.y);
     }
 
-    function spawnBosses() {
-        const bosses = [
-            { name: 'Kekurikekukaka', color: '#ff4d00', size: 60, hp: 5000, speed: 1.0 },
-            { name: 'Talos', color: '#4b0082', size: 75, hp: 12000, speed: 0.8 },
-            { name: 'Samma', color: '#1b4332', size: 65, hp: 8500, speed: 1.2 }
-        ];
-
-        bosses.forEach((b, i) => {
-            const pos = [
-                { x: 600, y: 600 },
-                { x: WORLD_WIDTH - 600, y: WORLD_HEIGHT - 600 },
-                { x: WORLD_WIDTH / 2, y: WORLD_HEIGHT / 2 - 800 }
-            ][i];
-
-            enemies.push({
-                ...b,
-                x: pos.x, y: pos.y,
-                maxHp: b.hp,
-                isBoss: true,
-                damage: 10 + (i * 5)
-            });
-        });
-    }
-
-    function spawnEnemies() {
-        const monsterTypes = [
-            { name: 'Slime', color: '#4ade80', size: 18, speed: 1.2 },
-            { name: 'Orc', color: '#8b4513', size: 24, speed: 1.5 },
-            { name: 'Void Walker', color: '#4b0082', size: 22, speed: 1.8 }
-        ];
-
-        for (let i = 0; i < 12; i++) {
-            let gx = Math.random() * WORLD_WIDTH;
-            let gy = Math.random() * WORLD_HEIGHT;
-            if (Math.hypot(gx - player.x, gy - player.y) < 600) continue;
-            
-            const type = monsterTypes[Math.floor(Math.random() * monsterTypes.length)];
-            
-            for (let j = 0; j < 4; j++) {
-                enemies.push({
-                    x: gx + (Math.random()-0.5)*200, y: gy + (Math.random()-0.5)*200,
-                    size: type.size, 
-                    hp: (60 + player.lvl * 20) * (type.size / 20), 
-                    maxHp: (60 + player.lvl * 20) * (type.size / 20),
-                    speed: type.speed, 
-                    color: type.color, 
-                    damage: 0.5 * (type.size / 20),
-                    name: type.name
-                });
-            }
-        }
-    }
-
     window.addEventListener('keydown', e => {
         keys[e.code] = true;
         if (e.code === 'KeyI') toggleInventory();
         if (e.code === 'KeyU') toggleStats();
+        if (e.code === 'KeyK') toggleSkillTree();
         if (e.code === 'KeyE') checkShopInteract();
         if (e.code === 'Digit1') castSpecificSkill(0);
         if (e.code === 'Digit2') castSpecificSkill(1);
-        if (e.code === 'Digit3') useQuickPotion('potion');
-        if (e.code === 'Digit4') useQuickPotion('mana_potion');
+        if (e.code === 'Digit3') castSpecificSkill(2);
+        if (e.code === 'Digit4') castSpecificSkill(3);
+        if (e.code === 'Digit5') useQuickPotion('potion');
+        if (e.code === 'Digit6') useQuickPotion('mana_potion');
     });
     window.addEventListener('keyup', e => keys[e.code] = false);
 
@@ -1385,12 +1477,14 @@
     }
 
     function castSpecificSkill(index) {
-        const skill = SKILL_DB[index];
+        const skill = player.activeSkills[index];
+        if (!skill) return;
+        
         const currentCd = player.skillCooldowns[index];
 
         if (currentCd <= 0 && player.mp >= skill.manaCost && enemies.length > 0) {
             let nearestTarget = null;
-            let minDist = 500; 
+            let minDist = 600; 
 
             enemies.forEach(e => {
                 const d = Math.hypot(player.x - e.x, player.y - e.y);
@@ -1902,10 +1996,12 @@
             player.lvl++; 
             player.xp = 0; 
             player.maxXp += 150; 
-            player.statPoints += 3; // Her seviyede 3 puan
+            player.statPoints += 3; 
+            player.skillPoints += 1; // Her seviyede 1 yetenek puanı
             playSound('levelup');
             updateStatsUI();
             updateStatWindow();
+            updateSkillTreeUI();
         }
     }
 
@@ -1955,6 +2051,82 @@
         if (index !== -1) {
             handleItemAction(index);
         }
+    }
+
+    let isSkillTreeOpen = false;
+    function toggleSkillTree() {
+        isSkillTreeOpen = !isSkillTreeOpen;
+        playSound('click');
+        skillTreeUI.style.display = isSkillTreeOpen ? 'block' : 'none';
+        if (isSkillTreeOpen) updateSkillTreeUI();
+    }
+
+    function updateSkillTreeUI() {
+        document.getElementById('skill-points-text').innerText = player.skillPoints;
+        
+        for (const branch in SKILL_TREE) {
+            const container = document.getElementById(`branch-${branch}`);
+            const title = container.querySelector('.branch-title');
+            container.innerHTML = '';
+            container.appendChild(title);
+
+            SKILL_TREE[branch].forEach(skill => {
+                const node = document.createElement('div');
+                const isLocked = skill.req && (SKILL_TREE[branch].find(s => s.id === skill.req).level < skill.reqLevel);
+                node.className = `skill-node ${skill.level > 0 ? 'unlocked' : (isLocked ? 'locked' : '')}`;
+                node.innerHTML = `
+                    ${skill.icon}
+                    <div class="level">${skill.level}/${skill.maxLevel}</div>
+                `;
+                
+                node.onclick = () => upgradeSkill(branch, skill.id);
+                node.onmouseenter = (e) => {
+                    const reqText = skill.req ? `<br><span style="color:#e74c3c;">Gereksinim: ${SKILL_TREE[branch].find(s => s.id === skill.req).name} Lv.${skill.reqLevel}</span>` : '';
+                    showTooltip({
+                        name: skill.name,
+                        desc: `${skill.desc}${reqText}<br><span style="color:#f1c40f;">Hasar: x${skill.damageMult}</span>`
+                    }, e);
+                };
+                node.onmouseleave = hideTooltip;
+                
+                container.appendChild(node);
+            });
+        }
+    }
+
+    function upgradeSkill(branch, skillId) {
+        const skill = SKILL_TREE[branch].find(s => s.id === skillId);
+        const isLocked = skill.req && (SKILL_TREE[branch].find(s => s.id === skill.req).level < skill.reqLevel);
+        
+        if (player.skillPoints > 0 && skill.level < skill.maxLevel && !isLocked) {
+            player.skillPoints--;
+            skill.level++;
+            playSound('levelup');
+            
+            // Eğer yeni bir yetenek açıldıysa ve slot boşsa ekle
+            if (skill.level === 1) {
+                let emptySlot = player.activeSkills.indexOf(null);
+                if (emptySlot !== -1) {
+                    player.activeSkills[emptySlot] = skill;
+                    updateSkillBarUI();
+                }
+            }
+            
+            updateSkillTreeUI();
+        }
+    }
+
+    function updateSkillBarUI() {
+        player.activeSkills.forEach((skill, i) => {
+            const slot = document.getElementById(`skill-${i+1}`);
+            if (slot) {
+                if (skill) {
+                    slot.innerHTML = `<span class="key-hint">${i+1}</span>${skill.icon}<div class="skill-cooldown" id="cd-${i+1}"></div>`;
+                } else {
+                    slot.innerHTML = `<span class="key-hint">${i+1}</span>`;
+                }
+            }
+        });
     }
 
     function toggleStats() {
