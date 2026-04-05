@@ -387,6 +387,9 @@
         this.level = 1; this.xp = 0; this.xpNeeded = 100;
         this.inventory = { wood:0, straw:0 };
         this.walkTimer = 0;
+        this.isShooting = false;
+        this.shootCooldown = 0;
+        this.lastTargetPos = null;
 
         this.mesh = new THREE.Group();
         this.mesh.position.set(this.x, 0, this.z);
@@ -455,16 +458,8 @@
           let swing = Math.sin(this.walkTimer) * 12;
           this.leftFoot.position.z = swing;
           this.rightFoot.position.z = -swing;
-
-          // HAREKET YÖNÜNE DÖNME
-          const targetRot = Math.atan2(dx, dz);
-          // Yumuşak dönüş (Lerp benzeri)
-          let diff = targetRot - this.mesh.rotation.y;
-          while (diff < -Math.PI) diff += Math.PI * 2;
-          while (diff > Math.PI) diff -= Math.PI * 2;
-          this.mesh.rotation.y += diff * 0.15;
         } else {
-          // Durduğunda zamanlayıcıyı sönümle ve ayakları ortala
+          // Durduğunda zamanlayıcıyı sönümle ve vücut parçalarını yerlerine oturt
           this.walkTimer *= 0.8;
           let bob = Math.abs(Math.sin(this.walkTimer)) * 4;
           this.body.position.y = 15 + bob;
@@ -474,6 +469,27 @@
           let swing = Math.sin(this.walkTimer) * 12;
           this.leftFoot.position.z = swing;
           this.rightFoot.position.z = -swing;
+        }
+
+        // SERİ ATEŞ MEKANİĞİ
+        if (this.shootCooldown > 0) this.shootCooldown -= dt;
+        if (this.isShooting && this.shootCooldown <= 0 && this.lastTargetPos) {
+           this.lookAtPos(this.lastTargetPos.x, this.lastTargetPos.z);
+           projectiles.push(new Projectile(this.x, this.z, this.lastTargetPos.x, this.lastTargetPos.z));
+           this.walkTimer += 1.5; // Asa sallama
+           this.shootCooldown = 0.33; // Saniyede ~3 mermi
+        }
+
+        // ROTASYON (Ateş etmiyorsa yürüme yönüne, ediyorsa hedefe bak)
+        if (!this.isShooting && (dx !== 0 || dz !== 0)) {
+           const targetRot = Math.atan2(dx, dz);
+           let diff = targetRot - this.mesh.rotation.y;
+           while (diff < -Math.PI) diff += Math.PI * 2;
+           while (diff > Math.PI) diff -= Math.PI * 2;
+           this.mesh.rotation.y += diff * 0.15;
+        } else if (this.isShooting && this.lastTargetPos) {
+            // Ateş ederken anında hedefe dön
+            this.lookAtPos(this.lastTargetPos.x, this.lastTargetPos.z);
         }
 
         this.x = Math.max(this.radius, Math.min(WORLD_SIZE-this.radius, this.x));
@@ -719,61 +735,73 @@
     let joystickActive = false;
     let joystickOrigin = { x: 0, y: 0 };
     let joystickVector = { x: 0, y: 0 };
+    let joystickTouchId = null;
 
     window.addEventListener('touchstart', (e) => {
-      const touch = e.touches[0];
-      // Sol taraf: Hareket
-      if (touch.clientX < window.innerWidth / 2) {
-        joystickActive = true;
-        joystickOrigin = { x: touch.clientX, y: touch.clientY };
-        joystickBase.style.display = 'block';
-        joystickBase.style.left = `${joystickOrigin.x - 60}px`;
-        joystickBase.style.top = `${joystickOrigin.y - 60}px`;
-        joystickStick.style.left = '50%';
-        joystickStick.style.top = '50%';
-      } else {
-        // Sağ taraf: Ateş
-        handleShoot(touch.clientX, touch.clientY);
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        const touch = e.changedTouches[i];
+        if (touch.clientX < window.innerWidth / 2 && joystickTouchId === null) {
+          joystickActive = true;
+          joystickTouchId = touch.identifier;
+          joystickOrigin = { x: touch.clientX, y: touch.clientY };
+          joystickBase.style.display = 'block';
+          joystickBase.style.left = `${joystickOrigin.x - 60}px`;
+          joystickBase.style.top = `${joystickOrigin.y - 60}px`;
+          joystickStick.style.left = '50%';
+          joystickStick.style.top = '50%';
+        } else if (touch.clientX >= window.innerWidth / 2) {
+          player.isShooting = true;
+          updateShootTarget(touch.clientX, touch.clientY);
+        }
       }
     }, { passive: false });
 
     window.addEventListener('touchmove', (e) => {
-      if (!joystickActive) return;
-      e.preventDefault();
-      const touch = e.touches[0];
-      const deltaX = touch.clientX - joystickOrigin.x;
-      const deltaY = touch.clientY - joystickOrigin.y;
-      const distVal = Math.hypot(deltaX, deltaY);
-      const maxDist = 50;
-      const angle = Math.atan2(deltaY, deltaX);
-      
-      const moveDist = Math.min(distVal, maxDist);
-      const moveX = Math.cos(angle) * moveDist;
-      const moveY = Math.sin(angle) * moveDist;
-      
-      joystickStick.style.transform = `translate(calc(-50% + ${moveX}px), calc(-50% + ${moveY}px))`;
-      
-      joystickVector = { x: moveX / maxDist, y: moveY / maxDist };
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        const touch = e.changedTouches[i];
+        if (joystickActive && touch.identifier === joystickTouchId) {
+          e.preventDefault();
+          const deltaX = touch.clientX - joystickOrigin.x;
+          const deltaY = touch.clientY - joystickOrigin.y;
+          const distVal = Math.hypot(deltaX, deltaY);
+          const maxDist = 50;
+          const angle = Math.atan2(deltaY, deltaX);
+          const moveDist = Math.min(distVal, maxDist);
+          const moveX = Math.cos(angle) * moveDist;
+          const moveY = Math.sin(angle) * moveDist;
+          joystickStick.style.transform = `translate(calc(-50% + ${moveX}px), calc(-50% + ${moveY}px))`;
+          joystickVector = { x: moveX / maxDist, y: moveY / maxDist };
+        } else if (player.isShooting && touch.clientX >= window.innerWidth / 2) {
+          updateShootTarget(touch.clientX, touch.clientY);
+        }
+      }
     }, { passive: false });
 
-    window.addEventListener('touchend', () => {
-      joystickActive = false;
-      joystickBase.style.display = 'none';
-      joystickVector = { x: 0, y: 0 };
+    window.addEventListener('touchend', (e) => {
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        const touch = e.changedTouches[i];
+        if (touch.identifier === joystickTouchId) {
+          joystickActive = false;
+          joystickTouchId = null;
+          joystickBase.style.display = 'none';
+          joystickVector = { x: 0, y: 0 };
+        } else {
+          player.isShooting = false;
+        }
+      }
     });
 
-    function handleShoot(clientX, clientY) {
+    function updateShootTarget(clientX, clientY) {
       if(isGameOver) return;
       
-      let nearestDist = Infinity, nearest = null;
+      let nearestDist = 800, nearest = null;
       dummies.forEach(d => {
          let curr = dist(player.x, player.z, d.x, d.z);
          if(curr < nearestDist) { nearestDist = curr; nearest = d; }
       });
       
       if(nearest) {
-         player.lookAtPos(nearest.x, nearest.z);
-         projectiles.push(new Projectile(player.x, player.z, nearest.x, nearest.z));
+         player.lastTargetPos = { x: nearest.x, z: nearest.z };
       } else {
          const mouseVec = new THREE.Vector2((clientX / window.innerWidth)*2-1, -(clientY / window.innerHeight)*2+1);
          const raycaster = new THREE.Raycaster();
@@ -781,15 +809,22 @@
          const intersects = raycaster.intersectObject(floorPlane);
          if(intersects.length > 0) {
             let pnt = intersects[0].point;
-            player.lookAtPos(pnt.x, pnt.z);
-            projectiles.push(new Projectile(player.x, player.z, pnt.x, pnt.z));
+            player.lastTargetPos = { x: pnt.x, z: pnt.z };
          }
       }
-      player.walkTimer += 1.5;
     }
 
     window.addEventListener('mousedown', (e) => {
-      handleShoot(e.clientX, e.clientY);
+      player.isShooting = true;
+      updateShootTarget(e.clientX, e.clientY);
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if(player.isShooting) updateShootTarget(e.clientX, e.clientY);
+    });
+
+    window.addEventListener('mouseup', () => {
+      player.isShooting = false;
     });
 
     let prevTime = performance.now();
