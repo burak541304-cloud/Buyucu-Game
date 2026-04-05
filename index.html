@@ -168,12 +168,44 @@
       position: absolute; bottom: -5px; right: -5px; background: #ff3366; color: white;
       font-size: 14px; padding: 2px 6px; border-radius: 10px; border: 2px solid var(--bg);
     }
+
+    /* Joystick Styles */
+    #joystick-base {
+      position: absolute;
+      bottom: 50px;
+      left: 50px;
+      width: 120px;
+      height: 120px;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(5px);
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      border-radius: 50%;
+      display: none; /* Sadece mobilde/dokunmada görünecek */
+      z-index: 100;
+      pointer-events: none;
+    }
+
+    #joystick-stick {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 50px;
+      height: 50px;
+      background: var(--primary);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 0 15px var(--primary);
+    }
   </style>
 </head>
 <body>
 
   <div id="floating-text-container"></div>
   <canvas id="gameCanvas"></canvas>
+
+  <div id="joystick-base">
+    <div id="joystick-stick"></div>
+  </div>
 
   <div id="ui-layer">
     <div class="header-info" style="justify-content: flex-end;">
@@ -396,11 +428,17 @@
       }
       update(dt) {
         let dx=0, dz=0;
-        // Kamera çapraz durduğu için, tuşları izometrik eksene göre eşliyoruz:
+        // Klavye Kontrolleri
         if(keys.w || keys.ArrowUp)   { dx += 1; dz -= 1; } // Ekranda Yukarı
         if(keys.s || keys.ArrowDown) { dx -= 1; dz += 1; } // Ekranda Aşağı
         if(keys.a || keys.ArrowLeft) { dx -= 1; dz -= 1; } // Ekranda Sola
-        if(keys.d || keys.ArrowRight){ dx += 1; dz += 1; } // Ekranda Sağa
+        if(keys.d || keys.ArrowRight) { dx += 1; dz += 1; } // Ekranda Sağa
+
+        // Joystick Kontrolleri (Mobil)
+        if (joystickActive) {
+          dx += joystickVector.x - joystickVector.y;
+          dz += joystickVector.x + joystickVector.y;
+        }
 
         if (dx !== 0 || dz !== 0) {
           let length = Math.hypot(dx, dz);
@@ -417,6 +455,14 @@
           let swing = Math.sin(this.walkTimer) * 12;
           this.leftFoot.position.z = swing;
           this.rightFoot.position.z = -swing;
+
+          // HAREKET YÖNÜNE DÖNME
+          const targetRot = Math.atan2(dx, dz);
+          // Yumuşak dönüş (Lerp benzeri)
+          let diff = targetRot - this.mesh.rotation.y;
+          while (diff < -Math.PI) diff += Math.PI * 2;
+          while (diff > Math.PI) diff -= Math.PI * 2;
+          this.mesh.rotation.y += diff * 0.15;
         } else {
           // Durduğunda zamanlayıcıyı sönümle ve ayakları ortala
           this.walkTimer *= 0.8;
@@ -667,7 +713,56 @@
       gameOverScreen.style.display = 'flex';
     }
 
-    window.addEventListener('mousedown', (e) => {
+    // --- JOYSTICK LOGIC ---
+    const joystickBase = document.getElementById('joystick-base');
+    const joystickStick = document.getElementById('joystick-stick');
+    let joystickActive = false;
+    let joystickOrigin = { x: 0, y: 0 };
+    let joystickVector = { x: 0, y: 0 };
+
+    window.addEventListener('touchstart', (e) => {
+      const touch = e.touches[0];
+      // Sol taraf: Hareket
+      if (touch.clientX < window.innerWidth / 2) {
+        joystickActive = true;
+        joystickOrigin = { x: touch.clientX, y: touch.clientY };
+        joystickBase.style.display = 'block';
+        joystickBase.style.left = `${joystickOrigin.x - 60}px`;
+        joystickBase.style.top = `${joystickOrigin.y - 60}px`;
+        joystickStick.style.left = '50%';
+        joystickStick.style.top = '50%';
+      } else {
+        // Sağ taraf: Ateş
+        handleShoot(touch.clientX, touch.clientY);
+      }
+    }, { passive: false });
+
+    window.addEventListener('touchmove', (e) => {
+      if (!joystickActive) return;
+      e.preventDefault();
+      const touch = e.touches[0];
+      const deltaX = touch.clientX - joystickOrigin.x;
+      const deltaY = touch.clientY - joystickOrigin.y;
+      const distVal = Math.hypot(deltaX, deltaY);
+      const maxDist = 50;
+      const angle = Math.atan2(deltaY, deltaX);
+      
+      const moveDist = Math.min(distVal, maxDist);
+      const moveX = Math.cos(angle) * moveDist;
+      const moveY = Math.sin(angle) * moveDist;
+      
+      joystickStick.style.transform = `translate(calc(-50% + ${moveX}px), calc(-50% + ${moveY}px))`;
+      
+      joystickVector = { x: moveX / maxDist, y: moveY / maxDist };
+    }, { passive: false });
+
+    window.addEventListener('touchend', () => {
+      joystickActive = false;
+      joystickBase.style.display = 'none';
+      joystickVector = { x: 0, y: 0 };
+    });
+
+    function handleShoot(clientX, clientY) {
       if(isGameOver) return;
       
       let nearestDist = Infinity, nearest = null;
@@ -680,7 +775,7 @@
          player.lookAtPos(nearest.x, nearest.z);
          projectiles.push(new Projectile(player.x, player.z, nearest.x, nearest.z));
       } else {
-         const mouseVec = new THREE.Vector2((e.clientX / window.innerWidth)*2-1, -(e.clientY / window.innerHeight)*2+1);
+         const mouseVec = new THREE.Vector2((clientX / window.innerWidth)*2-1, -(clientY / window.innerHeight)*2+1);
          const raycaster = new THREE.Raycaster();
          raycaster.setFromCamera(mouseVec, camera);
          const intersects = raycaster.intersectObject(floorPlane);
@@ -691,6 +786,10 @@
          }
       }
       player.walkTimer += 1.5;
+    }
+
+    window.addEventListener('mousedown', (e) => {
+      handleShoot(e.clientX, e.clientY);
     });
 
     let prevTime = performance.now();
