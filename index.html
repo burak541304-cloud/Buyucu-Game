@@ -2,716 +2,3960 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Knight Online Style - Mobile 3D RPG</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Knight Online 2D Mobile</title>
     <style>
-        body {
+        :root {
+            --panel-soft: rgba(16, 26, 45, 0.58);
+            --line: rgba(116, 180, 255, 0.45);
+            --text: #e6efff;
+            --muted: #9eb7de;
+            --gold: #f8c447;
+            --danger: #ff6b6b;
+            --mana: #4ed0ff;
+            --hp: #64e87f;
+        }
+
+        * {
             margin: 0;
-            overflow: hidden;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
         
-        /* Mobil UI Butonları */
-        .ui-panel {
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(145deg, #0a0a0a, #1a1a2e);
+            overflow: hidden;
+            touch-action: none;
+            position: fixed;
+            width: 100%;
+            height: 100%;
+        }
+
+        .shell {
+            width: min(100vw - 24px, 1060px);
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            padding: 10px;
+            background: linear-gradient(175deg, rgba(29, 44, 72, 0.52), rgba(15, 24, 43, 0.85));
+            box-shadow: 0 20px 55px rgba(0, 0, 0, 0.55), inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+            animation: reveal 500ms ease-out;
+        }
+
+        #gameContainer {
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid rgba(143, 197, 255, 0.35);
+            background: #101b32;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            aspect-ratio: 16/9;
+            height: auto;
+            image-rendering: auto;
+            cursor: crosshair;
+        }
+
+        .hud {
             position: absolute;
-            bottom: 20px;
-            left: 0;
-            right: 0;
+            inset: 0;
+            pointer-events: none;
+        }
+
+        .panel {
+            position: absolute;
+            padding: 12px 14px;
+            background: var(--panel);
+            border: 1px solid rgba(153, 204, 255, 0.3);
+            border-radius: 10px;
+            backdrop-filter: blur(4px);
+            box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35);
+        }
+
+        .title {
+            font-family: 'Cinzel', Georgia, serif;
+            font-size: 15px;
+            letter-spacing: 0.09em;
+            color: #f4d890;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        #leftPanel {
+            top: 12px;
+            left: 12px;
+            min-width: 230px;
+        }
+
+        #questPanel {
+            top: 12px;
+            right: 12px;
+            min-width: 230px;
+            background: var(--panel-soft);
+        }
+
+        #messagePanel {
+            bottom: 12px;
+            left: 12px;
+            right: 12px;
+            text-align: center;
+            font-size: 14px;
+            min-height: 42px;
+        }
+
+        .row {
+            font-size: 13px;
+            color: var(--muted);
             display: flex;
             justify-content: space-between;
-            padding: 0 20px;
-            pointer-events: none;
-            z-index: 10;
+            gap: 12px;
+            margin-bottom: 5px;
         }
-        
-        .joystick-area {
-            width: 140px;
-            height: 140px;
-            background: rgba(0,0,0,0.4);
-            border-radius: 70px;
-            pointer-events: auto;
-            touch-action: none;
-            position: relative;
+
+        .row strong {
+            color: var(--text);
+            font-weight: 600;
         }
-        
-        .joystick-base {
-            width: 100%;
+
+        .bar {
+            margin-top: 6px;
+            margin-bottom: 7px;
+            height: 8px;
+            border-radius: 999px;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .bar > span {
+            display: block;
             height: 100%;
-            border-radius: 70px;
-            background: rgba(255,255,255,0.2);
-            border: 2px solid rgba(255,255,255,0.5);
-            position: relative;
+            transition: width 220ms ease;
         }
-        
-        .joystick-thumb {
-            width: 60px;
-            height: 60px;
-            background: rgba(255,255,255,0.8);
-            border-radius: 30px;
+
+        #hpFill { background: linear-gradient(90deg, #2ed16d, var(--hp)); }
+        #manaFill { background: linear-gradient(90deg, #2297ff, var(--mana)); }
+        #xpFill { background: linear-gradient(90deg, #ffb233, var(--gold)); }
+
+        #controlsHint {
             position: absolute;
-            top: 40px;
-            left: 40px;
-            cursor: pointer;
+            bottom: 12px;
+            right: 12px;
+            font-size: 12px;
+            color: #d6e6ff;
+            background: rgba(8, 14, 26, 0.75);
+            padding: 8px 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(173, 204, 255, 0.24);
         }
-        
-        .action-buttons {
+
+        #inventoryPanel {
+            top: 12px;
+            left: 12px;
+            min-width: 320px;
+            max-width: 400px;
+        }
+
+        #inventoryGrid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 4px;
+            margin: 8px 0;
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            max-height: 240px;
+            overflow-y: auto;
+        }
+
+        .inventory-slot {
+            width: 40px;
+            height: 40px;
+            border: 1px solid rgba(116, 180, 255, 0.3);
+            border-radius: 4px;
+            background: rgba(0, 0, 0, 0.5);
             display: flex;
-            gap: 20px;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            position: relative;
+            font-size: 16px;
+            transition: all 0.2s;
+        }
+
+        .inventory-slot:hover {
+            border-color: rgba(116, 180, 255, 0.6);
+            background: rgba(116, 180, 255, 0.1);
+        }
+
+        .inventory-slot.has-item {
+            border-color: var(--gold);
+        }
+
+        .item-quantity {
+            position: absolute;
+            bottom: 2px;
+            right: 2px;
+            font-size: 9px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 1px 3px;
+            border-radius: 2px;
+        }
+
+        #equipmentSlots {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+            margin-top: 12px;
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+        }
+
+        .equipment-slot {
+            padding: 8px 4px;
+            border: 1px solid rgba(116, 180, 255, 0.3);
+            border-radius: 4px;
+            background: rgba(0, 0, 0, 0.5);
+            text-align: center;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-height: 50px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .equipment-slot:hover {
+            border-color: rgba(116, 180, 255, 0.6);
+            background: rgba(116, 180, 255, 0.1);
+        }
+
+        .equipment-slot.equipped {
+            border-color: var(--gold);
+            background: rgba(248, 196, 71, 0.1);
+        }
+
+        .equipment-item-icon {
+            font-size: 18px;
+            margin-bottom: 2px;
+        }
+
+        .equipment-item-name {
+            font-size: 9px;
+            opacity: 0.8;
+        }
+
+        .death {
+            position: absolute;
+            inset: 0;
+            display: none;
+            place-items: center;
+            text-align: center;
+            background: radial-gradient(circle, rgba(24, 8, 8, 0.45), rgba(8, 3, 3, 0.92));
             pointer-events: auto;
         }
-        
-        .action-btn {
-            width: 70px;
-            height: 70px;
-            background: rgba(0,0,0,0.6);
-            border-radius: 35px;
-            border: 2px solid #ffaa00;
-            color: #ffaa00;
-            font-size: 24px;
-            font-weight: bold;
-            text-align: center;
-            line-height: 70px;
+
+        .death button {
+            margin-top: 14px;
             cursor: pointer;
-            user-select: none;
-            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 207, 128, 0.35);
+            border-radius: 8px;
+            background: linear-gradient(180deg, #2e496d, #1e3150);
+            color: #f3f5ff;
+            padding: 8px 14px;
+            font-family: 'Exo 2', sans-serif;
         }
-        
-        .action-btn:active {
-            transform: scale(0.95);
-            background: rgba(255,170,0,0.5);
+
+        @keyframes reveal {
+            from { transform: translateY(16px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
         }
-        
-        .stats-panel {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            background: rgba(0,0,0,0.7);
-            padding: 10px 20px;
-            border-radius: 10px;
-            color: white;
-            font-size: 16px;
-            font-weight: bold;
-            backdrop-filter: blur(5px);
-            z-index: 10;
-            font-family: monospace;
-            pointer-events: none;
-        }
-        
-        .health-bar {
-            width: 200px;
-            height: 20px;
-            background: #330000;
-            border-radius: 10px;
-            overflow: hidden;
-            margin: 5px 0;
-        }
-        
-        .health-fill {
-            width: 100%;
-            height: 100%;
-            background: #ff3333;
-            transition: width 0.3s;
-        }
-        
-        .xp-bar {
-            width: 200px;
-            height: 10px;
-            background: #333300;
-            border-radius: 5px;
-            overflow: hidden;
-            margin: 5px 0;
-        }
-        
-        .xp-fill {
-            width: 0%;
-            height: 100%;
-            background: #33ff33;
-            transition: width 0.3s;
-        }
-        
-        .damage-number {
-            position: absolute;
-            color: red;
-            font-weight: bold;
-            font-size: 20px;
-            text-shadow: 1px 1px 0 black;
-            pointer-events: none;
-            z-index: 20;
-            animation: floatUp 1s ease-out forwards;
-        }
-        
-        @keyframes floatUp {
-            0% { transform: translateY(0px); opacity: 1; }
-            100% { transform: translateY(-50px); opacity: 0; }
-        }
-        
-        @media (max-width: 768px) {
-            .action-btn { width: 60px; height: 60px; line-height: 60px; font-size: 20px; }
-            .joystick-area { width: 120px; height: 120px; }
-            .joystick-thumb { width: 50px; height: 50px; top: 35px; left: 35px; }
-            .stats-panel { font-size: 12px; }
-            .health-bar { width: 150px; }
-        }
-        
-        .target-indicator {
-            position: absolute;
-            border: 2px solid red;
-            border-radius: 50%;
-            pointer-events: none;
-            z-index: 15;
-            transform: translate(-50%, -50%);
-            box-shadow: 0 0 10px red;
+
+        @media (max-width: 760px) {
+            #leftPanel, #questPanel {
+                min-width: 180px;
+                padding: 9px 10px;
+            }
+            .title {
+                font-size: 12px;
+            }
+            .row {
+                font-size: 11px;
+            }
+            #controlsHint {
+                font-size: 10px;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="stats-panel">
-        <div>❤️ Can: <span id="hpValue">100</span>/100</div>
-        <div class="health-bar"><div class="health-fill" id="healthFill" style="width:100%"></div></div>
-        <div>✨ Seviye: <span id="levelValue">1</span></div>
-        <div>⭐ XP: <span id="xpValue">0</span>/100</div>
-        <div class="xp-bar"><div class="xp-fill" id="xpFill" style="width:0%"></div></div>
-        <div>💰 Altın: <span id="goldValue">0</span></div>
-        <div>⚔️ Hasar: 25-35</div>
+    <div class="shell">
+        <div id="gameContainer">
+            <canvas id="gameCanvas" width="960" height="540"></canvas>
+            <div class="hud">
+                <div id="leftPanel" class="panel">
+                    <div class="title">Karakter</div>
+                    <div class="row"><span>Sinif</span><strong>Battle Mage</strong></div>
+                    <div class="row"><span>Seviye</span><strong id="level">1</strong></div>
+                    <div class="row"><span>Altin</span><strong id="gold">0</strong></div>
+                    <div class="row"><span>Iksir</span><strong id="potion">3</strong></div>
+                    <div class="bar"><span id="hpFill" style="width:100%"></span></div>
+                    <div class="row"><span>HP</span><strong id="hpText">120 / 120</strong></div>
+                    <div class="bar"><span id="manaFill" style="width:100%"></span></div>
+                    <div class="row"><span>Mana</span><strong id="manaText">100 / 100</strong></div>
+                    <div class="bar"><span id="xpFill" style="width:0%"></span></div>
+                    <div class="row"><span>Deneyim</span><strong id="xpText">0 / 100</strong></div>
+                </div>
+
+                <div id="questPanel" class="panel">
+                    <div class="title">Av Gorevi</div>
+                    <div class="row"><span>Hedef</span><strong id="questTarget">6 Goblin</strong></div>
+                    <div class="row"><span>Ilerleme</span><strong id="questProgress">0 / 6</strong></div>
+                    <div class="row"><span>Bolge</span><strong id="zoneText">Moradon Ova</strong></div>
+                    <div class="row"><span>Dalga</span><strong id="waveText">1</strong></div>
+                </div>
+
+                <div id="inventoryPanel" class="panel" style="display:none;">
+                    <div class="title">Envanter</div>
+                    <div id="inventoryGrid"></div>
+                    <div id="equipmentSlots">
+                        <div class="equipment-slot" data-slot="mainhand">Silah</div>
+                        <div class="equipment-slot" data-slot="chest">Zırh</div>
+                        <div class="equipment-slot" data-slot="head">Kask</div>
+                        <div class="equipment-slot" data-slot="feet">Bot</div>
+                        <div class="equipment-slot" data-slot="ring">Yüzük</div>
+                        <div class="equipment-slot" data-slot="neck">Kolye</div>
+                    </div>
+                </div>
+
+                <div id="messagePanel" class="panel">Moradon ovasina hos geldin. Kamp alaninda guvendesin.</div>
+                <div id="controlsHint">WASD: Hareket | Sol Tik: Buz Mermisi | Space: Kilic | Q: Iksir | I: Envanter | 1-4: Skill'ler | E: Etkilesim | M: Binek | G: Lonca | C: Craft | P: Pet | H: Ev | J: PvP Arena | K: Party | T: Chat | L: Market</div>
+            </div>
+
+            <div id="deathScreen" class="death">
+                <div>
+                    <div class="title" style="font-size:22px; margin-bottom:8px;">Yenildin</div>
+                    <div id="deathReason" style="color:#ffd4d4;">Canin tukendi.</div>
+                    <button id="respawnBtn">Kamp Alaninda Diril</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="loadingScreen">
+        <div class="loadingSpinner"></div>
+        <div class="loadingText">Knight Online 2D Mobile</div>
+        <div class="loadingSubtext">Yükleniyor...</div>
     </div>
     
-    <div class="ui-panel">
-        <div class="joystick-area" id="joystickArea">
-            <div class="joystick-base"></div>
-            <div class="joystick-thumb" id="joystickThumb"></div>
+    <div id="joystick">
+        <div id="joystickKnob"></div>
+    </div>
+    
+    <div id="skillButtons">
+        <div class="skillButton" data-skill="1">🔥</div>
+        <div class="skillButton" data-skill="2">⚡</div>
+        <div class="skillButton" data-skill="3">💚</div>
+        <div class="skillButton" data-skill="4">❄️</div>
+    </div>
+    
+    <div id="mobileControls">
+        <div class="mobileButton" data-action="attack">⚔️</div>
+        <div class="mobileButton" data-action="potion">🧪</div>
+        <div class="mobileButton" data-action="inventory">🎒</div>
+    </div>
+    
+    <div id="mobileMenu">
+        <div class="menuButton">☰</div>
+    </div>
+    
+    <div id="sideMenu">
+        <div class="menuClose">✕</div>
+        
+        <div class="menuSection">
+            <div class="menuTitle">🎮 Oyun</div>
+            <div class="menuItem" data-action="save">💾 Kaydet</div>
+            <div class="menuItem" data-action="load">📁 Yükle</div>
+            <div class="menuItem" data-action="settings">⚙️ Ayarlar</div>
+            <div class="menuItem" data-action="tutorial">📖 Rehber</div>
         </div>
-        <div class="action-buttons">
-            <div class="action-btn" id="attackBtn">⚔️</div>
-            <div class="action-btn" id="skillBtn">✨</div>
+        
+        <div class="menuSection">
+            <div class="menuTitle">⚔️ Savaş</div>
+            <div class="menuItem" data-action="pvp">🏆 PvP Arena</div>
+            <div class="menuItem" data-action="party">👥 Party</div>
+            <div class="menuItem" data-action="auto-battle">🤖 Otomatik Savaş</div>
+        </div>
+        
+        <div class="menuSection">
+            <div class="menuTitle">🏪 Ticaret</div>
+            <div class="menuItem" data-action="market">🛒 Market</div>
+            <div class="menuItem" data-action="craft">🔨 Crafting</div>
+            <div class="menuItem" data-action="auction">🏪 Auction</div>
+        </div>
+        
+        <div class="menuSection">
+            <div class="menuTitle">🐾 Pet & Binek</div>
+            <div class="menuItem" data-action="pet">🐺 Pet</div>
+            <div class="menuItem" data-action="mount">🐴 Binek</div>
+            <div class="menuItem" data-action="house">🏠 Ev</div>
+        </div>
+        
+        <div class="menuSection">
+            <div class="menuTitle">🌐 Sosyal</div>
+            <div class="menuItem" data-action="guild">⚔️ Lonca</div>
+            <div class="menuItem" data-action="chat">💬 Chat</div>
+            <div class="menuItem" data-action="friends">👥 Arkadaşlar</div>
         </div>
     </div>
 
-    <!-- Three.js kütüphanesi -->
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://unpkg.com/three@0.128.0/build/three.module.js"
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const ui = {
+            level: document.getElementById('level'),
+            gold: document.getElementById('gold'),
+            potion: document.getElementById('potion'),
+            hpText: document.getElementById('hpText'),
+            manaText: document.getElementById('manaText'),
+            xpText: document.getElementById('xpText'),
+            hpFill: document.getElementById('hpFill'),
+            manaFill: document.getElementById('manaFill'),
+            xpFill: document.getElementById('xpFill'),
+            questTarget: document.getElementById('questTarget'),
+            questProgress: document.getElementById('questProgress'),
+            zoneText: document.getElementById('zoneText'),
+            waveText: document.getElementById('waveText'),
+            messagePanel: document.getElementById('messagePanel'),
+            deathScreen: document.getElementById('deathScreen'),
+            respawnBtn: document.getElementById('respawnBtn')
+        };
+
+        const state = {
+            keys: {},
+            camera: { x: 0, y: 0 },
+            projectiles: [],
+            particles: [],
+            enemies: [],
+            floatingTexts: [],
+            mouseWorld: { x: 0, y: 0 },
+            gameOver: false,
+            wave: 1,
+            dayCycle: 0,
+            lastMelee: 0,
+            lastCast: 0,
+            msgTimer: 0,
+            inventoryOpen: false,
+            draggedItem: null,
+            npcs: [],
+            currentDungeon: null,
+            skillCooldowns: {},
+            activeQuests: [],
+            completedQuests: [],
+            shopOpen: false,
+            dialogOpen: false,
+            currentNPC: null,
+            craftingOpen: false,
+            pets: [],
+            activePet: null,
+            guild: null,
+            currentWeather: 'CLEAR',
+            weatherTimer: 0,
+            mount: null,
+            mounted: false,
+            auctionHouse: [],
+            housing: null,
+            pvp: {
+                inArena: false,
+                currentArena: null,
+                opponents: [],
+                score: 0,
+                wins: 0,
+                losses: 0,
+                honor: 0
+            },
+            party: {
+                members: [],
+                leader: null,
+                type: null,
+                invites: []
+            },
+            chat: {
+                messages: [],
+                currentChannel: 'GLOBAL',
+                unreadCount: 0
+            },
+            reputation: {
+                standing: 0,
+                faction: 'NEUTRAL',
+                quests: []
+            },
+            achievements: {},
+            ranking: {
+                position: 0,
+                score: 0,
+                category: 'LEVEL'
+            },
+            currentEvent: null,
+            eventTimer: 0,
+            market: {
+                isOpen: false,
+                restockTimers: {}
+            }
+        };
+
+        const world = {
+            width: 2200,
+            height: 1500,
+            tile: 50,
+            camp: { x: 340, y: 280, r: 90 },
+            obstacles: []
+        };
+
+        function saveGame() {
+            try {
+                SAVE_DATA.player = JSON.parse(JSON.stringify(player));
+                SAVE_DATA.state = JSON.parse(JSON.stringify(state));
+                SAVE_DATA.timestamp = Date.now();
+                SAVE_DATA.playtime = (SAVE_DATA.playtime || 0) + (Date.now() - mobileState.lastSave);
+                
+                localStorage.setItem('knightOnline2DSave', JSON.stringify(SAVE_DATA));
+                mobileState.lastSave = Date.now();
+                
+                pushMessage('Oyun kaydedildi! 💾');
+                return true;
+            } catch (error) {
+                console.error('Kaydetme hatası:', error);
+                pushMessage('Kaydedilemedi! ❌');
+                return false;
             }
         }
-    </script>
 
-    <script type="module">
-        import * as THREE from 'three';
-        import { OrbitControls } from 'https://unpkg.com/three@0.128.0/examples/jsm/controls/OrbitControls.js';
-        
-        // --- Oyun Durumu ---
-        const gameState = {
-            health: 100,
-            maxHealth: 100,
+        function loadGame() {
+            try {
+                const savedData = localStorage.getItem('knightOnline2DSave');
+                if (!savedData) {
+                    pushMessage('Kayıtlı oyun bulunamadı! 📁');
+                    return false;
+                }
+                
+                const data = JSON.parse(savedData);
+                
+                // Player verisini geri yükle
+                Object.assign(player, data.player);
+                
+                // State verisini geri yükle
+                Object.assign(state, data.state);
+                
+                // UI güncelle
+                updateUI();
+                
+                pushMessage('Oyun yüklendi! 📂');
+                return true;
+            } catch (error) {
+                console.error('Yükleme hatası:', error);
+                pushMessage('Yüklenemedi! ❌');
+                return false;
+            }
+        }
+
+        function autoSave() {
+            if (Date.now() - mobileState.lastSave >= MOBILE_SETTINGS.saveInterval) {
+                saveGame();
+            }
+        }
+
+        function showTutorial() {
+            const step = TUTORIAL_STEPS[mobileState.currentTutorial];
+            if (!step || step.completed) return;
+            
+            // Tutorial overlay oluştur
+            const overlay = document.createElement('div');
+            overlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.8);
+                z-index: 10000;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                text-align: center;
+                padding: 20px;
+            `;
+            
+            overlay.innerHTML = `
+                <div style="max-width: 300px;">
+                    <h2 style="color: #7dd3fc; margin-bottom: 20px;">${step.title}</h2>
+                    <p style="margin-bottom: 30px; font-size: 16px;">${step.text}</p>
+                    <button id="tutorialNext" style="
+                        background: #7dd3fc;
+                        color: #0a0a0a;
+                        border: none;
+                        padding: 12px 24px;
+                        border-radius: 8px;
+                        font-size: 16px;
+                        font-weight: bold;
+                        cursor: pointer;
+                        margin-right: 10px;
+                    ">Sonraki</button>
+                    <button id="tutorialSkip" style="
+                        background: rgba(255, 255, 255, 0.2);
+                        color: white;
+                        border: 1px solid rgba(255, 255, 255, 0.3);
+                        padding: 12px 24px;
+                        border-radius: 8px;
+                        font-size: 14px;
+                        cursor: pointer;
+                    ">Atla</button>
+                </div>
+            `;
+            
+            document.body.appendChild(overlay);
+            
+            // Highlight element
+            if (step.highlight) {
+                const element = document.querySelector(`[data-action="${step.highlight}"], #${step.highlight}`);
+                if (element) {
+                    element.style.boxShadow = '0 0 20px #7dd3fc';
+                    element.style.border = '2px solid #7dd3fc';
+                }
+            }
+            
+            // Event listeners
+            document.getElementById('tutorialNext').addEventListener('click', () => {
+                step.completed = true;
+                mobileState.currentTutorial++;
+                document.body.removeChild(overlay);
+                if (mobileState.currentTutorial < TUTORIAL_STEPS.length) {
+                    setTimeout(showTutorial, 500);
+                }
+            });
+            
+            document.getElementById('tutorialSkip').addEventListener('click', () => {
+                document.body.removeChild(overlay);
+                mobileState.currentTutorial = TUTORIAL_STEPS.length;
+            });
+        }
+
+        function toggleAutoBattle() {
+            mobileState.autoBattleEnabled = !mobileState.autoBattleEnabled;
+            
+            if (mobileState.autoBattleEnabled) {
+                pushMessage('Otomatik savaş aktif! 🤖');
+                findAutoBattleTarget();
+            } else {
+                pushMessage('Otomatik savaş pasif! ⚔️');
+                mobileState.autoBattleTarget = null;
+            }
+        }
+
+        function findAutoBattleTarget() {
+            if (!mobileState.autoBattleEnabled) return;
+            
+            let closestEnemy = null;
+            let closestDist = Infinity;
+            
+            for (const enemy of state.enemies) {
+                const dist = distance(player, enemy);
+                if (dist < closestDist && dist < 300) {
+                    closestDist = dist;
+                    closestEnemy = enemy;
+                }
+            }
+            
+            mobileState.autoBattleTarget = closestEnemy;
+        }
+
+        function updateAutoBattle() {
+            if (!mobileState.autoBattleEnabled || !mobileState.autoBattleTarget) return;
+            
+            const target = mobileState.autoBattleTarget;
+            const dist = distance(player, target);
+            
+            // Hedefe doğru hareket et
+            if (dist > 50) {
+                const angle = Math.atan2(target.y - player.y, target.x - player.x);
+                player.x += Math.cos(angle) * player.speed;
+                player.y += Math.sin(angle) * player.speed;
+            }
+            
+            // Saldır
+            if (dist < 60) {
+                meleeSlash();
+                // Skill kullan
+                if (player.mana > 20 && Math.random() < 0.3) {
+                    const skills = ['FIREBALL', 'LIGHTNING'];
+                    const randomSkill = skills[Math.floor(Math.random() * skills.length)];
+                    castSkill(randomSkill, target.x, target.y);
+                }
+            }
+            
+            // Yeni hedef ara
+            if (target.hp <= 0) {
+                findAutoBattleTarget();
+            }
+        }
+
+        function updateFPS() {
+            mobileState.frameCount++;
+            const now = Date.now();
+            const elapsed = now - mobileState.lastFPSUpdate;
+            
+            if (elapsed >= 1000) {
+                mobileState.fps = Math.round(mobileState.frameCount * 1000 / elapsed);
+                mobileState.frameCount = 0;
+                mobileState.lastFPSUpdate = now;
+                
+                if (MOBILE_SETTINGS.showFPS) {
+                    // FPS göstergesi güncelle
+                    let fpsDisplay = document.getElementById('fpsDisplay');
+                    if (!fpsDisplay) {
+                        fpsDisplay = document.createElement('div');
+                        fpsDisplay.id = 'fpsDisplay';
+                        fpsDisplay.style.cssText = `
+                            position: fixed;
+                            top: 10px;
+                            left: 10px;
+                            color: #7dd3fc;
+                            font-size: 14px;
+                            font-weight: bold;
+                            z-index: 1000;
+                        `;
+                        document.body.appendChild(fpsDisplay);
+                    }
+                    fpsDisplay.textContent = `FPS: ${mobileState.fps}`;
+                }
+            }
+        }
+
+        function optimizeGraphics() {
+            if (MOBILE_SETTINGS.graphics === 'low') {
+                // Düşük grafik ayarları
+                state.particles = state.particles.slice(0, 20);
+                // Daha az detaylı rendering
+            } else if (MOBILE_SETTINGS.graphics === 'high') {
+                // Yüksek grafik ayarları
+                // Daha fazla detaylı rendering
+            }
+        }
+
+        function vibrate(pattern) {
+            if (MOBILE_SETTINGS.vibrationEnabled && navigator.vibrate) {
+                navigator.vibrate(pattern);
+            }
+        }
+
+        const SAVE_DATA = {
+            version: '1.0',
+            player: null,
+            state: null,
+            timestamp: null,
+            playtime: 0
+        };
+
+        const TUTORIAL_STEPS = [
+            {
+                title: 'Hoş Geldin!',
+                text: 'Knight Online 2D Mobile\'a hoş geldin! Joystick ile hareket et.',
+                highlight: 'joystick',
+                completed: false
+            },
+            {
+                title: 'Savaş',
+                text: '⚔️ attack butonu ile düşmanlara saldır!',
+                highlight: 'attack',
+                completed: false
+            },
+            {
+                title: 'Skill\'ler',
+                text: '🔥⚡💚❄️ skill butonları ile büyü kullan!',
+                highlight: 'skillButtons',
+                completed: false
+            },
+            {
+                title: 'İksir',
+                text: '🧪 potion butonu ile can ve mana yenile!',
+                highlight: 'potion',
+                completed: false
+            },
+            {
+                title: 'Envanter',
+                text: '🎒 inventory butonu ile itemlarını yönet!',
+                highlight: 'inventory',
+                completed: false
+            },
+            {
+                title: 'Menü',
+                text: '☰ menü butonu ile tüm özelliklere eriş!',
+                highlight: 'mobileMenu',
+                completed: false
+            }
+        ];
+
+        let mobileState = {
+            joystickActive: false,
+            joystickX: 0,
+            joystickY: 0,
+            touchStartX: 0,
+            touchStartY: 0,
+            currentTutorial: 0,
+            lastSave: Date.now(),
+            fps: 0,
+            frameCount: 0,
+            lastFPSUpdate: Date.now(),
+            autoBattleTarget: null,
+            autoBattleEnabled: false
+        };
+
+        const player = {
+            x: world.camp.x,
+            y: world.camp.y,
+            r: 16,
+            speed: 2.9,
             level: 1,
             xp: 0,
-            xpNeeded: 100,
+            xpNeed: 100,
+            hp: 120,
+            maxHp: 120,
+            mana: 100,
+            maxMana: 100,
             gold: 0,
-            damage: 30,
-            attackSpeed: 1.0,
-            lastAttack: 0,
-            isAttacking: false
+            potions: 3,
+            facing: 0,
+            alive: true,
+            invulnUntil: 0,
+            inventory: [],
+            equipped: {
+                mainhand: null,
+                chest: null,
+                head: null,
+                feet: null,
+                ring: null,
+                neck: null
+            },
+            stats: {
+                strength: 10,
+                defense: 5,
+                magicPower: 5,
+                speed: 2.9
+            },
+            skills: {
+                FIREBALL: { unlocked: false, level: 0 },
+                LIGHTNING: { unlocked: false, level: 0 },
+                HEAL: { unlocked: false, level: 0 },
+                BLIZZARD: { unlocked: false, level: 0 },
+                CRITICAL_STRIKE: { unlocked: false, level: 0 },
+                MANA_REGEN: { unlocked: false, level: 0 },
+                LIFE_STEAL: { unlocked: false, level: 0 },
+                ARMOR_PIERCE: { unlocked: false, level: 0 }
+            },
+            skillPoints: 0,
+            critChance: 0.05,
+            critDamage: 1.5,
+            lifeSteal: 0,
+            armorPierce: 0,
+            crafting: {
+                WEAPON_SMITHING: { level: 0, exp: 0 },
+                ARMOR_SMITHING: { level: 0, exp: 0 },
+                ALCHEMY: { level: 0, exp: 0 }
+            },
+            materials: {},
+            petInventory: [],
+            housing: {
+                house: null,
+                decorations: [],
+                furniture: []
+            },
+            pvpStats: {
+                kills: 0,
+                deaths: 0,
+                assists: 0,
+                damage: 0,
+                healing: 0
+            },
+            titles: [],
+            currentTitle: null,
+            friends: [],
+            blocked: [],
+            lastOnline: Date.now()
         };
-        
-        // --- Three.js Kurulumu (Mobil için optimize) ---
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x071a3b);
-        scene.fog = new THREE.FogExp2(0x071a3b, 0.008);
-        
-        // Kamera (Third Person)
-        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(0, 5, 10);
-        camera.lookAt(0, 0, 0);
-        
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.shadowMap.enabled = true; // Gölgeler için
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Mobil performans
-        document.body.appendChild(renderer.domElement);
-        
-        // Işıklandırma (Yüksek grafik hissi)
-        // Ambient
-        const ambientLight = new THREE.AmbientLight(0x404060);
-        scene.add(ambientLight);
-        // Ana ışık (güneş)
-        const dirLight = new THREE.DirectionalLight(0xfff5e6, 1.2);
-        dirLight.position.set(10, 20, 5);
-        dirLight.castShadow = true;
-        dirLight.receiveShadow = true;
-        dirLight.shadow.mapSize.width = 1024;
-        dirLight.shadow.mapSize.height = 1024;
-        dirLight.shadow.camera.near = 0.5;
-        dirLight.shadow.camera.far = 30;
-        dirLight.shadow.camera.left = -10;
-        dirLight.shadow.camera.right = 10;
-        dirLight.shadow.camera.top = 10;
-        dirLight.shadow.camera.bottom = -10;
-        scene.add(dirLight);
-        // Arka ışık
-        const backLight = new THREE.PointLight(0x4466cc, 0.5);
-        backLight.position.set(-5, 5, -5);
-        scene.add(backLight);
-        // Yansıma
-        const fillLight = new THREE.PointLight(0xffaa66, 0.4);
-        fillLight.position.set(2, 3, 4);
-        scene.add(fillLight);
-        
-        // Zemin (taş doku benzeri)
-        const groundMat = new THREE.MeshStandardMaterial({ color: 0x4a3f35, roughness: 0.8, metalness: 0.1 });
-        const ground = new THREE.Mesh(new THREE.PlaneGeometry(30, 30), groundMat);
-        ground.rotation.x = -Math.PI / 2;
-        ground.position.y = -0.5;
-        ground.receiveShadow = true;
-        scene.add(ground);
-        
-        // Izgara yardımcı (görsel)
-        const gridHelper = new THREE.GridHelper(30, 20, 0xaa9977, 0x665544);
-        gridHelper.position.y = -0.4;
-        scene.add(gridHelper);
-        
-        // Çevre dekorasyonu (ağaçlar, taşlar)
-        const rockMat = new THREE.MeshStandardMaterial({ color: 0x7a6a5a, roughness: 0.9 });
-        for (let i = 0; i < 50; i++) {
-            const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(0.2 + Math.random() * 0.3), rockMat);
-            const angle = Math.random() * Math.PI * 2;
-            const rad = 8 + Math.random() * 12;
-            rock.position.x = Math.cos(angle) * rad;
-            rock.position.z = Math.sin(angle) * rad;
-            rock.position.y = -0.5 + Math.random() * 0.3;
-            rock.castShadow = true;
-            rock.receiveShadow = true;
-            scene.add(rock);
+
+        const quest = {
+            targetType: 'Goblin',
+            kills: 0,
+            need: 6,
+            rewardGold: 120,
+            rewardPotions: 1
+        };
+
+        const ENEMY_TYPES = {
+            Goblin: { hp: 55, speed: 1.5, damage: 10, xp: 22, gold: 12, color: '#82dd72' },
+            Wolf: { hp: 78, speed: 1.85, damage: 12, xp: 28, gold: 17, color: '#9cb6dd' },
+            Orc: { hp: 112, speed: 1.15, damage: 18, xp: 38, gold: 24, color: '#d88454' }
+        };
+
+        const ITEM_TYPES = {
+            // Silahlar
+            SWORD: { name: 'Demir Kılıç', type: 'weapon', slot: 'mainhand', damage: 15, level: 1, rarity: 'common', icon: '⚔️' },
+            BOW: { name: 'Yay', type: 'weapon', slot: 'mainhand', damage: 12, level: 1, rarity: 'common', icon: '🏹' },
+            STAFF: { name: 'Asa', type: 'weapon', slot: 'mainhand', damage: 10, magicPower: 8, level: 1, rarity: 'common', icon: '🔮' },
+            
+            // Zırhlar
+            LEATHER_ARMOR: { name: 'Deri Zırh', type: 'armor', slot: 'chest', defense: 8, level: 1, rarity: 'common', icon: '🛡️' },
+            IRON_ARMOR: { name: 'Demir Zırh', type: 'armor', slot: 'chest', defense: 15, level: 3, rarity: 'uncommon', icon: '🎖️' },
+            
+            // Kasklar
+            IRON_HELMET: { name: 'Demir Kask', type: 'armor', slot: 'head', defense: 5, level: 2, rarity: 'common', icon: '⛑️' },
+            
+            // Botlar
+            LEATHER_BOOTS: { name: 'Deri Botlar', type: 'armor', slot: 'feet', defense: 3, speed: 0.5, level: 1, rarity: 'common', icon: '👢' },
+            
+            // Aksesuarlar
+            RING: { name: 'Basit Halka', type: 'accessory', slot: 'ring', strength: 3, level: 1, rarity: 'common', icon: '💍' },
+            AMULET: { name: 'Kolye', type: 'accessory', slot: 'neck', hp: 20, level: 2, rarity: 'uncommon', icon: '📿' },
+            
+            // İksirler
+            HEALTH_POTION: { name: 'Can İksiri', type: 'consumable', effect: 'heal', value: 50, level: 1, rarity: 'common', icon: '🧪' },
+            MANA_POTION: { name: 'Mana İksiri', type: 'consumable', effect: 'mana', value: 30, level: 1, rarity: 'common', icon: '💙' }
+        };
+
+        const RARITY_COLORS = {
+            common: '#9eb7de',
+            uncommon: '#4ade80',
+            rare: '#60a5fa',
+            epic: '#c084fc',
+            legendary: '#f59e0b'
+        };
+
+        const SKILL_TYPES = {
+            // Active Skills
+            FIREBALL: { name: 'Ateş Topu', type: 'active', damage: 45, manaCost: 25, cooldown: 2000, level: 2, icon: '🔥', range: 300 },
+            LIGHTNING: { name: 'Yıldırım', type: 'active', damage: 65, manaCost: 35, cooldown: 3000, level: 5, icon: '⚡', range: 250 },
+            HEAL: { name: 'İyileştirme', type: 'active', heal: 80, manaCost: 30, cooldown: 2500, level: 3, icon: '💚', range: 200 },
+            BLIZZARD: { name: 'Buz Fırtınası', type: 'active', damage: 120, manaCost: 60, cooldown: 8000, level: 8, icon: '❄️', range: 400 },
+            
+            // Passive Skills
+            CRITICAL_STRIKE: { name: 'Kritik Vuruş', type: 'passive', critChance: 0.15, critDamage: 2.0, level: 4, icon: '⚔️' },
+            MANA_REGEN: { name: 'Mana Yenileme', type: 'passive', manaRegenBonus: 0.5, level: 2, icon: '💙' },
+            LIFE_STEAL: { name: 'Hayat Çalma', type: 'passive', lifeSteal: 0.1, level: 6, icon: '🩸' },
+            ARMOR_PIERCE: { name: 'Zırh Delme', type: 'passive', armorPierce: 0.2, level: 7, icon: '🛡️' }
+        };
+
+        const NPC_TYPES = {
+            MERCHANT: { 
+                name: 'Tüccar Ahmet', 
+                type: 'merchant', 
+                x: 400, 
+                y: 200, 
+                color: '#f4d03f',
+                dialog: 'Hoş geldin maceracı! İhtiyacın olan her şey burada.',
+                shop: [
+                    { item: 'HEALTH_POTION', price: 50 },
+                    { item: 'MANA_POTION', price: 40 },
+                    { item: 'SWORD', price: 200 },
+                    { item: 'LEATHER_ARMOR', price: 150 }
+                ]
+            },
+            QUEST_GIVER: { 
+                name: 'Görevver Fatma', 
+                type: 'quest', 
+                x: 600, 
+                y: 300, 
+                color: '#e74c3c',
+                dialog: 'Lütfen bana yardım et! Canavarlar köyümü basıyor.',
+                quest: { target: 'Orc', count: 5, reward: { gold: 300, xp: 150 } }
+            },
+            BLACKSMITH: { 
+                name: 'Demirci Mehmet', 
+                type: 'blacksmith', 
+                x: 250, 
+                y: 400, 
+                color: '#95a5a6',
+                dialog: 'En iyi silahları ben yaparım! Getir malzemeyi, yapayım sana.',
+                crafting: [
+                    { item: 'IRON_ARMOR', materials: { IRON_ORE: 3, GOLD_COIN: 100 } },
+                    { item: 'IRON_HELMET', materials: { IRON_ORE: 2, GOLD_COIN: 75 } }
+                ]
+            }
+        };
+
+        const DUNGEON_TYPES = {
+            GOBLIN_CAVE: { 
+                name: 'Goblin Mağarası', 
+                level: 5, 
+                width: 800, 
+                height: 600,
+                enemies: ['Goblin', 'Goblin', 'Wolf'],
+                boss: 'GOBLIN_KING',
+                rewards: { gold: 500, xp: 300, items: ['IRON_ARMOR', 'RING'] }
+            },
+            ORC_FORTRESS: { 
+                name: 'Ork Kalesi', 
+                level: 10, 
+                width: 1000, 
+                height: 800,
+                enemies: ['Orc', 'Orc', 'Wolf', 'Goblin'],
+                boss: 'ORC_WARLORD',
+                rewards: { gold: 1000, xp: 600, items: ['IRON_HELMET', 'AMULET', 'STAFF'] }
+            }
+        };
+
+        const BOSS_TYPES = {
+            GOBLIN_KING: { 
+                name: 'Goblin Kralı', 
+                hp: 500, 
+                damage: 25, 
+                speed: 1.2, 
+                color: '#8b4513',
+                size: 30,
+                skills: ['SUMMON_GOBLINS', 'RAGE'],
+                rewards: { gold: 200, xp: 150, dropChance: 0.8 }
+            },
+            ORC_WARLORD: { 
+                name: 'Ork Savaş Lordu', 
+                hp: 1200, 
+                damage: 40, 
+                speed: 0.8, 
+                color: '#ff6b6b',
+                size: 40,
+                skills: ['WHIRLWIND', 'STOMP'],
+                rewards: { gold: 500, xp: 300, dropChance: 0.9 }
+            }
+        };
+
+        const CRAFTING_MATERIALS = {
+            IRON_ORE: { name: 'Demir Cevheri', rarity: 'common', icon: '⛏️', value: 10 },
+            GOLD_ORE: { name: 'Altın Cevheri', rarity: 'uncommon', icon: '🏅', value: 25 },
+            MAGIC_CRYSTAL: { name: 'Büyü Kristali', rarity: 'rare', icon: '💎', value: 50 },
+            DRAGON_SCALE: { name: 'Ejderha Pulu', rarity: 'epic', icon: '🐉', value: 100 },
+            PHOENIX_FEATHER: { name: 'Anka Tüyü', rarity: 'legendary', icon: '🪶', value: 200 },
+            WOOD: { name: 'Odun', rarity: 'common', icon: '🪵', value: 5 },
+            LEATHER: { name: 'Deri', rarity: 'common', icon: '🦴', value: 8 },
+            HERB: { name: 'Otomatik', rarity: 'common', icon: '🌿', value: 12 }
+        };
+
+        const CRAFTING_RECIPES = {
+            IRON_SWORD: { 
+                name: 'Demir Kılıç', 
+                materials: { IRON_ORE: 3, WOOD: 1 }, 
+                skill: 'WEAPON_SMITHING',
+                level: 1,
+                result: 'SWORD',
+                rarity: 'common'
+            },
+            STEEL_SWORD: { 
+                name: 'Çelik Kılıç', 
+                materials: { IRON_ORE: 5, MAGIC_CRYSTAL: 1 }, 
+                skill: 'WEAPON_SMITHING',
+                level: 3,
+                result: 'SWORD',
+                rarity: 'uncommon'
+            },
+            DRAGON_SWORD: { 
+                name: 'Ejderha Kılıcı', 
+                materials: { DRAGON_SCALE: 2, MAGIC_CRYSTAL: 3, GOLD_ORE: 1 }, 
+                skill: 'WEAPON_SMITHING',
+                level: 5,
+                result: 'SWORD',
+                rarity: 'epic'
+            },
+            IRON_ARMOR: { 
+                name: 'Demir Zırh', 
+                materials: { IRON_ORE: 4, LEATHER: 2 }, 
+                skill: 'ARMOR_SMITHING',
+                level: 2,
+                result: 'IRON_ARMOR',
+                rarity: 'common'
+            },
+            STEEL_ARMOR: { 
+                name: 'Çelik Zırh', 
+                materials: { IRON_ORE: 8, MAGIC_CRYSTAL: 2 }, 
+                skill: 'ARMOR_SMITHING',
+                level: 4,
+                result: 'IRON_ARMOR',
+                rarity: 'uncommon'
+            },
+            DRAGON_ARMOR: { 
+                name: 'Ejderha Zırhı', 
+                materials: { DRAGON_SCALE: 3, PHOENIX_FEATHER: 1, GOLD_ORE: 2 }, 
+                skill: 'ARMOR_SMITHING',
+                level: 6,
+                result: 'IRON_ARMOR',
+                rarity: 'epic'
+            },
+            HEALTH_ELIXIR: { 
+                name: 'Can Elixiri', 
+                materials: { HERB: 3, MAGIC_CRYSTAL: 1 }, 
+                skill: 'ALCHEMY',
+                level: 2,
+                result: 'HEALTH_POTION',
+                rarity: 'uncommon'
+            },
+            MANA_ELIXIR: { 
+                name: 'Mana Elixiri', 
+                materials: { HERB: 2, MAGIC_CRYSTAL: 2 }, 
+                skill: 'ALCHEMY',
+                level: 2,
+                result: 'MANA_POTION',
+                rarity: 'uncommon'
+            },
+            PHOENIX_POTION: { 
+                name: 'Anka İksiri', 
+                materials: { PHOENIX_FEATHER: 1, MAGIC_CRYSTAL: 3, HERB: 5 }, 
+                skill: 'ALCHEMY',
+                level: 5,
+                result: 'HEALTH_POTION',
+                rarity: 'legendary'
+            }
+        };
+
+        const PET_TYPES = {
+            WOLF: { 
+                name: 'Kurt', 
+                type: 'companion', 
+                damage: 15, 
+                speed: 3.5, 
+                hp: 80,
+                size: 12,
+                color: '#8b7355',
+                skill: 'BITE',
+                unlockLevel: 5,
+                icon: '🐺'
+            },
+            EAGLE: { 
+                name: 'Kartal', 
+                type: 'flying', 
+                damage: 20, 
+                speed: 4.0, 
+                hp: 60,
+                size: 10,
+                color: '#87ceeb',
+                skill: 'SWOOP',
+                unlockLevel: 8,
+                icon: '🦅'
+            },
+            BEAR: { 
+                name: 'Ayı', 
+                type: 'tank', 
+                damage: 25, 
+                speed: 2.0, 
+                hp: 150,
+                size: 18,
+                color: '#654321',
+                skill: 'ROAR',
+                unlockLevel: 10,
+                icon: '🐻'
+            },
+            PHOENIX: { 
+                name: 'Anka', 
+                type: 'legendary', 
+                damage: 35, 
+                speed: 5.0, 
+                hp: 120,
+                size: 14,
+                color: '#ff6b35',
+                skill: 'FIRE_STORM',
+                unlockLevel: 15,
+                icon: '🪶'
+            }
+        };
+
+        const GUILD_TYPES = {
+            WARRIORS: { 
+                name: 'Savaşçılar Loncası', 
+                color: '#ff4444', 
+                bonus: { strength: 5, defense: 3 },
+                icon: '⚔️',
+                description: 'Güç ve dayanıklılık odaklı lonca'
+            },
+            MAGES: { 
+                name: 'Büyücüler Loncası', 
+                color: '#4444ff', 
+                bonus: { magicPower: 8, mana: 20 },
+                icon: '🔮',
+                description: 'Büyü gücü ve mana odaklı lonca'
+            },
+            HUNTERS: { 
+                name: 'Avcılar Loncası', 
+                color: '#44ff44', 
+                bonus: { speed: 0.5, critChance: 0.1 },
+                icon: '🏹',
+                description: 'Hız ve kritik vuruş odaklı lonca'
+            },
+            TRADERS: { 
+                name: 'Tüccarlar Loncası', 
+                color: '#ffaa00', 
+                bonus: { goldBonus: 0.2, luck: 0.15 },
+                icon: '💰',
+                description: 'Zenginlik ve şans odaklı lonca'
+            }
+        };
+
+        const WEATHER_TYPES = {
+            CLEAR: { name: 'Açık', visibility: 1.0, speedModifier: 1.0, color: 'rgba(255,255,255,0)' },
+            CLOUDY: { name: 'Bulutlu', visibility: 0.9, speedModifier: 0.95, color: 'rgba(200,200,200,0.3)' },
+            RAIN: { name: 'Yağmurlu', visibility: 0.7, speedModifier: 0.8, color: 'rgba(100,150,255,0.4)' },
+            STORM: { name: 'Fırtınalı', visibility: 0.5, speedModifier: 0.6, color: 'rgba(50,50,100,0.6)' },
+            FOG: { name: 'Sisli', visibility: 0.3, speedModifier: 0.7, color: 'rgba(200,200,200,0.7)' },
+            SNOW: { name: 'Karlı', visibility: 0.8, speedModifier: 0.7, color: 'rgba(255,255,255,0.5)' }
+        };
+
+        const MOUNT_TYPES = {
+            HORSE: { 
+                name: 'At', 
+                speed: 6.0, 
+                stamina: 100, 
+                unlockLevel: 3,
+                icon: '🐴',
+                color: '#8b4513'
+            },
+            WOLF_MOUNT: { 
+                name: 'Savaş Kurdu', 
+                speed: 7.0, 
+                stamina: 120, 
+                unlockLevel: 7,
+                icon: '🐺',
+                color: '#696969'
+            },
+            EAGLE_MOUNT: { 
+                name: 'Roket Kartal', 
+                speed: 9.0, 
+                stamina: 80, 
+                unlockLevel: 12,
+                icon: '🦅',
+                color: '#4169e1',
+                flying: true
+            },
+            DRAGON_MOUNT: { 
+                name: 'Ejderha', 
+                speed: 12.0, 
+                stamina: 200, 
+                unlockLevel: 20,
+                icon: '🐉',
+                color: '#ff4500',
+                flying: true
+            }
+        };
+
+        const PvP_ARENAS = {
+            ARENA_1V1: { 
+                name: '1v1 Arena', 
+                width: 400, 
+                height: 300, 
+                maxPlayers: 2,
+                reward: { honor: 50, gold: 100 },
+                icon: '⚔️'
+            },
+            ARENA_2V2: { 
+                name: '2v2 Arena', 
+                width: 500, 
+                height: 400, 
+                maxPlayers: 4,
+                reward: { honor: 75, gold: 150 },
+                icon: '👥'
+            },
+            ARENA_FFA: { 
+                name: 'Free For All', 
+                width: 600, 
+                height: 500, 
+                maxPlayers: 8,
+                reward: { honor: 100, gold: 200 },
+                icon: '🔥'
+            }
+        };
+
+        const PARTY_TYPES = {
+            BASIC: { 
+                name: 'Grup', 
+                maxSize: 4, 
+                expBonus: 0.1,
+                goldBonus: 0.05,
+                icon: '👥'
+            },
+            RAID: { 
+                name: 'Raid', 
+                maxSize: 8, 
+                expBonus: 0.2,
+                goldBonus: 0.1,
+                icon: '🛡️'
+            }
+        };
+
+        const CHAT_CHANNELS = {
+            GLOBAL: { name: 'Global', color: '#ffffff', prefix: '[Global]' },
+            TRADE: { name: 'Ticaret', color: '#ffd700', prefix: '[Ticaret]' },
+            GUILD: { name: 'Lonca', color: '#00ff00', prefix: '[Lonca]' },
+            PARTY: { name: 'Grup', color: '#00ffff', prefix: '[Grup]' },
+            WHISPER: { name: 'Fısıltı', color: '#ff69b4', prefix: '[Fısıltı]' },
+            SYSTEM: { name: 'Sistem', color: '#ff0000', prefix: '[Sistem]' }
+        };
+
+        const REPUTATION_FACTIONS = {
+            NEUTRAL: { name: 'Nötr', standing: 0, color: '#808080' },
+            FRIENDLY: { name: 'Dost', standing: 1000, color: '#00ff00' },
+            HONORED: { name: 'Onurlu', standing: 3000, color: '#0080ff' },
+            REVERED: { name: 'Saygıdeğer', standing: 6000, color: '#8000ff' },
+            EXALTED: { name: 'Yüce', standing: 10000, color: '#ff8000' }
+        };
+
+        const ACHIEVEMENTS = {
+            FIRST_KILL: { 
+                name: 'İlk Öldürüş', 
+                description: 'İlk düşmanını yen',
+                reward: { xp: 50, gold: 25 },
+                icon: '⚔️',
+                unlocked: false
+            },
+            LEVEL_10: { 
+                name: 'Deneyimli', 
+                description: '10. seviyeye ulaş',
+                reward: { skillPoints: 1 },
+                icon: '⭐',
+                unlocked: false
+            },
+            FIRST_PET: { 
+                name: 'Pet Sahibi', 
+                description: 'İlk pet\'ini çağır',
+                reward: { pet: 'WOLF' },
+                icon: '🐺',
+                unlocked: false
+            },
+            CRAFT_MASTER: { 
+                name: 'Craft Ustası', 
+                description: 'Herhangi bir crafting skill\'ini 5. seviyeye taşı',
+                reward: { title: 'Usta', gold: 500 },
+                icon: '🔨',
+                unlocked: false
+            },
+            PVP_CHAMPION: { 
+                name: 'PvP Şampiyonu', 
+                description: '10 PvP savaşı kazan',
+                reward: { honor: 100, title: 'Şampiyon' },
+                icon: '🏆',
+                unlocked: false
+            },
+            EXPLORER: { 
+                name: 'Kaşif', 
+                description: 'Tüm dungeon\'ları temizle',
+                reward: { gold: 1000, item: 'COMPASS' },
+                icon: '🗺️',
+                unlocked: false
+            },
+            RICH_MERCHANT: { 
+                name: 'Zengin Tüccar', 
+                description: '10000 altın biriktir',
+                reward: { title: 'Tüccar', goldBonus: 0.1 },
+                icon: '💰',
+                unlocked: false
+            },
+            GUILD_MASTER: { 
+                name: 'Lonca Ustası', 
+                description: 'Lonca seviyesini 5\'e taşı',
+                reward: { honor: 500, title: 'Lonca Lideri' },
+                icon: '👑',
+                unlocked: false
+            }
+        };
+
+        const RANKING_CATEGORIES = {
+            LEVEL: { name: 'Seviye', weight: 0.3 },
+            PVP: { name: 'PvP', weight: 0.25 },
+            WEALTH: { name: 'Zenginlik', weight: 0.2 },
+            ACHIEVEMENTS: { name: 'Başarımlar', weight: 0.15 },
+            REPUTATION: { name: 'İtibar', weight: 0.1 }
+        };
+
+        const GAME_EVENTS = {
+            DOUBLE_XP: { 
+                name: '2x XP Haftası', 
+                duration: 604800, // 1 hafta
+                bonus: { xpMultiplier: 2.0 },
+                icon: '⭐',
+                description: 'Tüm XP kazanımı 2 kat'
+            },
+            GOLD_RUSH: { 
+                name: 'Altın Hırsı', 
+                duration: 432000, // 5 gün
+                bonus: { goldMultiplier: 1.5 },
+                icon: '💰',
+                description: 'Altın kazanımı %50 arttı'
+            },
+            PVP_TOURNAMENT: { 
+                name: 'PvP Turnuvası', 
+                duration: 86400, // 1 gün
+                bonus: { honorMultiplier: 2.0 },
+                icon: '🏆',
+                description: 'PvP onur kazanımı 2 kat'
+            },
+            CRAFTING_FESTIVAL: { 
+                name: 'Crafting Festivali', 
+                duration: 345600, // 4 gün
+                bonus: { craftingExpBonus: 1.5 },
+                icon: '🔨',
+                description: 'Crafting exp kazanımı %50 arttı'
+            }
+        };
+
+        const MARKET_ITEMS = {
+            BASIC_POTIONS: {
+                name: 'Temel İksir Paketi',
+                items: ['HEALTH_POTION', 'MANA_POTION'],
+                prices: { HEALTH_POTION: 60, MANA_POTION: 50 },
+                stock: { HEALTH_POTION: 50, MANA_POTION: 50 },
+                restockTime: 3600
+            },
+            CRAFTING_MATERIALS: {
+                name: 'Crafting Malzemeleri',
+                items: ['IRON_ORE', 'WOOD', 'HERB'],
+                prices: { IRON_ORE: 15, WOOD: 8, HERB: 18 },
+                stock: { IRON_ORE: 100, WOOD: 150, HERB: 80 },
+                restockTime: 7200
+            },
+            BASIC_EQUIPMENT: {
+                name: 'Temel Ekipman',
+                items: ['SWORD', 'LEATHER_ARMOR'],
+                prices: { SWORD: 250, LEATHER_ARMOR: 180 },
+                stock: { SWORD: 10, LEATHER_ARMOR: 10 },
+                restockTime: 14400
+            },
+            RARE_ITEMS: {
+                name: 'Nadir Itemlar',
+                items: ['MAGIC_CRYSTAL', 'GOLD_ORE'],
+                prices: { MAGIC_CRYSTAL: 75, GOLD_ORE: 40 },
+                stock: { MAGIC_CRYSTAL: 20, GOLD_ORE: 30 },
+                restockTime: 21600
+            }
+        };
+
+        function pushMessage(text) {
+            ui.messagePanel.textContent = text;
+            state.msgTimer = 240;
         }
-        
-        // --- Oyuncu Karakteri (Şövalye görünümlü) ---
-        const playerGroup = new THREE.Group();
-        // Gövde
-        const bodyGeo = new THREE.CylinderGeometry(0.5, 0.6, 1.2, 8);
-        const bodyMat = new THREE.MeshStandardMaterial({ color: 0x3a6ea5, metalness: 0.7, roughness: 0.3 });
-        const body = new THREE.Mesh(bodyGeo, bodyMat);
-        body.castShadow = true;
-        body.receiveShadow = true;
-        body.position.y = 0;
-        playerGroup.add(body);
-        // Baş
-        const headGeo = new THREE.SphereGeometry(0.45, 24, 24);
-        const headMat = new THREE.MeshStandardMaterial({ color: 0xfdd7a8 });
-        const head = new THREE.Mesh(headGeo, headMat);
-        head.position.y = 0.8;
-        head.castShadow = true;
-        playerGroup.add(head);
-        // Kask
-        const helmetGeo = new THREE.CylinderGeometry(0.5, 0.55, 0.4, 8);
-        const helmetMat = new THREE.MeshStandardMaterial({ color: 0xccaa77, metalness: 0.9 });
-        const helmet = new THREE.Mesh(helmetGeo, helmetMat);
-        helmet.position.y = 1.0;
-        helmet.castShadow = true;
-        playerGroup.add(helmet);
-        // Kılıç
-        const swordGeo = new THREE.BoxGeometry(0.1, 0.1, 1.2);
-        const swordMat = new THREE.MeshStandardMaterial({ color: 0xddccaa, metalness: 0.9 });
-        const sword = new THREE.Mesh(swordGeo, swordMat);
-        sword.position.set(0.6, 0.2, 0.3);
-        sword.rotation.z = -0.4;
-        sword.castShadow = true;
-        playerGroup.add(sword);
-        
-        playerGroup.position.set(0, 0, 0);
-        playerGroup.castShadow = true;
-        playerGroup.receiveShadow = true;
-        scene.add(playerGroup);
-        
-        // --- Düşmanlar (Orklar) ---
-        class Enemy {
-            constructor(x, z) {
-                this.group = new THREE.Group();
-                // Gövde
-                const eBody = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.65, 1.1, 8), new THREE.MeshStandardMaterial({ color: 0x6a4a3a, roughness: 0.6 }));
-                eBody.castShadow = true;
-                this.group.add(eBody);
-                // Baş
-                const eHead = new THREE.Mesh(new THREE.SphereGeometry(0.5, 24, 24), new THREE.MeshStandardMaterial({ color: 0x8a6a4a }));
-                eHead.position.y = 0.75;
-                eHead.castShadow = true;
-                this.group.add(eHead);
-                // Dişler
-                const toothMat = new THREE.MeshStandardMaterial({ color: 0xeeddcc });
-                const tooth = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.2, 4), toothMat);
-                tooth.position.set(0.2, 0.55, 0.45);
-                this.group.add(tooth);
-                const tooth2 = tooth.clone();
-                tooth2.position.set(-0.2, 0.55, 0.45);
-                this.group.add(tooth2);
-                
-                this.group.position.set(x, 0, z);
-                this.health = 50;
-                this.maxHealth = 50;
-                this.level = 1;
-                this.damage = 15;
-                scene.add(this.group);
-                this.isAlive = true;
-                
-                // Sağlık barı (CSS2D ile yapmak daha kolay, ancak basit text label ekleyelim)
-                this.createHealthLabel();
-            }
+
+        function clamp(value, min, max) {
+            return Math.max(min, Math.min(max, value));
+        }
+
+        function distance(a, b) {
+            const dx = a.x - b.x;
+            const dy = a.y - b.y;
+            return Math.hypot(dx, dy);
+        }
+
+        function randomBetween(min, max) {
+            return Math.random() * (max - min) + min;
+        }
+
+        function createItem(itemKey, quantity = 1) {
+            const itemTemplate = ITEM_TYPES[itemKey];
+            if (!itemTemplate) return null;
             
-            createHealthLabel() {
-                const canvas = document.createElement('canvas');
-                canvas.width = 64;
-                canvas.height = 32;
-                const ctx = canvas.getContext('2d');
-                this.canvas = canvas;
-                const texture = new THREE.CanvasTexture(canvas);
-                const material = new THREE.SpriteMaterial({ map: texture });
-                this.sprite = new THREE.Sprite(material);
-                this.sprite.scale.set(1, 0.5, 1);
-                this.sprite.position.y = 1.2;
-                this.group.add(this.sprite);
-                this.updateHealthBar();
-            }
-            
-            updateHealthBar() {
-                if (!this.canvas) return;
-                const ctx = this.canvas.getContext('2d');
-                ctx.clearRect(0, 0, 64, 32);
-                ctx.fillStyle = '#330000';
-                ctx.fillRect(0, 0, 64, 10);
-                ctx.fillStyle = '#ff3333';
-                const percent = this.health / this.maxHealth;
-                ctx.fillRect(0, 0, 64 * percent, 10);
-                ctx.fillStyle = 'white';
-                ctx.font = 'bold 12px monospace';
-                ctx.fillText(`${this.health}`, 5, 25);
-                this.canvas.texture.needsUpdate = true;
-            }
-            
-            takeDamage(amount, sourcePos) {
-                if (!this.isAlive) return false;
-                this.health -= amount;
-                this.updateHealthBar();
-                // Hasar efekti (vücut kızarma)
-                this.group.children[0].material.emissive = new THREE.Color(0xff0000);
-                setTimeout(() => {
-                    if(this.group.children[0]) this.group.children[0].material.emissive = new THREE.Color(0x000000);
-                }, 100);
-                // Hasar numarası gösterme
-                showDamageNumber(amount, this.group.position);
-                
-                if (this.health <= 0) {
-                    this.isAlive = false;
-                    this.die();
+            return {
+                id: Math.random().toString(36).substr(2, 9),
+                key: itemKey,
+                ...itemTemplate,
+                quantity,
+                stackable: itemTemplate.type === 'consumable'
+            };
+        }
+
+        function addItemToInventory(item) {
+            if (item.stackable) {
+                const existingItem = player.inventory.find(i => i.key === item.key);
+                if (existingItem) {
+                    existingItem.quantity += item.quantity;
                     return true;
                 }
+            }
+            
+            if (player.inventory.length < 24) {
+                player.inventory.push(item);
+                return true;
+            }
+            
+            return false; // Envanter dolu
+        }
+
+        function removeItemFromInventory(itemId, quantity = 1) {
+            const index = player.inventory.findIndex(i => i.id === itemId);
+            if (index === -1) return false;
+            
+            const item = player.inventory[index];
+            if (item.quantity > quantity) {
+                item.quantity -= quantity;
+            } else {
+                player.inventory.splice(index, 1);
+            }
+            return true;
+        }
+
+        function equipItem(itemId) {
+            const itemIndex = player.inventory.findIndex(i => i.id === itemId);
+            if (itemIndex === -1) return false;
+            
+            const item = player.inventory[itemIndex];
+            if (item.type === 'consumable') return false;
+            
+            const slot = item.slot;
+            const currentItem = player.equipped[slot];
+            
+            if (currentItem) {
+                player.inventory.push(currentItem);
+            }
+            
+            player.equipped[slot] = item;
+            player.inventory.splice(itemIndex, 1);
+            
+            updatePlayerStats();
+            return true;
+        }
+
+        function unequipItem(slot) {
+            const item = player.equipped[slot];
+            if (!item) return false;
+            
+            if (player.inventory.length < 24) {
+                player.equipped[slot] = null;
+                player.inventory.push(item);
+                updatePlayerStats();
+                return true;
+            }
+            
+            return false;
+        }
+
+        function updatePlayerStats() {
+            const baseStats = {
+                strength: 10,
+                defense: 5,
+                magicPower: 5,
+                speed: 2.9
+            };
+            
+            // Ekipman bonuslarını ekle
+            for (const slot in player.equipped) {
+                const item = player.equipped[slot];
+                if (item) {
+                    if (item.strength) baseStats.strength += item.strength;
+                    if (item.defense) baseStats.defense += item.defense;
+                    if (item.magicPower) baseStats.magicPower += item.magicPower;
+                    if (item.speed) baseStats.speed += item.speed;
+                    if (item.hp) baseStats.maxHp += item.hp;
+                }
+            }
+            
+            player.stats = baseStats;
+            player.speed = baseStats.speed;
+        }
+
+        function useItem(itemId) {
+            const item = player.inventory.find(i => i.id === itemId);
+            if (!item || item.type !== 'consumable') return false;
+            
+            if (item.effect === 'heal') {
+                player.hp = Math.min(player.hp + item.value, player.maxHp);
+                addFloatingText('+' + item.value + ' HP', player.x, player.y - 20, '#7bf29f');
+            } else if (item.effect === 'mana') {
+                player.mana = Math.min(player.mana + item.value, player.maxMana);
+                addFloatingText('+' + item.value + ' MP', player.x, player.y - 20, '#7de6ff');
+            }
+            
+            removeItemFromInventory(itemId, 1);
+            return true;
+        }
+
+        function castSkill(skillKey, targetX, targetY) {
+            const skill = SKILL_TYPES[skillKey];
+            const playerSkill = player.skills[skillKey];
+            
+            if (!skill || !playerSkill.unlocked) return false;
+            if (state.skillCooldowns[skillKey] && Date.now() < state.skillCooldowns[skillKey]) return false;
+            if (player.mana < skill.manaCost) return false;
+            
+            player.mana -= skill.manaCost;
+            state.skillCooldowns[skillKey] = Date.now() + skill.cooldown;
+            
+            if (skill.type === 'active') {
+                if (skill.heal) {
+                    player.hp = Math.min(player.hp + skill.heal, player.maxHp);
+                    addFloatingText('+' + skill.heal + ' HP', player.x, player.y - 20, '#7bf29f');
+                    
+                    // Heal efekti
+                    for (let i = 0; i < 8; i++) {
+                        state.particles.push({
+                            x: player.x,
+                            y: player.y,
+                            vx: randomBetween(-1.5, 1.5),
+                            vy: randomBetween(-2, -0.5),
+                            life: 20,
+                            color: '#7bf29f'
+                        });
+                    }
+                } else if (skill.damage) {
+                    const angle = Math.atan2(targetY - player.y, targetX - player.x);
+                    
+                    if (skillKey === 'BLIZZARD') {
+                        // Blizzard - area effect
+                        for (let i = 0; i < 12; i++) {
+                            const spreadAngle = angle + (Math.random() - 0.5) * Math.PI / 3;
+                            state.projectiles.push({
+                                x: player.x,
+                                y: player.y,
+                                vx: Math.cos(spreadAngle) * 6,
+                                vy: Math.sin(spreadAngle) * 6,
+                                life: 100,
+                                damage: skill.damage / 12,
+                                color: '#b3e5fc',
+                                skill: skillKey
+                            });
+                        }
+                    } else {
+                        // Single projectile
+                        state.projectiles.push({
+                            x: player.x,
+                            y: player.y,
+                            vx: Math.cos(angle) * 10,
+                            vy: Math.sin(angle) * 10,
+                            life: 60,
+                            damage: skill.damage,
+                            color: skillKey === 'FIREBALL' ? '#ff6b35' : '#ffd93d',
+                            skill: skillKey
+                        });
+                    }
+                }
+            }
+            
+            return true;
+        }
+
+        function unlockSkill(skillKey) {
+            if (player.skillPoints <= 0) return false;
+            if (player.skills[skillKey].unlocked) return false;
+            
+            const skill = SKILL_TYPES[skillKey];
+            if (player.level < skill.level) return false;
+            
+            player.skills[skillKey].unlocked = true;
+            player.skills[skillKey].level = 1;
+            player.skillPoints--;
+            
+            // Passive skill'leri uygula
+            if (skill.type === 'passive') {
+                applyPassiveSkill(skillKey);
+            }
+            
+            pushMessage(skill.name + ' skilli açıldı!');
+            return true;
+        }
+
+        function applyPassiveSkill(skillKey) {
+            const skill = SKILL_TYPES[skillKey];
+            const playerSkill = player.skills[skillKey];
+            
+            if (!playerSkill.unlocked) return;
+            
+            switch (skillKey) {
+                case 'CRITICAL_STRIKE':
+                    player.critChance = skill.critChance;
+                    player.critDamage = skill.critDamage;
+                    break;
+                case 'MANA_REGEN':
+                    // Mana regen bonus updatePlayerStats'da uygulanacak
+                    break;
+                case 'LIFE_STEAL':
+                    player.lifeSteal = skill.lifeSteal;
+                    break;
+                case 'ARMOR_PIERCE':
+                    player.armorPierce = skill.armorPierce;
+                    break;
+            }
+        }
+
+        function updatePlayerStats() {
+            const baseStats = {
+                strength: 10,
+                defense: 5,
+                magicPower: 5,
+                speed: 2.9
+            };
+            
+            // Ekipman bonuslarını ekle
+            for (const slot in player.equipped) {
+                const item = player.equipped[slot];
+                if (item) {
+                    if (item.strength) baseStats.strength += item.strength;
+                    if (item.defense) baseStats.defense += item.defense;
+                    if (item.magicPower) baseStats.magicPower += item.magicPower;
+                    if (item.speed) baseStats.speed += item.speed;
+                    if (item.hp) baseStats.maxHp += item.hp;
+                }
+            }
+            
+            // Passive skill bonuslarını ekle
+            if (player.skills.MANA_REGEN.unlocked) {
+                const manaRegenSkill = SKILL_TYPES.MANA_REGEN;
+                baseStats.manaRegenBonus = manaRegenSkill.manaRegenBonus;
+            }
+            
+            player.stats = baseStats;
+            player.speed = baseStats.speed;
+        }
+
+        function calculateDamage(baseDamage) {
+            let damage = baseDamage;
+            
+            // Ekipman bonusları
+            if (player.equipped.mainhand && player.equipped.mainhand.damage) {
+                damage += player.equipped.mainhand.damage;
+            }
+            damage += player.stats.strength * 0.5;
+            damage += player.stats.magicPower * 0.3;
+            
+            // Kritik şansı
+            if (Math.random() < player.critChance) {
+                damage *= player.critDamage;
+                addFloatingText('KRİTİK!', player.x, player.y - 30, '#ff6b35');
+            }
+            
+            return Math.floor(damage);
+        }
+
+        function spawnNPC(npcKey) {
+            const npcTemplate = NPC_TYPES[npcKey];
+            if (!npcTemplate) return;
+            
+            state.npcs.push({
+                key: npcKey,
+                ...npcTemplate,
+                id: Math.random().toString(36).substr(2, 9),
+                r: 20,
+                active: false
+            });
+        }
+
+        function interactWithNPC(npc) {
+            state.currentNPC = npc;
+            state.dialogOpen = true;
+            
+            if (npc.type === 'merchant') {
+                openShop(npc);
+            } else if (npc.type === 'quest') {
+                acceptQuest(npc);
+            } else if (npc.type === 'blacksmith') {
+                openCrafting(npc);
+            }
+            
+            pushMessage(npc.dialog);
+        }
+
+        function openShop(npc) {
+            state.shopOpen = true;
+            // Shop UI render edilecek
+        }
+
+        function buyItem(itemKey, price) {
+            if (player.gold < price) return false;
+            
+            const item = createItem(itemKey);
+            if (!addItemToInventory(item)) {
+                pushMessage('Envanterin dolu!');
                 return false;
             }
             
-            die() {
-                // Ölüm animasyonu
-                this.group.visible = false;
-                // Altın ve XP kazan
-                gameState.gold += 20 + Math.floor(Math.random() * 30);
-                gameState.xp += 50;
-                document.getElementById('goldValue').innerText = gameState.gold;
-                updateXP();
-                // 3 saniye sonra yeniden doğur
-                setTimeout(() => {
-                    this.respawn();
-                }, 5000);
+            player.gold -= price;
+            pushMessage(item.name + ' satın aldın!');
+            return true;
+        }
+
+        function acceptQuest(npc) {
+            const quest = npc.quest;
+            if (state.activeQuests.find(q => q.npcId === npc.id)) {
+                pushMessage('Bu görevi zaten aldın!');
+                return;
             }
             
-            respawn() {
-                this.health = this.maxHealth;
-                this.isAlive = true;
-                this.group.visible = true;
-                // Rastgele pozisyon
-                const angle = Math.random() * Math.PI * 2;
-                const rad = 6 + Math.random() * 8;
-                this.group.position.x = Math.cos(angle) * rad;
-                this.group.position.z = Math.sin(angle) * rad;
-                this.updateHealthBar();
-            }
-        }
-        
-        // --- Düşmanları oluştur ---
-        const enemies = [];
-        for (let i = 0; i < 8; i++) {
-            const angle = Math.random() * Math.PI * 2;
-            const rad = 5 + Math.random() * 7;
-            const x = Math.cos(angle) * rad;
-            const z = Math.sin(angle) * rad;
-            enemies.push(new Enemy(x, z));
-        }
-        
-        // --- Hasar Numarası Sistemi ---
-        function showDamageNumber(damage, worldPos) {
-            const div = document.createElement('div');
-            div.className = 'damage-number';
-            div.innerText = Math.floor(damage);
-            div.style.left = '50%';
-            div.style.top = '50%';
-            document.body.appendChild(div);
-            // 3D'den ekrana projeksiyon
-            const vector = worldPos.clone().project(camera);
-            const x = (vector.x * 0.5 + 0.5) * window.innerWidth;
-            const y = (-vector.y * 0.5 + 0.5) * window.innerHeight;
-            div.style.position = 'absolute';
-            div.style.left = x + 'px';
-            div.style.top = y + 'px';
-            setTimeout(() => div.remove(), 1000);
-        }
-        
-        // --- Seviye atlama ---
-        function updateXP() {
-            let needed = gameState.xpNeeded;
-            while (gameState.xp >= needed) {
-                gameState.xp -= needed;
-                gameState.level++;
-                gameState.maxHealth += 20;
-                gameState.health = gameState.maxHealth;
-                gameState.damage += 5;
-                needed = Math.floor(100 + gameState.level * 20);
-                gameState.xpNeeded = needed;
-                document.getElementById('levelValue').innerText = gameState.level;
-                // Seviye atlama efekti
-                const msg = document.createElement('div');
-                msg.innerText = 'LEVEL UP!';
-                msg.style.position = 'absolute';
-                msg.style.top = '40%';
-                msg.style.left = '50%';
-                msg.style.transform = 'translate(-50%, -50%)';
-                msg.style.color = 'gold';
-                msg.style.fontSize = '40px';
-                msg.style.fontWeight = 'bold';
-                msg.style.textShadow = '2px 2px 0 black';
-                msg.style.zIndex = '100';
-                document.body.appendChild(msg);
-                setTimeout(() => msg.remove(), 1500);
-            }
-            document.getElementById('xpValue').innerText = `${gameState.xp}/${gameState.xpNeeded}`;
-            const percent = (gameState.xp / gameState.xpNeeded) * 100;
-            document.getElementById('xpFill').style.width = percent + '%';
-            document.getElementById('hpValue').innerText = `${gameState.health}/${gameState.maxHealth}`;
-            document.getElementById('healthFill').style.width = (gameState.health/gameState.maxHealth)*100 + '%';
-        }
-        
-        // --- Oyuncu saldırısı ---
-        function playerAttack() {
-            const now = Date.now() / 1000;
-            if (now - gameState.lastAttack < 1.0 / gameState.attackSpeed) return false;
-            gameState.lastAttack = now;
-            gameState.isAttacking = true;
-            // Animasyon: kılıç salla
-            sword.rotation.x = -Math.PI / 3;
-            setTimeout(() => { sword.rotation.x = 0; gameState.isAttacking = false; }, 200);
+            state.activeQuests.push({
+                npcId: npc.id,
+                target: quest.target,
+                count: 0,
+                need: quest.count,
+                reward: quest.reward
+            });
             
-            let hitEnemy = false;
-            for (let i = 0; i < enemies.length; i++) {
-                const e = enemies[i];
-                if (!e.isAlive) continue;
-                const dist = playerGroup.position.distanceTo(e.group.position);
-                if (dist < 2.2) {
-                    const dmg = gameState.damage + Math.floor(Math.random() * 15);
-                    e.takeDamage(dmg, e.group.position);
-                    hitEnemy = true;
-                    break;
+            pushMessage('Görev kabul edildi: ' + quest.count + ' ' + quest.target + ' öldür!');
+        }
+
+        function updateQuests(enemyType) {
+            for (const quest of state.activeQuests) {
+                if (quest.target === enemyType) {
+                    quest.count++;
+                    addFloatingText('Görev: ' + quest.count + '/' + quest.need, player.x, player.y - 40, '#ffd93d');
+                    
+                    if (quest.count >= quest.need) {
+                        completeQuest(quest);
+                    }
                 }
             }
-            if (hitEnemy) {
-                // Vuruş efekti
-                const ringGeo = new THREE.SphereGeometry(0.5, 8, 8);
-                const ringMat = new THREE.MeshBasicMaterial({ color: 0xffaa44, transparent: true, opacity: 0.7 });
-                const ring = new THREE.Mesh(ringGeo, ringMat);
-                ring.position.copy(playerGroup.position);
-                ring.scale.set(0.5,0.5,0.5);
-                scene.add(ring);
-                setTimeout(() => scene.remove(ring), 200);
-            }
-            return hitEnemy;
         }
-        
-        // --- Düşman saldırısı (AI) ---
-        function updateEnemies() {
-            for (let e of enemies) {
-                if (!e.isAlive) continue;
-                const dist = playerGroup.position.distanceTo(e.group.position);
-                if (dist < 2.0) {
-                    const now = Date.now() / 1000;
-                    if (!e.lastAttackTime) e.lastAttackTime = 0;
-                    if (now - e.lastAttackTime > 1.2) {
-                        e.lastAttackTime = now;
-                        gameState.health -= e.damage;
-                        if (gameState.health <= 0) {
-                            gameState.health = 0;
-                            document.getElementById('hpValue').innerText = '0';
-                            document.getElementById('healthFill').style.width = '0%';
-                            alert('Öldünüz! Yeniden başlatılıyor...');
-                            resetGame();
-                        } else {
-                            document.getElementById('hpValue').innerText = `${gameState.health}/${gameState.maxHealth}`;
-                            document.getElementById('healthFill').style.width = (gameState.health/gameState.maxHealth)*100 + '%';
-                            showDamageNumber(e.damage, playerGroup.position);
+
+        function completeQuest(quest) {
+            player.gold += quest.reward.gold;
+            player.xp += quest.reward.xp;
+            player.skillPoints += 1;
+            
+            pushMessage('Görev tamamlandı! Ödül: ' + quest.reward.gold + ' altın, ' + quest.reward.xp + ' XP, 1 Skill Point!');
+            
+            const index = state.activeQuests.indexOf(quest);
+            state.activeQuests.splice(index, 1);
+            state.completedQuests.push(quest);
+            
+            tryLevelUp();
+        }
+
+        function enterDungeon(dungeonKey) {
+            const dungeon = DUNGEON_TYPES[dungeonKey];
+            if (!dungeon) return;
+            if (player.level < dungeon.level) {
+                pushMessage('Seviyen yetersiz! Gerekli seviye: ' + dungeon.level);
+                return;
+            }
+            
+            state.currentDungeon = {
+                ...dungeon,
+                enemies: [],
+                bossDefeated: false,
+                cleared: false
+            };
+            
+            // Dungeon düşmanlarını spawn et
+            for (let i = 0; i < 5; i++) {
+                const enemyType = dungeon.enemies[Math.floor(Math.random() * dungeon.enemies.length)];
+                spawnEnemy(enemyType);
+            }
+            
+            pushMessage(dungeon.name + 'na giriş yapıldı!');
+        }
+
+        function spawnBoss(bossKey) {
+            const bossTemplate = BOSS_TYPES[bossKey];
+            if (!bossTemplate) return;
+            
+            state.enemies.push({
+                type: bossKey,
+                x: world.camp.x + randomBetween(-100, 100),
+                y: world.camp.y + randomBetween(-100, 100),
+                r: bossTemplate.size,
+                hp: bossTemplate.hp,
+                maxHp: bossTemplate.hp,
+                speed: bossTemplate.speed,
+                damage: bossTemplate.damage,
+                color: bossTemplate.color,
+                isBoss: true,
+                skills: bossTemplate.skills || [],
+                skillCooldown: 0
+            });
+            
+            pushMessage(bossTemplate.name + ' ortaya çıktı!');
+        }
+
+        function craftItem(recipeKey) {
+            const recipe = CRAFTING_RECIPES[recipeKey];
+            if (!recipe) return false;
+            
+            // Crafting level kontrolü
+            const craftingSkill = player.crafting[recipe.skill];
+            if (craftingSkill.level < recipe.level) {
+                pushMessage('Crafting seviyen yetersiz! Gerekli seviye: ' + recipe.level);
+                return false;
+            }
+            
+            // Malzeme kontrolü
+            for (const [material, amount] of Object.entries(recipe.materials)) {
+                if (!player.materials[material] || player.materials[material] < amount) {
+                    pushMessage('Yetersiz malzeme: ' + CRAFTING_MATERIALS[material].name);
+                    return false;
+                }
+            }
+            
+            // Malzemeleri kullan
+            for (const [material, amount] of Object.entries(recipe.materials)) {
+                player.materials[material] -= amount;
+            }
+            
+            // Item oluştur
+            const item = createItem(recipe.result);
+            if (item) {
+                item.rarity = recipe.rarity;
+                addItemToInventory(item);
+                
+                // Crafting exp kazan
+                craftingSkill.exp += 10;
+                if (craftingSkill.exp >= craftingSkill.level * 50) {
+                    craftingSkill.level++;
+                    craftingSkill.exp = 0;
+                    pushMessage(recipe.skill + ' seviyesi atladı! Seviye: ' + craftingSkill.level);
+                }
+                
+                pushMessage(recipe.name + ' üretildi!');
+                return true;
+            }
+            
+            return false;
+        }
+
+        function addMaterial(materialKey, amount) {
+            if (!player.materials[materialKey]) {
+                player.materials[materialKey] = 0;
+            }
+            player.materials[materialKey] += amount;
+        }
+
+        function summonPet(petKey) {
+            const petTemplate = PET_TYPES[petKey];
+            if (!petTemplate) return false;
+            if (player.level < petTemplate.unlockLevel) {
+                pushMessage('Seviyen yetersiz! Gerekli seviye: ' + petTemplate.unlockLevel);
+                return false;
+            }
+            
+            // Pet'i envanterden kontrol et
+            const petItem = player.petInventory.find(p => p.key === petKey);
+            if (!petItem) {
+                pushMessage('Bu pet\'e sahip değilsin!');
+                return false;
+            }
+            
+            // Aktif pet varsa geri ekle
+            if (state.activePet) {
+                player.petInventory.push(state.activePet);
+            }
+            
+            state.activePet = {
+                ...petTemplate,
+                x: player.x + 30,
+                y: player.y + 30,
+                hp: petTemplate.hp,
+                maxHp: petTemplate.hp,
+                skillCooldown: 0,
+                target: null
+            };
+            
+            // Envanterden çıkar
+            const index = player.petInventory.indexOf(petItem);
+            player.petInventory.splice(index, 1);
+            
+            pushMessage(petTemplate.name + ' çağrıldı!');
+            return true;
+        }
+
+        function updatePets() {
+            if (!state.activePet) return;
+            
+            const pet = state.activePet;
+            
+            // Player'a takip et
+            const dx = player.x - pet.x;
+            const dy = player.y - pet.y;
+            const dist = Math.hypot(dx, dy);
+            
+            if (dist > 60) {
+                const angle = Math.atan2(dy, dx);
+                pet.x += Math.cos(angle) * pet.speed;
+                pet.y += Math.sin(angle) * pet.speed;
+            }
+            
+            // Hedef bulma
+            if (!pet.target || distance(pet, pet.target) > 200) {
+                let closestEnemy = null;
+                let closestDist = Infinity;
+                
+                for (const enemy of state.enemies) {
+                    const dist = distance(pet, enemy);
+                    if (dist < closestDist && dist < 150) {
+                        closestDist = dist;
+                        closestEnemy = enemy;
+                    }
+                }
+                pet.target = closestEnemy;
+            }
+            
+            // Saldırı
+            if (pet.target && pet.hp > 0) {
+                const dist = distance(pet, pet.target);
+                if (dist < 30) {
+                    if (pet.skillCooldown <= 0) {
+                        pet.target.hp -= pet.damage;
+                        addFloatingText('-' + pet.damage, pet.target.x, pet.target.y - 10, '#ff9999');
+                        pet.skillCooldown = 60;
+                        
+                        // Life steal
+                        const healAmount = Math.floor(pet.damage * 0.2);
+                        pet.hp = Math.min(pet.hp + healAmount, pet.maxHp);
+                        
+                        if (pet.target.hp <= 0) {
+                            pet.target = null;
                         }
                     }
-                } else if (dist < 6) {
-                    // Düşman oyuncuya doğru yürüsün
-                    const dir = new THREE.Vector3().subVectors(playerGroup.position, e.group.position).normalize();
-                    e.group.position.x += dir.x * 0.03;
-                    e.group.position.z += dir.z * 0.03;
-                    e.group.lookAt(playerGroup.position);
                 }
             }
+            
+            if (pet.skillCooldown > 0) pet.skillCooldown--;
         }
-        
-        function resetGame() {
-            gameState.health = gameState.maxHealth;
-            gameState.xp = 0;
-            gameState.level = 1;
-            gameState.gold = 0;
-            gameState.damage = 30;
-            gameState.maxHealth = 100;
-            gameState.xpNeeded = 100;
-            document.getElementById('hpValue').innerText = `${gameState.health}/${gameState.maxHealth}`;
-            document.getElementById('healthFill').style.width = '100%';
-            document.getElementById('levelValue').innerText = '1';
-            document.getElementById('goldValue').innerText = '0';
-            updateXP();
-            playerGroup.position.set(0,0,0);
-            // düşmanları respawnla
-            for(let e of enemies) e.respawn();
+
+        function joinGuild(guildKey) {
+            const guild = GUILD_TYPES[guildKey];
+            if (!guild) return false;
+            
+            if (state.guild) {
+                pushMessage('Zaten bir loncadasın!');
+                return false;
+            }
+            
+            if (player.level < 5) {
+                pushMessage('Loncasına katılmak için en az 5. seviye olmalısın!');
+                return false;
+            }
+            
+            state.guild = {
+                ...guild,
+                members: 1,
+                level: 1,
+                exp: 0,
+                contribution: 0
+            };
+            
+            // Lonca bonus'larını uygula
+            applyGuildBonuses();
+            
+            pushMessage(guild.name + '\'na katıldın!');
+            return true;
         }
-        
-        // --- Joystick Kontrolü (Mobil) ---
-        let moveVector = { x: 0, z: 0 };
-        const joystickArea = document.getElementById('joystickArea');
-        const thumb = document.getElementById('joystickThumb');
-        let activeTouch = null;
-        let centerX = 0, centerY = 0;
-        
-        function getJoystickPos(touchX, touchY) {
-            const rect = joystickArea.getBoundingClientRect();
-            const relativeX = touchX - rect.left - 70;
-            const relativeY = touchY - rect.top - 70;
-            const distance = Math.min(40, Math.hypot(relativeX, relativeY));
-            const angle = Math.atan2(relativeY, relativeX);
-            const thumbX = Math.cos(angle) * distance;
-            const thumbY = Math.sin(angle) * distance;
-            thumb.style.transform = `translate(${thumbX}px, ${thumbY}px)`;
-            const normX = thumbX / 40;
-            const normY = thumbY / 40;
-            moveVector.x = normX;
-            moveVector.z = normY;
+
+        function applyGuildBonuses() {
+            if (!state.guild) return;
+            
+            const bonus = state.guild.bonus;
+            for (const [stat, value] of Object.entries(bonus)) {
+                if (stat === 'strength') player.stats.strength += value;
+                if (stat === 'defense') player.stats.defense += value;
+                if (stat === 'magicPower') player.stats.magicPower += value;
+                if (stat === 'mana') player.maxMana += value;
+                if (stat === 'speed') player.speed += value;
+                if (stat === 'critChance') player.critChance += value;
+                if (stat === 'goldBonus') player.goldBonus = value;
+                if (stat === 'luck') player.luck = value;
+            }
         }
-        
-        joystickArea.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            const rect = joystickArea.getBoundingClientRect();
-            centerX = rect.left + 70;
-            centerY = rect.top + 70;
-            const touch = e.touches[0];
-            activeTouch = touch.identifier;
-            getJoystickPos(touch.clientX, touch.clientY);
-        });
-        
-        joystickArea.addEventListener('touchmove', (e) => {
-            e.preventDefault();
-            for(let i=0; i<e.touches.length; i++) {
-                if(e.touches[i].identifier === activeTouch) {
-                    getJoystickPos(e.touches[i].clientX, e.touches[i].clientY);
+
+        function changeWeather() {
+            const weatherTypes = Object.keys(WEATHER_TYPES);
+            const newWeather = weatherTypes[Math.floor(Math.random() * weatherTypes.length)];
+            state.currentWeather = newWeather;
+            state.weatherTimer = 300 + Math.random() * 600; // 5-15 dakika
+            
+            pushMessage('Hava değişti: ' + WEATHER_TYPES[newWeather].name);
+        }
+
+        function updateWeather() {
+            state.weatherTimer--;
+            if (state.weatherTimer <= 0) {
+                changeWeather();
+            }
+        }
+
+        function mount(mountKey) {
+            const mountTemplate = MOUNT_TYPES[mountKey];
+            if (!mountTemplate) return false;
+            
+            if (player.level < mountTemplate.unlockLevel) {
+                pushMessage('Seviyen yetersiz! Gerekli seviye: ' + mountTemplate.unlockLevel);
+                return false;
+            }
+            
+            if (state.mounted) {
+                // Binmekten in
+                state.mounted = false;
+                player.speed = player.stats.speed;
+                pushMessage('Binekten indin!');
+            } else {
+                // Bineğe bin
+                state.mount = mountTemplate;
+                state.mounted = true;
+                player.speed = mountTemplate.speed;
+                pushMessage(mountTemplate.name + 'na bindin!');
+            }
+            
+            return true;
+        }
+
+        function createAuctionListing(itemKey, price) {
+            const item = player.inventory.find(i => i.key === itemKey);
+            if (!item) return false;
+            
+            const listing = {
+                id: Math.random().toString(36).substr(2, 9),
+                seller: 'Player',
+                item: item,
+                price: price,
+                timeLeft: 3600 // 1 saat
+            };
+            
+            state.auctionHouse.push(listing);
+            removeItemFromInventory(item.id, 1);
+            
+            pushMessage(item.name + ' ihaleye konuldu! Fiyat: ' + price + ' altın');
+            return true;
+        }
+
+        function buyFromAuction(listingId) {
+            const listing = state.auctionHouse.find(l => l.id === listingId);
+            if (!listing) return false;
+            
+            if (player.gold < listing.price) {
+                pushMessage('Yetersiz altın!');
+                return false;
+            }
+            
+            player.gold -= listing.price;
+            addItemToInventory(listing.item);
+            
+            const index = state.auctionHouse.indexOf(listing);
+            state.auctionHouse.splice(index, 1);
+            
+            pushMessage(listing.item.name + ' satın alındı!');
+            return true;
+        }
+
+        function buyHouse(houseType) {
+            const housePrice = houseType === 'basic' ? 1000 : houseType === 'deluxe' ? 5000 : 10000;
+            if (player.gold < housePrice) {
+                pushMessage('Ev almak için yetersiz altın!');
+                return false;
+            }
+            
+            if (player.housing.house) {
+                pushMessage('Zaten bir evin var!');
+                return false;
+            }
+            
+            player.gold -= housePrice;
+            player.housing.house = {
+                type: houseType,
+                rooms: houseType === 'basic' ? 2 : houseType === 'deluxe' ? 4 : 6,
+                decorations: [],
+                furniture: []
+            };
+            
+            pushMessage('Ev satın alındı! I ile evine gidebilirsin.');
+            return true;
+        }
+
+        function enterHouse() {
+            if (!player.housing.house) {
+                pushMessage('Evin yok!');
+                return false;
+            }
+            
+            // Ev içine geçiş (basit implementasyon)
+            pushMessage('Evine hoş geldin!');
+            return true;
+        }
+
+        function enterPvPArena(arenaKey) {
+            const arena = PvP_ARENAS[arenaKey];
+            if (!arena) return false;
+            
+            if (player.level < 10) {
+                pushMessage('Arena için en az 10. seviye gerekli!');
+                return false;
+            }
+            
+            if (state.pvp.inArena) {
+                pushMessage('Zaten arenadasın!');
+                return false;
+            }
+            
+            state.pvp.inArena = true;
+            state.pvp.currentArena = arenaKey;
+            state.pvp.opponents = [];
+            
+            // AI opponent'ları oluştur
+            for (let i = 0; i < arena.maxPlayers - 1; i++) {
+                state.pvp.opponents.push({
+                    id: 'ai_' + i,
+                    name: 'Düşman ' + (i + 1),
+                    x: world.camp.x + randomBetween(-150, 150),
+                    y: world.camp.y + randomBetween(-150, 150),
+                    hp: 100 + player.level * 10,
+                    maxHp: 100 + player.level * 10,
+                    damage: 15 + player.level * 2,
+                    speed: 2.5,
+                    color: '#ff4444',
+                    ai: true,
+                    target: null
+                });
+            }
+            
+            pushMessage(arena.name + 'na giriş yapıldı! Düşmanları yen!');
+            return true;
+        }
+
+        function updatePvP() {
+            if (!state.pvp.inArena) return;
+            
+            // AI opponent'ları güncelle
+            for (const opponent of state.pvp.opponents) {
+                if (opponent.hp <= 0) continue;
+                
+                // Player'a doğru hareket et
+                const dist = distance(opponent, player);
+                if (dist < 200) {
+                    const angle = Math.atan2(player.y - opponent.y, player.x - opponent.x);
+                    opponent.x += Math.cos(angle) * opponent.speed * 0.5;
+                    opponent.y += Math.sin(angle) * opponent.speed * 0.5;
+                }
+                
+                // Saldır
+                if (dist < 40) {
+                    if (!opponent.attackCooldown || opponent.attackCooldown <= 0) {
+                        const damage = opponent.damage - player.stats.defense * 0.5;
+                        player.hp -= Math.max(1, damage);
+                        addFloatingText('-' + Math.floor(damage), player.x, player.y - 20, '#ff4444');
+                        opponent.attackCooldown = 60;
+                    }
+                }
+                
+                if (opponent.attackCooldown > 0) opponent.attackCooldown--;
+            }
+            
+            // Ölü opponent'ları kontrol et
+            let aliveOpponents = state.pvp.opponents.filter(o => o.hp > 0);
+            if (aliveOpponents.length === 0) {
+                // Arena kazanıldı
+                winPvPArena();
+            }
+            
+            // Player ölüm kontrolü
+            if (player.hp <= 0) {
+                losePvPArena();
+            }
+        }
+
+        function winPvPArena() {
+            const arena = PvP_ARENAS[state.pvp.currentArena];
+            player.honor += arena.reward.honor;
+            player.gold += arena.reward.gold;
+            state.pvp.wins++;
+            state.pvp.score += 100;
+            
+            pushMessage('Arena kazanıldı! Ödül: ' + arena.reward.honor + ' onur, ' + arena.reward.gold + ' altın!');
+            
+            // Başarım kontrolü
+            checkAchievement('PVP_CHAMPION');
+            
+            exitPvPArena();
+        }
+
+        function losePvPArena() {
+            state.pvp.losses++;
+            state.pvp.score = Math.max(0, state.pvp.score - 50);
+            
+            pushMessage('Arena kaybedildi! Daha iyi dene!');
+            
+            exitPvPArena();
+        }
+
+        function exitPvPArena() {
+            state.pvp.inArena = false;
+            state.pvp.currentArena = null;
+            state.pvp.opponents = [];
+            player.hp = player.maxHp;
+            player.mana = player.maxMana;
+        }
+
+        function createParty(partyType) {
+            if (state.party.members.length > 0) {
+                pushMessage('Zaten bir gruptasın!');
+                return false;
+            }
+            
+            const party = PARTY_TYPES[partyType];
+            state.party.type = partyType;
+            state.party.leader = 'Player';
+            state.party.members = ['Player'];
+            
+            pushMessage(party.name + ' oluşturuldu! Arkadaşlarını davet et.');
+            return true;
+        }
+
+        function inviteToParty(playerName) {
+            if (!state.party.leader || state.party.leader !== 'Player') {
+                pushMessage('Grup lideri değilsin!');
+                return false;
+            }
+            
+            if (state.party.members.length >= PARTY_TYPES[state.party.type].maxSize) {
+                pushMessage('Grup dolu!');
+                return false;
+            }
+            
+            // Basit implementasyon - direkt ekle
+            state.party.members.push(playerName);
+            pushMessage(playerName + ' gruba davet edildi!');
+            return true;
+        }
+
+        function leaveParty() {
+            if (state.party.members.length === 0) {
+                pushMessage('Grupta değilsin!');
+                return false;
+            }
+            
+            if (state.party.leader === 'Player') {
+                // Lider ayrılırsa grup dağılır
+                state.party.members = [];
+                state.party.leader = null;
+                state.party.type = null;
+                pushMessage('Grup dağıtıldı!');
+            } else {
+                // Üye ayrılır
+                const index = state.party.members.indexOf('Player');
+                state.party.members.splice(index, 1);
+                pushMessage('Gruptan ayrıldın!');
+            }
+            
+            return true;
+        }
+
+        function sendChatMessage(message, channel = 'GLOBAL') {
+            if (!message || message.trim() === '') return false;
+            
+            const chatChannel = CHAT_CHANNELS[channel];
+            if (!chatChannel) return false;
+            
+            const chatMsg = {
+                sender: player.currentTitle ? player.currentTitle + ' ' + 'Player' : 'Player',
+                message: message.trim(),
+                channel: channel,
+                timestamp: Date.now(),
+                color: chatChannel.color
+            };
+            
+            state.chat.messages.push(chatMsg);
+            if (state.chat.messages.length > 100) {
+                state.chat.messages.shift(); // Son 100 mesajı tut
+            }
+            
+            // Chat loguna ekle
+            console.log(chatChannel.prefix + ' ' + chatMsg.sender + ': ' + chatMsg.message);
+            
+            return true;
+        }
+
+        function updateReputation(standingChange) {
+            state.reputation.standing += standingChange;
+            
+            // Faction seviyesini güncelle
+            let newFaction = 'NEUTRAL';
+            for (const [factionKey, faction] of Object.entries(REPUTATION_FACTIONS)) {
+                if (state.reputation.standing >= faction.standing) {
+                    newFaction = factionKey;
+                }
+            }
+            
+            if (newFaction !== state.reputation.faction) {
+                state.reputation.faction = newFaction;
+                const faction = REPUTATION_FACTIONS[newFaction];
+                pushMessage('İtibar seviyesi: ' + faction.name + '!');
+            }
+        }
+
+        function unlockAchievement(achievementKey) {
+            if (state.achievements[achievementKey]) return false;
+            
+            const achievement = ACHIEVEMENTS[achievementKey];
+            if (!achievement) return false;
+            
+            state.achievements[achievementKey] = {
+                ...achievement,
+                unlocked: true,
+                unlockedAt: Date.now()
+            };
+            
+            // Ödülleri ver
+            if (achievement.reward.xp) {
+                player.xp += achievement.reward.xp;
+                addFloatingText('+' + achievement.reward.xp + ' XP', player.x, player.y - 30, '#ffff00');
+            }
+            if (achievement.reward.gold) {
+                player.gold += achievement.reward.gold;
+                addFloatingText('+' + achievement.reward.gold + ' G', player.x, player.y - 40, '#ffd700');
+            }
+            if (achievement.reward.skillPoints) {
+                player.skillPoints += achievement.reward.skillPoints;
+            }
+            if (achievement.reward.title) {
+                player.titles.push(achievement.reward.title);
+                if (!player.currentTitle) {
+                    player.currentTitle = achievement.reward.title;
+                }
+            }
+            if (achievement.reward.pet) {
+                player.petInventory.push({ key: achievement.reward.pet, name: PET_TYPES[achievement.reward.pet].name });
+            }
+            
+            pushMessage('Başırım açıldı: ' + achievement.name + '! 🏆');
+            return true;
+        }
+
+        function checkAchievement(achievementKey) {
+            const achievement = ACHIEVEMENTS[achievementKey];
+            if (!achievement || state.achievements[achievementKey]) return false;
+            
+            let shouldUnlock = false;
+            
+            switch (achievementKey) {
+                case 'FIRST_KILL':
+                    shouldUnlock = state.enemies.length > 0;
+                    break;
+                case 'LEVEL_10':
+                    shouldUnlock = player.level >= 10;
+                    break;
+                case 'FIRST_PET':
+                    shouldUnlock = player.petInventory.length > 0 || state.activePet;
+                    break;
+                case 'CRAFT_MASTER':
+                    shouldUnlock = Object.values(player.crafting).some(skill => skill.level >= 5);
+                    break;
+                case 'PVP_CHAMPION':
+                    shouldUnlock = state.pvp.wins >= 10;
+                    break;
+                case 'EXPLORER':
+                    shouldUnlock = state.completedQuests.length >= 5; // Basit kontrol
+                    break;
+                case 'RICH_MERCHANT':
+                    shouldUnlock = player.gold >= 10000;
+                    break;
+                case 'GUILD_MASTER':
+                    shouldUnlock = state.guild && state.guild.level >= 5;
+                    break;
+            }
+            
+            if (shouldUnlock) {
+                unlockAchievement(achievementKey);
+            }
+        }
+
+        function updateRanking() {
+            let score = 0;
+            
+            // Seviye skoru
+            score += player.level * 100 * RANKING_CATEGORIES.LEVEL.weight;
+            
+            // PvP skoru
+            score += state.pvp.honor * 10 * RANKING_CATEGORIES.PVP.weight;
+            
+            // Zenginlik skoru
+            score += player.gold * 0.01 * RANKING_CATEGORIES.WEALTH.weight;
+            
+            // Başarım skoru
+            const achievementCount = Object.keys(state.achievements).length;
+            score += achievementCount * 500 * RANKING_CATEGORIES.ACHIEVEMENTS.weight;
+            
+            // İtibar skoru
+            score += state.reputation.standing * 0.1 * RANKING_CATEGORIES.REPUTATION.weight;
+            
+            state.ranking.score = Math.floor(score);
+            
+            // Basit sıralama (gerçek oyunda sunucu tarafı olur)
+            state.ranking.position = Math.max(1, Math.floor(1000 / (score / 1000 + 1)));
+        }
+
+        function startGameEvent(eventKey) {
+            const gameEvent = GAME_EVENTS[eventKey];
+            if (!gameEvent) return false;
+            
+            if (state.currentEvent) {
+                pushMessage('Zaten bir etkinlik devam ediyor!');
+                return false;
+            }
+            
+            state.currentEvent = eventKey;
+            state.eventTimer = gameEvent.duration;
+            
+            pushMessage('Etkinlik başladı: ' + gameEvent.name + '! ' + gameEvent.description);
+            return true;
+        }
+
+        function updateGameEvent() {
+            if (!state.currentEvent) return;
+            
+            state.eventTimer--;
+            if (state.eventTimer <= 0) {
+                const event = GAME_EVENTS[state.currentEvent];
+                pushMessage('Etkinlik sona erdi: ' + event.name);
+                state.currentEvent = null;
+                state.eventTimer = 0;
+            }
+        }
+
+        function openMarket() {
+            state.market.isOpen = true;
+            pushMessage('Market açıldı! İtemleri satın alabilirsin.');
+        }
+
+        function buyFromMarket(itemKey, quantity = 1) {
+            let foundItem = null;
+            let foundCategory = null;
+            
+            for (const [category, marketData] of Object.entries(MARKET_ITEMS)) {
+                if (marketData.items.includes(itemKey) && marketData.stock[itemKey] >= quantity) {
+                    foundItem = marketData;
+                    foundCategory = category;
                     break;
                 }
             }
-        });
-        
-        joystickArea.addEventListener('touchend', (e) => {
-            thumb.style.transform = `translate(0px, 0px)`;
-            moveVector.x = 0;
-            moveVector.z = 0;
-            activeTouch = null;
-        });
-        
-        // --- Hareket ve Kamera takibi ---
-        let playerVelocity = { x: 0, z: 0 };
-        function updateMovement() {
-            const speed = 5.0;
-            playerVelocity.x = moveVector.x * speed * 0.016;
-            playerVelocity.z = moveVector.z * speed * 0.016;
-            let newX = playerGroup.position.x + playerVelocity.x;
-            let newZ = playerGroup.position.z + playerVelocity.z;
-            newX = Math.min(14, Math.max(-14, newX));
-            newZ = Math.min(14, Math.max(-14, newZ));
-            playerGroup.position.x = newX;
-            playerGroup.position.z = newZ;
             
-            // Kamera takibi (Third person)
-            const targetCamPos = new THREE.Vector3(playerGroup.position.x, 5, playerGroup.position.z + 8);
-            camera.position.lerp(targetCamPos, 0.1);
-            camera.lookAt(playerGroup.position);
-            
-            // Oyuncu yönü (hareket yönüne dön)
-            if (Math.abs(moveVector.x) > 0.1 || Math.abs(moveVector.z) > 0.1) {
-                const angle = Math.atan2(moveVector.x, moveVector.z);
-                playerGroup.rotation.y = angle;
+            if (!foundItem) {
+                pushMessage('Item stokta yok!');
+                return false;
             }
+            
+            const price = foundItem.prices[itemKey] * quantity;
+            if (player.gold < price) {
+                pushMessage('Yetersiz altın!');
+                return false;
+            }
+            
+            player.gold -= price;
+            foundItem.stock[itemKey] -= quantity;
+            
+            // Item'ı envantere ekle
+            for (let i = 0; i < quantity; i++) {
+                addItemToInventory(createItem(itemKey));
+            }
+            
+            pushMessage(itemKey + ' satın alındı! Fiyat: ' + price + ' altın');
+            return true;
         }
-        
-        // --- Saldırı ve Skill butonları ---
-        document.getElementById('attackBtn').addEventListener('click', () => {
-            playerAttack();
-        });
-        document.getElementById('skillBtn').addEventListener('click', () => {
-            // Yetenek: Alan hasarı
-            for(let e of enemies) {
-                if(e.isAlive && playerGroup.position.distanceTo(e.group.position) < 4) {
-                    e.takeDamage(45, e.group.position);
+
+        function restockMarket() {
+            for (const [category, marketData] of Object.entries(MARKET_ITEMS)) {
+                for (const itemKey of marketData.items) {
+                    if (marketData.stock[itemKey] < 10) {
+                        marketData.stock[itemKey] = Math.min(100, marketData.stock[itemKey] + 20);
+                    }
                 }
             }
-            // Efekt
-            const ring = new THREE.Mesh(new THREE.RingGeometry(0.5, 2, 16), new THREE.MeshBasicMaterial({ color: 0x44aaff, transparent: true, side: THREE.DoubleSide }));
-            ring.position.copy(playerGroup.position);
-            ring.rotation.x = -Math.PI/2;
-            scene.add(ring);
-            setTimeout(() => scene.remove(ring), 300);
-        });
-        
-        // --- Animasyon döngüsü ---
-        let lastTime = performance.now();
-        function animate() {
-            const now = performance.now();
-            let delta = Math.min(0.033, (now - lastTime) / 1000);
-            lastTime = now;
-            updateMovement();
-            updateEnemies();
+            pushMessage('Market stokları yenilendi!');
+        }
+
+        function renderInventory() {
+            const grid = document.getElementById('inventoryGrid');
+            grid.innerHTML = '';
             
-            // Hava efekti (parçacık)
-            renderer.render(scene, camera);
-            requestAnimationFrame(animate);
+            // 24 slot oluştur
+            for (let i = 0; i < 24; i++) {
+                const slot = document.createElement('div');
+                slot.className = 'inventory-slot';
+                slot.dataset.slotIndex = i;
+                
+                const item = player.inventory[i];
+                if (item) {
+                    slot.classList.add('has-item');
+                    slot.innerHTML = `
+                        <span style="color: ${RARITY_COLORS[item.rarity]}">${item.icon}</span>
+                        ${item.quantity > 1 ? `<span class="item-quantity">${item.quantity}</span>` : ''}
+                    `;
+                    slot.title = `${item.name} (${item.rarity})`;
+                    
+                    slot.addEventListener('click', () => {
+                        if (item.type === 'consumable') {
+                            useItem(item.id);
+                            renderInventory();
+                            renderEquipment();
+                        } else {
+                            equipItem(item.id);
+                            renderInventory();
+                            renderEquipment();
+                        }
+                    });
+                }
+                
+                grid.appendChild(slot);
+            }
         }
-        
-        // Rastgele efektler (yaprak, toz)
-        const particleGeo = new THREE.BufferGeometry();
-        const particleCount = 200;
-        const particlePositions = new Float32Array(particleCount * 3);
-        for(let i=0; i<particleCount; i++) {
-            particlePositions[i*3] = (Math.random() - 0.5) * 30;
-            particlePositions[i*3+1] = Math.random() * 5;
-            particlePositions[i*3+2] = (Math.random() - 0.5) * 30;
+
+        function renderEquipment() {
+            const slots = document.querySelectorAll('.equipment-slot');
+            
+            slots.forEach(slot => {
+                const slotType = slot.dataset.slot;
+                const item = player.equipped[slotType];
+                
+                if (item) {
+                    slot.classList.add('equipped');
+                    slot.innerHTML = `
+                        <div class="equipment-item-icon" style="color: ${RARITY_COLORS[item.rarity]}">${item.icon}</div>
+                        <div class="equipment-item-name">${item.name}</div>
+                    `;
+                    slot.title = `${item.name} (${item.rarity})`;
+                    
+                    slot.addEventListener('click', () => {
+                        unequipItem(slotType);
+                        renderInventory();
+                        renderEquipment();
+                    });
+                } else {
+                    slot.classList.remove('equipped');
+                    slot.innerHTML = slotType === 'mainhand' ? 'Silah' : 
+                                   slotType === 'chest' ? 'Zırh' :
+                                   slotType === 'head' ? 'Kask' :
+                                   slotType === 'feet' ? 'Bot' :
+                                   slotType === 'ring' ? 'Yüzük' : 'Kolye';
+                    slot.title = '';
+                }
+            });
         }
-        particleGeo.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
-        const particleMat = new THREE.PointsMaterial({ color: 0xaaffaa, size: 0.08 });
-        const particles = new THREE.Points(particleGeo, particleMat);
-        scene.add(particles);
-        
-        // Başlangıç mesajı
-        console.log('Oyun hazır! Knight Online tarzı mobil RPG');
-        animate();
-        
-        // Mobil performans için fps düşürme yok, gayet akıcı
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
+
+        function toggleInventory() {
+            state.inventoryOpen = !state.inventoryOpen;
+            const panel = document.getElementById('inventoryPanel');
+            const questPanel = document.getElementById('questPanel');
+            
+            if (state.inventoryOpen) {
+                panel.style.display = 'block';
+                questPanel.style.display = 'none';
+                renderInventory();
+                renderEquipment();
+            } else {
+                panel.style.display = 'none';
+                questPanel.style.display = 'block';
+            }
+        }
+
+        function generateObstacles() {
+            world.obstacles = [];
+            for (let i = 0; i < 48; i++) {
+                const x = randomBetween(100, world.width - 100);
+                const y = randomBetween(100, world.height - 100);
+                if (Math.hypot(x - world.camp.x, y - world.camp.y) < 190) continue;
+                world.obstacles.push({ x, y, r: randomBetween(18, 38) });
+            }
+        }
+
+        function spawnEnemy(typeName) {
+            const type = ENEMY_TYPES[typeName];
+            const edge = Math.floor(Math.random() * 4);
+            let x = 0;
+            let y = 0;
+            if (edge === 0) {
+                x = randomBetween(0, world.width);
+                y = -40;
+            } else if (edge === 1) {
+                x = world.width + 40;
+                y = randomBetween(0, world.height);
+            } else if (edge === 2) {
+                x = randomBetween(0, world.width);
+                y = world.height + 40;
+            } else {
+                x = -40;
+                y = randomBetween(0, world.height);
+            }
+
+            state.enemies.push({
+                type: typeName,
+                x,
+                y,
+                r: typeName === 'Orc' ? 20 : 15,
+                hp: type.hp + state.wave * 4,
+                maxHp: type.hp + state.wave * 4,
+                speed: type.speed + Math.min(state.wave * 0.04, 0.45),
+                damage: type.damage + Math.floor(state.wave / 3),
+                xp: type.xp,
+                gold: type.gold,
+                color: type.color,
+                hitCooldown: 0
+            });
+        }
+
+        function spawnWave() {
+            const total = 4 + state.wave * 2;
+            for (let i = 0; i < total; i++) {
+                const roll = Math.random();
+                let type = 'Goblin';
+                if (roll > 0.82) {
+                    type = 'Orc';
+                } else if (roll > 0.52) {
+                    type = 'Wolf';
+                }
+                spawnEnemy(type);
+            }
+            pushMessage('Yeni dusman dalgasi yaklasiyor. Hazir ol.');
+        }
+
+        function tryLevelUp() {
+            while (player.xp >= player.xpNeed) {
+                player.xp -= player.xpNeed;
+                player.level += 1;
+                player.xpNeed = Math.floor(player.xpNeed * 1.3);
+                player.maxHp += 18;
+                player.maxMana += 14;
+                player.hp = player.maxHp;
+                player.mana = player.maxMana;
+                player.skillPoints += 1;
+                pushMessage('Seviye atladın! Tum kaynaklar yenilendi. +1 Skill Point!');
+                
+                // Başarım kontrolü
+                checkAchievement('LEVEL_10');
+                checkAchievement('RICH_MERCHANT');
+                
+                // Sıralama güncelle
+                updateRanking();
+            }
+        }
+
+        function questCheck(enemyType) {
+            if (enemyType !== quest.targetType) return;
+            quest.kills += 1;
+            if (quest.kills >= quest.need) {
+                player.gold += quest.rewardGold;
+                player.potions += quest.rewardPotions;
+                quest.kills = 0;
+                quest.need += 2;
+                quest.rewardGold += 60;
+                ui.questTarget.textContent = quest.need + ' ' + quest.targetType;
+                pushMessage('Gorev tamamlandi! Odul: ' + quest.rewardGold + ' altin, +1 iksir.');
+            }
+        }
+
+        function addFloatingText(text, x, y, color) {
+            state.floatingTexts.push({ text, x, y, color, life: 65 });
+        }
+
+        function castIceBolt(targetX, targetY) {
+            const now = performance.now();
+            if (now - state.lastCast < 380 || player.mana < 16 || !player.alive) return;
+            state.lastCast = now;
+            player.mana -= 16;
+
+            const angle = Math.atan2(targetY - player.y, targetX - player.x);
+            state.projectiles.push({
+                x: player.x,
+                y: player.y,
+                vx: Math.cos(angle) * 8.4,
+                vy: Math.sin(angle) * 8.4,
+                life: 85,
+                damage: 36 + player.level * 2,
+                color: '#7de6ff'
+            });
+        }
+
+        function meleeSlash() {
+            const now = performance.now();
+            if (now - state.lastMelee < 460 || !player.alive) return;
+            state.lastMelee = now;
+
+            let hitAny = false;
+            const damage = calculateDamage(28 + player.level * 3);
+            
+            for (const enemy of state.enemies) {
+                const d = distance(player, enemy);
+                if (d <= player.r + 48) {
+                    const finalDamage = damage * (1 - (enemy.defense || 0) * (1 - player.armorPierce));
+                    enemy.hp -= Math.floor(finalDamage);
+                    addFloatingText('-' + Math.floor(finalDamage), enemy.x, enemy.y - 12, '#ffd36e');
+                    
+                    // Life steal
+                    if (player.lifeSteal > 0) {
+                        const lifeStealAmount = Math.floor(finalDamage * player.lifeSteal);
+                        player.hp = Math.min(player.hp + lifeStealAmount, player.maxHp);
+                        addFloatingText('+' + lifeStealAmount, player.x, player.y - 20, '#ff6b9d');
+                    }
+                    
+                    hitAny = true;
+                }
+            }
+            if (hitAny) {
+                for (let i = 0; i < 14; i++) {
+                    state.particles.push({
+                        x: player.x,
+                        y: player.y,
+                        vx: randomBetween(-2.4, 2.4),
+                        vy: randomBetween(-2.4, 2.4),
+                        life: 22,
+                        color: '#ffcf7d'
+                    });
+                }
+            }
+        }
+
+        function tryUsePotion() {
+            if (player.potions <= 0 || !player.alive) return;
+            if (player.hp >= player.maxHp * 0.95) return;
+            player.potions -= 1;
+            player.hp = clamp(player.hp + 65, 0, player.maxHp);
+            addFloatingText('+65 HP', player.x, player.y - 18, '#7bf29f');
+        }
+
+        function collideWithObstacles(obj, radius) {
+            for (const o of world.obstacles) {
+                const dx = obj.x - o.x;
+                const dy = obj.y - o.y;
+                const d = Math.hypot(dx, dy);
+                const overlap = radius + o.r - d;
+                if (overlap > 0) {
+                    const nx = dx / (d || 1);
+                    const ny = dy / (d || 1);
+                    obj.x += nx * overlap;
+                    obj.y += ny * overlap;
+                }
+            }
+        }
+
+        function updatePlayer() {
+            if (!player.alive) return;
+
+            let dx = 0;
+            let dy = 0;
+            if (state.keys['w']) dy -= 1;
+            if (state.keys['s']) dy += 1;
+            if (state.keys['a']) dx -= 1;
+            if (state.keys['d']) dx += 1;
+
+            if (dx !== 0 || dy !== 0) {
+                const len = Math.hypot(dx, dy);
+                const moveSpeed = player.speed * (state.mounted ? 1.0 : WEATHER_TYPES[state.currentWeather].speedModifier);
+                player.x += (dx / len) * moveSpeed;
+                player.y += (dy / len) * moveSpeed;
+            }
+
+            player.x = clamp(player.x, player.r, world.width - player.r);
+            player.y = clamp(player.y, player.r, world.height - player.r);
+            collideWithObstacles(player, player.r);
+            player.facing = Math.atan2(state.mouseWorld.y - player.y, state.mouseWorld.x - player.x);
+
+            // Mana yenileme (bonus ile)
+            let manaRegen = 0.09 + player.level * 0.002;
+            if (player.skills.MANA_REGEN.unlocked) {
+                manaRegen += SKILL_TYPES.MANA_REGEN.manaRegenBonus;
+            }
+            player.mana = clamp(player.mana + manaRegen, 0, player.maxMana);
+            
+            if (distance(player, world.camp) < world.camp.r - 20) {
+                player.hp = clamp(player.hp + 0.18, 0, player.maxHp);
+            }
+            
+            // NPC etkileşim kontrolü
+            for (const npc of state.npcs) {
+                const dist = distance(player, npc);
+                if (dist < 50) {
+                    npc.active = true;
+                } else {
+                    npc.active = false;
+                }
+            }
+        }
+
+        function killEnemy(index) {
+            const enemy = state.enemies[index];
+            player.xp += enemy.xp + Math.floor(state.wave * 0.7);
+            player.gold += enemy.gold + Math.floor(state.wave * 0.5);
+            questCheck(enemy.type);
+            updateQuests(enemy.type);
+            tryLevelUp();
+
+            addFloatingText('+' + enemy.xp + ' XP', enemy.x, enemy.y - 22, '#83d2ff');
+            addFloatingText('+' + enemy.gold + ' G', enemy.x, enemy.y - 6, '#f8c447');
+            
+            // Event bonus'ları
+            if (state.currentEvent) {
+                const event = GAME_EVENTS[state.currentEvent];
+                if (event.bonus.xpMultiplier) {
+                    player.xp = Math.floor(player.xp * event.bonus.xpMultiplier);
+                }
+                if (event.bonus.goldMultiplier) {
+                    player.gold = Math.floor(player.gold * event.bonus.goldMultiplier);
+                }
+            }
+            
+            // Party bonus'ları
+            if (state.party.members.length > 1) {
+                const party = PARTY_TYPES[state.party.type];
+                player.xp = Math.floor(player.xp * (1 + party.expBonus));
+                player.gold = Math.floor(player.gold * (1 + party.goldBonus));
+            }
+            
+            // Item drop sistemi
+            if (Math.random() < 0.35) { // %35 ihtimalle item düşür
+                const droppedItem = generateItemDrop(enemy.type);
+                if (droppedItem) {
+                    addItemToInventory(droppedItem);
+                    addFloatingText('+' + droppedItem.name + '!', enemy.x, enemy.y + 10, RARITY_COLORS[droppedItem.rarity]);
+                    pushMessage(droppedItem.name + ' buldun!');
+                }
+            }
+            
+            // Malzeme drop'u
+            if (Math.random() < 0.25) {
+                const materials = Object.keys(CRAFTING_MATERIALS);
+                const materialKey = materials[Math.floor(Math.random() * materials.length)];
+                addMaterial(materialKey, 1);
+                addFloatingText('+' + CRAFTING_MATERIALS[materialKey].icon, enemy.x, enemy.y + 20, '#ffd700');
+            }
+            
+            // İtibar kazanımı
+            updateReputation(5);
+            
+            // Başarım kontrolü
+            checkAchievement('FIRST_KILL');
+            
+            // Boss öldürme kontrolü
+            if (enemy.isBoss && state.currentDungeon && !state.currentDungeon.bossDefeated) {
+                state.currentDungeon.bossDefeated = true;
+                const rewards = state.currentDungeon.rewards;
+                player.gold += rewards.gold;
+                player.xp += rewards.xp;
+                
+                pushMessage('Boss yenildi! Ödül: ' + rewards.gold + ' altın, ' + rewards.xp + ' XP');
+                
+                // Boss reward itemları
+                for (const itemKey of rewards.items) {
+                    const item = createItem(itemKey);
+                    if (item) {
+                        item.rarity = Math.random() > 0.8 ? 'rare' : 'uncommon';
+                        addItemToInventory(item);
+                        addFloatingText('+' + item.name + '!', enemy.x, enemy.y + 20, RARITY_COLORS[item.rarity]);
+                    }
+                }
+                
+                state.currentDungeon.cleared = true;
+                checkAchievement('EXPLORER');
+            }
+            
+            for (let i = 0; i < 12; i++) {
+                state.particles.push({
+                    x: enemy.x,
+                    y: enemy.y,
+                    vx: randomBetween(-2.2, 2.2),
+                    vy: randomBetween(-2.2, 2.2),
+                    life: 25,
+                    color: enemy.color
+                });
+            }
+            state.enemies.splice(index, 1);
+        }
+
+        function generateItemDrop(enemyType) {
+            const dropTable = {
+                'Goblin': ['SWORD', 'LEATHER_ARMOR', 'LEATHER_BOOTS', 'HEALTH_POTION', 'MANA_POTION'],
+                'Wolf': ['BOW', 'LEATHER_ARMOR', 'LEATHER_BOOTS', 'RING', 'HEALTH_POTION'],
+                'Orc': ['IRON_ARMOR', 'IRON_HELMET', 'STAFF', 'AMULET', 'MANA_POTION']
+            };
+            
+            const possibleItems = dropTable[enemyType] || dropTable['Goblin'];
+            const itemKey = possibleItems[Math.floor(Math.random() * possibleItems.length)];
+            
+            // Rarity şansı
+            let rarity = 'common';
+            const rarityRoll = Math.random();
+            if (rarityRoll > 0.95) rarity = 'epic';
+            else if (rarityRoll > 0.85) rarity = 'rare';
+            else if (rarityRoll > 0.65) rarity = 'uncommon';
+            
+            const item = createItem(itemKey);
+            if (item) {
+                item.rarity = rarity;
+                // Rarity'e göre stats güncelle
+                if (rarity !== 'common') {
+                    const multiplier = rarity === 'uncommon' ? 1.2 : rarity === 'rare' ? 1.5 : rarity === 'epic' ? 2.0 : 1.0;
+                    if (item.damage) item.damage = Math.floor(item.damage * multiplier);
+                    if (item.defense) item.defense = Math.floor(item.defense * multiplier);
+                    if (item.magicPower) item.magicPower = Math.floor(item.magicPower * multiplier);
+                    if (item.strength) item.strength = Math.floor(item.strength * multiplier);
+                    if (item.hp) item.hp = Math.floor(item.hp * multiplier);
+                    if (item.value) item.value = Math.floor(item.value * multiplier);
+                }
+            }
+            
+            return item;
+        }
+
+        function updateEnemies() {
+            for (let i = state.enemies.length - 1; i >= 0; i--) {
+                const enemy = state.enemies[i];
+                const dist = distance(enemy, player);
+                const inCamp = distance(enemy, world.camp) < world.camp.r;
+
+                if (!inCamp && player.alive && dist < 520) {
+                    const angle = Math.atan2(player.y - enemy.y, player.x - enemy.x);
+                    enemy.x += Math.cos(angle) * enemy.speed;
+                    enemy.y += Math.sin(angle) * enemy.speed;
+                }
+
+                collideWithObstacles(enemy, enemy.r);
+                enemy.x = clamp(enemy.x, enemy.r, world.width - enemy.r);
+                enemy.y = clamp(enemy.y, enemy.r, world.height - enemy.r);
+
+                if (enemy.hitCooldown > 0) enemy.hitCooldown -= 1;
+
+                if (player.alive && dist < enemy.r + player.r + 2 && enemy.hitCooldown <= 0 && performance.now() > player.invulnUntil) {
+                    player.hp -= enemy.damage;
+                    enemy.hitCooldown = 28;
+                    player.invulnUntil = performance.now() + 220;
+                    addFloatingText('-' + enemy.damage, player.x, player.y - 20, '#ff8d8d');
+
+                    if (player.hp <= 0) {
+                        player.alive = false;
+                        state.gameOver = true;
+                        ui.deathScreen.style.display = 'grid';
+                    }
+                }
+
+                if (enemy.hp <= 0) {
+                    killEnemy(i);
+                }
+            }
+
+            if (state.enemies.length === 0 && player.alive) {
+                state.wave += 1;
+                spawnWave();
+            }
+        }
+
+        function updateProjectiles() {
+            for (let i = state.projectiles.length - 1; i >= 0; i--) {
+                const p = state.projectiles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life -= 1;
+
+                for (let j = state.enemies.length - 1; j >= 0; j--) {
+                    const enemy = state.enemies[j];
+                    if (distance(p, enemy) < enemy.r + 6) {
+                        enemy.hp -= p.damage;
+                        addFloatingText('-' + p.damage, enemy.x, enemy.y - 14, '#95ecff');
+                        p.life = 0;
+                        break;
+                    }
+                }
+
+                if (p.life <= 0 || p.x < -30 || p.y < -30 || p.x > world.width + 30 || p.y > world.height + 30) {
+                    state.projectiles.splice(i, 1);
+                }
+            }
+        }
+
+        function updateParticles() {
+            for (let i = state.particles.length - 1; i >= 0; i--) {
+                const part = state.particles[i];
+                part.x += part.vx;
+                part.y += part.vy;
+                part.life -= 1;
+                part.vx *= 0.95;
+                part.vy *= 0.95;
+                if (part.life <= 0) state.particles.splice(i, 1);
+            }
+        }
+
+        function updateFloatingTexts() {
+            for (let i = state.floatingTexts.length - 1; i >= 0; i--) {
+                const item = state.floatingTexts[i];
+                item.life -= 1;
+                item.y -= 0.45;
+                if (item.life <= 0) state.floatingTexts.splice(i, 1);
+            }
+        }
+
+        function updateCamera() {
+            state.camera.x = clamp(player.x - canvas.width / 2, 0, world.width - canvas.width);
+            state.camera.y = clamp(player.y - canvas.height / 2, 0, world.height - canvas.height);
+        }
+
+        function drawGround() {
+            const size = world.tile;
+            const startX = Math.floor(state.camera.x / size) * size;
+            const startY = Math.floor(state.camera.y / size) * size;
+
+            for (let y = startY; y < state.camera.y + canvas.height + size; y += size) {
+                for (let x = startX; x < state.camera.x + canvas.width + size; x += size) {
+                    const n = Math.sin(x * 0.008) + Math.cos(y * 0.01);
+                    if (n > 0.7) {
+                        ctx.fillStyle = '#294b32';
+                    } else if (n < -0.6) {
+                        ctx.fillStyle = '#1f3b2a';
+                    } else {
+                        ctx.fillStyle = '#24452e';
+                    }
+                    ctx.fillRect(x - state.camera.x, y - state.camera.y, size, size);
+                }
+            }
+
+            ctx.strokeStyle = 'rgba(145, 193, 126, 0.09)';
+            ctx.lineWidth = 1;
+            for (let y = startY; y < state.camera.y + canvas.height + size; y += size) {
+                ctx.beginPath();
+                ctx.moveTo(0, y - state.camera.y);
+                ctx.lineTo(canvas.width, y - state.camera.y);
+                ctx.stroke();
+            }
+        }
+
+        function drawCamp() {
+            const x = world.camp.x - state.camera.x;
+            const y = world.camp.y - state.camera.y;
+
+            ctx.fillStyle = 'rgba(80, 162, 255, 0.15)';
+            ctx.beginPath();
+            ctx.arc(x, y, world.camp.r, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.strokeStyle = 'rgba(143, 205, 255, 0.65)';
+            ctx.setLineDash([6, 6]);
+            ctx.beginPath();
+            ctx.arc(x, y, world.camp.r, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            ctx.fillStyle = '#ffd479';
+            ctx.beginPath();
+            ctx.arc(x, y, 8, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function drawObstacles() {
+            for (const o of world.obstacles) {
+                const x = o.x - state.camera.x;
+                const y = o.y - state.camera.y;
+                ctx.fillStyle = '#3d4f5a';
+                ctx.beginPath();
+                ctx.arc(x, y, o.r, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(240, 250, 255, 0.16)';
+                ctx.stroke();
+            }
+        }
+
+        function drawPlayer() {
+            const x = player.x - state.camera.x;
+            const y = player.y - state.camera.y;
+
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(player.facing);
+
+            ctx.fillStyle = '#f0d08c';
+            ctx.beginPath();
+            ctx.arc(0, 0, player.r, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#384f7a';
+            ctx.fillRect(-8, -23, 16, 9);
+
+            ctx.strokeStyle = '#8acbff';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(2, 2);
+            ctx.lineTo(20, 0);
+            ctx.stroke();
+
+            ctx.fillStyle = '#9cecff';
+            ctx.beginPath();
+            ctx.arc(20, 0, 4, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        function drawEnemies() {
+            for (const enemy of state.enemies) {
+                const x = enemy.x - state.camera.x;
+                const y = enemy.y - state.camera.y;
+
+                ctx.fillStyle = enemy.color;
+                ctx.beginPath();
+                ctx.arc(x, y, enemy.r, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = '#191919';
+                ctx.fillRect(x - 22, y - enemy.r - 12, 44, 5);
+                ctx.fillStyle = '#76f28a';
+                ctx.fillRect(x - 22, y - enemy.r - 12, 44 * (enemy.hp / enemy.maxHp), 5);
+            }
+        }
+
+        function drawProjectiles() {
+            for (const p of state.projectiles) {
+                ctx.fillStyle = p.color;
+                ctx.shadowBlur = 16;
+                ctx.shadowColor = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x - state.camera.x, p.y - state.camera.y, 5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        function drawParticles() {
+            for (const part of state.particles) {
+                ctx.fillStyle = part.color;
+                ctx.globalAlpha = Math.max(0, part.life / 25);
+                ctx.fillRect(part.x - state.camera.x, part.y - state.camera.y, 3, 3);
+                ctx.globalAlpha = 1;
+            }
+        }
+
+        function drawFloatingText() {
+            ctx.font = 'bold 13px Exo 2';
+            ctx.textAlign = 'center';
+            for (const item of state.floatingTexts) {
+                ctx.globalAlpha = Math.max(0, item.life / 65);
+                ctx.fillStyle = item.color;
+                ctx.fillText(item.text, item.x - state.camera.x, item.y - state.camera.y);
+            }
+            ctx.globalAlpha = 1;
+        }
+
+        function drawDayNightOverlay() {
+            state.dayCycle += 0.0025;
+            const n = (Math.sin(state.dayCycle) + 1) / 2;
+            const darkness = 0.14 + n * 0.28;
+            ctx.fillStyle = 'rgba(5, 10, 24,' + darkness.toFixed(3) + ')';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function drawWeatherOverlay() {
+            const weather = WEATHER_TYPES[state.currentWeather];
+            if (weather.color !== 'rgba(255,255,255,0)') {
+                ctx.fillStyle = weather.color;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+            
+            // Yağmur kar tanesi efekti
+            if (state.currentWeather === 'RAIN' || state.currentWeather === 'STORM') {
+                ctx.strokeStyle = 'rgba(150, 200, 255, 0.6)';
+                ctx.lineWidth = 1;
+                for (let i = 0; i < 50; i++) {
+                    const x = Math.random() * canvas.width;
+                    const y = Math.random() * canvas.height;
+                    ctx.beginPath();
+                    ctx.moveTo(x, y);
+                    ctx.lineTo(x - 2, y + 10);
+                    ctx.stroke();
+                }
+            }
+            
+            // Kar efekti
+            if (state.currentWeather === 'SNOW') {
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                for (let i = 0; i < 30; i++) {
+                    const x = Math.random() * canvas.width;
+                    const y = Math.random() * canvas.height;
+                    ctx.beginPath();
+                    ctx.arc(x, y, 2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+        }
+
+        function drawPets() {
+            if (!state.activePet) return;
+            
+            const pet = state.activePet;
+            const screenX = pet.x - state.camera.x;
+            const screenY = pet.y - state.camera.y;
+            
+            // Pet gövdesi
+            ctx.fillStyle = pet.color;
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(screenX, screenY, pet.size, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            
+            // Pet HP barı
+            const hpBarWidth = 30;
+            const hpBarHeight = 3;
+            const hpPercentage = pet.hp / pet.maxHp;
+            
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            ctx.fillRect(screenX - hpBarWidth/2, screenY - pet.size - 8, hpBarWidth, hpBarHeight);
+            
+            ctx.fillStyle = hpPercentage > 0.5 ? '#00ff00' : hpPercentage > 0.25 ? '#ffff00' : '#ff0000';
+            ctx.fillRect(screenX - hpBarWidth/2, screenY - pet.size - 8, hpBarWidth * hpPercentage, hpBarHeight);
+            
+            // Pet ikonu
+            ctx.font = '16px Arial';
+            ctx.fillText(pet.icon, screenX - 8, screenY + 5);
+        }
+
+        function drawPvPOpponents() {
+            if (!state.pvp.inArena) return;
+            
+            for (const opponent of state.pvp.opponents) {
+                if (opponent.hp <= 0) continue;
+                
+                const screenX = opponent.x - state.camera.x;
+                const screenY = opponent.y - state.camera.y;
+                
+                // Opponent gövdesi
+                ctx.fillStyle = opponent.color;
+                ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(screenX, screenY, 16, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                
+                // HP barı
+                const hpBarWidth = 32;
+                const hpBarHeight = 4;
+                const hpPercentage = opponent.hp / opponent.maxHp;
+                
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                ctx.fillRect(screenX - hpBarWidth/2, screenY - 25, hpBarWidth, hpBarHeight);
+                
+                ctx.fillStyle = hpPercentage > 0.5 ? '#00ff00' : hpPercentage > 0.25 ? '#ffff00' : '#ff0000';
+                ctx.fillRect(screenX - hpBarWidth/2, screenY - 25, hpBarWidth * hpPercentage, hpBarHeight);
+                
+                // İsim
+                ctx.fillStyle = '#ffffff';
+                ctx.font = '12px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(opponent.name, screenX, screenY - 28);
+                ctx.textAlign = 'left';
+            }
+        }
+
+        function drawMinimap() {
+            const w = 148;
+            const h = 96;
+            const x = canvas.width - w - 16;
+            const y = canvas.height - h - 16;
+
+            ctx.fillStyle = 'rgba(7, 15, 29, 0.68)';
+            ctx.fillRect(x, y, w, h);
+            ctx.strokeStyle = 'rgba(157, 210, 255, 0.45)';
+            ctx.strokeRect(x, y, w, h);
+
+            const px = x + (player.x / world.width) * w;
+            const py = y + (player.y / world.height) * h;
+            const cx = x + (world.camp.x / world.width) * w;
+            const cy = y + (world.camp.y / world.height) * h;
+
+            ctx.fillStyle = '#7ec7ff';
+            ctx.fillRect(cx - 2, cy - 2, 4, 4);
+            ctx.fillStyle = '#ffe08e';
+            ctx.beginPath();
+            ctx.arc(px, py, 3, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#ff8f79';
+            for (const enemy of state.enemies) {
+                if (distance(enemy, player) > 350) continue;
+                const ex = x + (enemy.x / world.width) * w;
+                const ey = y + (enemy.y / world.height) * h;
+                ctx.fillRect(ex - 1, ey - 1, 3, 3);
+            }
+        }
+
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawGround();
+            drawCamp();
+            drawObstacles();
+            drawEnemies();
+            drawPvPOpponents();
+            drawProjectiles();
+            drawPlayer();
+            drawPets();
+            drawParticles();
+            drawFloatingText();
+            drawMinimap();
+            drawWeatherOverlay();
+            drawDayNightOverlay();
+        }
+
+        function updateUI() {
+            ui.level.textContent = player.level;
+            ui.gold.textContent = player.gold;
+            ui.potion.textContent = player.potions;
+
+            ui.hpText.textContent = Math.floor(player.hp) + ' / ' + player.maxHp;
+            ui.manaText.textContent = Math.floor(player.mana) + ' / ' + player.maxMana;
+            ui.xpText.textContent = Math.floor(player.xp) + ' / ' + player.xpNeed;
+
+            ui.hpFill.style.width = (player.hp / player.maxHp) * 100 + '%';
+            ui.manaFill.style.width = (player.mana / player.maxMana) * 100 + '%';
+            ui.xpFill.style.width = (player.xp / player.xpNeed) * 100 + '%';
+
+            ui.questProgress.textContent = quest.kills + ' / ' + quest.need;
+            ui.zoneText.textContent = distance(player, world.camp) < world.camp.r ? 'Kamp Alani' : 'Moradon Ova';
+            ui.waveText.textContent = state.wave;
+
+            if (state.msgTimer > 0) {
+                state.msgTimer -= 1;
+            } else {
+                ui.messagePanel.textContent = distance(player, world.camp) < world.camp.r
+                    ? 'Kamp alaninda HP yenilenir, dusmanlar saldiramaz.'
+                    : 'Dalgayi temizle, gorev ilerlet ve daha guclu ol.';
+            }
+        }
+
+        function gameLoop() {
+            updatePlayer();
+            updateEnemies();
+            updateProjectiles();
+            updateParticles();
+            updateFloatingTexts();
+            updatePets();
+            updateWeather();
+            updatePvP();
+            updateGameEvent();
+            updateAutoBattle();
+            updateFPS();
+            autoSave();
+            optimizeGraphics();
+            updateCamera();
+            updateUI();
+            render();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function respawnPlayer() {
+            player.x = world.camp.x;
+            player.y = world.camp.y;
+            player.hp = player.maxHp;
+            player.mana = player.maxMana;
+            player.alive = true;
+            player.invulnUntil = performance.now() + 900;
+            state.gameOver = false;
+            state.enemies.length = 0;
+            state.projectiles.length = 0;
+            state.wave = Math.max(1, state.wave - 1);
+            ui.deathScreen.style.display = 'none';
+            spawnWave();
+            pushMessage('Kamp alaninda dirildin. Savasa geri don.');
+        }
+
+        window.addEventListener('keydown', (e) => {
+            const key = e.key.toLowerCase();
+            state.keys[key] = true;
+
+            if (key === ' ') {
+                e.preventDefault();
+                meleeSlash();
+            }
+            if (key === 'q') {
+                tryUsePotion();
+            }
+            if (key === 'i') {
+                e.preventDefault();
+                toggleInventory();
+            }
+            if (key === 'e') {
+                // NPC etkileşimi
+                for (const npc of state.npcs) {
+                    if (npc.active) {
+                        interactWithNPC(npc);
+                        break;
+                    }
+                }
+            }
+            
+            // Skill kontrolleri (1-4 tuşları)
+            if (key === '1') castSkill('FIREBALL', state.mouseWorld.x, state.mouseWorld.y);
+            if (key === '2') castSkill('LIGHTNING', state.mouseWorld.x, state.mouseWorld.y);
+            if (key === '3') castSkill('HEAL', player.x, player.y);
+            if (key === '4') castSkill('BLIZZARD', state.mouseWorld.x, state.mouseWorld.y);
+            
+            // Önceki kontroller
+            if (key === 'm') {
+                if (state.mount) {
+                    mount(state.mount.type === 'HORSE' ? 'HORSE' : 
+                          state.mount.type === 'WOLF_MOUNT' ? 'WOLF_MOUNT' :
+                          state.mount.type === 'EAGLE_MOUNT' ? 'EAGLE_MOUNT' : 'DRAGON_MOUNT');
+                } else {
+                    // İlk bineği çağır
+                    if (player.level >= 3) mount('HORSE');
+                    else pushMessage('Binek için 3. seviye gerekli!');
+                }
+            }
+            if (key === 'g') {
+                if (!state.guild) {
+                    if (player.level >= 5) {
+                        joinGuild('WARRIORS'); // Varsayılan lonca
+                    } else {
+                        pushMessage('Lonca için 5. seviye gerekli!');
+                    }
+                } else {
+                    pushMessage('Zaten ' + state.guild.name + ' loncasındasın!');
+                }
+            }
+            if (key === 'c') {
+                if (!state.craftingOpen) {
+                    state.craftingOpen = true;
+                    pushMessage('Crafting menüsü açıldı! (Basit implementasyon)');
+                } else {
+                    state.craftingOpen = false;
+                }
+            }
+            if (key === 'p') {
+                if (player.petInventory.length > 0) {
+                    const firstPet = player.petInventory[0];
+                    summonPet(firstPet.key);
+                } else if (!state.activePet) {
+                    // Başlangıç pet'i ver
+                    if (player.level >= 5) {
+                        player.petInventory.push({ key: 'WOLF', name: 'Kurt Yavrusu' });
+                        pushMessage('Kurt yavrusu kazandın! P ile çağırabilirsin.');
+                    } else {
+                        pushMessage('Pet için 5. seviye gerekli!');
+                    }
+                } else {
+                    // Aktif pet'i geri ekle
+                    player.petInventory.push(state.activePet);
+                    state.activePet = null;
+                    pushMessage('Pet geri çağrıldı!');
+                }
+            }
+            if (key === 'h') {
+                if (!player.housing.house) {
+                    if (player.gold >= 1000) {
+                        buyHouse('basic');
+                    } else {
+                        pushMessage('Ev için 1000 altın gerekli!');
+                    }
+                } else {
+                    enterHouse();
+                }
+            }
+            
+            // Yeni kontroller
+            if (key === 'j') {
+                if (!state.pvp.inArena) {
+                    enterPvPArena('ARENA_1V1');
+                } else {
+                    exitPvPArena();
+                }
+            }
+            if (key === 'k') {
+                if (state.party.members.length === 0) {
+                    createParty('BASIC');
+                } else {
+                    leaveParty();
+                }
+            }
+            if (key === 't') {
+                const message = prompt('Chat mesajı:');
+                if (message) {
+                    sendChatMessage(message, 'GLOBAL');
+                }
+            }
+            if (key === 'l') {
+                if (!state.market.isOpen) {
+                    openMarket();
+                } else {
+                    state.market.isOpen = false;
+                }
+            }
         });
+
+        window.addEventListener('keyup', (e) => {
+            state.keys[e.key.toLowerCase()] = false;
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const screenX = (e.clientX - rect.left) * scaleX;
+            const screenY = (e.clientY - rect.top) * scaleY;
+            state.mouseWorld.x = screenX + state.camera.x;
+            state.mouseWorld.y = screenY + state.camera.y;
+        });
+
+        canvas.addEventListener('click', () => {
+            castIceBolt(state.mouseWorld.x, state.mouseWorld.y);
+        });
+
+        ui.respawnBtn.addEventListener('click', respawnPlayer);
+
+        function init() {
+            // Canvas boyutlarını ayarla
+            resizeCanvas();
+            
+            // Loading ekranını gizle
+            setTimeout(() => {
+                const loadingScreen = document.getElementById('loadingScreen');
+                if (loadingScreen) {
+                    loadingScreen.style.opacity = '0';
+                    setTimeout(() => loadingScreen.remove(), 500);
+                }
+            }, 1500);
+            
+            generateObstacles();
+            spawnWave();
+            
+            // NPC'leri spawn et
+            spawnNPC('MERCHANT');
+            spawnNPC('QUEST_GIVER');
+            spawnNPC('BLACKSMITH');
+            
+            // Başlangıç itemları
+            addItemToInventory(createItem('SWORD'));
+            addItemToInventory(createItem('LEATHER_ARMOR'));
+            addItemToInventory(createItem('HEALTH_POTION', 3));
+            addItemToInventory(createItem('MANA_POTION', 2));
+            
+            // Başlangıç malzemeleri
+            addMaterial('IRON_ORE', 5);
+            addMaterial('WOOD', 3);
+            addMaterial('HERB', 2);
+            
+            // Başlangıç skill point'i
+            player.skillPoints = 2;
+            
+            // Weather sistemini başlat
+            changeWeather();
+            
+            // Event sistemini başlat
+            startGameEvent('DOUBLE_XP');
+            
+            // Mobile kontrolleri başlat
+            initMobileControls();
+            
+            // Kayıtlı oyunu yükle
+            if (localStorage.getItem('knightOnline2DSave')) {
+                setTimeout(() => {
+                    if (confirm('Kayıtlı oyun bulundu. Yüklemek ister misin?')) {
+                        loadGame();
+                    } else {
+                        // Tutorial'ı başlat
+                        setTimeout(showTutorial, 2000);
+                    }
+                }, 2000);
+            } else {
+                // Tutorial'ı başlat
+                setTimeout(showTutorial, 2000);
+            }
+            
+            pushMessage('Knight Online 2D Mobile\'a hoş geldin! 📱');
+            pushMessage('Joystick ile hareket, butonlar ile savaş!');
+            
+            gameLoop();
+        }
+
+        function resizeCanvas() {
+            const container = document.getElementById('gameContainer');
+            const maxWidth = window.innerWidth * 0.9;
+            const maxHeight = window.innerHeight * 0.8;
+            
+            // Canvas boyutlarını hesapla
+            const aspectRatio = 16 / 9;
+            let width = maxWidth;
+            let height = width / aspectRatio;
+            
+            if (height > maxHeight) {
+                height = maxHeight;
+                width = height * aspectRatio;
+            }
+            
+            canvas.width = 800;
+            canvas.height = 600;
+            canvas.style.width = width + 'px';
+            canvas.style.height = height + 'px';
+        }
+
+        function initMobileControls() {
+            // Joystick kontrolü
+            const joystick = document.getElementById('joystick');
+            const joystickKnob = document.getElementById('joystickKnob');
+            
+            joystick.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                mobileState.joystickActive = true;
+                handleJoystickMove(e.touches[0]);
+            });
+            
+            joystick.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                if (mobileState.joystickActive) {
+                    handleJoystickMove(e.touches[0]);
+                }
+            });
+            
+            joystick.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                mobileState.joystickActive = false;
+                mobileState.joystickX = 0;
+                mobileState.joystickY = 0;
+                joystickKnob.style.transform = 'translate(0, 0)';
+            });
+            
+            // Skill butonları
+            document.querySelectorAll('.skillButton').forEach(button => {
+                button.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    const skillNum = button.dataset.skill;
+                    useSkill(skillNum);
+                });
+            });
+            
+            // Mobil kontrol butonları
+            document.querySelectorAll('.mobileButton').forEach(button => {
+                button.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    const action = button.dataset.action;
+                    handleMobileAction(action);
+                });
+            });
+            
+            // Menü kontrolü
+            const menuButton = document.querySelector('.menuButton');
+            const sideMenu = document.getElementById('sideMenu');
+            const menuClose = document.querySelector('.menuClose');
+            
+            menuButton.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                sideMenu.classList.toggle('open');
+                vibrate(50);
+            });
+            
+            menuClose.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                sideMenu.classList.remove('open');
+            });
+            
+            // Menü item'ları
+            document.querySelectorAll('.menuItem').forEach(item => {
+                item.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    const action = item.dataset.action;
+                    handleMenuAction(action);
+                    sideMenu.classList.remove('open');
+                    vibrate(50);
+                });
+            });
+            
+            // Canvas tıklama (skill hedefleme)
+            canvas.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                const touch = e.touches[0];
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+                
+                const screenX = (touch.clientX - rect.left) * scaleX;
+                const screenY = (touch.clientY - rect.top) * scaleY;
+                
+                state.mouseWorld.x = screenX + state.camera.x;
+                state.mouseWorld.y = screenY + state.camera.y;
+                
+                // Buz mermisi at
+                castIceBolt(state.mouseWorld.x, state.mouseWorld.y);
+                vibrate(30);
+            });
+            
+            // Window resize
+            window.addEventListener('resize', resizeCanvas);
+        }
+
+        function handleJoystickMove(touch) {
+            const joystick = document.getElementById('joystick');
+            const joystickKnob = document.getElementById('joystickKnob');
+            const rect = joystick.getBoundingClientRect();
+            
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            
+            let deltaX = touch.clientX - centerX;
+            let deltaY = touch.clientY - centerY;
+            
+            const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+            const maxDistance = rect.width / 2 - 20;
+            
+            if (distance > maxDistance) {
+                deltaX = (deltaX / distance) * maxDistance;
+                deltaY = (deltaY / distance) * maxDistance;
+            }
+            
+            joystickKnob.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+            
+            // Joystick değerlerini normalize et
+            mobileState.joystickX = deltaX / maxDistance;
+            mobileState.joystickY = deltaY / maxDistance;
+            
+            // Klavye simülasyonu
+            state.keys['w'] = mobileState.joystickY < -0.3;
+            state.keys['s'] = mobileState.joystickY > 0.3;
+            state.keys['a'] = mobileState.joystickX < -0.3;
+            state.keys['d'] = mobileState.joystickX > 0.3;
+        }
+
+        function useSkill(skillNum) {
+            const skills = ['FIREBALL', 'LIGHTNING', 'HEAL', 'BLIZZARD'];
+            const skillKey = skills[skillNum - 1];
+            
+            if (skillKey) {
+                if (skillKey === 'HEAL') {
+                    castSkill(skillKey, player.x, player.y);
+                } else {
+                    castSkill(skillKey, state.mouseWorld.x, state.mouseWorld.y);
+                }
+                vibrate(40);
+            }
+        }
+
+        function handleMobileAction(action) {
+            switch (action) {
+                case 'attack':
+                    meleeSlash();
+                    vibrate(60);
+                    break;
+                case 'potion':
+                    tryUsePotion();
+                    vibrate(50);
+                    break;
+                case 'inventory':
+                    toggleInventory();
+                    vibrate(30);
+                    break;
+            }
+        }
+
+        function handleMenuAction(action) {
+            switch (action) {
+                case 'save':
+                    saveGame();
+                    break;
+                case 'load':
+                    loadGame();
+                    break;
+                case 'settings':
+                    toggleSettings();
+                    break;
+                case 'tutorial':
+                    mobileState.currentTutorial = 0;
+                    showTutorial();
+                    break;
+                case 'pvp':
+                    if (!state.pvp.inArena) {
+                        enterPvPArena('ARENA_1V1');
+                    } else {
+                        exitPvPArena();
+                    }
+                    break;
+                case 'party':
+                    if (state.party.members.length === 0) {
+                        createParty('BASIC');
+                    } else {
+                        leaveParty();
+                    }
+                    break;
+                case 'auto-battle':
+                    toggleAutoBattle();
+                    break;
+                case 'market':
+                    if (!state.market.isOpen) {
+                        openMarket();
+                    } else {
+                        state.market.isOpen = false;
+                    }
+                    break;
+                case 'craft':
+                    if (!state.craftingOpen) {
+                        state.craftingOpen = true;
+                        pushMessage('Crafting menüsü açıldı!');
+                    } else {
+                        state.craftingOpen = false;
+                    }
+                    break;
+                case 'auction':
+                    pushMessage('Auction House yakında!');
+                    break;
+                case 'pet':
+                    if (player.petInventory.length > 0) {
+                        const firstPet = player.petInventory[0];
+                        summonPet(firstPet.key);
+                    } else {
+                        pushMessage('Pet\'in yok!');
+                    }
+                    break;
+                case 'mount':
+                    if (player.level >= 3) {
+                        mount('HORSE');
+                    } else {
+                        pushMessage('Binek için 3. seviye gerekli!');
+                    }
+                    break;
+                case 'house':
+                    if (!player.housing.house) {
+                        if (player.gold >= 1000) {
+                            buyHouse('basic');
+                        } else {
+                            pushMessage('Ev için 1000 altın gerekli!');
+                        }
+                    } else {
+                        enterHouse();
+                    }
+                    break;
+                case 'guild':
+                    if (!state.guild) {
+                        if (player.level >= 5) {
+                            joinGuild('WARRIORS');
+                        } else {
+                            pushMessage('Lonca için 5. seviye gerekli!');
+                        }
+                    } else {
+                        pushMessage('Zaten loncadasın!');
+                    }
+                    break;
+                case 'chat':
+                    const message = prompt('Chat mesajı:');
+                    if (message) {
+                        sendChatMessage(message, 'GLOBAL');
+                    }
+                    break;
+                case 'friends':
+                    pushMessage('Arkadaş sistemi yakında!');
+                    break;
+            }
+        }
+
+        function toggleSettings() {
+            // Settings menüsü (basit implementasyon)
+            const settings = [
+                'Grafik: ' + MOBILE_SETTINGS.graphics,
+                'Parçacıklar: ' + (MOBILE_SETTINGS.particles ? 'Açık' : 'Kapalı'),
+                'Hava: ' + (MOBILE_SETTINGS.weather ? 'Açık' : 'Kapalı'),
+                'Titreşim: ' + (MOBILE_SETTINGS.vibrationEnabled ? 'Açık' : 'Kapalı'),
+                'FPS Göster: ' + (MOBILE_SETTINGS.showFPS ? 'Açık' : 'Kapalı')
+            ];
+            
+            pushMessage('Ayarlar: ' + settings.join(' | '));
+        }
+
+        init();
     </script>
 </body>
 </html>
