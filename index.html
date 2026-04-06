@@ -37,6 +37,122 @@
             position: fixed;
             width: 100%;
             height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transform-origin: center center;
+        }
+
+        @media (orientation: landscape) {
+            body {
+                transform: rotate(0deg);
+            }
+            
+            .shell {
+                width: min(100vw - 24px, 1400px);
+                height: min(100vh - 24px, 800px);
+                max-width: 95vw;
+                max-height: 95vh;
+            }
+            
+            #gameCanvas {
+                width: 100%;
+                height: 100%;
+                max-width: 1200px;
+                max-height: 600px;
+            }
+            
+            .mobile-controls {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 10px;
+                height: 100px;
+            }
+            
+            .joystick-container {
+                position: relative;
+                width: 120px;
+                height: 120px;
+                left: 20px;
+                top: 50%;
+                transform: translateY(-50%);
+            }
+            
+            .skill-buttons {
+                position: absolute;
+                right: 20px;
+                top: 50%;
+                transform: translateY(-50%);
+                display: grid;
+                grid-template-columns: repeat(2, 60px);
+                grid-template-rows: repeat(2, 60px);
+                gap: 10px;
+            }
+            
+            .action-buttons {
+                position: absolute;
+                right: 140px;
+                top: 50%;
+                transform: translateY(-50%);
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+
+        @media (orientation: portrait) {
+            body {
+                transform: rotate(0deg);
+            }
+            
+            .shell {
+                width: min(100vw - 24px, 600px);
+                height: min(100vh - 24px, 900px);
+                max-width: 95vw;
+                max-height: 95vh;
+            }
+            
+            #gameCanvas {
+                width: 100%;
+                height: 70%;
+                max-width: 500px;
+                max-height: 600px;
+            }
+            
+            .mobile-controls {
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+                padding: 10px;
+                height: 30%;
+            }
+            
+            .joystick-container {
+                position: relative;
+                width: 100px;
+                height: 100px;
+                left: 50%;
+                transform: translateX(-50%);
+            }
+            
+            .skill-buttons {
+                position: relative;
+                display: grid;
+                grid-template-columns: repeat(4, 50px);
+                grid-template-rows: repeat(2, 50px);
+                gap: 8px;
+                justify-content: center;
+                margin: 10px 0;
+            }
+            
+            .action-buttons {
+                position: relative;
+                display: flex;
+                justify-content: center;
+                gap: 10px;
+                margin: 10px 0;
+            }
         }
 
         .shell {
@@ -1597,6 +1713,1088 @@
             }
         };
 
+        const ULTIMATE_SYSTEMS = {
+            INFINITY_MODE: {
+                name: 'Infinity Mode',
+                description: 'Sonsuz güç ve yetenekler',
+                features: {
+                    INFINITE_SKILLS: {
+                        unlocked: true,
+                        maxLevel: 999,
+                        skillPoints: 999999,
+                        masteryBonus: 10.0
+                    },
+                    INFINITE_STATS: {
+                        strength: 999999,
+                        defense: 999999,
+                        magic: 999999,
+                        speed: 999999,
+                        health: 999999,
+                        mana: 999999
+                    },
+                    INFINITE_INVENTORY: {
+                        slots: 9999,
+                        unlimitedStack: true,
+                        autoSort: true,
+                        instantAccess: true
+                    },
+                    INFINITE_GOLD: {
+                        amount: 999999999,
+                        multiplier: 1000.0,
+                        passiveIncome: 999999,
+                        autoCollect: true
+                    }
+                }
+            },
+            DIMENSIONAL_WARPS: {
+                name: 'Dimensional Warps',
+                description: 'Çoklu evrenler ve boyutlar',
+                dimensions: {
+                    PRIME: {
+                        name: 'Prime Dimension',
+                        difficulty: 1.0,
+                        rewards: 1.0,
+                        enemies: ['GOBLIN', 'WOLF', 'ORC'],
+                        boss: 'DRAGON_LORD'
+                    },
+                    SHADOW: {
+                        name: 'Shadow Realm',
+                        difficulty: 2.5,
+                        rewards: 3.0,
+                        enemies: ['SHADOW_BEAST', 'DARK_WARRIOR', 'VOID_WALKER'],
+                        boss: 'SHADOW_EMPEROR'
+                    },
+                    CELESTIAL: {
+                        name: 'Celestial Plane',
+                        difficulty: 5.0,
+                        rewards: 10.0,
+                        enemies: ['ANGEL_WARRIOR', 'DIVINE_GUARDIAN', 'ARCHANGEL'],
+                        boss: 'CELESTIAL_OVERLORD'
+                    },
+                    ABYSS: {
+                        name: 'Abyssal Depths',
+                        difficulty: 10.0,
+                        rewards: 50.0,
+                        enemies: ['ABYSSAL_DEMON', 'HELL_BEAST', 'SOUL_REAPER'],
+                        boss: 'ABYSSAL_TITAN'
+                    },
+                    QUANTUM: {
+                        name: 'Quantum Realm',
+                        difficulty: 25.0,
+                        rewards: 250.0,
+                        enemies: ['QUANTUM_ENTITY', 'REALITY_BENDER', 'TIME_WRAITH'],
+                        boss: 'QUANTUM_OVERSEER'
+                    },
+                    VOID: {
+                        name: 'The Void',
+                        difficulty: 100.0,
+                        rewards: 1000.0,
+                        enemies: ['VOID_ENTITY', 'NOTHINGNESS', 'VOID_LORD'],
+                        boss: 'VOID_MASTER'
+                    }
+                }
+            },
+            REALITY_MANIPULATION: {
+                name: 'Reality Manipulation',
+                description: 'Gerçekliği manipüle etme güçleri',
+                powers: {
+                    TIME_CONTROL: {
+                        name: 'Time Control',
+                        cooldown: 1000,
+                        duration: 10000,
+                        effects: ['TIME_FREEZE', 'TIME_ACCELERATE', 'TIME_REVERSE'],
+                        cost: 100
+                    },
+                    REALITY_BEND: {
+                        name: 'Reality Bend',
+                        cooldown: 5000,
+                        duration: 30000,
+                        effects: ['GRAVITY_REVERSE', 'PHYSICS_BREAK', 'REALITY_WARP'],
+                        cost: 500
+                    },
+                    DIMENSION_SHIFT: {
+                        name: 'Dimension Shift',
+                        cooldown: 10000,
+                        duration: 60000,
+                        effects: ['PHASE_SHIFT', 'DIMENSION_TRAVEL', 'REALITY_OVERLAP'],
+                        cost: 1000
+                    },
+                    EXISTENCE_ERASE: {
+                        name: 'Existence Erase',
+                        cooldown: 60000,
+                        duration: 5000,
+                        effects: ['ENTITY_ERASE', 'MEMORY_WIPE', 'REALITY_RESET'],
+                        cost: 10000
+                    }
+                }
+            },
+            COSMIC_ENTITIES: {
+                name: 'Cosmic Entities',
+                description: 'Evrensel varlıklar ve tanrılar',
+                entities: {
+                    TIME_KEEPER: {
+                        name: 'Time Keeper',
+                        domain: 'Time',
+                        power: 1000000,
+                        abilities: ['TIME_STOP', 'TIME_REWIND', 'TIME_FORESEE'],
+                        location: 'TEMPLE_OF_TIME'
+                    },
+                    REALITY_WEAVER: {
+                        name: 'Reality Weaver',
+                        domain: 'Reality',
+                        power: 2000000,
+                        abilities: ['REALITY_CREATE', 'REALITY_DESTROY', 'REALITY_RESHAPE'],
+                        location: 'REALITY_NEXUS'
+                    },
+                    VOID_MASTER: {
+                        name: 'Void Master',
+                        domain: 'Nothingness',
+                        power: 5000000,
+                        abilities: ['VOID_CREATE', 'VOID_ERASE', 'VOID_CONTROL'],
+                        location: 'VOID_HEART'
+                    },
+                    COSMIC_CREATOR: {
+                        name: 'Cosmic Creator',
+                        domain: 'Creation',
+                        power: 10000000,
+                        abilities: ['UNIVERSE_CREATE', 'LIFE_CREATE', 'REALITY_MANIFEST'],
+                        location: 'CREATION_FORGE'
+                    }
+                }
+            },
+            TRANSCENDENCE: {
+                name: 'Transcendence',
+                description: 'Ölümsüzlük ve ötesi',
+                stages: {
+                    MORTAL: {
+                        name: 'Mortal',
+                        requirements: { level: 1, power: 0 },
+                        abilities: ['BASIC_COMBAT', 'ITEM_USE'],
+                        lifespan: 'normal'
+                    },
+                    IMMORTAL: {
+                        name: 'Immortal',
+                        requirements: { level: 100, power: 10000 },
+                        abilities: ['REGENERATION', 'AGE_IMMUNITY', 'DIVINE_PROTECTION'],
+                        lifespan: 'infinite'
+                    },
+                    DEMIGOD: {
+                        name: 'Demigod',
+                        requirements: { level: 1000, power: 1000000 },
+                        abilities: ['DIVINE_POWER', 'REALITY_INFLUENCE', 'DIMENSION_TRAVEL'],
+                        lifespan: 'eternal'
+                    },
+                    GOD: {
+                        name: 'God',
+                        requirements: { level: 10000, power: 100000000 },
+                        abilities: ['REALITY_CONTROL', 'TIME_MANIPULATION', 'CREATION'],
+                        lifespan: 'transcendent'
+                    },
+                    COSMIC_BEING: {
+                        name: 'Cosmic Being',
+                        requirements: { level: 100000, power: 10000000000 },
+                        abilities: ['MULTIVERSE_CONTROL', 'EXISTENCE_MANAGEMENT', 'INFINITE_POWER'],
+                        lifespan: 'beyond_time'
+                    },
+                    ABSOLUTE: {
+                        name: 'Absolute',
+                        requirements: { level: 1000000, power: 'infinite' },
+                        abilities: ['OMNIPOTENCE', 'OMNISCIENCE', 'OMNIPRESENCE'],
+                        lifespan: 'absolute'
+                    }
+                }
+            },
+            QUANTUM_MECHANICS: {
+                name: 'Quantum Mechanics',
+                description: 'Kuantum mekanikleri ve paralel evrenler',
+                features: {
+                    QUANTUM_ENTANGLEMENT: {
+                        description: 'Parçacıkların bağlantısı',
+                        effect: 'INSTANT_COMMUNICATION',
+                        range: 'infinite',
+                        power: 1000
+                    },
+                    SUPERPOSITION: {
+                        description: 'Birden fazla durumda var olma',
+                        effect: 'MULTIPLE_REALITIES',
+                        states: 'infinite',
+                        stability: 0.95
+                    },
+                    QUANTUM_TUNNELING: {
+                        description: 'Engellerden geçme',
+                        effect: 'PHASE_THROUGH',
+                        probability: 0.8,
+                        energy: 100
+                    },
+                    WAVE_FUNCTION: {
+                        description: 'Dalga fonksiyonu manipülasyonu',
+                        effect: 'PROBABILITY_CONTROL',
+                        precision: 0.99,
+                        complexity: 'quantum'
+                    }
+                }
+            },
+            MULTIVERSE_TRAVEL: {
+                name: 'Multiverse Travel',
+                description: 'Çoklu evrenler arası seyahat',
+                universes: {
+                    ALPHA: {
+                        name: 'Alpha Universe',
+                        description: 'Ana evren',
+                        difficulty: 1.0,
+                        rewards: 1.0,
+                        special: 'HOME_UNIVERSE'
+                    },
+                    BETA: {
+                        name: 'Beta Universe',
+                        description: 'Alternatif zaman çizgisi',
+                        difficulty: 2.0,
+                        rewards: 2.5,
+                        special: 'TIME_DIVERGENT'
+                    },
+                    GAMMA: {
+                        name: 'Gamma Universe',
+                        description: 'Farklı fizik kuralları',
+                        difficulty: 5.0,
+                        rewards: 10.0,
+                        special: 'PHYSICS_ALTERED'
+                    },
+                    DELTA: {
+                        name: 'Delta Universe',
+                        description: 'Ters evren',
+                        difficulty: 10.0,
+                        rewards: 50.0,
+                        special: 'INVERTED_REALITY'
+                    },
+                    OMEGA: {
+                        name: 'Omega Universe',
+                        description: 'Son evren',
+                        difficulty: 100.0,
+                        rewards: 1000.0,
+                        special: 'ULTIMATE_DESTINATION'
+                    }
+                }
+            },
+            REALITY_CODING: {
+                name: 'Reality Coding',
+                description: 'Gerçekliği kodlama ve programlama',
+                languages: {
+                    REALITY_SCRIPT: {
+                        name: 'Reality Script',
+                        syntax: 'reality.based',
+                        power: 'reality_manipulation',
+                        complexity: 'divine'
+                    },
+                    QUANTUM_CODE: {
+                        name: 'Quantum Code',
+                        syntax: 'quantum.based',
+                        power: 'probability_control',
+                        complexity: 'advanced'
+                    },
+                    COSMIC_CPP: {
+                        name: 'Cosmic C++',
+                        syntax: 'cosmic.cpp',
+                        power: 'universe_creation',
+                        complexity: 'transcendent'
+                    },
+                    DIVINE_PYTHON: {
+                        name: 'Divine Python',
+                        syntax: 'divine.py',
+                        power: 'omnipotence',
+                        complexity: 'absolute'
+                    }
+                }
+            },
+            EXISTENCE_MANAGEMENT: {
+                name: 'Existence Management',
+                description: 'Varlık yönetimi ve kontrolü',
+                features: {
+                    LIFE_CREATION: {
+                        name: 'Life Creation',
+                        requirements: { power: 1000000, knowledge: 'biology' },
+                        process: 'DNA_CODING',
+                        result: 'NEW_LIFEFORM'
+                    },
+                    REALITY_EDITING: {
+                        name: 'Reality Editing',
+                        requirements: { power: 10000000, knowledge: 'physics' },
+                        process: 'REALITY_MODIFICATION',
+                        result: 'ALTERED_REALITY'
+                    },
+                    TIME_MANAGEMENT: {
+                        name: 'Time Management',
+                        requirements: { power: 100000000, knowledge: 'temporal' },
+                        process: 'TIME_MANIPULATION',
+                        result: 'CONTROLLED_TIME'
+                    },
+                    EXISTENCE_DELETION: {
+                        name: 'Existence Deletion',
+                        requirements: { power: 'infinite', knowledge: 'void' },
+                        process: 'ERASE_FROM_EXISTENCE',
+                        result: 'NON_EXISTENCE'
+                    }
+                }
+            }
+        };
+
+        const COSMIC_GRAPHICS = {
+            VISUAL_EFFECTS: {
+                QUANTUM_PARTICLES: {
+                    name: 'Quantum Particles',
+                    description: 'Kuantum parçacık efektleri',
+                    particles: 1000,
+                    behavior: 'quantum_superposition',
+                    color: '#00FFFF',
+                    glow: true,
+                    size: [1, 5],
+                    lifetime: 5000
+                },
+                REALITY_WARP: {
+                    name: 'Reality Warp',
+                    description: 'Gerçeklik bozulma efektleri',
+                    effect: 'space_time_distortion',
+                    intensity: 10.0,
+                    color: '#FF00FF',
+                    duration: 3000
+                },
+                DIMENSIONAL_RIFT: {
+                    name: 'Dimensional Rift',
+                    description: 'Boyut aralığı efektleri',
+                    rifts: 5,
+                    stability: 0.7,
+                    color: '#00FF00',
+                    size: [50, 200]
+                },
+                COSMIC_AURA: {
+                    name: 'Cosmic Aura',
+                    description: 'Evrensel aura efektleri',
+                    layers: 10,
+                    opacity: 0.8,
+                    colors: ['#FFD700', '#00FFFF', '#FF00FF'],
+                    pulse: true
+                },
+                VOID_CORRUPTION: {
+                    name: 'Void Corruption',
+                    description: 'Bozulma efektleri',
+                    corruption: 0.9,
+                    spread: 'exponential',
+                    color: '#000000',
+                    effect: 'reality_decay'
+                },
+                TIME_DISTORTION: {
+                    name: 'Time Distortion',
+                    description: 'Zaman bozulma efektleri',
+                    distortion: 5.0,
+                    direction: 'all',
+                    color: '#FFFFFF',
+                    effect: 'temporal_anomaly'
+                }
+            },
+            PARTICLE_SYSTEMS: {
+                GALAXY_STARS: {
+                    name: 'Galaxy Stars',
+                    count: 10000,
+                    behavior: 'orbital',
+                    colors: ['#FFFFFF', '#FFFF00', '#00FFFF'],
+                    size: [0.5, 2],
+                    twinkle: true
+                },
+                NEBULA_CLOUDS: {
+                    name: 'Nebula Clouds',
+                    count: 5000,
+                    behavior: 'floating',
+                    colors: ['#FF00FF', '#00FF00', '#0000FF'],
+                    size: [5, 50],
+                    opacity: 0.6
+                },
+                COSMIC_DUST: {
+                    name: 'Cosmic Dust',
+                    count: 20000,
+                    behavior: 'drifting',
+                    colors: ['#8B4513', '#D2691E', '#DEB887'],
+                    size: [0.1, 1],
+                    density: 'high'
+                },
+                    QUANTUM_FLUCTUATIONS: {
+                    name: 'Quantum Fluctuations',
+                    count: 50000,
+                    behavior: 'random',
+                    colors: ['#00FFFF', '#FF00FF', '#FFFF00'],
+                    size: [0.1, 0.5],
+                    quantum: true
+                },
+                DIMENSIONAL_ENERGY: {
+                    name: 'Dimensional Energy',
+                    count: 1000,
+                    behavior: 'flowing',
+                    colors: ['#00FF00', '#FF0000', '#0000FF'],
+                    size: [2, 10],
+                    power: 'dimensional'
+                }
+            },
+            LIGHTING_SYSTEMS: {
+                COSMIC_LIGHTING: {
+                    name: 'Cosmic Lighting',
+                    sources: ['stars', 'nebulae', 'galaxies'],
+                    intensity: 'dynamic',
+                    color: 'full_spectrum',
+                    shadows: 'realistic'
+                },
+                QUANTUM_ILLUMINATION: {
+                    name: 'Quantum Illumination',
+                    behavior: 'probabilistic',
+                    intensity: 'variable',
+                    color: 'quantum_spectrum',
+                    effects: ['superposition', 'entanglement']
+                },
+                REALITY_GLOW: {
+                    name: 'Reality Glow',
+                    source: 'existence',
+                    intensity: 'infinite',
+                    color: 'divine',
+                    effects: ['transcendence', 'enlightenment']
+                }
+            },
+            SHADER_EFFECTS: {
+                REALITY_SHADER: {
+                    name: 'Reality Shader',
+                    vertex: 'reality_vertex.glsl',
+                    fragment: 'reality_fragment.glsl',
+                    effects: ['warp', 'distort', 'manipulate']
+                },
+                QUANTUM_SHADER: {
+                    name: 'Quantum Shader',
+                    vertex: 'quantum_vertex.glsl',
+                    fragment: 'quantum_fragment.glsl',
+                    effects: ['superposition', 'entanglement', 'probability']
+                },
+                COSMIC_SHADER: {
+                    name: 'Cosmic Shader',
+                    vertex: 'cosmic_vertex.glsl',
+                    fragment: 'cosmic_fragment.glsl',
+                    effects: ['universe', 'multiverse', 'transcendence']
+                }
+            }
+        };
+
+        const TRANSCENDENT_GAMEPLAY = {
+            INFINITE_PROGRESSION: {
+                name: 'Infinite Progression',
+                description: 'Sonsuz ilerleme sistemi',
+                systems: {
+                    INFINITE_LEVELS: {
+                        maxLevel: 'infinite',
+                        scaling: 'exponential',
+                        rewards: 'unlimited',
+                        challenges: 'dynamic'
+                    },
+                    COSMIC_SKILLS: {
+                        categories: ['divine', 'transcendent', 'absolute', 'omnipotent'],
+                        maxSkills: 'infinite',
+                        power: 'reality_bending',
+                        learning: 'instant'
+                    },
+                    MULTIVERSE_EXPLORATION: {
+                        universes: 'infinite',
+                        diversity: 'absolute',
+                        challenges: 'cosmic',
+                        rewards: 'transcendent'
+                    },
+                    REALITY_MASTERY: {
+                        aspects: ['time', 'space', 'causality', 'existence'],
+                        mastery: 'complete',
+                        control: 'absolute',
+                        understanding: 'transcendent'
+                    }
+                }
+            },
+            COSMIC_CHALLENGES: {
+                name: 'Cosmic Challenges',
+                description: 'Evrensel meydan okumalar',
+                challenges: {
+                    REALITY_BREAKER: {
+                        name: 'Reality Breaker',
+                        description: 'Gerçekliği kırmak',
+                        difficulty: 'transcendent',
+                        reward: 'reality_control',
+                        participants: 'cosmic_beings'
+                    },
+                    TIME_MASTER: {
+                        name: 'Time Master',
+                        description: 'Zamanı kontrol etmek',
+                        difficulty: 'divine',
+                        reward: 'time_manipulation',
+                        participants: 'temporal_entities'
+                    },
+                    VOID_CONQUEROR: {
+                        name: 'Void Conqueror',
+                        description: 'Boşluğu fethetmek',
+                        difficulty: 'absolute',
+                        reward: 'void_mastery',
+                        participants: 'void_beings'
+                    },
+                    COSMIC_CREATOR: {
+                        name: 'Cosmic Creator',
+                        description: 'Evren yaratmak',
+                        difficulty: 'omnipotent',
+                        reward: 'creation_power',
+                        participants: 'creator_beings'
+                    },
+                    MULTIVERSE_RULER: {
+                        name: 'Multiverse Ruler',
+                        description: 'Çoklu evrenleri yönetmek',
+                        difficulty: 'transcendent',
+                        reward: 'multiverse_control',
+                        participants: 'multiverse_entities'
+                    },
+                    EXISTENCE_MASTER: {
+                        name: 'Existence Master',
+                        description: 'Varlığı yönetmek',
+                        difficulty: 'absolute',
+                        reward: 'existence_control',
+                        participants: 'existence_beings'
+                    }
+                }
+            },
+            ULTIMATE_ABILITIES: {
+                name: 'Ultimate Abilities',
+                description: 'Nihai yetenekler',
+                abilities: {
+                    OMNIPOTENCE: {
+                        name: 'Omnipotence',
+                        description: 'Her şey yapabilme',
+                        cost: 'transcendence',
+                        duration: 'eternal',
+                        effect: 'absolute_power'
+                    },
+                    OMNISCIENCE: {
+                        name: 'Omniscience',
+                        description: 'Her şey bilme',
+                        cost: 'enlightenment',
+                        duration: 'infinite',
+                        effect: 'complete_knowledge'
+                    },
+                    OMNIPRESENCE: {
+                        name: 'Omnipresence',
+                        description: 'Her yerde olma',
+                        cost: 'existence',
+                        duration: 'absolute',
+                        effect: 'everywhere_at_once'
+                    },
+                    REALITY_CONTROL: {
+                        name: 'Reality Control',
+                        description: 'Gerçekliği kontrol etme',
+                        cost: 'mastery',
+                        duration: 'transcendent',
+                        effect: 'reality_manipulation'
+                    },
+                    TIME_CONTROL: {
+                        name: 'Time Control',
+                        description: 'Zamanı kontrol etme',
+                        cost: 'understanding',
+                        duration: 'infinite',
+                        effect: 'temporal_manipulation'
+                    },
+                    EXISTENCE_ERASURE: {
+                        name: 'Existence Erasure',
+                        description: 'Varlığı silme',
+                        cost: 'power',
+                        duration: 'instant',
+                        effect: 'non_existence'
+                    }
+                }
+            }
+        };
+
+        const REALISTIC_COMBAT = {
+            MECHANICS: {
+                STAMINA: {
+                    maxStamina: 100,
+                    staminaRegen: 0.5,
+                    attackCost: 10,
+                    dodgeCost: 15,
+                    blockCost: 5,
+                    sprintCost: 2
+                },
+                PHYSICS: {
+                    gravity: 0.5,
+                    friction: 0.85,
+                    airResistance: 0.98,
+                    mass: 1.0,
+                    velocityDecay: 0.92
+                },
+                COMBAT: {
+                    baseDamage: 15,
+                    criticalMultiplier: 2.5,
+                    criticalChance: 0.15,
+                    blockChance: 0.25,
+                    dodgeChance: 0.20,
+                    parryChance: 0.10,
+                    stunDuration: 1500,
+                    knockbackForce: 5.0,
+                    hitStun: 200,
+                    comboWindow: 800
+                },
+                WEAPONS: {
+                    SWORD: {
+                        damage: 20,
+                        speed: 1.2,
+                        range: 40,
+                        staminaCost: 8,
+                        criticalChance: 0.15,
+                        knockback: 3.0,
+                        type: 'SLASHING'
+                    },
+                    AXE: {
+                        damage: 25,
+                        speed: 0.9,
+                        range: 45,
+                        staminaCost: 12,
+                        criticalChance: 0.10,
+                        knockback: 5.0,
+                        type: 'SLASHING'
+                    },
+                    SPEAR: {
+                        damage: 18,
+                        speed: 1.0,
+                        range: 60,
+                        staminaCost: 10,
+                        criticalChance: 0.12,
+                        knockback: 2.0,
+                        type: 'PIERCING'
+                    },
+                    HAMMER: {
+                        damage: 30,
+                        speed: 0.7,
+                        range: 35,
+                        staminaCost: 15,
+                        criticalChance: 0.08,
+                        knockback: 8.0,
+                        type: 'BLUNT'
+                    },
+                    DAGGER: {
+                        damage: 12,
+                        speed: 1.8,
+                        range: 25,
+                        staminaCost: 5,
+                        criticalChance: 0.25,
+                        knockback: 1.0,
+                        type: 'PIERCING'
+                    },
+                    BOW: {
+                        damage: 15,
+                        speed: 1.5,
+                        range: 200,
+                        staminaCost: 6,
+                        criticalChance: 0.20,
+                        knockback: 0.5,
+                        type: 'PIERCING',
+                        projectile: true
+                    },
+                    STAFF: {
+                        damage: 10,
+                        speed: 1.1,
+                        range: 50,
+                        staminaCost: 4,
+                        criticalChance: 0.05,
+                        knockback: 1.5,
+                        type: 'MAGIC',
+                        magicDamage: 25
+                    }
+                },
+                ARMOR: {
+                    LIGHT: {
+                        defense: 5,
+                        speed: 1.2,
+                        dodgeBonus: 0.1,
+                        staminaRegen: 0.7,
+                        weight: 0.5
+                    },
+                    MEDIUM: {
+                        defense: 12,
+                        speed: 1.0,
+                        dodgeBonus: 0.0,
+                        staminaRegen: 0.5,
+                        weight: 1.0
+                    },
+                    HEAVY: {
+                        defense: 20,
+                        speed: 0.8,
+                        dodgeBonus: -0.1,
+                        staminaRegen: 0.3,
+                        weight: 2.0
+                    },
+                    MAGIC: {
+                        defense: 8,
+                        speed: 1.0,
+                        dodgeBonus: 0.05,
+                        staminaRegen: 0.6,
+                        weight: 0.7,
+                        magicResistance: 0.3
+                    }
+                },
+                STATUS_EFFECTS: {
+                    BLEEDING: {
+                        duration: 5000,
+                        damage: 2,
+                        stackable: true,
+                        icon: '🩸'
+                    },
+                    POISONED: {
+                        duration: 8000,
+                        damage: 1,
+                        stackable: true,
+                        icon: '☠️'
+                    },
+                    STUNNED: {
+                        duration: 1500,
+                        speed: 0,
+                        canAttack: false,
+                        icon: '😵'
+                    },
+                    FROZEN: {
+                        duration: 3000,
+                        speed: 0,
+                        canAttack: false,
+                        icon: '❄️'
+                    },
+                    BURNING: {
+                        duration: 4000,
+                        damage: 3,
+                        stackable: false,
+                        icon: '🔥'
+                    },
+                    WEAKENED: {
+                        duration: 6000,
+                        damage: 0.7,
+                        defense: 0.7,
+                        icon: '💔'
+                    },
+                    ENRAGED: {
+                        duration: 8000,
+                        damage: 1.5,
+                        defense: 0.8,
+                        speed: 1.2,
+                        icon: '😡'
+                    },
+                    BLESSED: {
+                        duration: 10000,
+                        damage: 1.2,
+                        defense: 1.2,
+                        healing: 1,
+                        icon: '✨'
+                    }
+                }
+            },
+            COMBO_SYSTEM: {
+                COMBOS: {
+                    SWORD_COMBO: {
+                        name: 'Sword Combo',
+                        sequence: ['LIGHT', 'LIGHT', 'HEAVY'],
+                        damage: 3.5,
+                        effect: 'BLEEDING',
+                        icon: '⚔️'
+                    },
+                    AXE_SPIN: {
+                        name: 'Axe Spin',
+                        sequence: ['HEAVY', 'HEAVY'],
+                        damage: 4.0,
+                        effect: 'STUNNED',
+                        knockback: 8.0,
+                        icon: '🪓'
+                    },
+                    SPEAR_THRUST: {
+                        name: 'Spear Thrust',
+                        sequence: ['LIGHT', 'HEAVY', 'LIGHT'],
+                        damage: 3.0,
+                        effect: 'POISONED',
+                        range: 80,
+                        icon: '🔱'
+                    },
+                    DAGGER_FLURRY: {
+                        name: 'Dagger Flurry',
+                        sequence: ['LIGHT', 'LIGHT', 'LIGHT', 'LIGHT'],
+                        damage: 2.8,
+                        effect: 'WEAKENED',
+                        speed: 2.0,
+                        icon: '🗡️'
+                    },
+                    HAMMER_SMASH: {
+                        name: 'Hammer Smash',
+                        sequence: ['HEAVY', 'BLOCK', 'HEAVY'],
+                        damage: 5.0,
+                        effect: 'STUNNED',
+                        knockback: 12.0,
+                        icon: '🔨'
+                    },
+                    BOW_VOLLEY: {
+                        name: 'Bow Volley',
+                        sequence: ['HEAVY', 'HEAVY'],
+                        damage: 2.5,
+                        arrows: 3,
+                        spread: 15,
+                        icon: '🏹'
+                    },
+                    STAFF_BLAST: {
+                        name: 'Staff Blast',
+                        sequence: ['HEAVY', 'LIGHT', 'HEAVY'],
+                        damage: 3.2,
+                        magicDamage: 40,
+                        effect: 'FROZEN',
+                        aoe: 60,
+                        icon: '🔮'
+                    }
+                },
+                TIMING: {
+                    comboWindow: 800,
+                    resetDelay: 2000,
+                    inputBuffer: 200
+                }
+            },
+            AI_BEHAVIOR: {
+                AGGRESSION_LEVELS: {
+                    PASSIVE: { attackRange: 0, fleeHealth: 0.8, aggression: 0 },
+                    DEFENSIVE: { attackRange: 100, fleeHealth: 0.5, aggression: 0.3 },
+                    NEUTRAL: { attackRange: 150, fleeHealth: 0.3, aggression: 0.5 },
+                    AGGRESSIVE: { attackRange: 200, fleeHealth: 0.1, aggression: 0.8 },
+                    BERSERKER: { attackRange: 300, fleeHealth: 0, aggression: 1.0 }
+                },
+                TACTICS: {
+                    CIRCLE_STRAFE: { description: 'Hedef etrafında dönerken saldır', useRange: true },
+                    KITE_RETREAT: { description: 'Mesafe açıp saldır', useRange: true },
+                    FLANK_ATTACK: { description: 'Yandan saldır', useMelee: true },
+                    POUNCE: { description: 'Sıçrama saldırısı', useMelee: true },
+                    RETREAT_HEAL: { description: 'Kaçıp iyileş', useHealing: true },
+                    GROUP_COORDINATE: { description: 'Grup saldırısı', useGroup: true }
+                }
+            }
+        };
+
+        const ADVANCED_PHYSICS = {
+            GRAVITY: 0.5,
+            FRICTION: 0.85,
+            AIR_RESISTANCE: 0.98,
+            WATER_RESISTANCE: 0.7,
+            ICE_FRICTION: 0.3,
+            MUD_FRICTION: 0.6,
+            COLLISION_TYPES: {
+                SOLID: { bounce: 0, friction: 0.8, damage: true },
+                SOFT: { bounce: 0.2, friction: 0.9, damage: false },
+                LIQUID: { bounce: 0, friction: 0.3, damage: false },
+                SHARP: { bounce: 0, friction: 0.1, damage: true, piercing: true },
+                EXPLOSIVE: { bounce: 0, friction: 0.5, damage: true, aoe: true }
+            },
+            MATERIALS: {
+                STONE: { density: 2.5, hardness: 7, durability: 100, sound: 'rock' },
+                WOOD: { density: 0.8, hardness: 3, durability: 40, sound: 'wood' },
+                METAL: { density: 4.0, hardness: 8, durability: 150, sound: 'metal' },
+                FLESH: { density: 1.0, hardness: 2, durability: 20, sound: 'flesh' },
+                WATER: { density: 1.0, hardness: 0, durability: 0, sound: 'water' },
+                SAND: { density: 1.5, hardness: 1, durability: 10, sound: 'sand' },
+                MUD: { density: 1.8, hardness: 1, durability: 15, sound: 'mud' },
+                ICE: { density: 0.9, hardness: 6, durability: 80, sound: 'ice' }
+            },
+            FORCES: {
+                WIND: { base: 0.1, variation: 0.3, gustChance: 0.1 },
+                WATER_CURRENT: { base: 0.2, variation: 0.2, direction: 'flow' },
+                MAGNETIC: { strength: 0.5, range: 100, materials: ['METAL'] },
+                GRAVITATIONAL: { strength: 0.8, range: 200, mass: 2.0 }
+            },
+            PARTICLE_SYSTEMS: {
+                BLOOD: {
+                    color: '#8B0000',
+                    size: 2,
+                    count: 15,
+                    lifetime: 2000,
+                    gravity: 0.3,
+                    spread: 45
+                },
+                SPARKS: {
+                    color: '#FFD700',
+                    size: 1,
+                    count: 20,
+                    lifetime: 1000,
+                    gravity: 0.1,
+                    spread: 90
+                },
+                DUST: {
+                    color: '#8B7355',
+                    size: 3,
+                    count: 10,
+                    lifetime: 3000,
+                    gravity: 0.2,
+                    spread: 30
+                },
+                WATER_SPLASH: {
+                    color: '#4169E1',
+                    size: 4,
+                    count: 25,
+                    lifetime: 1500,
+                    gravity: 0.4,
+                    spread: 60
+                },
+                EXPLOSION: {
+                    color: '#FF4500',
+                    size: 5,
+                    count: 50,
+                    lifetime: 2500,
+                    gravity: 0.1,
+                    spread: 360
+                },
+                MAGIC: {
+                    color: '#9400D3',
+                    size: 3,
+                    count: 30,
+                    lifetime: 2000,
+                    gravity: 0,
+                    spread: 180,
+                    glow: true
+                }
+            }
+        };
+
+        const DYNAMIC_WEATHER = {
+            SYSTEMS: {
+                RAIN: {
+                    intensity: [0.1, 0.9],
+                    dropSize: [1, 3],
+                    windEffect: [0.2, 0.8],
+                    visibility: [0.7, 0.3],
+                    wetness: 0.5,
+                    sound: 'rain',
+                    effects: ['WET_GROUND', 'REDUCED_VISIBILITY', 'PLANT_GROWTH']
+                },
+                SNOW: {
+                    intensity: [0.1, 0.8],
+                    flakeSize: [2, 6],
+                    windEffect: [0.3, 1.0],
+                    visibility: [0.8, 0.2],
+                    accumulation: 0.3,
+                    sound: 'snow',
+                    effects: ['SNOW_COVER', 'REDUCED_SPEED', 'ICE_FORMATION']
+                },
+                THUNDERSTORM: {
+                    intensity: [0.5, 1.0],
+                    lightningChance: 0.15,
+                    windSpeed: [2, 5],
+                    visibility: [0.6, 0.1],
+                    danger: 0.8,
+                    sound: 'thunder',
+                    effects: ['LIGHTNING_STRIKE', 'HEAVY_RAIN', 'WIND_GUSTS']
+                },
+                FOG: {
+                    density: [0.3, 0.9],
+                    visibility: [0.5, 0.05],
+                    movement: [0.1, 0.3],
+                    humidity: 0.9,
+                    sound: 'wind',
+                    effects: ['ZERO_VISIBILITY', 'MYSTERIOUS_AMBIANCE', 'STEALTH_BONUS']
+                },
+                WIND: {
+                    speed: [1, 8],
+                    direction: ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'],
+                    gustChance: 0.25,
+                    turbulence: [0.1, 0.7],
+                    sound: 'wind',
+                    effects: ['PROJECTILE_DEVIATION', 'MOVEMENT_IMPACT', 'LEAF_BLOW']
+                },
+                HEATWAVE: {
+                    temperature: [35, 45],
+                    humidity: [0.1, 0.3],
+                    visibility: [0.9, 0.4],
+                    duration: [2, 6],
+                    sound: 'heat',
+                    effects: ['DEHYDRATION', 'EXHAUSTION', 'MIRAGE']
+                },
+                BLIZZARD: {
+                    intensity: [0.7, 1.0],
+                    temperature: [-20, -5],
+                    windSpeed: [5, 15],
+                    visibility: [0.3, 0.05],
+                    danger: 0.9,
+                    sound: 'blizzard',
+                    effects: ['FREEZING', 'WHITEOUT', 'ACCUMULATION']
+                },
+                AURORA: {
+                    intensity: [0.3, 0.8],
+                    colors: ['#00FF00', '#FF00FF', '#00FFFF', '#FFFF00'],
+                    movement: [0.1, 0.5],
+                    magical: 0.9,
+                    sound: 'aurora',
+                    effects: ['MAGIC_BOOST', 'HEALING_AURA', 'ENLIGHTENMENT']
+                }
+            },
+            ENVIRONMENTAL_IMPACTS: {
+                TERRAIN: {
+                    MUD: { friction: 0.6, speed: 0.7, slipChance: 0.3, formedBy: ['RAIN', 'THUNDERSTORM'] },
+                    ICE: { friction: 0.1, speed: 0.4, slipChance: 0.8, formedBy: ['SNOW', 'BLIZZARD'] },
+                    PUDDLES: { friction: 0.8, speed: 0.9, splashEffect: true, formedBy: ['RAIN', 'THUNDERSTORM'] },
+                    SNOW_COVER: { friction: 0.4, speed: 0.6, concealment: 0.3, formedBy: ['SNOW', 'BLIZZARD'] },
+                    FROZEN_GROUND: { friction: 0.2, speed: 0.5, damage: true, formedBy: ['BLIZZARD'] }
+                },
+                FLORA: {
+                    GROWTH_RATE: { RAIN: 1.5, SUNNY: 1.0, DROUGHT: 0.3, FROZEN: 0.1 },
+                    SWAYING: { WIND: true, THUNDERSTORM: true, BREEZE: true },
+                    DROPS: { RAIN: true, THUNDERSTORM: true, FOG: true },
+                    BLOOMING: { SPRING: true, SUMMER: true, AURORA: true }
+                },
+                FAUNA: {
+                    ACTIVITY: { HOT: 0.3, COLD: 0.4, MILD: 1.0, STORM: 0.2 },
+                    SHELTER: { RAIN: true, THUNDERSTORM: true, BLIZZARD: true, HEATWAVE: true },
+                    MIGRATION: { SEASONAL: true, WEATHER_DRIVEN: true },
+                    BEHAVIOR: { NOCTURNAL: true, DIURNAL: true, CREPUSCULAR: true }
+                }
+            },
+            VISUAL_EFFECTS: {
+                PARTICLES: {
+                    RAIN_DROPS: { size: 2, speed: 8, color: '#4169E1', count: 100 },
+                    SNOW_FLAKES: { size: 4, speed: 2, color: '#FFFFFF', count: 80 },
+                    LEAVES: { size: 6, speed: 3, color: '#8B4513', count: 20 },
+                    DUST: { size: 3, speed: 1, color: '#D2B48C', count: 30 },
+                    LIGHTNING: { size: 20, speed: 50, color: '#FFFF00', count: 1 },
+                    MIST: { size: 10, speed: 0.5, color: '#E0E0E0', count: 50 }
+                },
+                LIGHTING: {
+                    AMBIENT: { base: 0.7, variation: 0.3 },
+                    SUNLIGHT: { angle: [0, 180], intensity: [0.5, 1.0], color: '#FFD700' },
+                    MOONLIGHT: { angle: [0, 180], intensity: [0.1, 0.3], color: '#C0C0C0' },
+                    LIGHTNING: { flash: 1.0, duration: 100, color: '#FFFFFF' },
+                    AURORA: { glow: 0.8, pulse: 0.3, colors: ['#00FF00', '#FF00FF'] }
+                },
+                ATMOSPHERE: {
+                    FOG_DENSITY: { min: 0.1, max: 0.9 },
+                    CLOUD_COVER: { min: 0, max: 1.0 },
+                    HAZE: { min: 0, max: 0.5 },
+                    GLARE: { min: 0, max: 0.8 },
+                    REFLECTIONS: { water: true, ice: true, metal: true }
+                }
+            },
+            TRANSITIONS: {
+                DURATION: {
+                    INSTANT: 0,
+                    RAPID: 1000,
+                    GRADUAL: 5000,
+                    SLOW: 10000,
+                    VERY_SLOW: 30000
+                },
+                PATTERNS: {
+                    LINEAR: 'linear',
+                    EASE_IN: 'ease-in',
+                    EASE_OUT: 'ease-out',
+                    EASE_IN_OUT: 'ease-in-out',
+                    BOUNCE: 'cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+                    ELASTIC: 'cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+                },
+                CHAINS: {
+                    CLEAR_TO_RAIN: ['CLOUDS', 'LIGHT_RAIN', 'HEAVY_RAIN'],
+                    RAIN_TO_STORM: ['HEAVY_RAIN', 'THUNDER', 'LIGHTNING'],
+                    STORM_TO_CLEAR: ['LIGHTNING', 'RAIN', 'CLOUDS', 'CLEAR'],
+                    SUNNY_TO_FOG: ['HAZE', 'LIGHT_FOG', 'DENSE_FOG'],
+                    WARM_TO_COLD: ['COOLING', 'CLOUDS', 'SNOW']
+                }
+            }
+        };
+
         const MOBILE_SETTINGS = {
             autoRun: false,
             autoBattle: false,
@@ -1820,6 +3018,85 @@
                 currentPlaylist: 'EXPLORATION',
                 trackHistory: [],
                 fadeInProgress: 0
+            },
+            realisticCombat: {
+                stamina: 100,
+                maxStamina: 100,
+                staminaRegenTimer: 0,
+                comboSequence: [],
+                comboTimer: 0,
+                statusEffects: [],
+                attackDirection: 0,
+                isBlocking: false,
+                isDodging: false,
+                knockbackVelocity: { x: 0, y: 0 },
+                hitStunTimer: 0,
+                lastAttackTime: 0,
+                attackCooldown: 0
+            },
+            physics: {
+                gravity: 0.5,
+                windForce: { x: 0, y: 0 },
+                waterLevel: 0,
+                terrainType: 'NORMAL',
+                environmentalForces: []
+            },
+            dynamicWeather: {
+                currentSystem: 'CLEAR',
+                intensity: 0,
+                transitionProgress: 0,
+                targetSystem: 'CLEAR',
+                transitionDuration: 0,
+                particleEffects: [],
+                lighting: {
+                    ambient: 1.0,
+                    direct: 1.0,
+                    color: '#FFFFFF'
+                },
+                visibility: 1.0,
+                temperature: 20,
+                humidity: 0.5
+            },
+            timeSystem: {
+                currentHour: 12,
+                currentDay: 1,
+                currentMonth: 1,
+                currentYear: 1,
+                timeScale: 60, // 1 gerçek saniye = 1 oyun dakikası
+                dayPhase: 'DAY',
+                season: 'SPRING'
+            },
+            npcBehaviors: {
+                schedules: {},
+                relationships: {},
+                memories: {},
+                currentActions: {}
+            },
+            economy: {
+                prices: {},
+                supply: {},
+                demand: {},
+                inflation: 1.0,
+                tradeRoutes: []
+            },
+            environment: {
+                interactables: [],
+                destructibles: [],
+                resources: [],
+                hazards: [],
+                triggers: []
+            },
+            animations: {
+                player: {
+                    current: 'IDLE',
+                    frame: 0,
+                    frameTimer: 0,
+                    direction: 'DOWN'
+                },
+                enemies: {},
+                npcs: {},
+                effects: [],
+                transitions: []
             }
         };
 
@@ -1830,6 +3107,549 @@
             camp: { x: 340, y: 280, r: 90 },
             obstacles: []
         };
+
+        function updateRealisticCombat() {
+            const combat = state.realisticCombat;
+            const mechanics = REALISTIC_COMBAT.MECHANICS;
+            
+            // Stamina regeneration
+            if (combat.stamina < combat.maxStamina) {
+                combat.stamina = Math.min(combat.stamina + mechanics.stamina.staminaRegen * 0.016, combat.maxStamina);
+            }
+            
+            // Combo timer update
+            if (combat.comboTimer > 0) {
+                combat.comboTimer -= 16;
+                if (combat.comboTimer <= 0) {
+                    combat.comboSequence = [];
+                }
+            }
+            
+            // Status effects update
+            combat.statusEffects = combat.statusEffects.filter(effect => {
+                effect.duration -= 16;
+                if (effect.duration <= 0) {
+                    return false; // Remove expired effect
+                }
+                
+                // Apply effect damage/healing
+                if (effect.damage) {
+                    player.hp = Math.max(0, player.hp - effect.damage * 0.016);
+                }
+                if (effect.healing) {
+                    player.hp = Math.min(player.maxHp, player.hp + effect.healing * 0.016);
+                }
+                
+                return true;
+            });
+            
+            // Hit stun timer
+            if (combat.hitStunTimer > 0) {
+                combat.hitStunTimer -= 16;
+            }
+            
+            // Attack cooldown
+            if (combat.attackCooldown > 0) {
+                combat.attackCooldown -= 16;
+            }
+            
+            // Knockback physics
+            if (Math.abs(combat.knockbackVelocity.x) > 0.1 || Math.abs(combat.knockbackVelocity.y) > 0.1) {
+                player.x += combat.knockbackVelocity.x;
+                player.y += combat.knockbackVelocity.y;
+                
+                // Apply friction
+                combat.knockbackVelocity.x *= REALISTIC_COMBAT.MECHANICS.PHYSICS.friction;
+                combat.knockbackVelocity.y *= REALISTIC_COMBAT.MECHANICS.PHYSICS.friction;
+                
+                // Stop if too small
+                if (Math.abs(combat.knockbackVelocity.x) < 0.1) combat.knockbackVelocity.x = 0;
+                if (Math.abs(combat.knockbackVelocity.y) < 0.1) combat.knockbackVelocity.y = 0;
+            }
+        }
+
+        function performAttack(attackType = 'LIGHT') {
+            const combat = state.realisticCombat;
+            const mechanics = REALISTIC_COMBAT.MECHANICS;
+            
+            // Check stamina
+            const staminaCost = attackType === 'HEAVY' ? mechanics.stamina.attackCost * 1.5 : mechanics.stamina.attackCost;
+            if (combat.stamina < staminaCost) {
+                pushMessage('Yetersiz stamina! 💪');
+                return false;
+            }
+            
+            // Check cooldown
+            if (combat.attackCooldown > 0) {
+                return false;
+            }
+            
+            // Check if stunned
+            if (combat.hitStunTimer > 0) {
+                return false;
+            }
+            
+            // Consume stamina
+            combat.stamina -= staminaCost;
+            
+            // Update combo
+            combat.comboSequence.push(attackType);
+            combat.comboTimer = mechanics.combat.comboWindow;
+            
+            // Calculate attack direction based on movement
+            if (state.keys['w'] || state.keys['s'] || state.keys['a'] || state.keys['d']) {
+                if (state.keys['w']) combat.attackDirection = 0; // UP
+                else if (state.keys['s']) combat.attackDirection = 180; // DOWN
+                else if (state.keys['a']) combat.attackDirection = 270; // LEFT
+                else if (state.keys['d']) combat.attackDirection = 90; // RIGHT
+            }
+            
+            // Check for combos
+            checkCombos();
+            
+            // Set attack cooldown
+            const weapon = getEquippedWeapon();
+            const cooldown = weapon ? (1000 / weapon.speed) : 500;
+            combat.attackCooldown = cooldown;
+            
+            // Perform attack
+            const damage = calculateAttackDamage(attackType);
+            const range = weapon ? weapon.range : 40;
+            
+            // Create attack effect
+            createAttackEffect(attackType, range);
+            
+            // Check hit detection
+            const hitEnemies = checkAttackHit(range);
+            hitEnemies.forEach(enemy => {
+                applyDamageToEnemy(enemy, damage, attackType);
+            });
+            
+            // Update animation
+            state.animations.player.current = attackType === 'HEAVY' ? 'HEAVY_ATTACK' : 'LIGHT_ATTACK';
+            state.animations.player.frameTimer = 0;
+            
+            return true;
+        }
+
+        function calculateAttackDamage(attackType) {
+            const mechanics = REALISTIC_COMBAT.MECHANICS;
+            const weapon = getEquippedWeapon();
+            
+            let baseDamage = mechanics.combat.baseDamage;
+            if (weapon) {
+                baseDamage = weapon.damage;
+            }
+            
+            // Apply attack type modifier
+            if (attackType === 'HEAVY') {
+                baseDamage *= 1.5;
+            }
+            
+            // Apply critical hit
+            const critChance = weapon ? weapon.criticalChance : mechanics.combat.criticalChance;
+            if (Math.random() < critChance) {
+                baseDamage *= mechanics.combat.criticalMultiplier;
+                addFloatingText('CRITICAL!', player.x, player.y - 30, '#FFD700');
+            }
+            
+            // Apply status effects
+            state.realisticCombat.statusEffects.forEach(effect => {
+                if (effect.damage) baseDamage *= 0.7; // Weakened
+                if (effect.damage && effect.icon === '😡') baseDamage *= 1.5; // Enraged
+            });
+            
+            return Math.floor(baseDamage);
+        }
+
+        function checkAttackHit(range) {
+            const hitEnemies = [];
+            const attackAngle = state.realisticCombat.attackDirection;
+            
+            state.enemies.forEach(enemy => {
+                const dist = distance(player, enemy);
+                if (dist <= range) {
+                    // Check angle for directional attacks
+                    const angle = Math.atan2(enemy.y - player.y, enemy.x - player.x) * 180 / Math.PI;
+                    const angleDiff = Math.abs(angle - attackAngle);
+                    
+                    if (angleDiff <= 45 || angleDiff >= 315) { // 90 degree attack cone
+                        hitEnemies.push(enemy);
+                    }
+                }
+            });
+            
+            return hitEnemies;
+        }
+
+        function applyDamageToEnemy(enemy, damage, attackType) {
+            const weapon = getEquippedWeapon();
+            const mechanics = REALISTIC_COMBAT.MECHANICS;
+            
+            // Apply damage
+            const actualDamage = Math.max(1, damage - (enemy.defense || 0));
+            enemy.hp -= actualDamage;
+            
+            // Apply knockback
+            if (weapon) {
+                const knockbackForce = weapon.knockback * mechanics.combat.knockbackForce;
+                const angle = Math.atan2(enemy.y - player.y, enemy.x - player.x);
+                enemy.vx += Math.cos(angle) * knockbackForce;
+                enemy.vy += Math.sin(angle) * knockbackForce;
+            }
+            
+            // Apply hit stun
+            enemy.stunTimer = mechanics.combat.hitStun;
+            
+            // Apply status effects based on weapon type
+            if (weapon && Math.random() < 0.2) {
+                applyStatusEffect(enemy, weapon.type);
+            }
+            
+            // Create damage effect
+            createDamageEffect(enemy, actualDamage);
+            
+            // Check if enemy died
+            if (enemy.hp <= 0) {
+                const index = state.enemies.indexOf(enemy);
+                if (index > -1) {
+                    killEnemy(index);
+                }
+            }
+        }
+
+        function applyStatusEffect(target, weaponType) {
+            const effects = REALISTIC_COMBAT.MECHANICS.STATUS_EFFECTS;
+            let effect = null;
+            
+            switch(weaponType) {
+                case 'SLASHING':
+                    if (Math.random() < 0.3) effect = { ...effects.BLEEDING };
+                    break;
+                case 'PIERCING':
+                    if (Math.random() < 0.2) effect = { ...effects.POISONED };
+                    break;
+                case 'BLUNT':
+                    if (Math.random() < 0.15) effect = { ...effects.STUNNED };
+                    break;
+                case 'MAGIC':
+                    if (Math.random() < 0.25) {
+                        const magicEffects = [effects.FROZEN, effects.BURNING];
+                        effect = { ...magicEffects[Math.floor(Math.random() * magicEffects.length)] };
+                    }
+                    break;
+            }
+            
+            if (effect) {
+                target.statusEffects = target.statusEffects || [];
+                target.statusEffects.push(effect);
+                addFloatingText(effect.icon, target.x, target.y - 20, '#FF6B6B');
+            }
+        }
+
+        function checkCombos() {
+            const combat = state.realisticCombat;
+            const combos = REALISTIC_COMBAT.COMBO_SYSTEM.COMBOS;
+            
+            // Check each combo
+            for (const [comboKey, combo] of Object.entries(combos)) {
+                if (combo.sequence.length <= combat.comboSequence.length) {
+                    // Check if the last attacks match the combo sequence
+                    const lastAttacks = combat.comboSequence.slice(-combo.sequence.length);
+                    const matches = combo.sequence.every((attack, index) => lastAttacks[index] === attack);
+                    
+                    if (matches) {
+                        executeCombo(combo);
+                        combat.comboSequence = []; // Reset combo
+                        break;
+                    }
+                }
+            }
+        }
+
+        function executeCombo(combo) {
+            const mechanics = REALISTIC_COMBAT.MECHANICS;
+            
+            // Apply combo damage multiplier
+            const comboDamage = mechanics.combat.baseDamage * combo.damage;
+            
+            // Create combo effect
+            addFloatingText(combo.name + '!', player.x, player.y - 40, '#FFD700');
+            vibrate(200);
+            
+            // Apply area of effect if specified
+            if (combo.aoe) {
+                createAOEEffect(player.x, player.y, combo.aoe, comboDamage);
+            }
+            
+            // Apply status effect
+            if (combo.effect) {
+                const effect = mechanics.STATUS_EFFECTS[combo.effect];
+                if (effect) {
+                    // Apply to nearby enemies
+                    state.enemies.forEach(enemy => {
+                        const dist = distance(player, enemy);
+                        if (dist <= 100) {
+                            enemy.statusEffects = enemy.statusEffects || [];
+                            enemy.statusEffects.push({ ...effect });
+                        }
+                    });
+                }
+            }
+            
+            // Apply knockback if specified
+            if (combo.knockback) {
+                state.enemies.forEach(enemy => {
+                    const dist = distance(player, enemy);
+                    if (dist <= 100) {
+                        const angle = Math.atan2(enemy.y - player.y, enemy.x - player.x);
+                        enemy.vx += Math.cos(angle) * combo.knockback;
+                        enemy.vy += Math.sin(angle) * combo.knockback;
+                    }
+                });
+            }
+        }
+
+        function updatePhysics() {
+            const physics = state.physics;
+            
+            // Apply gravity to all entities
+            [...state.enemies, ...state.particles].forEach(entity => {
+                if (entity.y < world.height - 50) { // Not on ground
+                    entity.vy = (entity.vy || 0) + physics.gravity;
+                }
+            });
+            
+            // Apply wind force
+            if (Math.abs(physics.windForce.x) > 0.1 || Math.abs(physics.windForce.y) > 0.1) {
+                [...state.particles].forEach(particle => {
+                    particle.vx += physics.windForce.x * 0.1;
+                    particle.vy += physics.windForce.y * 0.1;
+                });
+            }
+            
+            // Apply water resistance if in water
+            if (player.y > physics.waterLevel) {
+                player.speed *= ADVANCED_PHYSICS.WATER_RESISTANCE;
+            }
+            
+            // Apply terrain friction
+            const terrainFriction = getTerrainFriction();
+            player.speed *= terrainFriction;
+        }
+
+        function getTerrainFriction() {
+            const physics = state.physics;
+            const weather = state.dynamicWeather;
+            
+            switch(physics.terrainType) {
+                case 'ICE':
+                    return ADVANCED_PHYSICS.ICE_FRICTION;
+                case 'MUD':
+                    return ADVANCED_PHYSICS.MUD_FRICTION;
+                case 'WATER':
+                    return ADVANCED_PHYSICS.WATER_RESISTANCE;
+                default:
+                    return ADVANCED_PHYSICS.FRICTION;
+            }
+        }
+
+        function updateDynamicWeather() {
+            const weather = state.dynamicWeather;
+            const systems = DYNAMIC_WEATHER.SYSTEMS;
+            
+            // Handle transitions
+            if (weather.transitionDuration > 0) {
+                weather.transitionProgress += 16 / weather.transitionDuration;
+                
+                if (weather.transitionProgress >= 1) {
+                    weather.currentSystem = weather.targetSystem;
+                    weather.transitionDuration = 0;
+                    weather.transitionProgress = 0;
+                }
+            }
+            
+            // Update current weather system
+            const currentSystem = systems[weather.currentSystem];
+            if (currentSystem) {
+                // Update intensity
+                if (weather.intensity < 1) {
+                    weather.intensity = Math.min(1, weather.intensity + 0.001);
+                }
+                
+                // Update environmental effects
+                applyWeatherEffects(currentSystem);
+                
+                // Update particle effects
+                updateWeatherParticles(currentSystem);
+                
+                // Update lighting
+                updateWeatherLighting(currentSystem);
+                
+                // Update visibility
+                if (currentSystem.visibility) {
+                    weather.visibility = lerp(weather.visibility, currentSystem.visibility[1], 0.01);
+                }
+            }
+            
+            // Random weather changes
+            if (Math.random() < 0.0001) { // Very rare
+                const weatherTypes = Object.keys(systems);
+                const newWeather = weatherTypes[Math.floor(Math.random() * weatherTypes.length)];
+                changeWeather(newWeather);
+            }
+        }
+
+        function applyWeatherEffects(system) {
+            const impacts = DYNAMIC_WEATHER.ENVIRONMENTAL_IMPACTS;
+            
+            // Apply terrain changes
+            if (system.effects) {
+                system.effects.forEach(effect => {
+                    switch(effect) {
+                        case 'WET_GROUND':
+                            state.physics.terrainType = 'MUD';
+                            break;
+                        case 'ICE_FORMATION':
+                            state.physics.terrainType = 'ICE';
+                            break;
+                        case 'REDUCED_SPEED':
+                            player.speed *= 0.8;
+                            break;
+                        case 'FREEZING':
+                            applyStatusEffect(player, 'FROZEN');
+                            break;
+                    }
+                });
+            }
+        }
+
+        function updateWeatherParticles(system) {
+            const particleConfig = DYNAMIC_WEATHER.VISUAL_EFFECTS.PARTICLES[system.sound.toUpperCase()];
+            if (particleConfig) {
+                // Create weather particles
+                for (let i = 0; i < particleConfig.count * weather.intensity; i++) {
+                    if (Math.random() < 0.1) { // Spawn rate
+                        state.particles.push({
+                            x: Math.random() * world.width,
+                            y: -10,
+                            vx: (Math.random() - 0.5) * 2,
+                            vy: particleConfig.speed,
+                            size: particleConfig.size,
+                            color: particleConfig.color,
+                            lifetime: 5000,
+                            type: 'WEATHER'
+                        });
+                    }
+                }
+            }
+        }
+
+        function updateWeatherLighting(system) {
+            const lighting = DYNAMIC_WEATHER.VISUAL_EFFECTS.LIGHTING;
+            
+            if (system.sound === 'thunder') {
+                // Lightning flash
+                if (Math.random() < system.lightningChance) {
+                    weather.lighting.direct = 2.0;
+                    weather.lighting.color = '#FFFFFF';
+                    setTimeout(() => {
+                        weather.lighting.direct = 0.2;
+                    }, 100);
+                }
+            } else if (system.sound === 'aurora') {
+                // Aurora glow effect
+                weather.lighting.ambient = 0.8 + Math.sin(Date.now() * 0.001) * 0.2;
+                weather.lighting.color = system.colors[Math.floor(Date.now() / 1000) % system.colors.length];
+            }
+        }
+
+        function changeWeather(newWeather) {
+            const weather = state.dynamicWeather;
+            weather.targetSystem = newWeather;
+            weather.transitionDuration = DYNAMIC_WEATHER.TRANSITIONS.DURATION.GRADUAL;
+            weather.transitionProgress = 0;
+            
+            pushMessage(`Hava değişiyor: ${newWeather} 🌦️`);
+        }
+
+        function lerp(start, end, progress) {
+            return start + (end - start) * progress;
+        }
+
+        function getEquippedWeapon() {
+            // Simplified - return first weapon in inventory
+            const weapon = player.inventory.find(item => item.type === 'weapon');
+            if (weapon) {
+                return REALISTIC_COMBAT.MECHANICS.WEAPONS[weapon.key];
+            }
+            return null;
+        }
+
+        function createAttackEffect(attackType, range) {
+            // Create visual effect for attack
+            const angle = state.realisticCombat.attackDirection * Math.PI / 180;
+            
+            for (let i = 0; i < 5; i++) {
+                state.particles.push({
+                    x: player.x + Math.cos(angle) * 20,
+                    y: player.y + Math.sin(angle) * 20,
+                    vx: Math.cos(angle) * 5,
+                    vy: Math.sin(angle) * 5,
+                    size: 3,
+                    color: '#FFD700',
+                    lifetime: 200,
+                    type: 'ATTACK'
+                });
+            }
+        }
+
+        function createDamageEffect(enemy, damage) {
+            // Blood effect
+            const particleSystem = ADVANCED_PHYSICS.PARTICLE_SYSTEMS.BLOOD;
+            
+            for (let i = 0; i < particleSystem.count; i++) {
+                const angle = (Math.PI * 2 * i) / particleSystem.count;
+                state.particles.push({
+                    x: enemy.x,
+                    y: enemy.y,
+                    vx: Math.cos(angle) * 3,
+                    vy: Math.sin(angle) * 3,
+                    size: particleSystem.size,
+                    color: particleSystem.color,
+                    lifetime: particleSystem.lifetime,
+                    type: 'BLOOD'
+                });
+            }
+            
+            // Damage number
+            addFloatingText(`-${damage}`, enemy.x, enemy.y - 10, '#FF6B6B');
+        }
+
+        function createAOEEffect(x, y, radius, damage) {
+            // Create area of effect visual
+            for (let i = 0; i < 20; i++) {
+                const angle = (Math.PI * 2 * i) / 20;
+                state.particles.push({
+                    x: x,
+                    y: y,
+                    vx: Math.cos(angle) * 8,
+                    vy: Math.sin(angle) * 8,
+                    size: 5,
+                    color: '#FF4500',
+                    lifetime: 1000,
+                    type: 'AOE'
+                });
+            }
+            
+            // Apply damage to enemies in range
+            state.enemies.forEach(enemy => {
+                const dist = distance({ x, y }, enemy);
+                if (dist <= radius) {
+                    applyDamageToEnemy(enemy, damage, 'AOE');
+                }
+            });
+        }
 
         function evolvePet() {
             if (!state.activePet) {
@@ -6157,394 +7977,388 @@
 
         ui.respawnBtn.addEventListener('click', respawnPlayer);
 
-        function init() {
-            // Canvas boyutlarını ayarla
-            resizeCanvas();
+        function gameLoop() {
+            if (state.gameOver) return;
             
-            // Loading ekranını gizle
-            setTimeout(() => {
-                const loadingScreen = document.getElementById('loadingScreen');
-                if (loadingScreen) {
-                    loadingScreen.style.opacity = '0';
-                    setTimeout(() => loadingScreen.remove(), 500);
+            const now = Date.now();
+            const deltaTime = now - (state.lastTime || now);
+            state.lastTime = now;
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Update game state
+            update(deltaTime);
+            
+            // Render game
+            render();
+            
+            // Update UI
+            updateUI();
+            
+            // Continue loop
+            requestAnimationFrame(gameLoop);
+        }
+
+        function update(deltaTime) {
+            // Basic player movement
+            if (state.keys['w'] || state.keys['ArrowUp']) player.y -= player.speed;
+            if (state.keys['s'] || state.keys['ArrowDown']) player.y += player.speed;
+            if (state.keys['a'] || state.keys['ArrowLeft']) player.x -= player.speed;
+            if (state.keys['d'] || state.keys['ArrowRight']) player.x += player.speed;
+            
+            // Keep player in bounds
+            player.x = Math.max(player.r, Math.min(world.width - player.r, player.x));
+            player.y = Math.max(player.r, Math.min(world.height - player.r, player.y));
+            
+            // Update camera
+            state.camera.x = player.x - canvas.width / 2;
+            state.camera.y = player.y - canvas.height / 2;
+            
+            // Keep camera in bounds
+            state.camera.x = Math.max(0, Math.min(world.width - canvas.width, state.camera.x));
+            state.camera.y = Math.max(0, Math.min(world.height - canvas.height, state.camera.y));
+            
+            // Update particles
+            state.particles = state.particles.filter(particle => {
+                particle.x += particle.vx || 0;
+                particle.y += particle.vy || 0;
+                particle.lifetime = (particle.lifetime || 1000) - deltaTime;
+                return particle.lifetime > 0;
+            });
+            
+            // Update enemies
+            state.enemies.forEach(enemy => {
+                // Simple AI - move towards player
+                const dx = player.x - enemy.x;
+                const dy = player.y - enemy.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                
+                if (dist > 50) {
+                    enemy.x += (dx / dist) * enemy.speed;
+                    enemy.y += (dy / dist) * enemy.speed;
                 }
-            }, 1500);
-            
-            generateObstacles();
-            spawnWave();
-            
-            // NPC'leri spawn et
-            spawnNPC('MERCHANT');
-            spawnNPC('QUEST_GIVER');
-            spawnNPC('BLACKSMITH');
-            
-            // Başlangıç itemları
-            addItemToInventory(createItem('SWORD'));
-            addItemToInventory(createItem('LEATHER_ARMOR'));
-            addItemToInventory(createItem('HEALTH_POTION', 3));
-            addItemToInventory(createItem('MANA_POTION', 2));
-            
-            // Başlangıç malzemeleri
-            addMaterial('IRON_ORE', 5);
-            addMaterial('WOOD', 3);
-            addMaterial('HERB', 2);
-            
-            // Başlangıç cooking malzemeleri
-            state.cooking.inventory.push({
-                type: 'FISH',
-                quantity: 3,
-                ...COOKING_SYSTEM.INGREDIENTS.FISH
-            });
-            state.cooking.inventory.push({
-                type: 'MEAT',
-                quantity: 2,
-                ...COOKING_SYSTEM.INGREDIENTS.MEAT
             });
             
-            // Başlangıç skill ve talent point'leri
-            player.skillPoints = 2;
-            state.skillTree.points = 2;
-            state.talents.points = 1;
+            // Update floating texts
+            state.floatingTexts = state.floatingTexts.filter(text => {
+                text.y -= 1;
+                text.lifetime -= deltaTime;
+                return text.lifetime > 0;
+            });
+        }
+
+        function render() {
+            // Save context
+            ctx.save();
             
-            // Weather sistemini başlat
-            changeWeather();
+            // Apply camera transform
+            ctx.translate(-state.camera.x, -state.camera.y);
             
-            // Event sistemini başlat
-            startGameEvent('DOUBLE_XP');
+            // Draw background
+            ctx.fillStyle = '#2a2a2a';
+            ctx.fillRect(0, 0, world.width, world.height);
             
-            // Mobile kontrolleri başlat
-            initMobileControls();
-            
-            // Çevrimdışı ödüllerini kontrol et
-            const offlineRewards = calculateOfflineRewards();
-            if (offlineRewards) {
-                state.offlineRewards.pendingRewards = offlineRewards;
-                setTimeout(() => {
-                    if (confirm(`${offlineRewards.hours} saat çevrimdışın! ${offlineRewards.gold} altın, ${offlineRewards.xp} XP kazanmak ister misin?`)) {
-                        claimOfflineRewards();
-                    }
-                }, 2000);
+            // Draw grid
+            ctx.strokeStyle = '#444';
+            ctx.lineWidth = 1;
+            for (let x = 0; x < world.width; x += world.tile) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, world.height);
+                ctx.stroke();
+            }
+            for (let y = 0; y < world.height; y += world.tile) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(world.width, y);
+                ctx.stroke();
             }
             
-            // Kayıtlı oyunu yükle
-            if (localStorage.getItem('knightOnline2DSave')) {
-                setTimeout(() => {
-                    if (confirm('Kayıtlı oyun bulundu. Yüklemek ister misin?')) {
-                        loadGame();
-                    } else {
-                        // Tutorial'ı başlat
-                        setTimeout(showTutorial, 2000);
-                    }
-                }, 3000);
-            } else {
-                // Tutorial'ı başlat
-                setTimeout(showTutorial, 2000);
+            // Draw camp
+            ctx.fillStyle = '#4CAF50';
+            ctx.beginPath();
+            ctx.arc(world.camp.x, world.camp.y, world.camp.r, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Draw enemies
+            ctx.fillStyle = '#FF5252';
+            state.enemies.forEach(enemy => {
+                ctx.beginPath();
+                ctx.arc(enemy.x, enemy.y, enemy.r, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            
+            // Draw player
+            ctx.fillStyle = '#2196F3';
+            ctx.beginPath();
+            ctx.arc(player.x, player.y, player.r, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Draw particles
+            state.particles.forEach(particle => {
+                ctx.fillStyle = particle.color || '#FFF';
+                ctx.fillRect(particle.x - 2, particle.y - 2, 4, 4);
+            });
+            
+            // Draw floating texts
+            ctx.fillStyle = '#FFF';
+            ctx.font = '16px Arial';
+            state.floatingTexts.forEach(text => {
+                ctx.fillText(text.text, text.x, text.y);
+            });
+            
+            // Restore context
+            ctx.restore();
+            
+            // Draw UI
+            drawUI();
+        }
+
+        function drawUI() {
+            // Health bar
+            ctx.fillStyle = '#333';
+            ctx.fillRect(10, 10, 200, 20);
+            ctx.fillStyle = '#4CAF50';
+            ctx.fillRect(10, 10, (player.hp / player.maxHp) * 200, 20);
+            
+            // Mana bar
+            ctx.fillStyle = '#333';
+            ctx.fillRect(10, 35, 200, 20);
+            ctx.fillStyle = '#2196F3';
+            ctx.fillRect(10, 35, (playerMana / playerMaxMana) * 200, 20);
+            
+            // Level and XP
+            ctx.fillStyle = '#FFF';
+            ctx.font = '16px Arial';
+            ctx.fillText(`Level: ${player.level}`, 10, 75);
+            ctx.fillText(`XP: ${player.xp}/${player.xpNeed}`, 10, 95);
+            ctx.fillText(`Gold: ${player.gold}`, 10, 115);
+            
+            // Messages
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            ctx.fillRect(10, canvas.height - 150, 400, 140);
+            ctx.fillStyle = '#FFF';
+            ctx.font = '14px Arial';
+            state.messages.slice(-5).forEach((msg, i) => {
+                ctx.fillText(msg, 15, canvas.height - 130 + i * 25);
+            });
+        }
+
+        function updateUI() {
+            // Auto-regenerate mana
+            if (playerMana < playerMaxMana) {
+                playerMana = Math.min(playerMana + 0.1, playerMaxMana);
+            }
+        }
+
+        function init() {
+            // Initialize canvas
+            canvas = document.getElementById('gameCanvas');
+            ctx = canvas.getContext('2d');
+            
+            // Set canvas size
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            
+            // Initialize player
+            player.x = world.camp.x;
+            player.y = world.camp.y;
+            
+            // Spawn some enemies
+            for (let i = 0; i < 5; i++) {
+                state.enemies.push({
+                    x: Math.random() * world.width,
+                    y: Math.random() * world.height,
+                    r: 15,
+                    speed: 1,
+                    hp: 50,
+                    maxHp: 50
+                });
             }
             
-            // Günlük görevleri oluştur
-            generateDailyQuests();
+            // Setup controls
+            setupControls();
             
-            // World boss spawn timer'ını ayarla
-            const firstBoss = Object.keys(WORLD_BOSSES)[0];
-            const boss = WORLD_BOSSES[firstBoss];
-            state.worldBoss.nextSpawn = Date.now() + (boss.spawnInterval / 2) * 1000; // İlk boss için yarım süre
-            
-            pushMessage('Knight Online 2D Mobile\'a hoş geldin! 📱');
-            pushMessage('Joystick ile hareket, butonlar ile savaş!');
-            pushMessage('Yeni sistemler: Pet Evolüsyon, Mount Upgrade, Equipment Enhancement, Skill Tree, Talent, Prestige, Mini Games, Weather Events!');
-            pushMessage('Toplam 50+ sistem ile AAA MMORPG deneyimi! 🎮');
-            
+            // Start game loop
             gameLoop();
+            
+            pushMessage('Oyuna hoş geldin! 🎮');
         }
 
         function resizeCanvas() {
-            const container = document.getElementById('gameContainer');
-            const maxWidth = window.innerWidth * 0.9;
-            const maxHeight = window.innerHeight * 0.8;
-            
-            // Canvas boyutlarını hesapla
-            const aspectRatio = 16 / 9;
-            let width = maxWidth;
-            let height = width / aspectRatio;
-            
-            if (height > maxHeight) {
-                height = maxHeight;
-                width = height * aspectRatio;
-            }
-            
-            canvas.width = 800;
-            canvas.height = 600;
-            canvas.style.width = width + 'px';
-            canvas.style.height = height + 'px';
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
         }
 
-        function initMobileControls() {
-            // Joystick kontrolü
-            const joystick = document.getElementById('joystick');
-            const joystickKnob = document.getElementById('joystickKnob');
-            
-            joystick.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                mobileState.joystickActive = true;
-                handleJoystickMove(e.touches[0]);
+        function setupControls() {
+            // Keyboard controls
+            window.addEventListener('keydown', (e) => {
+                state.keys[e.key] = true;
+                
+                // Skill controls
+                if (e.key === '1') useSkill(1);
+                if (e.key === '2') useSkill(2);
+                if (e.key === '3') useSkill(3);
+                if (e.key === '4') useSkill(4);
+                if (e.key === ' ') usePotion();
+                if (e.key === 'i') toggleInventory();
+                if (e.key === 'Escape') toggleMenu();
             });
             
-            joystick.addEventListener('touchmove', (e) => {
-                e.preventDefault();
-                if (mobileState.joystickActive) {
-                    handleJoystickMove(e.touches[0]);
-                }
+            window.addEventListener('keyup', (e) => {
+                state.keys[e.key] = false;
             });
             
-            joystick.addEventListener('touchend', (e) => {
-                e.preventDefault();
-                mobileState.joystickActive = false;
-                mobileState.joystickX = 0;
-                mobileState.joystickY = 0;
-                joystickKnob.style.transform = 'translate(0, 0)';
-            });
-            
-            // Skill butonları
-            document.querySelectorAll('.skillButton').forEach(button => {
-                button.addEventListener('touchstart', (e) => {
-                    e.preventDefault();
-                    const skillNum = button.dataset.skill;
-                    useSkill(skillNum);
+            // Mouse controls
+            canvas.addEventListener('click', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left + state.camera.x;
+                const y = e.clientY - rect.top + state.camera.y;
+                
+                // Check if clicking on enemy
+                state.enemies.forEach((enemy, index) => {
+                    const dist = Math.sqrt((x - enemy.x) ** 2 + (y - enemy.y) ** 2);
+                    if (dist <= enemy.r) {
+                        attackEnemy(index);
+                    }
                 });
             });
             
-            // Mobil kontrol butonları
-            document.querySelectorAll('.mobileButton').forEach(button => {
-                button.addEventListener('touchstart', (e) => {
-                    e.preventDefault();
-                    const action = button.dataset.action;
-                    handleMobileAction(action);
-                });
-            });
-            
-            // Menü kontrolü
-            const menuButton = document.querySelector('.menuButton');
-            const sideMenu = document.getElementById('sideMenu');
-            const menuClose = document.querySelector('.menuClose');
-            
-            menuButton.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                sideMenu.classList.toggle('open');
-                vibrate(50);
-            });
-            
-            menuClose.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                sideMenu.classList.remove('open');
-            });
-            
-            // Menü item'ları
-            document.querySelectorAll('.menuItem').forEach(item => {
-                item.addEventListener('touchstart', (e) => {
-                    e.preventDefault();
-                    const action = item.dataset.action;
-                    handleMenuAction(action);
-                    sideMenu.classList.remove('open');
-                    vibrate(50);
-                });
-            });
-            
-            // Canvas tıklama (skill hedefleme)
+            // Touch controls for mobile
+            setupTouchControls();
+        }
+
+        function setupTouchControls() {
+            // Simple touch implementation
             canvas.addEventListener('touchstart', (e) => {
                 e.preventDefault();
                 const touch = e.touches[0];
                 const rect = canvas.getBoundingClientRect();
-                const scaleX = canvas.width / rect.width;
-                const scaleY = canvas.height / rect.height;
+                const x = touch.clientX - rect.left + state.camera.x;
+                const y = touch.clientY - rect.top + state.camera.y;
                 
-                const screenX = (touch.clientX - rect.left) * scaleX;
-                const screenY = (touch.clientY - rect.top) * scaleY;
-                
-                state.mouseWorld.x = screenX + state.camera.x;
-                state.mouseWorld.y = screenY + state.camera.y;
-                
-                // Buz mermisi at
-                castIceBolt(state.mouseWorld.x, state.mouseWorld.y);
-                vibrate(30);
+                // Check if touching enemy
+                state.enemies.forEach((enemy, index) => {
+                    const dist = Math.sqrt((x - enemy.x) ** 2 + (y - enemy.y) ** 2);
+                    if (dist <= enemy.r) {
+                        attackEnemy(index);
+                    }
+                });
             });
-            
-            // Window resize
-            window.addEventListener('resize', resizeCanvas);
         }
 
-        function handleJoystickMove(touch) {
-            const joystick = document.getElementById('joystick');
-            const joystickKnob = document.getElementById('joystickKnob');
-            const rect = joystick.getBoundingClientRect();
+        function attackEnemy(index) {
+            const enemy = state.enemies[index];
+            const dist = distance(player, enemy);
             
-            const centerX = rect.left + rect.width / 2;
-            const centerY = rect.top + rect.height / 2;
-            
-            let deltaX = touch.clientX - centerX;
-            let deltaY = touch.clientY - centerY;
-            
-            const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-            const maxDistance = rect.width / 2 - 20;
-            
-            if (distance > maxDistance) {
-                deltaX = (deltaX / distance) * maxDistance;
-                deltaY = (deltaY / distance) * maxDistance;
+            if (dist <= 100) {
+                enemy.hp -= 10;
+                addFloatingText('-10', enemy.x, enemy.y, '#FF5252');
+                
+                // Create particle effect
+                for (let i = 0; i < 5; i++) {
+                    state.particles.push({
+                        x: enemy.x,
+                        y: enemy.y,
+                        vx: (Math.random() - 0.5) * 5,
+                        vy: (Math.random() - 0.5) * 5,
+                        color: '#FF5252',
+                        lifetime: 1000
+                    });
+                }
+                
+                if (enemy.hp <= 0) {
+                    // Enemy defeated
+                    player.xp += 10;
+                    player.gold += 5;
+                    addFloatingText('+10 XP', enemy.x, enemy.y - 20, '#4CAF50');
+                    addFloatingText('+5 Gold', enemy.x, enemy.y - 40, '#FFD700');
+                    
+                    state.enemies.splice(index, 1);
+                    
+                    // Spawn new enemy
+                    setTimeout(() => {
+                        state.enemies.push({
+                            x: Math.random() * world.width,
+                            y: Math.random() * world.height,
+                            r: 15,
+                            speed: 1,
+                            hp: 50,
+                            maxHp: 50
+                        });
+                    }, 2000);
+                    
+                    // Level up check
+                    if (player.xp >= player.xpNeed) {
+                        player.level++;
+                        player.xp = 0;
+                        player.xpNeed = player.level * 100;
+                        player.maxHp += 10;
+                        player.hp = player.maxHp;
+                        playerMaxMana += 5;
+                        playerMana = playerMaxMana;
+                        player.speed += 0.1;
+                        addFloatingText('LEVEL UP!', player.x, player.y - 30, '#FFD700');
+                        pushMessage(`Seviye ${player.level} oldun! 🎉`);
+                    }
+                }
             }
-            
-            joystickKnob.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
-            
-            // Joystick değerlerini normalize et
-            mobileState.joystickX = deltaX / maxDistance;
-            mobileState.joystickY = deltaY / maxDistance;
-            
-            // Klavye simülasyonu
-            state.keys['w'] = mobileState.joystickY < -0.3;
-            state.keys['s'] = mobileState.joystickY > 0.3;
-            state.keys['a'] = mobileState.joystickX < -0.3;
-            state.keys['d'] = mobileState.joystickX > 0.3;
         }
 
         function useSkill(skillNum) {
-            const skills = ['FIREBALL', 'LIGHTNING', 'HEAL', 'BLIZZARD'];
-            const skillKey = skills[skillNum - 1];
-            
-            if (skillKey) {
-                if (skillKey === 'HEAL') {
-                    castSkill(skillKey, player.x, player.y);
-                } else {
-                    castSkill(skillKey, state.mouseWorld.x, state.mouseWorld.y);
-                }
-                vibrate(40);
+            const skills = ['🔥', '⚡', '💚', '❄️'];
+            if (skillNum >= 1 && skillNum <= 4) {
+                const skill = skills[skillNum - 1];
+                addFloatingText(skill, player.x, player.y - 30, '#FFD700');
+                pushMessage(`Skill ${skillNum} kullanıldı!`);
             }
         }
 
-        function handleMobileAction(action) {
-            switch (action) {
-                case 'attack':
-                    meleeSlash();
-                    vibrate(60);
-                    break;
-                case 'potion':
-                    tryUsePotion();
-                    vibrate(50);
-                    break;
-                case 'inventory':
-                    toggleInventory();
-                    vibrate(30);
-                    break;
+        function usePotion() {
+            if (player.hp < player.maxHp) {
+                player.hp = Math.min(player.hp + 50, player.maxHp);
+                addFloatingText('+50 HP', player.x, player.y - 30, '#4CAF50');
+                pushMessage('İksir kullanıldı! 🧪');
             }
         }
 
-        function handleMenuAction(action) {
-            switch (action) {
-                case 'save':
-                    saveGame();
-                    break;
-                case 'load':
-                    loadGame();
-                    break;
-                case 'settings':
-                    toggleSettings();
-                    break;
-                case 'tutorial':
-                    mobileState.currentTutorial = 0;
-                    showTutorial();
-                    break;
-                case 'pvp':
-                    if (!state.pvp.inArena) {
-                        enterPvPArena('ARENA_1V1');
-                    } else {
-                        exitPvPArena();
-                    }
-                    break;
-                case 'party':
-                    if (state.party.members.length === 0) {
-                        createParty('BASIC');
-                    } else {
-                        leaveParty();
-                    }
-                    break;
-                case 'auto-battle':
-                    toggleAutoBattle();
-                    break;
-                case 'market':
-                    if (!state.market.isOpen) {
-                        openMarket();
-                    } else {
-                        state.market.isOpen = false;
-                    }
-                    break;
-                case 'craft':
-                    if (!state.craftingOpen) {
-                        state.craftingOpen = true;
-                        pushMessage('Crafting menüsü açıldı!');
-                    } else {
-                        state.craftingOpen = false;
-                    }
-                    break;
-                case 'auction':
-                    pushMessage('Auction House yakında!');
-                    break;
-                case 'pet':
-                    if (player.petInventory.length > 0) {
-                        const firstPet = player.petInventory[0];
-                        summonPet(firstPet.key);
-                    } else {
-                        pushMessage('Pet\'in yok!');
-                    }
-                    break;
-                case 'mount':
-                    if (player.level >= 3) {
-                        mount('HORSE');
-                    } else {
-                        pushMessage('Binek için 3. seviye gerekli!');
-                    }
-                    break;
-                case 'house':
-                    if (!player.housing.house) {
-                        if (player.gold >= 1000) {
-                            buyHouse('basic');
-                        } else {
-                            pushMessage('Ev için 1000 altın gerekli!');
-                        }
-                    } else {
-                        enterHouse();
-                    }
-                    break;
-                case 'guild':
-                    if (!state.guild) {
-                        if (player.level >= 5) {
-                            joinGuild('WARRIORS');
-                        } else {
-                            pushMessage('Lonca için 5. seviye gerekli!');
-                        }
-                    } else {
-                        pushMessage('Zaten loncadasın!');
-                    }
-                    break;
-                case 'chat':
-                    const message = prompt('Chat mesajı:');
-                    if (message) {
-                        sendChatMessage(message, 'GLOBAL');
-                    }
-                    break;
-                case 'friends':
-                    pushMessage('Arkadaş sistemi yakında!');
-                    break;
+        function toggleInventory() {
+            state.inventoryOpen = !state.inventoryOpen;
+            pushMessage(state.inventoryOpen ? 'Envanter açıldı! 🎒' : 'Envanter kapatıldı!');
+        }
+
+        function toggleMenu() {
+            pushMessage('Menü açıldı! ☰');
+        }
+
+        // Utility functions
+        function distance(a, b) {
+            return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
+        }
+
+        function addFloatingText(text, x, y, color) {
+            state.floatingTexts.push({
+                text: text,
+                x: x,
+                y: y,
+                color: color,
+                lifetime: 2000
+            });
+        }
+
+        function pushMessage(msg) {
+            state.messages.push(msg);
+            if (state.messages.length > 50) {
+                state.messages.shift();
             }
         }
 
-        function toggleSettings() {
-            // Settings menüsü (basit implementasyon)
-            const settings = [
-                'Grafik: ' + MOBILE_SETTINGS.graphics,
-                'Parçacıklar: ' + (MOBILE_SETTINGS.particles ? 'Açık' : 'Kapalı'),
-                'Hava: ' + (MOBILE_SETTINGS.weather ? 'Açık' : 'Kapalı'),
-                'Titreşim: ' + (MOBILE_SETTINGS.vibrationEnabled ? 'Açık' : 'Kapalı'),
-                'FPS Göster: ' + (MOBILE_SETTINGS.showFPS ? 'Açık' : 'Kapalı')
-            ];
-            
-            pushMessage('Ayarlar: ' + settings.join(' | '));
+        function vibrate(pattern) {
+            if (navigator.vibrate) {
+                navigator.vibrate(pattern);
+            }
         }
 
         init();
