@@ -1,890 +1,1179 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Aetheria: 3D Tarayıcı RPG</title>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700&display=swap');
-    
-    :root {
-      --primary: #00e5ff;
-      --enemy: #ff3366;
-      --bg: #0b0c10;
-      --glass: rgba(15, 20, 30, 0.6);
-      --glass-border: rgba(255, 255, 255, 0.1);
-    }
-    
-    body, html {
-      margin: 0;
-      padding: 0;
-      width: 100%;
-      height: 100%;
-      background-color: var(--bg);
-      font-family: 'Outfit', sans-serif;
-      overflow: hidden;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      color: white;
-      user-select: none;
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Karanlık Diyar - 2D RPG</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+body {
+    background: #0a0a0a; display: flex; justify-content: center; align-items: center;
+    height: 100vh; overflow: hidden; font-family: 'Segoe UI', sans-serif;
+    touch-action: none; user-select: none; -webkit-user-select: none;
+}
+canvas { border: 2px solid #333; image-rendering: pixelated; touch-action: none; }
+#ui-overlay { position: absolute; top: 10px; left: 10px; color: white; pointer-events: none; }
 
-    #gameCanvas {
-      position: absolute;
-      top: 0; left: 0;
-      z-index: 1;
-    }
+/* MOBİL KONTROLLER */
+#mobile-controls {
+    position: absolute; bottom: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none; z-index: 10; display: none;
+}
 
-    #floating-text-container {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      pointer-events: none;
-      z-index: 5;
-    }
+/* JOYSTICK */
+#joystick-area {
+    position: absolute; bottom: 20px; left: 20px;
+    width: 140px; height: 140px; pointer-events: auto;
+}
+#joystick-base {
+    width: 140px; height: 140px; border-radius: 50%;
+    background: rgba(255,255,255,0.1); border: 3px solid rgba(255,255,255,0.25);
+    position: relative;
+}
+#joystick-thumb {
+    width: 56px; height: 56px; border-radius: 50%;
+    background: rgba(255,255,255,0.35); border: 2px solid rgba(255,255,255,0.5);
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    transition: none;
+}
 
-    .float-text {
-      position: absolute;
-      font-family: 'Outfit', sans-serif;
-      font-weight: 700;
-      pointer-events: none;
-      text-shadow: 0px 4px 10px rgba(0,0,0,0.8);
-      transform: translate(-50%, -50%);
-    }
+/* BUTONLAR */
+.mobile-btn {
+    pointer-events: auto; border-radius: 50%; display: flex;
+    align-items: center; justify-content: center;
+    color: white; font-weight: bold; text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+    border: 3px solid rgba(255,255,255,0.3);
+    position: absolute; touch-action: none;
+    -webkit-touch-callout: none;
+}
+.mobile-btn:active { transform: scale(0.92); opacity: 0.8; }
 
-    #ui-layer {
-      position: absolute;
-      top: 0; left: 0; width: 100%; height: 100%;
-      pointer-events: none;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      padding: 30px;
-      box-sizing: border-box;
-      z-index: 10;
-    }
+#btn-attack {
+    width: 80px; height: 80px; bottom: 30px; right: 30px;
+    background: rgba(200,50,50,0.6); font-size: 14px;
+}
+#btn-attack span { font-size: 28px; }
 
-    .glass-panel {
-      background: var(--glass);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border: 1px solid var(--glass-border);
-      border-radius: 16px;
-      padding: 15px 25px;
-      box-shadow: 0 8px 32px 0 rgba(0,0,0,0.3);
-    }
+#btn-roll {
+    width: 60px; height: 60px; bottom: 120px; right: 100px;
+    background: rgba(50,100,200,0.6); font-size: 12px;
+}
+#btn-interact {
+    width: 55px; height: 55px; bottom: 120px; right: 25px;
+    background: rgba(50,180,50,0.6); font-size: 18px;
+}
+#btn-inv {
+    width: 50px; height: 50px; bottom: 190px; right: 170px;
+    background: rgba(180,150,50,0.6); font-size: 16px;
+}
 
-    .header-info {
-      display: flex;
-      justify-content: flex-end;
-      align-items: flex-start;
-    }
+/* BÜYÜ BUTONLARI */
+.spell-btn {
+    pointer-events: auto; border-radius: 12px; width: 58px; height: 58px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    color: white; font-size: 22px; border: 2px solid rgba(255,255,255,0.3);
+    position: absolute; touch-action: none; background: rgba(0,0,0,0.6);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+}
+.spell-btn:active { transform: scale(0.9); }
+.spell-btn .spell-name { font-size: 8px; margin-top: 2px; }
+.spell-btn .spell-key { font-size: 9px; color: #aaa; position: absolute; top: 2px; right: 5px; }
 
-    .stats {
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-      font-size: 14px;
-      font-weight: 500;
-      min-width: 120px;
-      padding: 10px 20px;
-      opacity: 0.85;
-    }
+#spell-0 { bottom: 195px; right: 25px; }
+#spell-1 { bottom: 195px; right: 92px; }
+#spell-2 { bottom: 195px; right: 159px; }
+/* İyileştir butonu ayrı */
 
-    .stat-box {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
+#dialog-box {
+    position: absolute; bottom: 220px; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.85); border: 2px solid #8B7355; border-radius: 8px;
+    padding: 15px 25px; color: #f0e6d2; font-size: 15px; max-width: 90%;
+    width: 340px; display: none; text-align: center; pointer-events: none; line-height: 1.6;
+    z-index: 20;
+}
+#dialog-box .name { color: #ffd700; font-weight: bold; font-size: 13px; }
+#dialog-box .tap-hint { color: #888; font-size: 11px; margin-top: 5px; }
 
-    .score-val { color: #00e5ff; font-weight: 700; text-shadow: 0 0 5px rgba(251, 191, 36, 0.6); }
-    .health-val { color: #ff3366; font-weight: 700; text-shadow: 0 0 10px rgba(255, 51, 102, 0.6); }
+#inventory-panel {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    background: rgba(20,15,10,0.97); border: 2px solid #8B7355; border-radius: 10px;
+    padding: 15px; color: #f0e6d2; display: none; min-width: 320px; max-width: 95%;
+    z-index: 30; max-height: 80vh; overflow-y: auto;
+}
+#inventory-panel h2 { color: #ffd700; text-align: center; margin-bottom: 10px; font-size: 18px; }
+.inv-grid { display: grid; grid-template-columns: repeat(6, 48px); gap: 5px; justify-content: center; margin-bottom: 10px; }
+.inv-slot {
+    width: 48px; height: 48px; background: rgba(60,50,40,0.8); border: 1px solid #5a4a3a;
+    border-radius: 4px; display: flex; align-items: center; justify-content: center;
+    font-size: 22px; cursor: pointer; position: relative;
+}
+.inv-slot:active { border-color: #ffd700; background: rgba(80,70,50,0.9); }
+.inv-slot .count { position: absolute; bottom: 1px; right: 3px; font-size: 10px; color: #aaa; }
+.inv-slot .tooltip {
+    display: none; position: absolute; bottom: 52px; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.95); border: 1px solid #8B7355; border-radius: 5px;
+    padding: 6px 10px; white-space: nowrap; font-size: 11px; z-index: 100;
+    pointer-events: none;
+}
+.inv-slot.active-item { border: 2px solid #ffd700; }
+.close-btn {
+    display: block; margin: 0 auto; padding: 10px 30px; background: #8B7355;
+    border: none; border-radius: 5px; color: white; font-size: 14px; cursor: pointer;
+}
 
-    .health-bar-container {
-      width: 100%;
-      height: 4px;
-      background: rgba(255,255,255,0.1);
-      border-radius: 4px;
-      margin-top: 5px;
-      overflow: hidden;
-    }
+#death-screen {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(80,0,0,0.85); display: none; justify-content: center;
+    align-items: center; flex-direction: column; color: white; z-index: 40;
+}
+#death-screen h1 { font-size: 48px; color: #ff3333; margin-bottom: 15px; }
+#death-screen button {
+    padding: 14px 40px; background: #8B0000; border: 2px solid #ff3333;
+    border-radius: 8px; color: white; font-size: 18px; cursor: pointer;
+}
 
-    #xp-bar-fill {
-      height: 100%;
-      width: 0%;
-      background: #b500ff;
-      box-shadow: 0 0 5px #b500ff;
-      transition: width 0.2s ease-out;
-    }
+#minimap {
+    position: absolute; top: 5px; right: 5px; border: 2px solid #555; border-radius: 4px;
+}
 
-    #health-bar-fill {
-      height: 100%;
-      width: 100%;
-      background: #ff3366;
-      box-shadow: 0 0 10px #ff3366;
-      transition: width 0.2s ease-out;
-    }
+#controls-hint {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    color: rgba(255,255,255,0.6); font-size: 13px; text-align: center;
+    pointer-events: none; display: none; z-index: 5;
+    background: rgba(0,0,0,0.6); padding: 15px 25px; border-radius: 10px;
+}
 
-    .game-over {
-      position: absolute;
-      top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
-      text-align: center;
-      display: none;
-      z-index: 20;
-      pointer-events: auto;
-      flex-direction: column;
-      align-items: center;
-      gap: 20px;
-    }
-
-    .game-over h2 { font-size: 56px; margin: 0; color: #ff3366; text-shadow: 0 0 20px rgba(255, 51, 102, 0.5); }
-    .game-over p { font-size: 24px; margin: 0; opacity: 0.9; }
-
-    .restart-btn {
-      background: linear-gradient(45deg, #00e5ff, #8a2be2);
-      border: none; color: white; padding: 14px 32px;
-      font-family: 'Outfit', sans-serif; font-size: 18px; font-weight: 700;
-      border-radius: 8px; cursor: pointer; transition: all 0.3s;
-      box-shadow: 0 0 15px rgba(0, 229, 255, 0.4);
-    }
-
-    .restart-btn:hover { transform: scale(1.05) translateY(-2px); box-shadow: 0 5px 25px rgba(0, 229, 255, 0.6); }
-
-    #inventory-bar {
-      display: flex; gap: 15px; margin-top: auto; align-self: center; margin-bottom: 10px; pointer-events: auto;
-    }
-
-    .inv-slot {
-      width: 60px; height: 60px; border-radius: 12px; display: flex; justify-content: center; align-items: center;
-      position: relative; font-weight: 700; transition: transform 0.2s; cursor: pointer;
-    }
-    
-    .inv-slot:hover { transform: translateY(-5px); box-shadow: 0 5px 15px rgba(0, 229, 255, 0.4); }
-    .slot-icon { font-size: 32px; }
-    
-    .slot-count {
-      position: absolute; bottom: -5px; right: -5px; background: #ff3366; color: white;
-      font-size: 14px; padding: 2px 6px; border-radius: 10px; border: 2px solid var(--bg);
-    }
-
-    /* Joystick Styles */
-    #joystick-base {
-      position: absolute;
-      bottom: 50px;
-      left: 50px;
-      width: 120px;
-      height: 120px;
-      background: rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(5px);
-      border: 2px solid rgba(255, 255, 255, 0.2);
-      border-radius: 50%;
-      display: none; /* Sadece mobilde/dokunmada görünecek */
-      z-index: 100;
-      pointer-events: none;
-    }
-
-    #joystick-stick {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 50px;
-      height: 50px;
-      background: var(--primary);
-      border-radius: 50%;
-      transform: translate(-50%, -50%);
-      box-shadow: 0 0 15px var(--primary);
-    }
-  </style>
+/* HP/MP mobilde daha küçük */
+@media (max-width: 600px) {
+    #dialog-box { font-size: 13px; padding: 10px 15px; max-width: 85%; }
+    #btn-attack { width: 70px; height: 70px; bottom: 20px; right: 20px; }
+    #btn-attack span { font-size: 24px; }
+    #btn-roll { width: 50px; height: 50px; bottom: 100px; right: 85px; }
+    #btn-interact { width: 48px; height: 48px; bottom: 100px; right: 22px; }
+    #btn-inv { width: 44px; height: 44px; bottom: 170px; right: 150px; }
+    .spell-btn { width: 50px; height: 50px; font-size: 20px; }
+    #spell-0 { bottom: 175px; right: 20px; }
+    #spell-1 { bottom: 175px; right: 78px; }
+    #spell-2 { bottom: 175px; right: 136px; }
+}
+</style>
 </head>
 <body>
 
-  <div id="floating-text-container"></div>
-  <canvas id="gameCanvas"></canvas>
+<canvas id="game"></canvas>
+<canvas id="minimap" width="140" height="100"></canvas>
 
-  <div id="joystick-base">
-    <div id="joystick-stick"></div>
-  </div>
+<div id="controls-hint">
+    🎮 Dokunmatik kontroller aktif<br>
+    <span style="font-size:11px">Klavye + Fare de çalışır</span>
+</div>
 
-  <div id="ui-layer">
-    <div class="header-info" style="justify-content: flex-end;">
-      <div class="glass-panel stats">
-        <div class="stat-box"><span>Level</span><span id="levelVal" class="score-val">1</span></div>
-        <div class="stat-box" style="font-size: 12px; opacity: 0.9;"><span>XP</span><span id="xpVal">0 / 100</span></div>
-        <div class="health-bar-container"><div id="xp-bar-fill"></div></div>
-        <div class="stat-box" style="margin-top: 6px;"><span>Can</span><span id="healthVal" class="health-val">100 / 100</span></div>
-        <div class="health-bar-container"><div id="health-bar-fill"></div></div>
-      </div>
+<div id="dialog-box">
+    <div class="name"></div>
+    <div class="text"></div>
+    <div class="tap-hint">Devam etmek için dokun</div>
+</div>
+
+<div id="inventory-panel">
+    <h2>⚔️ Envanter</h2>
+    <div class="inv-grid" id="inv-grid"></div>
+    <button class="close-btn" onclick="toggleInventory()">Kapat</button>
+</div>
+
+<div id="death-screen">
+    <h1>💀 ÖLDÜN</h1>
+    <p>Karanlık seni yuttu...</p>
+    <button onclick="respawnPlayer()">Yeniden Doğ</button>
+</div>
+
+<!-- MOBİL KONTROLLER -->
+<div id="mobile-controls">
+    <div id="joystick-area">
+        <div id="joystick-base">
+            <div id="joystick-thumb"></div>
+        </div>
     </div>
-    <div id="inventory-bar">
-      <div class="glass-panel inv-slot"><span class="slot-icon" title="Odun">🪵</span><span class="slot-count" id="inv-wood">0</span></div>
-      <div class="glass-panel inv-slot"><span class="slot-icon" title="Saman">🌾</span><span class="slot-count" id="inv-straw">0</span></div>
-    </div>
-  </div>
+    <div id="btn-attack" class="mobile-btn"><span>⚔️</span></div>
+    <div id="btn-roll" class="mobile-btn">💨</div>
+    <div id="btn-interact" class="mobile-btn">✋</div>
+    <div id="btn-inv" class="mobile-btn">🎒</div>
+    <div id="spell-0" class="spell-btn">🔥<span class="spell-name">Ateş</span></div>
+    <div id="spell-1" class="spell-btn">❄️<span class="spell-name">Buz</span></div>
+    <div id="spell-2" class="spell-btn">⚡<span class="spell-name">Şimşek</span></div>
+</div>
 
-  <div id="gameOverScreen" class="glass-panel game-over">
-    <h2>ÖLDÜN</h2>
-    <p>Nihai Skorun: <span id="finalScore" class="score-val">0</span></p>
-    <button class="restart-btn" onclick="resetGame()">YENİDEN BAŞLA</button>
-  </div>
+<script>
+// ============ OYUN AYARLARI ============
+const TILE = 32;
+const COLS = 50;
+const ROWS = 50;
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const mCanvas = document.getElementById('minimap');
+const mCtx = mCanvas.getContext('2d');
 
-  <!-- THREE.JS WEBGL KÜTÜPHANESİ -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+let isMobile = false;
+function detectMobile() {
+    return ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || window.innerWidth < 900;
+}
 
-  <script>
-    const WORLD_SIZE = 3000;
-    const TILE_SIZE = 50;
-    const MAP_COLS = Math.floor(WORLD_SIZE / TILE_SIZE);
-    const MAP_ROWS = Math.floor(WORLD_SIZE / TILE_SIZE);
+function resizeCanvas() {
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    const ratio = 960 / 640;
 
-    // DOM ELEMENTS
-    const levelEl = document.getElementById('levelVal');
-    const xpEl = document.getElementById('xpVal');
-    const xpBarFill = document.getElementById('xp-bar-fill');
-    const healthEl = document.getElementById('healthVal');
-    const healthBarFill = document.getElementById('health-bar-fill');
-    const gameOverScreen = document.getElementById('gameOverScreen');
-    const finalScoreEl = document.getElementById('finalScore');
-    const invWoodEl = document.getElementById('inv-wood');
-    const invStrawEl = document.getElementById('inv-straw');
-    const floatContainer = document.getElementById('floating-text-container');
-
-    // THREE JS SETUP
-    const canvas = document.getElementById('gameCanvas');
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color('#87CEEB'); // Gökyüzü mavisi
-    scene.fog = new THREE.Fog('#87CEEB', 500, 2000);
-
-    const camera = new THREE.PerspectiveCamera(50, window.innerWidth/window.innerHeight, 0.1, 5000);
-
-    const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-
-    window.addEventListener('resize', () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-    });
-
-    // AYDINLATMA
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-    scene.add(ambientLight);
-
-    const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    dirLight.position.set(-1000, 2000, 1000);
-    dirLight.castShadow = true;
-    dirLight.shadow.camera.left = -2000;
-    dirLight.shadow.camera.right = 2000;
-    dirLight.shadow.camera.top = 2000;
-    dirLight.shadow.camera.bottom = -2000;
-    dirLight.shadow.camera.far = 5000;
-    dirLight.shadow.mapSize.width = 2048;
-    dirLight.shadow.mapSize.height = 2048;
-    scene.add(dirLight);
-
-    // KONTROLLER
-    const keys = { w: false, a: false, s: false, d: false, ArrowUp: false, ArrowLeft: false, ArrowDown: false, ArrowRight: false };
-    window.addEventListener('keydown', e => { if(keys.hasOwnProperty(e.key)) keys[e.key] = true; });
-    window.addEventListener('keyup', e => { if(keys.hasOwnProperty(e.key)) keys[e.key] = false; });
-
-    let cameraZoom = 1.0;
-    window.addEventListener('wheel', e => {
-      if(e.target === canvas || e.target === floatContainer || e.target.closest('#ui-layer')) {
-        if (e.deltaY < 0) cameraZoom *= 1.1; else cameraZoom /= 1.1;
-        cameraZoom = Math.max(0.4, Math.min(cameraZoom, 2.5));
-      }
-    });
-
-    // 3D ZEMİN YAKALAYICI (Raycasting için sanal düzlem)
-    const floorPlane = new THREE.Mesh(
-      new THREE.PlaneGeometry(WORLD_SIZE * 2, WORLD_SIZE * 2),
-      new THREE.MeshBasicMaterial({ visible: false })
-    );
-    floorPlane.rotation.x = -Math.PI / 2;
-    scene.add(floorPlane);
-
-    const dist = (x1, y1, x2, y2) => Math.hypot(x2 - x1, y2 - y1);
-    const rand = (min, max) => Math.random() * (max - min) + min;
-
-    // MATERYALLER
-    const matGrass = new THREE.MeshLambertMaterial({color: '#4ade80'});
-    const matWater = new THREE.MeshLambertMaterial({color: '#3b82f6', transparent: true, opacity: 0.8});
-    const matSand = new THREE.MeshLambertMaterial({color: '#fde047'});
-    const matTree = new THREE.MeshLambertMaterial({color: '#064e3b'});
-
-    let dummies=[], projectiles=[], gems=[], groundItems=[], floatingTexts=[], particles=[];
-    let mapMeshes = [];
-    let player;
-    let isGameOver = false;
-    let score = 0;
-
-    class FloatingText {
-      constructor(x, y, z, text, color) {
-        this.pos = new THREE.Vector3(x, y, z);
-        this.life = 1.0;
-        this.element = document.createElement('div');
-        this.element.className = 'float-text';
-        this.element.innerText = text;
-        this.element.style.color = color;
-        this.element.style.fontSize = '14px'; // Yazılar daha ufak ve minimal hale getirildi
-        floatContainer.appendChild(this.element);
-      }
-      update(dt) {
-        this.pos.y += 30 * dt;
-        this.life -= dt * 1.5;
-        
-        let vec = this.pos.clone();
-        vec.project(camera);
-        let px = (vec.x * 0.5 + 0.5) * window.innerWidth;
-        let py = (-(vec.y * 0.5) + 0.5) * window.innerHeight;
-        
-        this.element.style.left = `${px}px`;
-        this.element.style.top = `${py}px`;
-        this.element.style.opacity = Math.max(0, this.life);
-      }
-      destroy() {
-        if(this.element.parentNode) this.element.parentNode.removeChild(this.element);
-      }
+    if (w / h > ratio) {
+        canvas.height = h;
+        canvas.width = h * ratio;
+    } else {
+        canvas.width = w;
+        canvas.height = w / ratio;
     }
+    canvas.style.position = 'absolute';
+    canvas.style.left = ((window.innerWidth - canvas.width) / 2) + 'px';
+    canvas.style.top = ((window.innerHeight - canvas.height) / 2) + 'px';
 
-    class Particle {
-      constructor(x, y, z, color) {
-        this.mesh = new THREE.Mesh(new THREE.BoxGeometry(4, 4, 4), new THREE.MeshBasicMaterial({color: color}));
-        this.mesh.position.set(x, y, z);
-        scene.add(this.mesh);
-        
-        const angle = rand(0, Math.PI*2);
-        const speed = rand(30, 80);
-        this.vx = Math.cos(angle) * speed;
-        this.vz = Math.sin(angle) * speed;
-        this.vy = rand(30, 80);
-        this.life = 1.0;
-      }
-      update(dt) {
-        this.mesh.position.x += this.vx * dt;
-        this.mesh.position.z += this.vz * dt;
-        this.mesh.position.y += this.vy * dt;
-        this.vy -= 150 * dt; // Gravity
-        if(this.mesh.position.y < 0) this.mesh.position.y = 0;
-        
-        this.life -= dt;
-        this.mesh.scale.setScalar(Math.max(0, this.life));
-      }
-    }
+    // Mobil minimap boyutlandırma
+    const mmScale = Math.min(140, canvas.width * 0.18);
+    mCanvas.width = mmScale;
+    mCanvas.height = mmScale * 0.7;
+    mCanvas.style.top = '5px';
+    mCanvas.style.right = '5px';
+}
 
-    function createExplosion(x, y, z, color, count) {
-      for(let i=0; i<count; i++) particles.push(new Particle(x, y, z, color));
-    }
+window.addEventListener('resize', resizeCanvas);
 
-    class Player {
-      constructor() {
-        this.x = WORLD_SIZE/2; this.z = WORLD_SIZE/2;
-        this.speed = 300; this.radius = 20;
-        this.maxHealth = 100; this.health = 100;
-        this.level = 1; this.xp = 0; this.xpNeeded = 100;
-        this.inventory = { wood:0, straw:0 };
-        this.walkTimer = 0;
-        this.isShooting = false;
-        this.shootCooldown = 0;
-        this.lastTargetPos = null;
+// ============ TILE TİPLERİ ============
+const TILES = {
+    GRASS: 0, DIRT: 1, WATER: 2, STONE: 3, TREE: 4, WALL: 5,
+    FLOOR: 6, DOOR: 7, CHEST: 8, SAND: 9, PATH: 10, BRIDGE: 11,
+    LAVA: 12, ICE: 13, FLOWER: 14, MUSHROOM: 15, CRYSTAL: 16
+};
 
-        this.mesh = new THREE.Group();
-        this.mesh.position.set(this.x, 0, this.z);
+const TILE_COLORS = {
+    0: '#2d5a1e', 1: '#8B6914', 2: '#1a5276', 3: '#666', 4: '#1a3a0a',
+    5: '#444', 6: '#5a4a3a', 7: '#8B7355', 8: '#8B6914', 9: '#d4a843',
+    10: '#a08060', 11: '#8B6914', 12: '#cc3300', 13: '#a0d8ef',
+    14: '#2d5a1e', 15: '#2d5a1e', 16: '#2d5a1e'
+};
 
-        // Body
-        this.body = new THREE.Mesh(new THREE.BoxGeometry(20, 30, 20), new THREE.MeshLambertMaterial({color: '#1d4ed8'}));
-        this.body.position.y = 15;
-        this.body.castShadow = true;
-        this.mesh.add(this.body);
+const SOLID = new Set([2, 4, 5, 8, 12, 15, 16]);
 
-        // Head
-        this.head = new THREE.Mesh(new THREE.BoxGeometry(16, 16, 16), new THREE.MeshLambertMaterial({color: '#fde047'}));
-        this.head.position.y = 38;
-        this.head.castShadow = true;
-        this.mesh.add(this.head);
-
-        // Staff
-        this.staff = new THREE.Mesh(new THREE.BoxGeometry(4, 40, 4), new THREE.MeshLambertMaterial({color: '#78350f'}));
-        this.staff.position.set(15, 20, 10);
-        this.staff.rotation.x = Math.PI/4;
-        this.staff.castShadow = true;
-        this.mesh.add(this.staff);
-
-        // FEET (Ayaklar)
-        const footGeo = new THREE.BoxGeometry(8, 6, 12);
-        const footMat = new THREE.MeshLambertMaterial({color: '#0f172a'}); // Koyu mavi/siyah ayakkabı
-
-        this.leftFoot = new THREE.Mesh(footGeo, footMat);
-        this.leftFoot.position.set(-6, 3, 0);
-        this.leftFoot.castShadow = true;
-        this.mesh.add(this.leftFoot);
-
-        this.rightFoot = new THREE.Mesh(footGeo, footMat);
-        this.rightFoot.position.set(6, 3, 0);
-        this.rightFoot.castShadow = true;
-        this.mesh.add(this.rightFoot);
-
-        scene.add(this.mesh);
-      }
-      update(dt) {
-        let dx=0, dz=0;
-        // Klavye Kontrolleri
-        if(keys.w || keys.ArrowUp)   { dx += 1; dz -= 1; } // Ekranda Yukarı
-        if(keys.s || keys.ArrowDown) { dx -= 1; dz += 1; } // Ekranda Aşağı
-        if(keys.a || keys.ArrowLeft) { dx -= 1; dz -= 1; } // Ekranda Sola
-        if(keys.d || keys.ArrowRight) { dx += 1; dz += 1; } // Ekranda Sağa
-
-        // Joystick Kontrolleri (Mobil)
-        if (joystickActive) {
-          dx += joystickVector.x - joystickVector.y;
-          dz += joystickVector.x + joystickVector.y;
+// ============ HARİTA OLUŞTURUCU ============
+function generateMap() {
+    const map = [];
+    for (let y = 0; y < ROWS; y++) {
+        map[y] = [];
+        for (let x = 0; x < COLS; x++) {
+            if (x === 0 || y === 0 || x === COLS-1 || y === ROWS-1) {
+                map[y][x] = TILES.WALL;
+            } else { map[y][x] = TILES.GRASS; }
         }
-
-        if (dx !== 0 || dz !== 0) {
-          let length = Math.hypot(dx, dz);
-          this.x += (dx/length) * this.speed * dt;
-          this.z += (dz/length) * this.speed * dt;
-          this.walkTimer += dt * 15;
-          // Bobbing (Sekme ve Adım Atma)
-          let bob = Math.abs(Math.sin(this.walkTimer)) * 4;
-          this.body.position.y = 15 + bob;
-          this.head.position.y = 38 + bob;
-          this.staff.position.y = 20 + bob;
-
-          // Ayak Salınımı
-          let swing = Math.sin(this.walkTimer) * 12;
-          this.leftFoot.position.z = swing;
-          this.rightFoot.position.z = -swing;
-        } else {
-          // Durduğunda zamanlayıcıyı sönümle ve vücut parçalarını yerlerine oturt
-          this.walkTimer *= 0.8;
-          let bob = Math.abs(Math.sin(this.walkTimer)) * 4;
-          this.body.position.y = 15 + bob;
-          this.head.position.y = 38 + bob;
-          this.staff.position.y = 20 + bob;
-
-          let swing = Math.sin(this.walkTimer) * 12;
-          this.leftFoot.position.z = swing;
-          this.rightFoot.position.z = -swing;
-        }
-
-        // SERİ ATEŞ MEKANİĞİ
-        if (this.shootCooldown > 0) this.shootCooldown -= dt;
-        if (this.isShooting && this.shootCooldown <= 0 && this.lastTargetPos) {
-           this.lookAtPos(this.lastTargetPos.x, this.lastTargetPos.z);
-           projectiles.push(new Projectile(this.x, this.z, this.lastTargetPos.x, this.lastTargetPos.z));
-           this.walkTimer += 1.5; // Asa sallama
-           this.shootCooldown = 0.33; // Saniyede ~3 mermi
-        }
-
-        // ROTASYON (Ateş etmiyorsa yürüme yönüne, ediyorsa hedefe bak)
-        if (!this.isShooting && (dx !== 0 || dz !== 0)) {
-           const targetRot = Math.atan2(dx, dz);
-           let diff = targetRot - this.mesh.rotation.y;
-           while (diff < -Math.PI) diff += Math.PI * 2;
-           while (diff > Math.PI) diff -= Math.PI * 2;
-           this.mesh.rotation.y += diff * 0.15;
-        } else if (this.isShooting && this.lastTargetPos) {
-            // Ateş ederken anında hedefe dön
-            this.lookAtPos(this.lastTargetPos.x, this.lastTargetPos.z);
-        }
-
-        this.x = Math.max(this.radius, Math.min(WORLD_SIZE-this.radius, this.x));
-        this.z = Math.max(this.radius, Math.min(WORLD_SIZE-this.radius, this.z));
-        this.mesh.position.set(this.x, 0, this.z);
-      }
-      lookAtPos(x, z) {
-        this.mesh.rotation.y = Math.atan2(this.x - x, this.z - z);
-      }
-      addXp(amount) {
-        this.xp += amount;
-        while(this.xp >= this.xpNeeded) {
-          this.xp -= this.xpNeeded;
-          this.level++;
-          this.maxHealth += 20;
-          this.health = this.maxHealth;
-          this.xpNeeded = Math.floor(this.xpNeeded * 1.5);
-          floatingTexts.push(new FloatingText(this.x, 60, this.z, "SEVİYE ATLADI!", '#fbbf24'));
-        }
-      }
     }
-
-    class Projectile {
-      constructor(x, z, targetX, targetZ) {
-        this.x = x; this.z = z; this.radius = 8;
-        this.mesh = new THREE.Mesh(new THREE.SphereGeometry(6, 8, 8), new THREE.MeshBasicMaterial({color: '#a855f7'}));
-        this.mesh.position.set(x, 20, z);
-        scene.add(this.mesh);
-
-        let angle = Math.atan2(targetZ - z, targetX - x);
-        this.vx = Math.cos(angle) * 500;
-        this.vz = Math.sin(angle) * 500;
-        this.life = 2.0;
-        this.active = true;
-        this.damage = Math.floor(rand(500, 1500));
-      }
-      update(dt) {
-        this.x += this.vx * dt;
-        this.z += this.vz * dt;
-        this.mesh.position.set(this.x, 20, this.z);
-        this.life -= dt;
-        if(this.life <= 0) this.active = false;
-      }
-      destroy() { scene.remove(this.mesh); }
-    }
-
-    class Dummy {
-      constructor(x, z) {
-        this.x = x; this.z = z; this.radius = 25;
-        this.maxHealth = 10000; this.health = 10000;
-
-        this.mesh = new THREE.Group();
-        this.mesh.position.set(x, 0, z);
-
-        // Stick
-        const stick = new THREE.Mesh(new THREE.BoxGeometry(8, 40, 8), new THREE.MeshLambertMaterial({color: '#78350f'}));
-        stick.position.y = 20; stick.castShadow = true;
-        this.mesh.add(stick);
-
-        // Body
-        this.body = new THREE.Mesh(new THREE.BoxGeometry(30, 20, 20), new THREE.MeshLambertMaterial({color: '#fde047'}));
-        this.body.position.y = 30; this.body.castShadow = true;
-        this.mesh.add(this.body);
-
-        // Head
-        this.head = new THREE.Mesh(new THREE.BoxGeometry(16, 16, 16), new THREE.MeshLambertMaterial({color: '#fef08a'}));
-        this.head.position.y = 48; this.head.castShadow = true;
-        this.mesh.add(this.head);
-
-        scene.add(this.mesh);
-        
-        // Health Bar UI element
-        this.hpUI = document.createElement('div');
-        this.hpUI.style.position = 'absolute';
-        this.hpUI.style.width = '40px'; this.hpUI.style.height = '6px';
-        this.hpUI.style.background = 'black';
-        this.hpUI.style.border = '1px solid white';
-        this.hpFill = document.createElement('div');
-        this.hpFill.style.width = '100%'; this.hpFill.style.height = '100%';
-        this.hpFill.style.background = '#10b981';
-        this.hpUI.appendChild(this.hpFill);
-        floatContainer.appendChild(this.hpUI);
-      }
-      update(dt) {
-        if(this.health < this.maxHealth) this.health = Math.min(this.maxHealth, this.health + 200 * dt);
-        
-        this.hpFill.style.width = `${(this.health / this.maxHealth)*100}%`;
-        let vec = new THREE.Vector3(this.x, 70, this.z).project(camera);
-        let px = (vec.x * 0.5 + 0.5) * window.innerWidth;
-        let py = (-(vec.y * 0.5) + 0.5) * window.innerHeight;
-        this.hpUI.style.left = `${px - 20}px`;
-        this.hpUI.style.top = `${py}px`;
-      }
-      takeDamage(amount) {
-        this.health = Math.max(0, this.health - amount);
-        floatingTexts.push(new FloatingText(this.x + rand(-10,10), 40, this.z + rand(-10,10), "-" + Math.floor(amount), '#ef4444'));
-        
-        let mat = this.body.material;
-        mat.emissive.setHex(0xffffff);
-        setTimeout(() => mat.emissive.setHex(0x000000), 100);
-
-        if(Math.random() < 0.25) groundItems.push(new GroundItem(this.x + rand(-30,30), this.z + rand(-30,30), 'wood'));
-        if(Math.random() < 0.25) groundItems.push(new GroundItem(this.x + rand(-30,30), this.z + rand(-30,30), 'straw'));
-      }
-      destroy() {
-        scene.remove(this.mesh);
-        if(this.hpUI.parentNode) this.hpUI.parentNode.removeChild(this.hpUI);
-      }
-    }
-
-    class Gem {
-      constructor(x, z) {
-        this.x = x; this.z = z; this.radius = 15;
-        this.mesh = new THREE.Mesh(new THREE.OctahedronGeometry(8), new THREE.MeshLambertMaterial({color: '#b500ff', emissive: '#5a0080'}));
-        this.mesh.position.set(x, 10, z);
-        this.mesh.castShadow = true;
-        scene.add(this.mesh);
-        this.timeOffset = rand(0, 10);
-      }
-      update(dt, t) {
-        this.mesh.rotation.y += dt;
-        this.mesh.position.y = 10 + Math.sin(t + this.timeOffset) * 5;
-      }
-      destroy() { scene.remove(this.mesh); }
-    }
-
-    class GroundItem {
-      constructor(x, z, type) {
-        this.x = x; this.z = z; this.type = type; this.radius = 15;
-        let color = type === 'wood' ? '#78350f' : '#fde047';
-        this.mesh = new THREE.Mesh(new THREE.BoxGeometry(10, 10, 10), new THREE.MeshLambertMaterial({color: color}));
-        this.mesh.position.set(x, 5, z);
-        this.mesh.castShadow = true;
-        scene.add(this.mesh);
-        this.timeOffset = rand(0, 10);
-      }
-      update(dt, t) {
-        this.mesh.rotation.y -= dt;
-        this.mesh.rotation.x += dt;
-        this.mesh.position.y = 10 + Math.sin(t + this.timeOffset) * 3;
-      }
-      destroy() { scene.remove(this.mesh); }
-    }
-
-    function initMap() {
-      mapMeshes.forEach(m => scene.remove(m));
-      mapMeshes = [];
-      gems.forEach(g => g.destroy()); gems = [];
-      groundItems.forEach(i => i.destroy()); groundItems = [];
-      dummies.forEach(d => d.destroy()); dummies = [];
-      projectiles.forEach(p => p.destroy()); projectiles = [];
-      floatingTexts.forEach(f => f.destroy()); floatingTexts = [];
-      particles.forEach(p => scene.remove(p.mesh)); particles = [];
-
-      let gCnt=0, wCnt=0, sCnt=0, tCnt=0;
-      let gridData = [];
-      for(let r=0; r<MAP_ROWS; r++) {
-        for(let c=0; c<MAP_COLS; c++) {
-          let noise = (Math.sin(c*0.15) + Math.sin(r*0.15) + Math.sin((c+r)*0.07)) / 3;
-          let type = 0;
-          if(noise < -0.3) { type = 1; wCnt++; }
-          else if(noise < -0.2) { type = 2; sCnt++; }
-          else if(noise > 0.4) { type = 3; tCnt++; }
-          else { type = 0; gCnt++; }
-          gridData.push({r, c, type});
-        }
-      }
-
-      let grassInst = new THREE.InstancedMesh(new THREE.BoxGeometry(TILE_SIZE, TILE_SIZE, TILE_SIZE), matGrass, gCnt);
-      let waterInst = new THREE.InstancedMesh(new THREE.BoxGeometry(TILE_SIZE, TILE_SIZE-10, TILE_SIZE), matWater, wCnt);
-      let sandInst  = new THREE.InstancedMesh(new THREE.BoxGeometry(TILE_SIZE, TILE_SIZE, TILE_SIZE), matSand, sCnt);
-      let treeInst  = new THREE.InstancedMesh(new THREE.BoxGeometry(TILE_SIZE, TILE_SIZE*3, TILE_SIZE), matTree, tCnt);
-      
-      grassInst.receiveShadow = true; sandInst.receiveShadow = true; 
-      treeInst.castShadow = true; treeInst.receiveShadow = true;
-
-      let ig=0, iw=0, is=0, it=0;
-      let dummyMatrix = new THREE.Object3D();
-
-      gridData.forEach(cell => {
-         let px = cell.c * TILE_SIZE + TILE_SIZE/2;
-         let pz = cell.r * TILE_SIZE + TILE_SIZE/2;
-         
-         if(cell.type === 0) {
-            dummyMatrix.position.set(px, -TILE_SIZE/2, pz);
-            dummyMatrix.updateMatrix();
-            grassInst.setMatrixAt(ig++, dummyMatrix.matrix);
-         } else if(cell.type === 1) {
-            dummyMatrix.position.set(px, -TILE_SIZE/2 - 5, pz);
-            dummyMatrix.updateMatrix();
-            waterInst.setMatrixAt(iw++, dummyMatrix.matrix);
-         } else if(cell.type === 2) {
-            dummyMatrix.position.set(px, -TILE_SIZE/2, pz);
-            dummyMatrix.updateMatrix();
-            sandInst.setMatrixAt(is++, dummyMatrix.matrix);
-         } else if(cell.type === 3) {
-            dummyMatrix.position.set(px, TILE_SIZE/2, pz);
-            dummyMatrix.updateMatrix();
-            treeInst.setMatrixAt(it++, dummyMatrix.matrix);
-         }
-      });
-
-      scene.add(grassInst); scene.add(waterInst); scene.add(sandInst); scene.add(treeInst);
-      mapMeshes.push(grassInst, waterInst, sandInst, treeInst);
-
-      dummies.push(new Dummy(WORLD_SIZE/2 + 250, WORLD_SIZE/2));
-      
-      for(let i=0; i<100; i++) {
-         let gx = rand(100, WORLD_SIZE-100);
-         let gz = rand(100, WORLD_SIZE-100);
-         gems.push(new Gem(gx, gz));
-      }
-    }
-
-    function resetGame() {
-      if(player && player.mesh) scene.remove(player.mesh);
-      player = new Player();
-      initMap();
-      score = 0; isGameOver = false;
-      gameOverScreen.style.display = 'none';
-      updateUI();
-    }
-
-    function updateUI() {
-      levelEl.innerText = player.level;
-      xpEl.innerText = `${Math.floor(player.xp)} / ${player.xpNeeded}`;
-      xpBarFill.style.width = `${(player.xp / player.xpNeeded) * 100}%`;
-      healthEl.innerText = `${Math.ceil(player.health)} / ${player.maxHealth}`;
-      healthBarFill.style.width = `${(player.health / player.maxHealth) * 100}%`;
-      invWoodEl.innerText = player.inventory.wood;
-      invStrawEl.innerText = player.inventory.straw;
-    }
-
-    function endGame() {
-      isGameOver = true;
-      finalScoreEl.innerText = score;
-      gameOverScreen.style.display = 'flex';
-    }
-
-    // --- JOYSTICK LOGIC ---
-    const joystickBase = document.getElementById('joystick-base');
-    const joystickStick = document.getElementById('joystick-stick');
-    let joystickActive = false;
-    let joystickOrigin = { x: 0, y: 0 };
-    let joystickVector = { x: 0, y: 0 };
-    let joystickTouchId = null;
-
-    window.addEventListener('touchstart', (e) => {
-      for (let i = 0; i < e.changedTouches.length; i++) {
-        const touch = e.changedTouches[i];
-        if (touch.clientX < window.innerWidth / 2 && joystickTouchId === null) {
-          joystickActive = true;
-          joystickTouchId = touch.identifier;
-          joystickOrigin = { x: touch.clientX, y: touch.clientY };
-          joystickBase.style.display = 'block';
-          joystickBase.style.left = `${joystickOrigin.x - 60}px`;
-          joystickBase.style.top = `${joystickOrigin.y - 60}px`;
-          joystickStick.style.left = '50%';
-          joystickStick.style.top = '50%';
-        } else if (touch.clientX >= window.innerWidth / 2) {
-          player.isShooting = true;
-          updateShootTarget(touch.clientX, touch.clientY);
-        }
-      }
-    }, { passive: false });
-
-    window.addEventListener('touchmove', (e) => {
-      for (let i = 0; i < e.changedTouches.length; i++) {
-        const touch = e.changedTouches[i];
-        if (joystickActive && touch.identifier === joystickTouchId) {
-          e.preventDefault();
-          const deltaX = touch.clientX - joystickOrigin.x;
-          const deltaY = touch.clientY - joystickOrigin.y;
-          const distVal = Math.hypot(deltaX, deltaY);
-          const maxDist = 50;
-          const angle = Math.atan2(deltaY, deltaX);
-          const moveDist = Math.min(distVal, maxDist);
-          const moveX = Math.cos(angle) * moveDist;
-          const moveY = Math.sin(angle) * moveDist;
-          joystickStick.style.transform = `translate(calc(-50% + ${moveX}px), calc(-50% + ${moveY}px))`;
-          joystickVector = { x: moveX / maxDist, y: moveY / maxDist };
-        } else if (player.isShooting && touch.clientX >= window.innerWidth / 2) {
-          updateShootTarget(touch.clientX, touch.clientY);
-        }
-      }
-    }, { passive: false });
-
-    window.addEventListener('touchend', (e) => {
-      for (let i = 0; i < e.changedTouches.length; i++) {
-        const touch = e.changedTouches[i];
-        if (touch.identifier === joystickTouchId) {
-          joystickActive = false;
-          joystickTouchId = null;
-          joystickBase.style.display = 'none';
-          joystickVector = { x: 0, y: 0 };
-        } else {
-          player.isShooting = false;
-        }
-      }
-    });
-
-    function updateShootTarget(clientX, clientY) {
-      if(isGameOver) return;
-      
-      let nearestDist = 800, nearest = null;
-      dummies.forEach(d => {
-         let curr = dist(player.x, player.z, d.x, d.z);
-         if(curr < nearestDist) { nearestDist = curr; nearest = d; }
-      });
-      
-      if(nearest) {
-         player.lastTargetPos = { x: nearest.x, z: nearest.z };
-      } else {
-         const mouseVec = new THREE.Vector2((clientX / window.innerWidth)*2-1, -(clientY / window.innerHeight)*2+1);
-         const raycaster = new THREE.Raycaster();
-         raycaster.setFromCamera(mouseVec, camera);
-         const intersects = raycaster.intersectObject(floorPlane);
-         if(intersects.length > 0) {
-            let pnt = intersects[0].point;
-            player.lastTargetPos = { x: pnt.x, z: pnt.z };
-         }
-      }
-    }
-
-    window.addEventListener('mousedown', (e) => {
-      player.isShooting = true;
-      updateShootTarget(e.clientX, e.clientY);
-    });
-
-    window.addEventListener('mousemove', (e) => {
-      if(player.isShooting) updateShootTarget(e.clientX, e.clientY);
-    });
-
-    window.addEventListener('mouseup', () => {
-      player.isShooting = false;
-    });
-
-    let prevTime = performance.now();
-    function loop() {
-      requestAnimationFrame(loop);
-      const time = performance.now();
-      const dt = Math.min((time - prevTime) / 1000, 0.1);
-      prevTime = time;
-
-      if(isGameOver) return;
-
-      player.update(dt);
-
-      const camDst = 600 / cameraZoom;
-      camera.position.set(player.x - camDst*0.7, camDst, player.z + camDst*0.7);
-      camera.lookAt(player.x, 0, player.z);
-
-      gems.forEach((g, i) => {
-         g.update(dt, time*0.003);
-         if(dist(player.x, player.z, g.x, g.z) < player.radius + g.radius) {
-            createExplosion(g.x, 15, g.z, '#b500ff', 10);
-            player.addXp(25);
-            gems.push(new Gem(rand(100, WORLD_SIZE-100), rand(100, WORLD_SIZE-100)));
-            g.destroy(); gems.splice(i, 1);
-            updateUI();
-         }
-      });
-
-      groundItems.forEach((gi, i) => {
-         gi.update(dt, time*0.005);
-         if(dist(player.x, player.z, gi.x, gi.z) < player.radius + gi.radius) {
-            player.inventory[gi.type]++;
-            floatingTexts.push(new FloatingText(player.x, 60, player.z, "+1", '#10b981'));
-            createExplosion(gi.x, 10, gi.z, gi.type === 'wood'?'#78350f':'#fde047', 5);
-            gi.destroy(); groundItems.splice(i, 1);
-            updateUI();
-         }
-      });
-
-      projectiles.forEach((p, i) => {
-         p.update(dt);
-         dummies.forEach(d => {
-            if(p.active && dist(p.x, p.z, d.x, d.z) < p.radius + d.radius) {
-               p.active = false;
-               d.takeDamage(p.damage);
-               createExplosion(p.x, 20, p.z, '#b500ff', 10);
+    for (let i = 0; i < 8; i++) {
+        let cx = randInt(5, COLS-6), cy = randInt(5, ROWS-6);
+        for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
+            if (Math.random() < 0.6 && !(dx===0 && dy===0)) {
+                let ny = cy+dy, nx = cx+dx;
+                if (ny > 0 && ny < ROWS-1 && nx > 0 && nx < COLS-1) map[ny][nx] = TILES.TREE;
             }
-         });
-         if(!p.active) { p.destroy(); projectiles.splice(i, 1); }
-      });
+        }
+    }
+    for (let i = 0; i < 4; i++) {
+        let cx = randInt(8, COLS-9), cy = randInt(8, ROWS-9);
+        for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) {
+            if (dx*dx + dy*dy <= 10) {
+                let ny = cy+dy, nx = cx+dx;
+                if (ny > 0 && ny < ROWS-1 && nx > 0 && nx < COLS-1) map[ny][nx] = TILES.WATER;
+            }
+        }
+    }
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+        let ny = ROWS-8+dy, nx = COLS-8+dx;
+        if (ny > 0 && ny < ROWS-1 && nx > 0 && nx < COLS-1) map[ny][nx] = TILES.LAVA;
+    }
+    for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
+        let ny = 5+dy, nx = 5+dx;
+        if (ny > 0 && ny < ROWS-1 && nx > 0 && nx < COLS-1) map[ny][nx] = TILES.ICE;
+    }
+    for (let x = 2; x < COLS-2; x++) map[ROWS/2|0][x] = TILES.PATH;
+    for (let y = 2; y < ROWS-2; y++) map[y][COLS/2|0] = TILES.PATH;
+    for (let i = 0; i < 3; i++) {
+        let cx = randInt(8, COLS-9), cy = randInt(8, ROWS-9);
+        for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+            let ny = cy+dy, nx = cx+dx;
+            if (ny > 0 && ny < ROWS-1 && nx > 0 && nx < COLS-1) map[ny][nx] = TILES.SAND;
+        }
+    }
+    for (let i = 0; i < 5; i++) {
+        let cx = randInt(5, COLS-6), cy = randInt(5, ROWS-6);
+        for (let dy = 0; dy < 4; dy++) for (let dx = 0; dx < 4; dx++) {
+            if (dy===0||dy===3||dx===0||dx===3) {
+                let ny = cy+dy, nx = cx+dx;
+                if (ny > 0 && ny < ROWS-1 && nx > 0 && nx < COLS-1) map[ny][nx] = TILES.STONE;
+            }
+        }
+    }
+    for (let i = 0; i < 5; i++) {
+        let cx = randInt(5, COLS-6), cy = randInt(5, ROWS-6);
+        map[cy][cx] = TILES.MUSHROOM;
+        if (cy+1 < ROWS-1) map[cy+1][cx] = TILES.MUSHROOM;
+    }
+    for (let i = 0; i < 3; i++) map[randInt(5, ROWS-6)][randInt(5, COLS-6)] = TILES.CRYSTAL;
+    for (let i = 0; i < 30; i++) map[randInt(2, ROWS-3)][randInt(2, COLS-3)] = TILES.FLOWER;
+    for (let i = 0; i < 8; i++) {
+        let px, py;
+        do { px = randInt(3, COLS-4); py = randInt(3, ROWS-4); } while (SOLID.has(map[py][px]));
+        map[py][px] = TILES.CHEST;
+    }
+    return map;
+}
 
-      dummies.forEach(d => d.update(dt));
-      floatingTexts.forEach((ft, i) => { ft.update(dt); if(ft.life <= 0) { ft.destroy(); floatingTexts.splice(i,1); }});
-      particles.forEach((p, i) => { p.update(dt); if(p.life <= 0) { scene.remove(p.mesh); particles.splice(i,1); }});
+// ============ VARLIK TİPLERİ ============
+const ENEMY_TYPES = {
+    slime: { name:'Slime', hp:30, atk:5, def:2, speed:0.8, xp:10, color:'#44cc44', size:12, drops:['herb','slime_jelly'] },
+    skeleton: { name:'İskelet', hp:50, atk:10, def:4, speed:1.2, xp:20, color:'#ddd', size:14, drops:['bone','iron_sword'] },
+    bat: { name:'Yarasa', hp:20, atk:7, def:1, speed:2.0, xp:8, color:'#6633aa', size:10, drops:['bat_wing','herb'] },
+    demon: { name:'İfrit', hp:100, atk:18, def:8, speed:1.5, xp:50, color:'#cc2200', size:16, drops:['demon_horn','fire_potion','steel_armor'] },
+    ghost: { name:'Hayalet', hp:40, atk:12, def:3, speed:1.8, xp:25, color:'#aaaaff', size:13, drops:['ectoplasm','mana_potion'] },
+    boss_dragon: { name:'🐉 Ejderha', hp:500, atk:30, def:15, speed:1.0, xp:500, color:'#ff4400', size:24, drops:['dragon_sword','dragon_armor','legendary_potion'] }
+};
 
-      renderer.render(scene, camera);
+const NPC_DATA = [
+    { name:'Bilge Eldrin', x:25, y:24, color:'#ffd700', dialog:[
+        'Hoş geldin cesur savaşçı! Bu diyarda karanlık güçler yükseliyor.',
+        'Güneydeki Ejderha\'yı yenmek için güçlü ekipmanlara ihtiyacın var.',
+        'Sandıkları aç ve düşmanları yenerek güçlen!']},
+    { name:'Tüccar Zara', x:15, y:25, color:'#ff66aa', dialog:[
+        'Merhaba! Düşmanlardan düşen eşyaları topla!',
+        'Sağ tık ile iksir kullan, büyü butonlarını kullan.',
+        'Yuvarlanma ile saldırılardan kaçınabilirsin!']},
+    { name:'Savaşçı Gorak', x:35, y:25, color:'#ff4444', dialog:[
+        'Dikkat et! Lav bölgesinde İfritler çok güçlü!',
+        'Ejderha\'nın ininin güneydoğu köşede olduğunu duydum.',
+        'Seviye atladığında tüm canın dolar!']},
+    { name:'Şifacı Lira', x:20, y:15, color:'#44ff44', dialog:[
+        'Yaralarını iyileştirmemi ister misin?',
+        'Mana iksirleri büyü kullanmanı sağlar.',
+        'Dikkatli ol, ölünce altınlarının yarısını kaybedersin!']}
+];
+
+// ============ EŞYA SİSTEMİ ============
+const ITEMS = {
+    herb: { name:'Şifalı Ot', icon:'🌿', type:'consumable', desc:'25 HP iyileştir', effect:{hp:25} },
+    mana_potion: { name:'Mana İksiri', icon:'💙', type:'consumable', desc:'20 Mana yenile', effect:{mp:20} },
+    fire_potion: { name:'Ateş İksiri', icon:'🔥', type:'consumable', desc:'50 hasar', effect:{damage:50} },
+    legendary_potion: { name:'Efsane İksir', icon:'⭐', type:'consumable', desc:'Tüm canı yenile', effect:{hp:999,mp:999} },
+    iron_sword: { name:'Demir Kılıç', icon:'🗡️', type:'weapon', desc:'+5 Saldırı', effect:{atk:5} },
+    steel_armor: { name:'Çelik Zırh', icon:'🛡️', type:'armor', desc:'+5 Savunma', effect:{def:5} },
+    dragon_sword: { name:'Ejder Kılıcı', icon:'⚔️', type:'weapon', desc:'+20 Saldırı', effect:{atk:20} },
+    dragon_armor: { name:'Ejder Zırhı', icon:'🛡️', type:'armor', desc:'+15 Savunma', effect:{def:15} },
+    bone: { name:'Kemik', icon:'🦴', type:'material', desc:'Satılabilir', value:5 },
+    slime_jelly: { name:'Slime Jölesi', icon:'🟢', type:'material', desc:'Satılabilir', value:3 },
+    bat_wing: { name:'Yarasa Kanadı', icon:'🦇', type:'material', desc:'Satılabilir', value:4 },
+    demon_horn: { name:'İfrit Boynuzu', icon:'🔴', type:'material', desc:'Satılabilir', value:15 },
+    ectoplasm: { name:'Ektoplazma', icon:'👻', type:'material', desc:'Satılabilir', value:8 },
+    gold_coin: { name:'Altın', icon:'🪙', type:'currency', desc:'Para birimi', value:1 },
+    key: { name:'Anahtar', icon:'🗝️', type:'quest', desc:'Gizli kapı', value:10 },
+    crystal_shard: { name:'Kristal Parçası', icon:'💎', type:'quest', desc:'Nadir kristal', value:25 }
+};
+
+// ============ OYUNCU ============
+let player = {
+    x: 25 * TILE, y: 25 * TILE, w: 20, h: 20,
+    hp: 100, maxHp: 100, mp: 50, maxMp: 50,
+    atk: 10, def: 5, speed: 3,
+    level: 1, xp: 0, xpToNext: 50, gold: 0,
+    dir: 'down', attacking: false, attackTimer: 0,
+    rolling: false, rollTimer: 0, rollCooldown: 0,
+    invincible: 0, inventory: [],
+    equipped: { weapon: null, armor: null },
+    spells: [
+        { name:'Ateş Topu', mpCost:8, damage:25, range:200, color:'#ff4400', cooldown:0 },
+        { name:'Buz Oku', mpCost:6, damage:18, range:250, color:'#44aaff', cooldown:0 },
+        { name:'Şimşek', mpCost:15, damage:40, range:150, color:'#ffff00', cooldown:0 },
+        { name:'İyileştir', mpCost:10, damage:0, range:0, color:'#44ff44', cooldown:0, heal:30 }
+    ]
+};
+
+// ============ OYUN DURUMU ============
+let gameMap = [];
+let enemies = [];
+let npcs = [];
+let chests = [];
+let particles = [];
+let projectiles = [];
+let damageNumbers = [];
+let camera = { x: 0, y: 0 };
+let keys = {};
+let mouse = { x: 0, y: 0, down: false };
+let gameTime = 0;
+let dialogActive = false;
+let dialogIndex = 0;
+let currentNPC = null;
+let inventoryOpen = false;
+let bossDefeated = false;
+let dayNightCycle = 0;
+let screenShake = 0;
+
+// ============ MOBİL KONTROL DURUMU ============
+let joystick = { active: false, dx: 0, dy: 0, touchId: null };
+let mobileAttack = false;
+let mobileInteract = false;
+
+// ============ YARDIMCI ============
+function randInt(a, b) { return Math.floor(Math.random() * (b - a + 1)) + a; }
+function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
+function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+function lerp(a, b, t) { return a + (b - a) * t; }
+function tileAt(px, py) {
+    let tx = Math.floor(px / TILE), ty = Math.floor(py / TILE);
+    if (tx < 0 || ty < 0 || tx >= COLS || ty >= ROWS) return TILES.WALL;
+    return gameMap[ty][tx];
+}
+function isSolid(px, py) { return SOLID.has(tileAt(px, py)); }
+
+// ============ HARİTA ============
+gameMap = generateMap();
+NPC_DATA.forEach(n => { npcs.push({ ...n, dialogShown: -1 }); });
+for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) {
+    if (gameMap[y][x] === TILES.CHEST) chests.push({ x: x * TILE + 16, y: y * TILE + 16, opened: false });
+}
+
+function spawnEnemies() {
+    enemies = [];
+    const zones = [
+        { type:'slime', count:15, minX:2, maxX:48, minY:2, maxY:48 },
+        { type:'bat', count:10, minX:2, maxX:48, minY:2, maxY:20 },
+        { type:'skeleton', count:10, minX:2, maxX:48, minY:20, maxY:48 },
+        { type:'ghost', count:6, minX:2, maxX:20, minY:2, maxY:48 },
+        { type:'demon', count:5, minX:30, maxX:48, minY:30, maxY:48 },
+    ];
+    zones.forEach(z => {
+        for (let i = 0; i < z.count; i++) {
+            let ex, ey, attempts = 0;
+            do { ex = randInt(z.minX, z.maxX) * TILE + 16; ey = randInt(z.minY, z.maxY) * TILE + 16; attempts++; }
+            while ((isSolid(ex, ey) || dist({x:ex,y:ey}, player) < 200) && attempts < 50);
+            if (attempts < 50) {
+                const t = ENEMY_TYPES[z.type];
+                enemies.push({ ...t, type: z.type, x: ex, y: ey, maxHp: t.hp,
+                    dir: randInt(0,3), moveTimer: randInt(0,60), hitTimer: 0, attackCooldown: 0,
+                    aggroRange: z.type === 'demon' ? 200 : 150, alive: true, deathTimer: 0 });
+            }
+        }
+    });
+    if (!bossDefeated) {
+        enemies.push({ ...ENEMY_TYPES.boss_dragon, x: (COLS-6)*TILE+16, y: (ROWS-6)*TILE+16,
+            maxHp: ENEMY_TYPES.boss_dragon.hp, dir:0, moveTimer:0, hitTimer:0, attackCooldown:0,
+            aggroRange:350, alive:true, deathTimer:0, phase:1 });
+    }
+}
+spawnEnemies();
+
+// ============ ENVANTER ============
+function addItem(id, count = 1) {
+    const existing = player.inventory.find(i => i.id === id);
+    if (existing) existing.count += count;
+    else player.inventory.push({ id, count });
+}
+function hasItem(id) { return player.inventory.some(i => i.id === id); }
+function removeItem(id, count = 1) {
+    const idx = player.inventory.findIndex(i => i.id === id);
+    if (idx !== -1) { player.inventory[idx].count -= count; if (player.inventory[idx].count <= 0) player.inventory.splice(idx, 1); }
+}
+function useItem(id) {
+    const item = ITEMS[id];
+    if (!item || !hasItem(id)) return;
+    if (item.type === 'consumable') {
+        const eff = item.effect;
+        if (eff.hp) { player.hp = Math.min(player.maxHp, player.hp + eff.hp); addParticle(player.x, player.y, '+', '#44ff44'); }
+        if (eff.mp) { player.mp = Math.min(player.maxMp, player.mp + eff.mp); addParticle(player.x, player.y, '+', '#4488ff'); }
+        if (eff.damage) {
+            let closest = enemies.filter(e => e.alive).sort((a,b) => dist(a,player) - dist(b,player))[0];
+            if (closest) { dealDamage(closest, eff.damage); for (let i = 0; i < 10; i++) addParticle(closest.x, closest.y, '🔥', '#ff4400'); }
+        }
+        removeItem(id);
+        addDamageNumber(player.x, player.y - 20, item.name, '#ffff00');
+    } else if (item.type === 'weapon') {
+        if (player.equipped.weapon) addItem(player.equipped.weapon);
+        player.equipped.weapon = id; recalcStats(); removeItem(id);
+        addDamageNumber(player.x, player.y - 20, item.name + ' kuşanıldı!', '#ff8800');
+    } else if (item.type === 'armor') {
+        if (player.equipped.armor) addItem(player.equipped.armor);
+        player.equipped.armor = id; recalcStats(); removeItem(id);
+        addDamageNumber(player.x, player.y - 20, item.name + ' giyildi!', '#ff8800');
+    }
+    if (inventoryOpen) renderInventory();
+}
+function recalcStats() {
+    const baseAtk = 10 + (player.level - 1) * 3;
+    const baseDef = 5 + (player.level - 1) * 2;
+    let bonusAtk = 0, bonusDef = 0;
+    if (player.equipped.weapon) bonusAtk = ITEMS[player.equipped.weapon].effect.atk || 0;
+    if (player.equipped.armor) bonusDef = ITEMS[player.equipped.armor].effect.def || 0;
+    player.atk = baseAtk + bonusAtk;
+    player.def = baseDef + bonusDef;
+}
+function toggleInventory() {
+    inventoryOpen = !inventoryOpen;
+    document.getElementById('inventory-panel').style.display = inventoryOpen ? 'block' : 'none';
+    if (inventoryOpen) renderInventory();
+}
+function renderInventory() {
+    const grid = document.getElementById('inv-grid');
+    grid.innerHTML = '';
+    for (let i = 0; i < 30; i++) {
+        const slot = document.createElement('div');
+        slot.className = 'inv-slot';
+        const item = player.inventory[i];
+        if (item) {
+            const data = ITEMS[item.id];
+            slot.innerHTML = `${data.icon}<span class="count">${item.count > 1 ? item.count : ''}</span>
+                <div class="tooltip"><b>${data.name}</b><br>${data.desc}</div>`;
+            slot.onclick = (e) => { e.stopPropagation(); useItem(item.id); };
+        }
+        grid.appendChild(slot);
+    }
+}
+
+// ============ PARÇACIK ============
+function addParticle(x, y, text, color) {
+    particles.push({ x, y, text, color, life: 40, vy: -1.5, vx: (Math.random()-0.5)*2, size: 14 });
+}
+function addDamageNumber(x, y, text, color) {
+    damageNumbers.push({ x, y, text, color, life: 60, vy: -1 });
+}
+function spawnDeathParticles(x, y, color, count) {
+    for (let i = 0; i < count; i++) addParticle(x, y, '✦', color);
+}
+
+// ============ HASAR ============
+function dealDamage(enemy, amount) {
+    const dmg = Math.max(1, amount - enemy.def);
+    enemy.hp -= dmg; enemy.hitTimer = 10;
+    addDamageNumber(enemy.x, enemy.y - 20, '-' + dmg, '#ff4444');
+    screenShake = 5;
+    if (enemy.hp <= 0) {
+        enemy.alive = false; enemy.deathTimer = 30;
+        player.xp += enemy.xp;
+        spawnDeathParticles(enemy.x, enemy.y, enemy.color, 12);
+        ENEMY_TYPES[enemy.type].drops.forEach(d => {
+            if (Math.random() < 0.4) { addItem(d); addParticle(enemy.x, enemy.y, ITEMS[d].icon, '#ffffff'); }
+        });
+        let goldDrop = randInt(1, 5) + (enemy.type === 'boss_dragon' ? 50 : 0);
+        if (goldDrop > 0) { player.gold += goldDrop; addParticle(enemy.x, enemy.y, '+' + goldDrop + '🪙', '#ffd700'); }
+        while (player.xp >= player.xpToNext) {
+            player.xp -= player.xpToNext; player.level++;
+            player.xpToNext = Math.floor(player.xpToNext * 1.5);
+            player.maxHp += 15; player.maxMp += 8;
+            player.hp = player.maxHp; player.mp = player.maxMp;
+            recalcStats();
+            addDamageNumber(player.x, player.y - 40, '🎉 SEVİYE ' + player.level + '!', '#ffd700');
+            screenShake = 10;
+            for (let i = 0; i < 20; i++) addParticle(player.x, player.y, '⭐', '#ffd700');
+        }
+        if (enemy.type === 'boss_dragon') {
+            bossDefeated = true;
+            addDamageNumber(player.x, player.y - 60, '🏆 EJDERHA YENİLDİ!', '#ffd700');
+        }
+    }
+}
+function hurtPlayer(amount) {
+    if (player.invincible > 0 || player.rolling) return;
+    const dmg = Math.max(1, amount - player.def);
+    player.hp -= dmg; player.invincible = 30; screenShake = 8;
+    addDamageNumber(player.x, player.y - 20, '-' + dmg, '#ff0000');
+    if (player.hp <= 0) { player.hp = 0; document.getElementById('death-screen').style.display = 'flex'; }
+}
+function respawnPlayer() {
+    document.getElementById('death-screen').style.display = 'none';
+    player.hp = player.maxHp; player.mp = player.maxMp;
+    player.x = 25 * TILE; player.y = 25 * TILE;
+    player.gold = Math.floor(player.gold / 2); player.invincible = 60;
+    spawnEnemies();
+}
+
+// ============ BÜYÜ ============
+function castSpell(index) {
+    if (inventoryOpen || dialogActive) return;
+    const spell = player.spells[index];
+    if (!spell || spell.cooldown > 0 || player.mp < spell.mpCost) return;
+    player.mp -= spell.mpCost; spell.cooldown = 30;
+    if (spell.heal) {
+        player.hp = Math.min(player.maxHp, player.hp + spell.heal);
+        for (let i = 0; i < 10; i++) addParticle(player.x, player.y, '✨', '#44ff44');
+        addDamageNumber(player.x, player.y - 20, '+' + spell.heal, '#44ff44');
+    } else {
+        // Mobil: en yakın düşmana, PC: fare yönüne
+        let angle;
+        if (isMobile && enemies.filter(e => e.alive).length > 0) {
+            let closest = enemies.filter(e => e.alive).sort((a,b) => dist(a,player) - dist(b,player))[0];
+            angle = Math.atan2(closest.y - player.y, closest.x - player.x);
+        } else {
+            angle = Math.atan2(mouse.y - canvas.height/2, mouse.x - canvas.width/2);
+        }
+        projectiles.push({ x: player.x, y: player.y, vx: Math.cos(angle)*6, vy: Math.sin(angle)*6,
+            damage: spell.damage, color: spell.color, range: spell.range, traveled: 0, size: 6, type: 'player' });
+        for (let i = 0; i < 5; i++) addParticle(player.x, player.y, '✧', spell.color);
+    }
+}
+
+// ============ GİRDİ ============
+document.addEventListener('keydown', e => {
+    keys[e.key.toLowerCase()] = true;
+    if (e.key === 'i' || e.key === 'I') toggleInventory();
+    if (e.key === 'e' || e.key === 'E') interact();
+    if (e.key === '1') castSpell(0);
+    if (e.key === '2') castSpell(1);
+    if (e.key === '3') castSpell(2);
+    if (e.key === '4') castSpell(3);
+    if (e.key === ' ' && !player.rolling && player.rollCooldown <= 0) {
+        player.rolling = true; player.rollTimer = 12; player.rollCooldown = 40; player.invincible = 12;
+    }
+});
+document.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+canvas.addEventListener('mousemove', e => {
+    const r = canvas.getBoundingClientRect();
+    mouse.x = e.clientX - r.left; mouse.y = e.clientY - r.top;
+});
+canvas.addEventListener('mousedown', e => {
+    if (e.button === 0) mouse.down = true;
+    if (e.button === 2) { usePotion(); }
+});
+canvas.addEventListener('mouseup', e => { if (e.button === 0) mouse.down = false; });
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+function usePotion() {
+    if (hasItem('herb') && player.hp < player.maxHp) useItem('herb');
+    else if (hasItem('mana_potion') && player.mp < player.maxMp) useItem('mana_potion');
+}
+
+function interact() {
+    if (dialogActive) {
+        currentNPC.dialogShown++;
+        if (currentNPC.dialogShown >= currentNPC.dialog.length) {
+            dialogActive = false;
+            document.getElementById('dialog-box').style.display = 'none';
+            if (currentNPC.name === 'Şifacı Lira') {
+                player.hp = player.maxHp; player.mp = player.maxMp;
+                addDamageNumber(player.x, player.y - 20, 'Tamamen iyileşti!', '#44ff44');
+            }
+        } else { updateDialog(); }
+        return;
+    }
+    npcs.forEach(npc => {
+        const nx = npc.x * TILE + 16, ny = npc.y * TILE + 16;
+        if (dist(player, {x:nx, y:ny}) < 60) {
+            dialogActive = true; currentNPC = npc; currentNPC.dialogShown = 0; updateDialog();
+        }
+    });
+    chests.forEach(chest => {
+        if (!chest.opened && dist(player, chest) < 50) {
+            chest.opened = true;
+            const tx = Math.floor(chest.x/TILE), ty = Math.floor(chest.y/TILE);
+            if (ty >= 0 && ty < ROWS && tx >= 0 && tx < COLS) gameMap[ty][tx] = TILES.FLOOR;
+            const rewards = ['herb','mana_potion','iron_sword','steel_armor','key','crystal_shard','gold_coin'];
+            const reward = rewards[randInt(0, rewards.length-1)];
+            const count = reward === 'gold_coin' ? randInt(5, 15) : 1;
+            addItem(reward, count);
+            addDamageNumber(chest.x, chest.y - 20, ITEMS[reward].icon + ' ' + ITEMS[reward].name, '#ffd700');
+            if (count > 1) addDamageNumber(chest.x, chest.y - 35, 'x' + count, '#ffd700');
+            for (let i = 0; i < 8; i++) addParticle(chest.x, chest.y, '✨', '#ffd700');
+        }
+    });
+}
+
+function updateDialog() {
+    const box = document.getElementById('dialog-box');
+    box.style.display = 'block';
+    box.querySelector('.name').textContent = currentNPC.name;
+    box.querySelector('.text').textContent = currentNPC.dialog[currentNPC.dialogShown];
+}
+
+// ============ MOBİL KONTROLLER ============
+function setupMobileControls() {
+    if (!isMobile) return;
+    document.getElementById('mobile-controls').style.display = 'block';
+    document.getElementById('controls-hint').style.display = 'block';
+    setTimeout(() => { document.getElementById('controls-hint').style.display = 'none'; }, 3000);
+
+    const joystickArea = document.getElementById('joystick-area');
+    const joystickThumb = document.getElementById('joystick-thumb');
+    const joystickBase = document.getElementById('joystick-base');
+    const baseRect = joystickBase.getBoundingClientRect();
+    const centerX = baseRect.left + baseRect.width / 2;
+    const centerY = baseRect.top + baseRect.height / 2;
+    const maxDist = 45;
+
+    joystickArea.addEventListener('touchstart', (e) => {
+        e.preventDefault(); e.stopPropagation();
+        const touch = e.changedTouches[0];
+        joystick.active = true;
+        joystick.touchId = touch.identifier;
+        updateJoystick(touch, centerX, centerY, maxDist, joystickThumb);
+    }, { passive: false });
+
+    joystickArea.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        for (let t of e.changedTouches) {
+            if (t.identifier === joystick.touchId) {
+                updateJoystick(t, centerX, centerY, maxDist, joystickThumb);
+            }
+        }
+    }, { passive: false });
+
+    joystickArea.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        for (let t of e.changedTouches) {
+            if (t.identifier === joystick.touchId) {
+                joystick.active = false; joystick.dx = 0; joystick.dy = 0;
+                joystickThumb.style.transform = 'translate(-50%, -50%)';
+            }
+        }
+    }, { passive: false });
+
+    // Butonlar
+    const btnAttack = document.getElementById('btn-attack');
+    const btnRoll = document.getElementById('btn-roll');
+    const btnInteract = document.getElementById('btn-interact');
+    const btnInv = document.getElementById('btn-inv');
+
+    btnAttack.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); mobileAttack = true; }, { passive: false });
+    btnAttack.addEventListener('touchend', (e) => { e.preventDefault(); mobileAttack = false; }, { passive: false });
+
+    btnRoll.addEventListener('touchstart', (e) => {
+        e.preventDefault(); e.stopPropagation();
+        if (!player.rolling && player.rollCooldown <= 0) {
+            player.rolling = true; player.rollTimer = 12; player.rollCooldown = 40; player.invincible = 12;
+        }
+    }, { passive: false });
+
+    btnInteract.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); interact(); }, { passive: false });
+    btnInv.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); toggleInventory(); }, { passive: false });
+
+    // Büyü butonları
+    document.getElementById('spell-0').addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); castSpell(0); }, { passive: false });
+    document.getElementById('spell-1').addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); castSpell(1); }, { passive: false });
+    document.getElementById('spell-2').addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); castSpell(2); }, { passive: false });
+
+    // Dialog'a dokunma
+    document.getElementById('dialog-box').addEventListener('touchstart', (e) => {
+        e.preventDefault(); interact();
+    }, { passive: false });
+
+    // Envanter dışı tıklama
+    document.getElementById('inventory-panel').addEventListener('touchstart', (e) => {
+        if (e.target === document.getElementById('inventory-panel') || e.target.tagName === 'BUTTON') {
+            // close button handled by onclick
+        }
+    });
+}
+
+function updateJoystick(touch, cx, cy, maxDist, thumb) {
+    let dx = touch.clientX - cx;
+    let dy = touch.clientY - cy;
+    const d = Math.hypot(dx, dy);
+    if (d > maxDist) { dx = dx/d * maxDist; dy = dy/d * maxDist; }
+    joystick.dx = dx / maxDist;
+    joystick.dy = dy / maxDist;
+    thumb.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+}
+
+// ============ GÜNCELLEME ============
+function update() {
+    gameTime++;
+    dayNightCycle = (gameTime % 3600) / 3600;
+    if (player.invincible > 0) player.invincible--;
+    if (player.rollCooldown > 0) player.rollCooldown--;
+    player.spells.forEach(s => { if (s.cooldown > 0) s.cooldown--; });
+    if (screenShake > 0) screenShake--;
+
+    // Hareket - klavye veya joystick
+    let dx = 0, dy = 0;
+    if (keys['a'] || keys['arrowleft']) { dx = -1; player.dir = 'left'; }
+    if (keys['d'] || keys['arrowright']) { dx = 1; player.dir = 'right'; }
+    if (keys['w'] || keys['arrowup']) { dy = -1; player.dir = 'up'; }
+    if (keys['s'] || keys['arrowdown']) { dy = 1; player.dir = 'down'; }
+
+    // Joystick girdisi
+    if (joystick.active && (Math.abs(joystick.dx) > 0.15 || Math.abs(joystick.dy) > 0.15)) {
+        dx = joystick.dx;
+        dy = joystick.dy;
+        if (Math.abs(joystick.dx) > Math.abs(joystick.dy)) {
+            player.dir = joystick.dx > 0 ? 'right' : 'left';
+        } else {
+            player.dir = joystick.dy > 0 ? 'down' : 'up';
+        }
     }
 
-    resetGame();
-    loop();
-  </script>
+    if (player.rolling) {
+        player.rollTimer--;
+        let rdx = 0, rdy = 0;
+        if (player.dir === 'left') rdx = -1;
+        if (player.dir === 'right') rdx = 1;
+        if (player.dir === 'up') rdy = -1;
+        if (player.dir === 'down') rdy = 1;
+        const spd = 8;
+        let nx = player.x + rdx * spd, ny = player.y + rdy * spd;
+        if (!isSolid(nx, player.y)) player.x = nx;
+        if (!isSolid(player.x, ny)) player.y = ny;
+        if (player.rollTimer <= 0) player.rolling = false;
+        if (gameTime % 2 === 0) addParticle(player.x, player.y, '💨', '#aaaaaa');
+    } else if (dx !== 0 || dy !== 0) {
+        const len = Math.hypot(dx, dy);
+        dx /= len; dy /= len;
+        let nx = player.x + dx * player.speed;
+        let ny = player.y + dy * player.speed;
+        const margin = 8;
+        if (!isSolid(nx - margin, player.y - margin) && !isSolid(nx + margin, player.y - margin) &&
+            !isSolid(nx - margin, player.y + margin) && !isSolid(nx + margin, player.y + margin)) player.x = nx;
+        if (!isSolid(player.x - margin, ny - margin) && !isSolid(player.x + margin, ny - margin) &&
+            !isSolid(player.x - margin, ny + margin) && !isSolid(player.x + margin, ny + margin)) player.y = ny;
+        if (tileAt(player.x, player.y) === TILES.LAVA && gameTime % 20 === 0) hurtPlayer(3);
+    }
+
+    player.x = clamp(player.x, TILE, (COLS-1) * TILE);
+    player.y = clamp(player.y, TILE, (ROWS-1) * TILE);
+
+    // Saldırı
+    if ((mouse.down || mobileAttack) && player.attackTimer <= 0) {
+        player.attacking = true; player.attackTimer = 20;
+        const atkRange = 40;
+        enemies.forEach(e => {
+            if (!e.alive) return;
+            if (dist(player, e) < atkRange + e.size) {
+                dealDamage(e, player.atk);
+                const angle = Math.atan2(e.y - player.y, e.x - player.x);
+                e.x += Math.cos(angle) * 15; e.y += Math.sin(angle) * 15;
+            }
+        });
+    }
+    if (player.attackTimer > 0) player.attackTimer--;
+    if (player.attackTimer <= 15) player.attacking = false;
+
+    // Düşmanlar
+    enemies.forEach(e => {
+        if (!e.alive) { if (e.deathTimer > 0) e.deathTimer--; return; }
+        if (e.hitTimer > 0) e.hitTimer--;
+        if (e.attackCooldown > 0) e.attackCooldown--;
+        const d = dist(e, player);
+        if (d < e.aggroRange) {
+            const angle = Math.atan2(player.y - e.y, player.x - e.x);
+            let mx = Math.cos(angle) * e.speed, my = Math.sin(angle) * e.speed;
+            let nx = e.x + mx, ny = e.y + my;
+            if (!isSolid(nx, e.y)) e.x = nx;
+            if (!isSolid(e.x, ny)) e.y = ny;
+            if (d < e.size + 15 && e.attackCooldown <= 0) { hurtPlayer(e.atk); e.attackCooldown = 40; }
+        } else {
+            e.moveTimer--;
+            if (e.moveTimer <= 0) { e.dir = randInt(0,3); e.moveTimer = randInt(30,90); }
+            const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
+            const [mx, my] = dirs[e.dir];
+            let nx = e.x + mx * e.speed * 0.3, ny = e.y + my * e.speed * 0.3;
+            if (!isSolid(nx, ny)) { e.x = nx; e.y = ny; }
+        }
+        if (e.type === 'boss_dragon' && d < e.aggroRange && e.attackCooldown <= 0) {
+            e.attackCooldown = 60;
+            if (e.hp < e.maxHp * 0.5 && e.phase === 1) { e.phase = 2; e.speed *= 1.5; e.atk *= 1.3; }
+            const angle = Math.atan2(player.y - e.y, player.x - e.x);
+            for (let i = -2; i <= 2; i++) {
+                const a = angle + i * 0.3;
+                projectiles.push({ x: e.x, y: e.y, vx: Math.cos(a)*4, vy: Math.sin(a)*4,
+                    damage: e.atk*0.5, color:'#ff4400', range:300, traveled:0, size:8, type:'enemy' });
+            }
+        }
+    });
+
+    // Mermiler
+    projectiles.forEach(p => {
+        p.x += p.vx; p.y += p.vy; p.traveled += Math.hypot(p.vx, p.vy);
+        if (p.traveled > p.range || isSolid(p.x, p.y)) { p.dead = true; return; }
+        if (p.type === 'player') {
+            enemies.forEach(e => { if (!e.alive || p.dead) return; if (dist(p,e) < e.size+p.size) { dealDamage(e, p.damage); p.dead = true; for(let i=0;i<5;i++) addParticle(p.x,p.y,'✦',p.color); }});
+        } else { if (dist(p,player) < 12 && player.invincible <= 0) { hurtPlayer(p.damage); p.dead = true; }}
+    });
+    projectiles = projectiles.filter(p => !p.dead);
+    particles.forEach(p => { p.life--; p.x += p.vx; p.y += p.vy; p.vy += 0.02; });
+    particles = particles.filter(p => p.life > 0);
+    damageNumbers.forEach(d => { d.life--; d.y += d.vy; });
+    damageNumbers = damageNumbers.filter(d => d.life > 0);
+    if (gameTime % 120 === 0 && player.mp < player.maxMp) player.mp++;
+
+    camera.x = lerp(camera.x, player.x - canvas.width/2, 0.1);
+    camera.y = lerp(camera.y, player.y - canvas.height/2, 0.1);
+}
+
+// ============ ÇİZİM ============
+function draw() {
+    ctx.save();
+    if (screenShake > 0) ctx.translate(Math.random()*screenShake-screenShake/2, Math.random()*screenShake-screenShake/2);
+    ctx.translate(-camera.x, -camera.y);
+
+    const startX = Math.max(0, Math.floor(camera.x/TILE));
+    const startY = Math.max(0, Math.floor(camera.y/TILE));
+    const endX = Math.min(COLS, Math.ceil((camera.x+canvas.width)/TILE)+1);
+    const endY = Math.min(ROWS, Math.ceil((camera.y+canvas.height)/TILE)+1);
+
+    for (let y = startY; y < endY; y++) for (let x = startX; x < endX; x++) {
+        const tile = gameMap[y][x]; const px = x*TILE, py = y*TILE;
+        ctx.fillStyle = TILE_COLORS[tile] || '#333'; ctx.fillRect(px, py, TILE, TILE);
+        if (tile === TILES.GRASS) { ctx.fillStyle='#3a7a2a'; if((x+y*7)%5===0){ctx.fillRect(px+8,py+12,2,8);ctx.fillRect(px+20,py+8,2,6);} }
+        else if (tile === TILES.TREE) {
+            ctx.fillStyle='#4a3520'; ctx.fillRect(px+12,py+16,8,16);
+            ctx.fillStyle='#1a6a0a'; ctx.beginPath(); ctx.arc(px+16,py+12,14,0,Math.PI*2); ctx.fill();
+            ctx.fillStyle='#2a8a1a'; ctx.beginPath(); ctx.arc(px+14,py+10,10,0,Math.PI*2); ctx.fill();
+        } else if (tile === TILES.WALL) { ctx.fillStyle='#555'; ctx.fillRect(px+1,py+1,TILE-2,TILE-2); ctx.fillStyle='#666'; ctx.fillRect(px+2,py+2,TILE-4,4); }
+        else if (tile === TILES.WATER) { const w=Math.sin(gameTime*0.05+x+y)*3; ctx.fillStyle=`rgba(100,180,255,${0.3+Math.abs(w)/10})`; ctx.fillRect(px,py,TILE,TILE); ctx.fillStyle='#88ccff'; ctx.fillRect(px+4+w,py+12,12,2); }
+        else if (tile === TILES.FLOWER) { const c=['#ff4488','#ffaa00','#ff66aa','#ffdd44'][(x*3+y*7)%4]; ctx.fillStyle=c; ctx.beginPath(); ctx.arc(px+16,py+16,4,0,Math.PI*2); ctx.fill(); ctx.fillStyle='#ffff00'; ctx.beginPath(); ctx.arc(px+16,py+16,2,0,Math.PI*2); ctx.fill(); }
+        else if (tile === TILES.LAVA) { const lg=Math.sin(gameTime*0.08+x*2+y)*0.3; ctx.fillStyle=`rgba(255,${80+lg*80|0},0,${0.6+lg})`; ctx.fillRect(px,py,TILE,TILE); if((x+y)%3===0&&gameTime%40<20){ctx.fillStyle='#ffcc00';ctx.beginPath();ctx.arc(px+10+Math.random()*12,py+10+Math.random()*12,3,0,Math.PI*2);ctx.fill();} }
+        else if (tile === TILES.ICE) { ctx.fillStyle='rgba(200,230,255,0.3)'; ctx.fillRect(px,py,TILE,TILE); ctx.strokeStyle='rgba(255,255,255,0.4)'; ctx.beginPath(); ctx.moveTo(px,py+16);ctx.lineTo(px+TILE,py+16);ctx.moveTo(px+16,py);ctx.lineTo(px+16,py+TILE);ctx.stroke(); }
+        else if (tile === TILES.MUSHROOM) { ctx.fillStyle='#8B6914'; ctx.fillRect(px+12,py+18,8,14); ctx.fillStyle='#cc2244'; ctx.beginPath(); ctx.arc(px+16,py+16,10,Math.PI,0); ctx.fill(); ctx.fillStyle='#fff'; ctx.beginPath();ctx.arc(px+12,py+12,2,0,Math.PI*2);ctx.fill(); ctx.beginPath();ctx.arc(px+20,py+14,2,0,Math.PI*2);ctx.fill(); }
+        else if (tile === TILES.CRYSTAL) { const gl=Math.sin(gameTime*0.06+x+y)*0.3+0.7; ctx.fillStyle=`rgba(100,200,255,${gl})`; ctx.beginPath(); ctx.moveTo(px+16,py+4);ctx.lineTo(px+26,py+16);ctx.lineTo(px+20,py+28);ctx.lineTo(px+12,py+28);ctx.lineTo(px+6,py+16);ctx.closePath();ctx.fill(); }
+        else if (tile === TILES.STONE) { ctx.fillStyle='#777'; ctx.fillRect(px+2,py+2,TILE-4,TILE-4); ctx.fillStyle='#888'; ctx.fillRect(px+3,py+3,TILE-6,3); ctx.fillStyle='#555'; ctx.fillRect(px+3,py+TILE-5,TILE-6,3); }
+        else if (tile === TILES.PATH) { ctx.fillStyle='#b09070'; if((x+y)%4===0) ctx.fillRect(px+4,py+4,4,4); }
+        else if (tile === TILES.SAND) { ctx.fillStyle='#e0b843'; if((x+y)%3===0) ctx.fillRect(px+10,py+10,2,2); }
+        ctx.strokeStyle = 'rgba(0,0,0,0.1)'; ctx.strokeRect(px, py, TILE, TILE);
+    }
+
+    chests.forEach(chest => {
+        if (!chest.opened) {
+            ctx.fillStyle='#8B6914'; ctx.fillRect(chest.x-10,chest.y-8,20,16);
+            ctx.fillStyle='#a07820'; ctx.fillRect(chest.x-10,chest.y-8,20,6);
+            ctx.fillStyle='#ffd700'; ctx.fillRect(chest.x-3,chest.y-3,6,6);
+            const sp=Math.sin(gameTime*0.1)*0.5+0.5;
+            ctx.fillStyle=`rgba(255,255,200,${sp*0.5})`; ctx.beginPath(); ctx.arc(chest.x,chest.y-15,5+sp*3,0,Math.PI*2); ctx.fill();
+        } else { ctx.fillStyle='#6a5010'; ctx.fillRect(chest.x-10,chest.y-4,20,12); ctx.fillStyle='#5a4010'; ctx.fillRect(chest.x-10,chest.y-4,20,3); }
+    });
+
+    npcs.forEach(npc => {
+        const nx = npc.x*TILE+16, ny = npc.y*TILE+16;
+        ctx.fillStyle=npc.color; ctx.beginPath(); ctx.arc(nx,ny,12,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle='#fff'; ctx.beginPath();ctx.arc(nx-4,ny-3,3,0,Math.PI*2);ctx.fill(); ctx.beginPath();ctx.arc(nx+4,ny-3,3,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='#000'; ctx.beginPath();ctx.arc(nx-4,ny-3,1.5,0,Math.PI*2);ctx.fill(); ctx.beginPath();ctx.arc(nx+4,ny-3,1.5,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='#000'; ctx.beginPath(); ctx.arc(nx,ny+3,3,0,Math.PI); ctx.fill();
+        ctx.fillStyle='#ffd700'; ctx.font='10px sans-serif'; ctx.textAlign='center'; ctx.fillText(npc.name,nx,ny-18);
+        if (dist(player,{x:nx,y:ny}) < 60) { ctx.fillStyle='#fff'; ctx.font='bold 12px sans-serif'; ctx.fillText(isMobile ? '✋' : '[E]', nx, ny-28); }
+    });
+
+    enemies.forEach(e => {
+        if (!e.alive && e.deathTimer <= 0) return;
+        const alpha = e.alive ? 1 : e.deathTimer/30;
+        ctx.globalAlpha = alpha;
+        const flash = e.hitTimer > 0 && e.hitTimer % 2 === 0;
+
+        if (e.type === 'slime') {
+            const sq = Math.sin(gameTime*0.1+e.x)*2;
+            ctx.fillStyle=flash?'#ffffff':e.color; ctx.beginPath(); ctx.ellipse(e.x,e.y,e.size,e.size-sq,0,0,Math.PI*2); ctx.fill();
+            ctx.fillStyle='#2a8a2a'; ctx.beginPath();ctx.arc(e.x-4,e.y-3,3,0,Math.PI*2);ctx.fill(); ctx.beginPath();ctx.arc(e.x+4,e.y-3,3,0,Math.PI*2);ctx.fill();
+            ctx.fillStyle='#fff'; ctx.beginPath();ctx.arc(e.x-4,e.y-3,1.5,0,Math.PI*2);ctx.fill(); ctx.beginPath();ctx.arc(e.x+4,e.y-3,1.5,0,Math.PI*2);ctx.fill();
+        } else if (e.type === 'skeleton') {
+            ctx.fillStyle=flash?'#ffffff':e.color; ctx.beginPath(); ctx.arc(e.x,e.y-8,8,0,Math.PI*2); ctx.fill();
+            ctx.fillStyle='#cc0000'; ctx.fillRect(e.x-5,e.y-10,3,3); ctx.fillRect(e.x+2,e.y-10,3,3);
+            ctx.fillStyle=flash?'#ffffff':'#ddd'; ctx.fillRect(e.x-3,e.y-2,6,14); ctx.fillRect(e.x-12,e.y-2,9,3); ctx.fillRect(e.x+3,e.y-2,9,3);
+            ctx.fillStyle='#aaa'; ctx.fillRect(e.x+10,e.y-8,3,16);
+        } else if (e.type === 'bat') {
+            ctx.fillStyle=flash?'#ffffff':e.color; ctx.beginPath(); ctx.arc(e.x,e.y,6,0,Math.PI*2); ctx.fill();
+            const wa=Math.sin(gameTime*0.3+e.x)*0.5;
+            ctx.fillStyle=flash?'#ffffff':'#5522aa';
+            ctx.beginPath(); ctx.ellipse(e.x-10,e.y+Math.sin(wa)*5,10,5,wa,0,Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.ellipse(e.x+10,e.y+Math.sin(wa)*5,10,5,-wa,0,Math.PI*2); ctx.fill();
+            ctx.fillStyle='#ff0000'; ctx.beginPath();ctx.arc(e.x-3,e.y-2,2,0,Math.PI*2);ctx.fill(); ctx.beginPath();ctx.arc(e.x+3,e.y-2,2,0,Math.PI*2);ctx.fill();
+        } else if (e.type === 'demon') {
+            ctx.fillStyle=flash?'#ffffff':e.color; ctx.beginPath(); ctx.arc(e.x,e.y,e.size,0,Math.PI*2); ctx.fill();
+            ctx.fillStyle='#880000'; ctx.beginPath();ctx.moveTo(e.x-8,e.y-e.size+4);ctx.lineTo(e.x-12,e.y-e.size-8);ctx.lineTo(e.x-4,e.y-e.size+2);ctx.fill();
+            ctx.beginPath();ctx.moveTo(e.x+8,e.y-e.size+4);ctx.lineTo(e.x+12,e.y-e.size-8);ctx.lineTo(e.x+4,e.y-e.size+2);ctx.fill();
+            ctx.fillStyle='#ffff00'; ctx.beginPath();ctx.arc(e.x-5,e.y-4,3,0,Math.PI*2);ctx.fill(); ctx.beginPath();ctx.arc(e.x+5,e.y-4,3,0,Math.PI*2);ctx.fill();
+            if (gameTime%5===0) addParticle(e.x+(Math.random()-0.5)*20, e.y+e.size, '🔥', '#ff4400');
+        } else if (e.type === 'ghost') {
+            const bob = Math.sin(gameTime*0.05+e.x*0.1)*5;
+            ctx.fillStyle=flash?'#ffffff':'rgba(170,170,255,0.7)'; ctx.beginPath();
+            ctx.arc(e.x,e.y+bob,e.size,Math.PI,0); ctx.lineTo(e.x+e.size,e.y+bob+e.size);
+            for(let i=0;i<5;i++) ctx.lineTo(e.x+e.size-(i+0.5)*(e.size*2/5), e.y+bob+e.size-(i%2===0?5:0));
+            ctx.closePath(); ctx.fill();
+            ctx.fillStyle='#000044'; ctx.beginPath();ctx.arc(e.x-4,e.y+bob-2,3,0,Math.PI*2);ctx.fill(); ctx.beginPath();ctx.arc(e.x+4,e.y+bob-2,3,0,Math.PI*2);ctx.fill();
+        } else if (e.type === 'boss_dragon') {
+            const scale=e.phase===2?1.1:1, s=e.size*scale;
+            ctx.fillStyle=flash?'#ffffff':e.color; ctx.beginPath(); ctx.ellipse(e.x,e.y,s,s*0.7,0,0,Math.PI*2); ctx.fill();
+            const wf=Math.sin(gameTime*0.08)*15; ctx.fillStyle=flash?'#ffffff':'#cc3300';
+            ctx.beginPath();ctx.ellipse(e.x-s-10,e.y-10+wf,20,12,-0.3,0,Math.PI*2);ctx.fill();
+            ctx.beginPath();ctx.ellipse(e.x+s+10,e.y-10+wf,20,12,0.3,0,Math.PI*2);ctx.fill();
+            ctx.fillStyle=flash?'#ffffff':'#ff6600'; ctx.beginPath();ctx.arc(e.x,e.y-s+5,12,0,Math.PI*2);ctx.fill();
+            ctx.fillStyle='#ffff00'; ctx.beginPath();ctx.arc(e.x-4,e.y-s+3,3,0,Math.PI*2);ctx.fill(); ctx.beginPath();ctx.arc(e.x+4,e.y-s+3,3,0,Math.PI*2);ctx.fill();
+            if (e.phase===2&&gameTime%3===0) addParticle(e.x+(Math.random()-0.5)*30, e.y-s-5, '🔥', '#ff4400');
+            const hpPct=e.hp/e.maxHp;
+            ctx.fillStyle='#333'; ctx.fillRect(e.x-30,e.y-s-20,60,6);
+            ctx.fillStyle=hpPct>0.5?'#44cc44':hpPct>0.25?'#ccaa00':'#cc2200'; ctx.fillRect(e.x-30,e.y-s-20,60*hpPct,6);
+            ctx.strokeStyle='#000'; ctx.strokeRect(e.x-30,e.y-s-20,60,6);
+            ctx.fillStyle='#fff'; ctx.font='bold 9px sans-serif'; ctx.textAlign='center'; ctx.fillText(e.name,e.x,e.y-s-24);
+        }
+
+        if (e.alive && e.type !== 'boss_dragon') {
+            const hpPct=e.hp/e.maxHp;
+            ctx.fillStyle='#333'; ctx.fillRect(e.x-12,e.y-e.size-10,24,4);
+            ctx.fillStyle=hpPct>0.5?'#44cc44':hpPct>0.25?'#ccaa00':'#cc2200'; ctx.fillRect(e.x-12,e.y-e.size-10,24*hpPct,4);
+        }
+        ctx.globalAlpha = 1;
+    });
+
+    // Oyuncu
+    const px=player.x, py=player.y;
+    const pAlpha = player.invincible>0 ? (Math.sin(gameTime*0.5)>0?0.5:1) : 1;
+    ctx.globalAlpha = pAlpha;
+    ctx.fillStyle='rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.ellipse(px,py+14,12,5,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#3366cc'; ctx.fillRect(px-8,py-6,16,16);
+    ctx.fillStyle='#ffcc88'; ctx.beginPath(); ctx.arc(px,py-10,8,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#553300'; ctx.beginPath(); ctx.arc(px,py-14,7,Math.PI,0); ctx.fill();
+    ctx.fillStyle='#fff';
+    let eox=0,eoy=0;
+    if(player.dir==='left')eox=-2; if(player.dir==='right')eox=2; if(player.dir==='up')eoy=-1; if(player.dir==='down')eoy=1;
+    ctx.beginPath();ctx.arc(px-3+eox,py-10+eoy,2.5,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(px+3+eox,py-10+eoy,2.5,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#222';
+    ctx.beginPath();ctx.arc(px-3+eox,py-10+eoy,1.2,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(px+3+eox,py-10+eoy,1.2,0,Math.PI*2);ctx.fill();
+
+    if (player.equipped.weapon) {
+        ctx.fillStyle='#aaa';
+        const wa=player.dir==='left'?Math.PI:player.dir==='right'?0:player.dir==='up'?-Math.PI/2:Math.PI/2;
+        const sa=player.attacking?Math.sin(player.attackTimer*0.5)*1.5:0;
+        ctx.save(); ctx.translate(px,py); ctx.rotate(wa+sa); ctx.fillRect(8,-2,20,4);
+        ctx.fillStyle='#ddd'; ctx.fillRect(24,-3,6,6); ctx.restore();
+    } else {
+        if (player.attacking) {
+            const fx=player.dir==='left'?px-18:player.dir==='right'?px+18:px;
+            const fy=player.dir==='up'?py-18:player.dir==='down'?py+18:py;
+            ctx.fillStyle='#ffcc88'; ctx.beginPath();ctx.arc(fx,fy,5,0,Math.PI*2);ctx.fill();
+        }
+    }
+
+    if (player.attacking) {
+        ctx.strokeStyle='rgba(255,255,255,0.5)'; ctx.lineWidth=2;
+        const aa=player.dir==='left'?Math.PI:player.dir==='right'?0:player.dir==='up'?-Math.PI/2:Math.PI/2;
+        ctx.beginPath(); ctx.arc(px,py,35,aa-0.8,aa+0.8); ctx.stroke();
+    }
+    if (player.rolling) {
+        ctx.strokeStyle=`rgba(200,200,255,${player.rollTimer/12})`; ctx.lineWidth=2;
+        ctx.beginPath(); ctx.arc(px,py,18-(12-player.rollTimer),0,Math.PI*2); ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+
+    projectiles.forEach(p => {
+        ctx.fillStyle=p.color; ctx.beginPath(); ctx.arc(p.x,p.y,p.size,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle='rgba(255,255,255,0.5)'; ctx.beginPath(); ctx.arc(p.x,p.y,p.size*0.5,0,Math.PI*2); ctx.fill();
+    });
+
+    particles.forEach(p => {
+        const alpha=p.life/40; ctx.globalAlpha=alpha; ctx.fillStyle=p.color;
+        ctx.font=`${p.size}px sans-serif`; ctx.textAlign='center'; ctx.fillText(p.text,p.x,p.y); ctx.globalAlpha=1;
+    });
+    damageNumbers.forEach(d => {
+        const alpha=d.life/60; ctx.globalAlpha=alpha; ctx.fillStyle=d.color;
+        ctx.font='bold 16px sans-serif'; ctx.textAlign='center';
+        ctx.strokeStyle='#000'; ctx.lineWidth=3; ctx.strokeText(d.text,d.x,d.y);
+        ctx.fillText(d.text,d.x,d.y); ctx.globalAlpha=1;
+    });
+    ctx.restore();
+
+    // UI
+    const barX=15,barY=15,barW=200,barH=18;
+    // Arka plan
+    ctx.fillStyle='rgba(0,0,0,0.7)'; ctx.fillRect(barX-2,barY-2,barW+4,barH+4);
+    ctx.fillStyle='#333'; ctx.fillRect(barX,barY,barW,barH);
+    ctx.fillStyle=player.hp/player.maxHp>0.3?'#44cc44':'#cc2200'; ctx.fillRect(barX,barY,barW*(player.hp/player.maxHp),barH);
+    ctx.strokeStyle='#222'; ctx.strokeRect(barX,barY,barW,barH);
+    ctx.fillStyle='#fff'; ctx.font='bold 12px sans-serif'; ctx.textAlign='center';
+    ctx.fillText(`❤️ ${player.hp}/${player.maxHp}`,barX+barW/2,barY+14);
+
+    const mpY=barY+barH+5;
+    ctx.fillStyle='rgba(0,0,0,0.7)'; ctx.fillRect(barX-2,mpY-2,barW+4,barH+4);
+    ctx.fillStyle='#333'; ctx.fillRect(barX,mpY,barW,barH);
+    ctx.fillStyle='#4488ff'; ctx.fillRect(barX,mpY,barW*(player.mp/player.maxMp),barH);
+    ctx.strokeStyle='#222'; ctx.strokeRect(barX,mpY,barW,barH);
+    ctx.fillStyle='#fff'; ctx.fillText(`💎 ${player.mp}/${player.maxMp}`,barX+barW/2,mpY+14);
+
+    const xpY=mpY+barH+5;
+    ctx.fillStyle='rgba(0,0,0,0.7)'; ctx.fillRect(barX-2,xpY-2,barW+4,12);
+    ctx.fillStyle='#333'; ctx.fillRect(barX,xpY,barW,8);
+    ctx.fillStyle='#ccaa00'; ctx.fillRect(barX,xpY,barW*(player.xp/player.xpToNext),8);
+    ctx.fillStyle='#fff'; ctx.font='10px sans-serif';
+    ctx.fillText(`⭐ Lv.${player.level} | XP:${player.xp}/${player.xpToNext}`,barX+barW/2,xpY+7);
+
+    ctx.fillStyle='#ffd700'; ctx.font='bold 14px sans-serif'; ctx.textAlign='left';
+    ctx.fillText(`🪙 ${player.gold}`,barX,xpY+28);
+
+    // Büyü barı (mobilde gizle, butonlar var)
+    if (!isMobile) {
+        const sbX=canvas.width/2-160, sbY=canvas.height-50;
+        for (let i=0;i<4;i++) {
+            const spell=player.spells[i], sx=sbX+i*85, sw=75, sh=40;
+            ctx.fillStyle='rgba(0,0,0,0.7)'; ctx.fillRect(sx,sbY,sw,sh);
+            ctx.strokeStyle=spell.cooldown>0?'#666':player.mp>=spell.mpCost?'#aaa':'#444'; ctx.lineWidth=2; ctx.strokeRect(sx,sbY,sw,sh);
+            if (spell.cooldown>0){ctx.fillStyle='rgba(0,0,0,0.5)';ctx.fillRect(sx,sbY,sw,sh*(spell.cooldown/30));}
+            ctx.fillStyle=spell.color; ctx.font='20px sans-serif'; ctx.textAlign='center';
+            const icons=['🔥','❄️','⚡','💚']; ctx.fillText(icons[i],sx+sw/2,sbY+22);
+            ctx.fillStyle='#aaa'; ctx.font='9px sans-serif';
+            ctx.fillText(`${spell.name}(${spell.mpCost})`,sx+sw/2,sbY+35);
+            ctx.fillStyle='#888'; ctx.font='10px sans-serif'; ctx.fillText(`[${i+1}]`,sx+sw/2,sbY-3);
+        }
+    }
+
+    ctx.fillStyle='#aaa'; ctx.font='11px sans-serif'; ctx.textAlign='left';
+    ctx.fillText(`⚔️ ${player.atk}  🛡️ ${player.def}`,barX,xpY+45);
+    if (player.equipped.weapon) ctx.fillText(`${ITEMS[player.equipped.weapon].icon} ${ITEMS[player.equipped.weapon].name}`,barX,xpY+60);
+    if (player.equipped.armor) ctx.fillText(`${ITEMS[player.equipped.armor].icon} ${ITEMS[player.equipped.armor].name}`,barX,xpY+73);
+
+    if (bossDefeated) { ctx.fillStyle='#ffd700'; ctx.font='bold 16px sans-serif'; ctx.textAlign='right'; ctx.fillText('🏆 Ejderha Yenildi!',canvas.width-15,25); }
+
+    let darkness = 0;
+    if (dayNightCycle>0.7) darkness=(dayNightCycle-0.7)/0.3*0.4;
+    else if (dayNightCycle<0.1) darkness=(0.1-dayNightCycle)/0.1*0.4;
+    if (darkness>0) {
+        ctx.fillStyle=`rgba(0,0,50,${darkness})`; ctx.fillRect(0,0,canvas.width,canvas.height);
+        const grad=ctx.createRadialGradient(player.x-camera.x,player.y-camera.y,0,player.x-camera.x,player.y-camera.y,120);
+        grad.addColorStop(0,`rgba(255,220,150,${darkness*0.5})`); grad.addColorStop(1,'rgba(255,220,150,0)');
+        ctx.fillStyle=grad; ctx.fillRect(0,0,canvas.width,canvas.height);
+    }
+
+    renderMinimap();
+}
+
+function renderMinimap() {
+    const w=mCanvas.width, h=mCanvas.height;
+    mCtx.fillStyle='#000'; mCtx.fillRect(0,0,w,h);
+    const sx=w/COLS, sy=h/ROWS;
+    for (let y=0;y<ROWS;y+=2) for (let x=0;x<COLS;x+=2) {
+        mCtx.fillStyle=TILE_COLORS[gameMap[y][x]]||'#333';
+        mCtx.fillRect(x*sx,y*sy,sx*2+1,sy*2+1);
+    }
+    enemies.forEach(e => { if(!e.alive)return; mCtx.fillStyle=e.type==='boss_dragon'?'#ff0000':'#ff4444';
+        mCtx.fillRect(e.x/TILE*sx-1,e.y/TILE*sy-1,e.type==='boss_dragon'?4:2,e.type==='boss_dragon'?4:2); });
+    npcs.forEach(n => { mCtx.fillStyle='#ffd700'; mCtx.fillRect(n.x*sx-1,n.y*sy-1,3,3); });
+    mCtx.fillStyle='#44ff44'; mCtx.fillRect(player.x/TILE*sx-2,player.y/TILE*sy-2,5,5);
+    mCtx.strokeStyle='rgba(255,255,255,0.5)'; mCtx.lineWidth=1;
+    mCtx.strokeRect(camera.x/TILE*sx,camera.y/TILE*sy,canvas.width/TILE*sx,canvas.height/TILE*sy);
+}
+
+// ============ BAŞLATMA ============
+function init() {
+    isMobile = detectMobile();
+    resizeCanvas();
+    setupMobileControls();
+    setTimeout(() => {
+        dialogActive = true; currentNPC = NPC_DATA[0]; currentNPC.dialogShown = 0; updateDialog();
+    }, 500);
+    gameLoop();
+}
+
+function gameLoop() {
+    if (!inventoryOpen) update();
+    draw();
+    requestAnimationFrame(gameLoop);
+}
+
+init();
+</script>
 </body>
 </html>
