@@ -1,1834 +1,717 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#1a0a0a">
-<title>Knight Online Mobile - Kapsamlı RPG</title>
-<style>
-/* ============================================
-   CORE STYLES - TEMEL SİSTEM
-   ============================================ */
-*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;touch-action:none;user-select:none;-webkit-user-select:none}
-html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Segoe UI',Tahoma,sans-serif}
-canvas{image-rendering:pixelated;touch-action:none;position:absolute;width:100%;height:100%}
-
-/* ============================================
-   UI LAYER SYSTEM - ARAYÜZ KATMANLARI
-   ============================================ */
-#ui-layer{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:100}
-.ui-panel{pointer-events:auto;position:absolute;transition:all 0.3s}
-.ui-hidden{opacity:0;pointer-events:none;transform:scale(0.95)}
-.ui-visible{opacity:1;pointer-events:auto;transform:scale(1)}
-
-/* ============================================
-   CHARACTER INFO PANEL - KARAKTER BİLGİSİ
-   ============================================ */
-#char-panel{top:10px;left:10px;background:linear-gradient(135deg,#1a1a2e,#16213e);border:2px solid #0f3460;border-radius:12px;padding:12px;min-width:220px;box-shadow:0 0 20px rgba(15,52,96,0.5)}
-.char-header{display:flex;align-items:center;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #0f3460}
-.char-avatar{width:40px;height:40px;border-radius:8px;background:linear-gradient(135deg,#e94560,#0f3460);display:flex;align-items:center;justify-content:center;font-size:24px;margin-right:10px}
-.char-name{color:#e94560;font-size:14px;font-weight:bold}
-.char-level{color:#aaa;font-size:11px;margin-left:8px}
-.stat-container{margin-bottom:8px}
-.stat-label{display:flex;justify-content:space-between;font-size:10px;color:#aaa;margin-bottom:3px}
-.stat-bar-bg{height:12px;background:#0f3460;border-radius:6px;overflow:hidden;position:relative}
-.stat-bar-fill{height:100%;transition:width 0.5s ease-out}
-.hp-fill{background:linear-gradient(90deg,#c0392b,#e74c3c)}
-.mp-fill{background:linear-gradient(90deg,#2980b9,#3498db)}
-.exp-fill{background:linear-gradient(90deg,#f39c12,#f1c40f)}
-.stat-text{position:absolute;width:100%;text-align:center;font-size:9px;color:#fff;line-height:12px;text-shadow:1px 1px 2px #000}
-.char-details{font-size:9px;color:#888;margin-top:8px;line-height:1.6}
-.gold-display{color:#f1c40f;font-size:11px;font-weight:bold;margin-top:8px}
-
-/* ============================================
-   ZONE & MINIMAP - BÖLGE VE HARİTA
-   ============================================ */
-#zone-panel{top:10px;right:10px;background:rgba(15,52,96,0.9);border:1px solid #0f3460;border-radius:8px;padding:8px 15px;color:#e94560;font-size:12px;text-align:center;box-shadow:0 0 10px rgba(233,69,96,0.3)}
-#minimap{top:50px;right:10px;border:2px solid #0f3460;border-radius:8px;background:#0a0a0a;box-shadow:0 0 15px rgba(15,52,96,0.5)}
-
-/* ============================================
-   JOYSTICK - HAREKET KONTROLÜ
-   ============================================ */
-#joystick-zone{bottom:40px;left:40px;width:140px;height:140px}
-#joystick-base{width:140px;height:140px;border-radius:50%;background:radial-gradient(circle,rgba(15,52,96,0.3) 0%,rgba(15,52,96,0.1) 70%);border:2px solid rgba(233,69,96,0.3);position:relative;box-shadow:0 0 30px rgba(15,52,96,0.3)}
-#joystick-thumb{width:55px;height:55px;border-radius:50%;background:radial-gradient(circle,#e94560 0%,#c0392b 100%);border:3px solid rgba(255,255,255,0.3);position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);box-shadow:0 0 20px rgba(233,69,96,0.5);transition:transform 0.1s}
-
-/* ============================================
-   SKILL BAR - YETENEK ÇUBUĞU
-   ============================================ */
-#skill-bar{bottom:40px;right:220px;display:flex;gap:10px;background:rgba(15,52,96,0.8);padding:10px;border-radius:12px;border:1px solid #0f3460;box-shadow:0 0 20px rgba(15,52,96,0.5)}
-.skill-slot{width:55px;height:55px;border-radius:10px;background:linear-gradient(135deg,#16213e,#0f3460);border:2px solid #0f3460;display:flex;flex-direction:column;justify-content:center;align-items:center;position:relative;font-size:24px;cursor:pointer;transition:all 0.2s;box-shadow:0 4px 10px rgba(0,0,0,0.3)}
-.skill-slot:hover{transform:scale(1.1);border-color:#e94560;box-shadow:0 0 15px rgba(233,69,96,0.5)}
-.skill-slot:active{transform:scale(0.95)}
-.skill-slot.active{border-color:#2ecc71;box-shadow:0 0 20px rgba(46,204,113,0.5)}
-.skill-cd{position:absolute;bottom:0;left:0;width:100%;background:rgba(0,0,0,0.85);color:#fff;font-size:11px;text-align:center;border-radius:0 0 8px 8px;height:0%;transition:height 0.1s}
-.skill-key{position:absolute;top:3px;right:4px;font-size:9px;color:#e94560;font-weight:bold}
-.skill-mp{position:absolute;bottom:2px;left:4px;font-size:8px;color:#3498db}
-
-/* ============================================
-   ACTION BUTTONS - AKSİYON BUTONLARI
-   ============================================ */
-#action-buttons{bottom:40px;right:40px;display:flex;flex-direction:column;gap:15px;align-items:flex-end}
-#attack-btn{width:90px;height:90px;border-radius:50%;background:linear-gradient(135deg,#c0392b,#e74c3c);border:4px solid rgba(233,69,96,0.5);color:#fff;font-size:40px;display:flex;justify-content:center;align-items:center;box-shadow:0 0 30px rgba(233,69,96,0.5);transition:all 0.1s}
-#attack-btn:active{transform:scale(0.85);box-shadow:0 0 50px rgba(233,69,96,0.8)}
-#sub-actions{display:flex;gap:12px}
-.sub-btn{width:65px;height:65px;border-radius:50%;background:linear-gradient(135deg,#16213e,#0f3460);border:2px solid rgba(233,69,96,0.3);color:#fff;font-size:26px;display:flex;justify-content:center;align-items:center;transition:all 0.2s;box-shadow:0 4px 15px rgba(0,0,0,0.4)}
-.sub-btn:active{transform:scale(0.9);background:linear-gradient(135deg,#0f3460,#e94560)}
-
-/* ============================================
-   CHAT SYSTEM - SOHBET SİSTEMİ
-   ============================================ */
-#chat-container{position:fixed;bottom:200px;left:200px;width:400px;height:180px;background:rgba(15,52,96,0.9);border:1px solid #0f3460;border-radius:8px;overflow:hidden;display:none;z-index:150;box-shadow:0 0 20px rgba(0,0,0,0.5)}
-#chat-messages{height:145px;overflow-y:auto;padding:10px;font-size:11px}
-.chat-msg{margin-bottom:4px;line-height:1.4;word-wrap:break-word}
-.chat-system{color:#95a5a6}
-.chat-party{color:#2ecc71}
-.chat-trade{color:#f1c40f}
-.chat-global{color:#3498db}
-.chat-guild{color:#9b59b6}
-.chat-whisper{color:#e94560}
-#chat-input{height:35px;background:rgba(0,0,0,0.5);border:none;border-top:1px solid #0f3460;color:#fff;padding:0 10px;font-size:11px}
-#chat-input:focus{outline:none;background:rgba(0,0,0,0.7)}
-
-/* ============================================
-   PANELS - PENCERE SİSTEMLERİ
-   ============================================ */
-.game-panel{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);border:2px solid #e94560;border-radius:16px;padding:20px;color:#ecf0f1;display:none;z-index:200;min-width:550px;max-width:90%;max-height:85%;overflow-y:auto;box-shadow:0 0 50px rgba(233,69,96,0.3);animation:panelOpen 0.3s ease-out}
-@keyframes panelOpen{from{opacity:0;transform:translate(-50%,-50%) scale(0.9)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
-.game-panel h2{color:#e94560;text-align:center;margin-bottom:15px;font-size:24px;border-bottom:2px solid #0f3460;padding-bottom:12px;text-shadow:0 0 10px rgba(233,69,96,0.5)}
-.panel-close{display:block;margin:20px auto 0;padding:12px 50px;background:linear-gradient(135deg,#e94560,#c0392b);border:none;border-radius:8px;color:#fff;font-size:16px;cursor:pointer;transition:all 0.2s;box-shadow:0 4px 15px rgba(233,69,96,0.4)}
-.panel-close:hover{transform:scale(1.05);box-shadow:0 6px 20px rgba(233,69,96,0.6)}
-
-/* ============================================
-   INVENTORY SYSTEM - ENVANTER SİSTEMİ
-   ============================================ */
-.inv-grid{display:grid;grid-template-columns:repeat(10,55px);gap:10px;justify-content:center;margin:15px 0}
-.inv-slot{width:55px;height:55px;background:linear-gradient(135deg,#16213e,#0f3460);border:2px solid #0f3460;border-radius:10px;display:flex;justify-content:center;align-items:center;font-size:26px;position:relative;cursor:pointer;transition:all 0.2s;box-shadow:0 2px 10px rgba(0,0,0,0.3)}
-.inv-slot:hover{transform:scale(1.15);z-index:10;box-shadow:0 0 20px rgba(233,69,96,0.5)}
-.inv-slot.rarity-1{border-color:#95a5a6;box-shadow:0 0 10px rgba(149,165,166,0.3)}
-.inv-slot.rarity-2{border-color:#2ecc71;box-shadow:0 0 12px rgba(46,204,113,0.4)}
-.inv-slot.rarity-3{border-color:#3498db;box-shadow:0 0 15px rgba(52,152,219,0.5)}
-.inv-slot.rarity-4{border-color:#9b59b6;box-shadow:0 0 18px rgba(155,89,182,0.6)}
-.inv-slot.rarity-5{border-color:#f1c40f;box-shadow:0 0 22px rgba(241,196,15,0.7)}
-.inv-slot .count{position:absolute;bottom:4px;right:5px;font-size:12px;color:#fff;text-shadow:2px 2px 4px #000;font-weight:bold}
-.inv-slot .tooltip{display:none;position:absolute;bottom:60px;left:50%;transform:translateX(-50%);background:rgba(15,52,96,0.95);border:2px solid #e94560;border-radius:10px;padding:12px 16px;font-size:12px;z-index:100;pointer-events:none;min-width:200px;box-shadow:0 0 30px rgba(0,0,0,0.8)}
-.inv-slot:hover .tooltip{display:block;animation:tooltipFade 0.2s ease-out}
-@keyframes tooltipFade{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
-.inv-nav{display:flex;justify-content:center;gap:15px;margin-bottom:15px}
-.nav-btn{padding:10px 25px;background:linear-gradient(135deg,#16213e,#0f3460);border:1px solid #0f3460;border-radius:8px;color:#fff;cursor:pointer;font-size:14px;transition:all 0.2s}
-.nav-btn:hover{background:linear-gradient(135deg,#0f3460,#e94560);border-color:#e94560}
-.nav-btn:disabled{opacity:0.3;cursor:not-allowed}
-
-/* ============================================
-   CHARACTER CREATE - KARAKTER OLUŞTURMA
-   ============================================ */
-#char-create{position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(135deg,#0a0a0a 0%,#1a1a2e 50%,#16213e 100%);z-index:300;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;overflow-y:auto}
-#char-create h1{color:#e94560;font-size:42px;margin-bottom:15px;text-shadow:0 0 30px rgba(233,69,96,0.5);text-align:center}
-#char-create p{color:#95a5a6;margin-bottom:40px;font-size:16px;text-align:center}
-.class-select{display:flex;gap:25px;flex-wrap:wrap;justify-content:center;max-width:900px}
-.class-card{width:160px;padding:25px 20px;background:linear-gradient(135deg,rgba(22,33,62,0.9),rgba(15,52,96,0.9));border:2px solid #0f3460;border-radius:15px;cursor:pointer;text-align:center;transition:all 0.3s;box-shadow:0 4px 20px rgba(0,0,0,0.4)}
-.class-card:hover{border-color:#e94560;transform:translateY(-10px) scale(1.05);box-shadow:0 10px 40px rgba(233,69,96,0.4)}
-.class-card:active{transform:scale(0.95)}
-.class-card .icon{font-size:50px;margin-bottom:15px}
-.class-card .name{font-size:18px;font-weight:bold;color:#e94560;margin-bottom:10px}
-.class-card .desc{font-size:12px;color:#95a5a6;line-height:1.6}
-.class-card .stats{font-size:10px;color:#3498db;margin-top:12px;line-height:1.8}
-
-/* ============================================
-   NOTIFICATIONS - BİLDİRİMLER
-   ============================================ */
-#quest-notify{position:fixed;top:100px;left:50%;transform:translateX(-50%);color:#f1c40f;font-size:15px;background:rgba(15,52,96,0.9);padding:15px 30px;border-radius:12px;display:none;z-index:180;animation:notifyFade 3s forwards;border:1px solid #e94560;box-shadow:0 0 30px rgba(233,69,96,0.3)}
-@keyframes notifyFade{0%,100%{opacity:0;transform:translateX(-50%) translateY(-20px)}15%,85%{opacity:1;transform:translateX(-50%) translateY(0)}}
-
-/* ============================================
-   DEATH SCREEN - ÖLÜM EKRANI
-   ============================================ */
-#death-screen{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(70,0,0,0.9);display:none;justify-content:center;align-items:center;flex-direction:column;z-index:250}
-#death-screen h1{color:#e74c3c;font-size:72px;margin-bottom:20px;text-shadow:0 0 50px rgba(231,76,60,0.8);animation:pulse 1s infinite}
-@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
-#death-screen p{color:#ecf0f1;font-size:18px;margin-bottom:30px}
-#death-screen button{padding:18px 60px;background:linear-gradient(135deg,#c0392b,#e74c3c);border:2px solid #e74c3c;border-radius:12px;color:#fff;font-size:22px;cursor:pointer;transition:all 0.2s;box-shadow:0 0 30px rgba(231,76,60,0.5)}
-#death-screen button:hover{transform:scale(1.05);box-shadow:0 0 50px rgba(231,76,60,0.8)}
-
-/* ============================================
-   ROTATE MESSAGE - YATAY UYARI
-   ============================================ */
-#rotate-msg{position:fixed;top:0;left:0;width:100%;height:100%;background:#000;z-index:350;display:none;justify-content:center;align-items:center;flex-direction:column;color:#fff}
-#rotate-msg .icon{font-size:80px;margin-bottom:30px;animation:rotate 2s infinite}
-@keyframes rotate{0%,100%{transform:rotate(-10deg)}50%{transform:rotate(10deg)}}
-
-/* ============================================
-   LOADING SCREEN - YÜKLEME EKRANI
-   ============================================ */
-#loading-screen{position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(135deg,#0a0a0a,#1a1a2e);z-index:400;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff}
-#loading-screen .loader{width:60px;height:60px;border:4px solid #0f3460;border-top:4px solid #e94560;border-radius:50%;animation:spin 1s linear infinite;margin-bottom:20px}
-@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
-#loading-screen .text{color:#e94560;font-size:20px;animation:pulse 1.5s infinite}
-
-/* ============================================
-   RESPONSIVE - MOBİL UYUMLULUK
-   ============================================ */
-@media (orientation: portrait) {
-    #rotate-msg{display:flex}
-    canvas,#ui-layer,#char-create,#loading-screen{display:none}
-}
-
-@media (max-width: 900px) {
-    #char-panel{min-width:180px;padding:10px}
-    #skill-bar{right:180px;gap:8px;padding:8px}
-    .skill-slot{width:50px;height:50px;font-size:22px}
-    #action-buttons{right:30px;bottom:30px}
-    #attack-btn{width:80px;height:80px;font-size:36px}
-    .sub-btn{width:55px;height:55px;font-size:22px}
-    #joystick-zone{left:30px;bottom:30px;width:130px;height:130px}
-    #joystick-base,#joystick-thumb{width:130px;height:130px}
-    #joystick-thumb{width:50px;height:50px}
-    .game-panel{min-width:90%;padding:15px}
-    .inv-grid{grid-template-columns:repeat(8,48px);gap:8px}
-    .inv-slot{width:48px;height:48px;font-size:22px}
-    #chat-container{width:90%;left:5%;bottom:150px}
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Knight Online Style - Mobile 3D RPG</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        /* Mobil UI Butonları */
+        .ui-panel {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 20px;
+            pointer-events: none;
+            z-index: 10;
+        }
+        
+        .joystick-area {
+            width: 140px;
+            height: 140px;
+            background: rgba(0,0,0,0.4);
+            border-radius: 70px;
+            pointer-events: auto;
+            touch-action: none;
+            position: relative;
+        }
+        
+        .joystick-base {
+            width: 100%;
+            height: 100%;
+            border-radius: 70px;
+            background: rgba(255,255,255,0.2);
+            border: 2px solid rgba(255,255,255,0.5);
+            position: relative;
+        }
+        
+        .joystick-thumb {
+            width: 60px;
+            height: 60px;
+            background: rgba(255,255,255,0.8);
+            border-radius: 30px;
+            position: absolute;
+            top: 40px;
+            left: 40px;
+            cursor: pointer;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 20px;
+            pointer-events: auto;
+        }
+        
+        .action-btn {
+            width: 70px;
+            height: 70px;
+            background: rgba(0,0,0,0.6);
+            border-radius: 35px;
+            border: 2px solid #ffaa00;
+            color: #ffaa00;
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            line-height: 70px;
+            cursor: pointer;
+            user-select: none;
+            backdrop-filter: blur(5px);
+        }
+        
+        .action-btn:active {
+            transform: scale(0.95);
+            background: rgba(255,170,0,0.5);
+        }
+        
+        .stats-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0,0,0,0.7);
+            padding: 10px 20px;
+            border-radius: 10px;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            backdrop-filter: blur(5px);
+            z-index: 10;
+            font-family: monospace;
+            pointer-events: none;
+        }
+        
+        .health-bar {
+            width: 200px;
+            height: 20px;
+            background: #330000;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 5px 0;
+        }
+        
+        .health-fill {
+            width: 100%;
+            height: 100%;
+            background: #ff3333;
+            transition: width 0.3s;
+        }
+        
+        .xp-bar {
+            width: 200px;
+            height: 10px;
+            background: #333300;
+            border-radius: 5px;
+            overflow: hidden;
+            margin: 5px 0;
+        }
+        
+        .xp-fill {
+            width: 0%;
+            height: 100%;
+            background: #33ff33;
+            transition: width 0.3s;
+        }
+        
+        .damage-number {
+            position: absolute;
+            color: red;
+            font-weight: bold;
+            font-size: 20px;
+            text-shadow: 1px 1px 0 black;
+            pointer-events: none;
+            z-index: 20;
+            animation: floatUp 1s ease-out forwards;
+        }
+        
+        @keyframes floatUp {
+            0% { transform: translateY(0px); opacity: 1; }
+            100% { transform: translateY(-50px); opacity: 0; }
+        }
+        
+        @media (max-width: 768px) {
+            .action-btn { width: 60px; height: 60px; line-height: 60px; font-size: 20px; }
+            .joystick-area { width: 120px; height: 120px; }
+            .joystick-thumb { width: 50px; height: 50px; top: 35px; left: 35px; }
+            .stats-panel { font-size: 12px; }
+            .health-bar { width: 150px; }
+        }
+        
+        .target-indicator {
+            position: absolute;
+            border: 2px solid red;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 15;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 10px red;
+        }
+    </style>
 </head>
 <body>
-
-<!-- CANVAS -->
-<canvas id="game"></canvas>
-<canvas id="minimap" width="140" height="100"></canvas>
-
-<!-- YÜKLEME EKRANI -->
-<div id="loading-screen">
-    <div class="loader"></div>
-    <div class="text">Knight Online Mobile Yükleniyor...</div>
-</div>
-
-<!-- YATAY UYARI -->
-<div id="rotate-msg">
-    <div class="icon">📱</div>
-    <div style="font-size:26px;font-weight:bold;margin-bottom:15px">Lütfen Telefonunuzu Yatay Tutun</div>
-    <div style="color:#95a5a6;font-size:16px">Knight Online Mobile - Yatay Ekran Gerekli</div>
-</div>
-
-<!-- KARAKTER OLUŞTURMA -->
-<div id="char-create">
-    <h1>⚔️ Knight Online Mobile ⚔️</h1>
-    <p>Karanlık diyarlarda efsane ol! Sınıfını seç ve maceraya başla.</p>
-    <div class="class-select">
-        <div class="class-card" onclick="Game.createCharacter('warrior')">
-            <div class="icon">⚔️</div>
-            <div class="name">Warrior</div>
-            <div class="desc">Yüksek HP ve Defans<br>Güçlü Yakın Saldırı</div>
-            <div class="stats">❤️ HP: 150<br>⚔️ ATK: 18<br>🛡️ DEF: 12<br>💨 Hız: Orta</div>
+    <div class="stats-panel">
+        <div>❤️ Can: <span id="hpValue">100</span>/100</div>
+        <div class="health-bar"><div class="health-fill" id="healthFill" style="width:100%"></div></div>
+        <div>✨ Seviye: <span id="levelValue">1</span></div>
+        <div>⭐ XP: <span id="xpValue">0</span>/100</div>
+        <div class="xp-bar"><div class="xp-fill" id="xpFill" style="width:0%"></div></div>
+        <div>💰 Altın: <span id="goldValue">0</span></div>
+        <div>⚔️ Hasar: 25-35</div>
+    </div>
+    
+    <div class="ui-panel">
+        <div class="joystick-area" id="joystickArea">
+            <div class="joystick-base"></div>
+            <div class="joystick-thumb" id="joystickThumb"></div>
         </div>
-        <div class="class-card" onclick="Game.createCharacter('archer')">
-            <div class="icon">🏹</div>
-            <div class="name">Archer</div>
-            <div class="desc">Yüksek Kritik Hasarı<br>Uzaktan Saldırı</div>
-            <div class="stats">❤️ HP: 100<br>⚔️ ATK: 15<br>🎯 Kritik: %25<br>💨 Hız: Yüksek</div>
-        </div>
-        <div class="class-card" onclick="Game.createCharacter('mage')">
-            <div class="icon">🔮</div>
-            <div class="name">Mage</div>
-            <div class="desc">Büyü Hasarı Uzmanı<br>Alan Saldırıları</div>
-            <div class="stats">❤️ HP: 80<br>✨ Büyü: 150<br>💎 MP: 120<br>🎯 Kritik: %10</div>
-        </div>
-        <div class="class-card" onclick="Game.createCharacter('priest')">
-            <div class="icon">✝️</div>
-            <div class="name">Priest</div>
-            <div class="desc">İyileştirme ve Destek<br>Takım Oyuncusu</div>
-            <div class="stats">❤️ HP: 90<br>💎 MP: 100<br>✨ Heal: 50<br>🛡️ DEF: 8</div>
-        </div>
-        <div class="class-card" onclick="Game.createCharacter('rogue')">
-            <div class="icon">🗡️</div>
-            <div class="name">Rogue</div>
-            <div class="desc">Yüksek Kritik & Stealth<br>Çevik Saldırı</div>
-            <div class="stats">❤️ HP: 95<br>⚔️ ATK: 16<br>🎯 Kritik: %30<br>💨 Hız: Çok Yüksek</div>
+        <div class="action-buttons">
+            <div class="action-btn" id="attackBtn">⚔️</div>
+            <div class="action-btn" id="skillBtn">✨</div>
         </div>
     </div>
-</div>
 
-<!-- UI LAYER -->
-<div id="ui-layer">
-    <!-- KARAKTER PANELİ -->
-    <div id="char-panel" class="ui-panel ui-hidden">
-        <div class="char-header">
-            <div class="char-avatar" id="char-avatar">⚔️</div>
-            <div>
-                <div class="char-name" id="char-name">Player</div>
-                <div class="char-level" id="char-level">Level 1</div>
-            </div>
-        </div>
-        <div class="stat-container">
-            <div class="stat-label"><span>❤️ HP</span><span id="hp-text">100/100</span></div>
-            <div class="stat-bar-bg"><div class="stat-bar-fill hp-fill" id="hp-bar" style="width:100%"></div><div class="stat-text" id="hp-percent">100%</div></div>
-        </div>
-        <div class="stat-container">
-            <div class="stat-label"><span>💎 MP</span><span id="mp-text">50/50</span></div>
-            <div class="stat-bar-bg"><div class="stat-bar-fill mp-fill" id="mp-bar" style="width:100%"></div><div class="stat-text" id="mp-percent">100%</div></div>
-        </div>
-        <div class="stat-container">
-            <div class="stat-label"><span>⭐ EXP</span><span id="exp-text">0/100</span></div>
-            <div class="stat-bar-bg"><div class="stat-bar-fill exp-fill" id="exp-bar" style="width:0%"></div><div class="stat-text" id="exp-percent">0%</div></div>
-        </div>
-        <div class="char-details" id="char-stats">STR: 10 | DEX: 10 | INT: 10</div>
-        <div class="gold-display" id="gold-display">💰 0 Gold</div>
-    </div>
-
-    <!-- ZONE BİLGİSİ -->
-    <div id="zone-panel" class="ui-panel ui-hidden">Karasu Training Ground</div>
-
-    <!-- MİNİHARİTA -->
-    <div id="minimap" class="ui-panel ui-hidden"></div>
-
-    <!-- JOYSTICK -->
-    <div id="joystick-zone" class="ui-panel ui-hidden">
-        <div id="joystick-base"><div id="joystick-thumb"></div></div>
-    </div>
-
-    <!-- SKILL BAR -->
-    <div id="skill-bar" class="ui-panel ui-hidden"></div>
-
-    <!-- AKSİYON BUTONLARI -->
-    <div id="action-buttons" class="ui-panel ui-hidden">
-        <div id="attack-btn">⚔️</div>
-        <div id="sub-actions">
-            <div class="sub-btn" onclick="Game.doRoll()" title="Yuvarlan (Space)">💨</div>
-            <div class="sub-btn" onclick="Game.doInteract()" title="Etkileşim (E)">✋</div>
-            <div class="sub-btn" onclick="Game.toggleChat()" title="Chat (Enter)">💬</div>
-        </div>
-    </div>
-</div>
-
-<!-- CHAT CONTAINER -->
-<div id="chat-container">
-    <div id="chat-messages"></div>
-    <input type="text" id="chat-input" placeholder="Mesaj yaz..." onkeypress="if(event.key==='Enter')Game.sendChat()">
-</div>
-
-<!-- BİLDİRİM -->
-<div id="quest-notify"></div>
-
-<!-- ÖLÜM EKRANI -->
-<div id="death-screen">
-    <h1>💀 ÖLDÜN</h1>
-    <p>Ruhun karanlıkta kayboldu...</p>
-    <button onclick="Game.respawnPlayer()">🔄 Şehre Dön</button>
-</div>
-
-<!-- ENVANTER PANELİ -->
-<div id="inventory-panel" class="game-panel">
-    <h2>🎒 Envanter</h2>
-    <div class="inv-nav">
-        <button class="nav-btn" onclick="Game.invPage(-1)">◀ Önceki</button>
-        <span id="inv-page" style="color:#e94560;margin:0 20px;line-height:35px;font-size:16px;font-weight:bold">1 / 1</span>
-        <button class="nav-btn" onclick="Game.invPage(1)">Sonraki ▶</button>
-    </div>
-    <div class="inv-grid" id="inv-grid"></div>
-    <button class="panel-close" onclick="Game.toggleInventory()">Kapat</button>
-</div>
-
-<!-- SKILL PANELİ -->
-<div id="skill-panel" class="game-panel">
-    <h2>⚡ Skill Tree</h2>
-    <div style="text-align:center;color:#3498db;margin-bottom:15px;font-size:18px" id="sp-display">Skill Point: 0</div>
-    <div id="skill-tree" style="display:grid;grid-template-columns:repeat(3,1fr);gap:15px"></div>
-    <button class="panel-close" onclick="Game.toggleSkills()">Kapat</button>
-</div>
-
-<!-- SHOP PANELİ -->
-<div id="shop-panel" class="game-panel">
-    <h2>🏪 NPC Market</h2>
-    <div style="margin-bottom:20px">
-        <h3 style="color:#95a5a6;font-size:16px;margin-bottom:12px;border-bottom:1px solid #0f3460;padding-bottom:8px">📦 Eşyalarını Sat</h3>
-        <div id="shop-sell"></div>
-    </div>
-    <div>
-        <h3 style="color:#95a5a6;font-size:16px;margin-bottom:12px;border-bottom:1px solid #0f3460;padding-bottom:8px">🛒 Alışveriş</h3>
-        <div id="shop-buy"></div>
-    </div>
-    <button class="panel-close" onclick="Game.toggleShop()">Kapat</button>
-</div>
-
-<!-- QUEST PANELİ -->
-<div id="quest-panel" class="game-panel">
-    <h2>📜 Aktif Görevler</h2>
-    <div id="quest-list"></div>
-    <button class="panel-close" onclick="Game.toggleQuests()">Kapat</button>
-</div>
-
-<script>
-/**
- * ============================================
- * KNIGHT ONLINE MOBILE - KAPSAMLI RPG
- * ============================================
- * 
- * MODÜL YAPISI:
- * 1. Constants - Sabitler
- * 2. Database - Veritabanı (Items, Monsters, Skills, etc.)
- * 3. Game State - Oyun Durumu
- * 4. Renderer - Grafik Motoru
- * 5. Input Handler - Girdi Yönetimi
- * 6. Game Logic - Oyun Mantığı
- * 7. UI Manager - Arayüz Yönetimi
- * 8. Network Simulator - Ağ Simülasyonu
- * 
- * TOPLAM: ~2000+ satır temel yapı
- * GENİŞLETİLEBİLİR: 5000+ satıra kolayca çıkarılabilir
- */
-
-// ============================================
-// 1. CONSTANTS - SABİTLER
-// ============================================
-const CONFIG = {
-    TILE: 32,
-    COLS: 400,
-    ROWS: 400,
-    FPS: 60,
-    CHUNK_SIZE: 50,
-    MAX_MONSTERS: 200,
-    MAX_DROPS: 100,
-    MAX_PARTICLES: 500
-};
-
-const GAME_STATE = {
-    LOADING: 0,
-    CHARACTER_CREATE: 1,
-    PLAYING: 2,
-    PAUSED: 3,
-    GAME_OVER: 4
-};
-
-const RARITY = {
-    1: {name: 'Common', color: '#95a5a6', mult: 1},
-    2: {name: 'Uncommon', color: '#2ecc71', mult: 1.3},
-    3: {name: 'Rare', color: '#3498db', mult: 1.7},
-    4: {name: 'Epic', color: '#9b59b6', mult: 2.2},
-    5: {name: 'Legendary', color: '#f1c40f', mult: 3.0}
-};
-
-// ============================================
-// 2. DATABASE - VERİTABANI
-// ============================================
-const DB = {
-    // Sınıflar
-    classes: {
-        warrior: {
-            name: 'Warrior',
-            icon: '⚔️',
-            baseStats: {hp: 150, mp: 50, str: 15, dex: 10, int: 5},
-            growth: {hp: 20, mp: 5, str: 3, dex: 1, int: 0},
-            skills: ['power_strike', 'war_cry', 'whirlwind', 'shield_bash', 'berserk']
-        },
-        archer: {
-            name: 'Archer',
-            icon: '🏹',
-            baseStats: {hp: 100, mp: 70, str: 10, dex: 18, int: 5},
-            growth: {hp: 12, mp: 8, str: 1, dex: 3, int: 0},
-            skills: ['power_shot', 'multi_shot', 'poison_arrow', 'eagle_eye', 'rapid_fire']
-        },
-        mage: {
-            name: 'Mage',
-            icon: '🔮',
-            baseStats: {hp: 80, mp: 120, str: 5, dex: 8, int: 20},
-            growth: {hp: 8, mp: 15, str: 0, dex: 1, int: 4},
-            skills: ['fireball', 'ice_storm', 'lightning', 'meteor', 'teleport']
-        },
-        priest: {
-            name: 'Priest',
-            icon: '✝️',
-            baseStats: {hp: 90, mp: 100, str: 8, dex: 8, int: 16},
-            growth: {hp: 10, mp: 12, str: 1, dex: 1, int: 3},
-            skills: ['heal', 'bless', 'holy_light', 'resurrection', 'divine_shield']
-        },
-        rogue: {
-            name: 'Rogue',
-            icon: '🗡️',
-            baseStats: {hp: 95, mp: 60, str: 12, dex: 18, int: 5},
-            growth: {hp: 12, mp: 6, str: 2, dex: 3, int: 0},
-            skills: ['stealth', 'backstab', 'poison', 'shadow_step', 'assassinate']
-        }
-    },
-
-    // Yetenekler
-    skills: {
-        // Warrior
-        power_strike: {name: 'Power Strike', icon: '⚔️', cost: 10, damage: 150, cooldown: 30, type: 'attack', class: 'warrior'},
-        war_cry: {name: 'War Cry', icon: '📢', cost: 15, buff: 'atk', buffValue: 20, duration: 600, cooldown: 60, type: 'buff', class: 'warrior'},
-        whirlwind: {name: 'Whirlwind', icon: '🌪️', cost: 20, damage: 120, cooldown: 45, type: 'aoe', range: 100, class: 'warrior'},
-        shield_bash: {name: 'Shield Bash', icon: '🛡️', cost: 12, damage: 100, stun: 30, cooldown: 35, type: 'attack', class: 'warrior'},
-        berserk: {name: 'Berserk', icon: '😡', cost: 25, buff: 'all', buffValue: 30, duration: 400, cooldown: 90, type: 'buff', class: 'warrior'},
-        
-        // Archer
-        power_shot: {name: 'Power Shot', icon: '🏹', cost: 10, damage: 180, cooldown: 30, type: 'attack', class: 'archer'},
-        multi_shot: {name: 'Multi Shot', icon: '🏹', cost: 15, damage: 100, cooldown: 40, type: 'multi', count: 5, class: 'archer'},
-        poison_arrow: {name: 'Poison Arrow', icon: '☠️', cost: 12, damage: 80, dotDamage: 20, dotDuration: 300, cooldown: 35, type: 'dot', class: 'archer'},
-        eagle_eye: {name: 'Eagle Eye', icon: '🦅', cost: 15, buff: 'crit', buffValue: 50, duration: 500, cooldown: 60, type: 'buff', class: 'archer'},
-        rapid_fire: {name: 'Rapid Fire', icon: '🔥', cost: 25, damage: 60, cooldown: 50, type: 'channel', hits: 10, class: 'archer'},
-        
-        // Mage
-        fireball: {name: 'Fireball', icon: '🔥', cost: 15, damage: 200, cooldown: 35, type: 'attack', class: 'mage'},
-        ice_storm: {name: 'Ice Storm', icon: '❄️', cost: 25, damage: 150, slow: 50, slowDuration: 200, cooldown: 50, type: 'aoe', range: 120, class: 'mage'},
-        lightning: {name: 'Lightning', icon: '⚡', cost: 18, damage: 220, cooldown: 40, type: 'attack', class: 'mage'},
-        meteor: {name: 'Meteor', icon: '☄️', cost: 35, damage: 300, cooldown: 80, type: 'aoe', range: 150, class: 'mage'},
-        teleport: {name: 'Teleport', icon: '✨', cost: 20, cooldown: 60, type: 'utility', range: 200, class: 'mage'},
-        
-        // Priest
-        heal: {name: 'Heal', icon: '✝️', cost: 20, heal: 50, cooldown: 30, type: 'heal', class: 'priest'},
-        bless: {name: 'Bless', icon: '✨', cost: 25, buff: 'all', buffValue: 15, duration: 600, cooldown: 90, type: 'buff', class: 'priest'},
-        holy_light: {name: 'Holy Light', icon: '☀️', cost: 30, damage: 180, cooldown: 55, type: 'aoe', range: 100, class: 'priest'},
-        resurrection: {name: 'Resurrection', icon: '💫', cost: 50, cooldown: 300, type: 'utility', class: 'priest'},
-        divine_shield: {name: 'Divine Shield', icon: '🛡️', cost: 30, shield: 100, duration: 400, cooldown: 70, type: 'shield', class: 'priest'},
-        
-        // Rogue
-        stealth: {name: 'Stealth', icon: '👤', cost: 15, duration: 500, cooldown: 60, type: 'stealth', class: 'rogue'},
-        backstab: {name: 'Backstab', icon: '🗡️', cost: 12, damage: 250, cooldown: 40, type: 'attack', class: 'rogue'},
-        poison: {name: 'Poison', icon: '🧪', cost: 10, dotDamage: 30, dotDuration: 400, cooldown: 35, type: 'dot', class: 'rogue'},
-        shadow_step: {name: 'Shadow Step', icon: '👣', cost: 15, cooldown: 50, type: 'utility', range: 150, class: 'rogue'},
-        assassinate: {name: 'Assassinate', icon: '💀', cost: 30, damage: 400, cooldown: 100, type: 'attack', class: 'rogue'}
-    },
-
-    // Canavarlar
-    monsters: {
-        slime: {name: 'Slime', icon: '🟢', hp: 30, attack: 5, defense: 2, xp: 10, gold: 5, speed: 0.5, size: 12, color: '#44cc44', drops: ['potion_hp', 'potion_mp'], zone: [0, 1]},
-        wolf: {name: 'Wolf', icon: '🐺', hp: 50, attack: 10, defense: 4, xp: 20, gold: 10, speed: 0.8, size: 14, color: '#888', drops: ['wolf_pelt', 'potion_hp'], zone: [0, 1, 2]},
-        spider: {name: 'Giant Spider', icon: '🕷️', hp: 70, attack: 12, defense: 5, xp: 35, gold: 15, speed: 0.6, size: 16, color: '#664422', drops: ['spider_silk', 'potion_mp'], zone: [1, 2]},
-        bear: {name: 'Brown Bear', icon: '🐻', hp: 120, attack: 18, defense: 8, xp: 60, gold: 25, speed: 0.4, size: 20, color: '#8B4513', drops: ['bear_pelt', 'meat'], zone: [1, 2, 3]},
-        skeleton: {name: 'Skeleton', icon: '💀', hp: 100, attack: 16, defense: 8, xp: 55, gold: 25, speed: 0.4, size: 18, color: '#ddd', drops: ['bone', 'iron_sword'], zone: [3, 4]},
-        zombie: {name: 'Zombie', icon: '🧟', hp: 130, attack: 14, defense: 10, xp: 65, gold: 30, speed: 0.3, size: 18, color: '#556644', drops: ['rotten_meat', 'potion_hp'], zone: [3, 4]},
-        ice_golem: {name: 'Ice Golem', icon: '❄️', hp: 180, attack: 20, defense: 15, xp: 90, gold: 45, speed: 0.3, size: 22, color: '#88ccff', drops: ['ice_crystal', 'frost_armor'], zone: [4, 5]},
-        demon: {name: 'Demon', icon: '👿', hp: 200, attack: 28, defense: 12, xp: 120, gold: 60, speed: 0.6, size: 20, color: '#cc2200', drops: ['demon_horn', 'fire_sword'], zone: [5, 6]},
-        dragon: {name: 'Young Dragon', icon: '🐲', hp: 350, attack: 38, defense: 20, xp: 250, gold: 150, speed: 0.5, size: 28, color: '#44aa44', drops: ['dragon_scale', 'dragon_sword'], zone: [6, 7]},
-        lich: {name: 'Lich', icon: '🧙', hp: 300, attack: 35, defense: 15, xp: 200, gold: 120, speed: 0.4, size: 22, color: '#aa44ff', drops: ['lich_heart', 'staff_power'], zone: [7, 8]},
-        boss_dragon: {name: '🐉 Ancient Dragon', icon: '🐉', hp: 2000, attack: 60, defense: 35, xp: 2000, gold: 1000, speed: 0.3, size: 40, color: '#ff4400', drops: ['dragon_helm', 'dragon_armor', 'legendary_sword'], zone: [8], boss: true},
-        boss_king: {name: '👑 Dark King', icon: '👑', hp: 2500, attack: 70, defense: 40, xp: 3000, gold: 1500, speed: 0.3, size: 45, color: '#ff0000', drops: ['king_crown', 'king_sword', 'royal_armor'], zone: [8], boss: true}
-    },
-
-    // Eşyalar
-    items: {
-        // Potions
-        potion_hp: {name: 'HP Potion', icon: '🔴', type: 'consumable', effect: {hp: 50}, value: 10, rarity: 1},
-        potion_mp: {name: 'MP Potion', icon: '🔵', type: 'consumable', effect: {mp: 30}, value: 10, rarity: 1},
-        dragon_potion: {name: 'Dragon Potion', icon: '🟣', type: 'consumable', effect: {hp: 200, mp: 100}, value: 100, rarity: 4},
-        
-        // Materials
-        wolf_pelt: {name: 'Wolf Pelt', icon: '🐺', type: 'material', value: 15, rarity: 1},
-        spider_silk: {name: 'Spider Silk', icon: '🕸️', type: 'material', value: 20, rarity: 2},
-        bear_pelt: {name: 'Bear Pelt', icon: '🐻', type: 'material', value: 35, rarity: 2},
-        bone: {name: 'Bone', icon: '🦴', type: 'material', value: 12, rarity: 1},
-        ice_crystal: {name: 'Ice Crystal', icon: '❄️', type: 'material', value: 40, rarity: 3},
-        demon_horn: {name: 'Demon Horn', icon: '🔴', type: 'material', value: 60, rarity: 3},
-        dragon_scale: {name: 'Dragon Scale', icon: '🐲', type: 'material', value: 150, rarity: 4},
-        lich_heart: {name: 'Lich Heart', icon: '💜', type: 'material', value: 120, rarity: 4},
-        
-        // Weapons
-        iron_sword: {name: 'Iron Sword', icon: '🗡️', type: 'weapon', attack: 15, defense: 2, value: 80, rarity: 1},
-        steel_sword: {name: 'Steel Sword', icon: '🗡️', type: 'weapon', attack: 25, defense: 4, value: 200, rarity: 2},
-        fire_sword: {name: 'Fire Sword', icon: '🔥', type: 'weapon', attack: 35, defense: 5, value: 300, rarity: 3},
-        frost_sword: {name: 'Frost Sword', icon: '❄️', type: 'weapon', attack: 32, defense: 6, value: 350, rarity: 3},
-        dragon_sword: {name: 'Dragon Sword', icon: '⚔️', type: 'weapon', attack: 65, defense: 10, value: 1000, rarity: 5},
-        legendary_sword: {name: 'Legendary Sword', icon: '🗡️', type: 'weapon', attack: 100, defense: 15, value: 5000, rarity: 5},
-        staff_power: {name: 'Staff of Power', icon: '🪄', type: 'weapon', attack: 25, magic: 30, value: 350, rarity: 3},
-        king_sword: {name: 'King Sword', icon: '⚔️', type: 'weapon', attack: 80, defense: 12, value: 3000, rarity: 5},
-        
-        // Armor
-        leather_armor: {name: 'Leather Armor', icon: '🛡️', type: 'armor', defense: 10, hp: 20, value: 100, rarity: 1},
-        chain_mail: {name: 'Chain Mail', icon: '🛡️', type: 'armor', defense: 20, hp: 40, value: 250, rarity: 2},
-        plate_armor: {name: 'Plate Armor', icon: '🛡️', type: 'armor', defense: 30, hp: 60, value: 450, rarity: 3},
-        frost_armor: {name: 'Frost Armor', icon: '🛡️', type: 'armor', defense: 30, hp: 80, value: 400, rarity: 3},
-        dragon_armor: {name: 'Dragon Armor', icon: '🛡️', type: 'armor', defense: 45, hp: 200, value: 1500, rarity: 5},
-        royal_armor: {name: 'Royal Armor', icon: '🛡️', type: 'armor', defense: 55, hp: 300, value: 4000, rarity: 5},
-        dragon_helm: {name: 'Dragon Helm', icon: '🪖', type: 'armor', defense: 25, hp: 100, value: 800, rarity: 4},
-        king_crown: {name: 'King Crown', icon: '👑', type: 'armor', defense: 35, magic: 20, value: 2000, rarity: 5}
-    },
-
-    // Bölgeler
-    zones: [
-        {name: 'Karasu Training Ground', level: 1, color: '#2d5a1e', monsters: ['slime', 'wolf']},
-        {name: 'Dalion Forest', level: 5, color: '#1a4a1a', monsters: ['wolf', 'spider', 'bear']},
-        {name: 'Elmorad Desert', level: 10, color: '#d4a843', monsters: ['spider', 'bear']},
-        {name: 'Moradon Castle', level: 15, color: '#5a4a3a', monsters: ['skeleton', 'zombie']},
-        {name: 'Ice Dungeon', level: 20, color: '#a0d8ef', monsters: ['ice_golem', 'skeleton']},
-        {name: 'Lava Temple', level: 25, color: '#cc3300', monsters: ['demon', 'ice_golem']},
-        {name: 'Dragon Valley', level: 30, color: '#4a2a1a', monsters: ['dragon', 'demon']},
-        {name: 'Abyss Dungeon', level: 35, color: '#2a1a3a', monsters: ['lich', 'dragon']},
-        {name: 'Boss Arena', level: 40, color: '#3a0a0a', monsters: ['boss_dragon', 'boss_king']}
-    ],
-
-    // Görevler
-    quests: [
-        {id: 1, name: 'İlk Av', description: '5 Slime öldür', target: 'slime', count: 5, reward: {xp: 100, gold: 50, items: ['potion_hp']}},
-        {id: 2, name: 'Kurt Avcısı', description: '10 Wolf öldür', target: 'wolf', count: 10, reward: {xp: 200, gold: 100, items: ['potion_mp']}},
-        {id: 3, name: 'Örümcek Temizliği', description: '15 Spider öldür', target: 'spider', count: 15, reward: {xp: 350, gold: 150, items: ['steel_sword']}},
-        {id: 4, name: 'Kemik Toplayıcı', description: '20 Skeleton öldür', target: 'skeleton', count: 20, reward: {xp: 500, gold: 250, items: ['chain_mail']}},
-        {id: 5, name: 'Ejder Avcısı', description: 'Ejderha Lord\'u yen', target: 'boss_dragon', count: 1, reward: {xp: 2000, gold: 1000, items: ['dragon_sword', 'dragon_armor']}}
-    ]
-};
-
-// ============================================
-// 3. GAME STATE - OYUN DURUMU
-// ============================================
-const Game = {
-    state: GAME_STATE.LOADING,
-    canvas: null,
-    ctx: null,
-    minimapCanvas: null,
-    minimapCtx: null,
-    
-    // Oyuncu
-    player: {
-        name: '',
-        class: '',
-        level: 1,
-        xp: 0,
-        xpToNext: 100,
-        hp: 100,
-        maxHp: 100,
-        mp: 50,
-        maxMp: 50,
-        str: 10,
-        dex: 10,
-        int: 10,
-        attack: 15,
-        defense: 8,
-        gold: 0,
-        x: 0,
-        y: 0,
-        zone: 0,
-        inventory: [],
-        equipment: {
-            weapon: null,
-            armor: null,
-            helmet: null
-        },
-        skills: {},
-        skillPoints: 0,
-        buffs: [],
-        roll: 0,
-        rollCooldown: 0,
-        invincible: 0
-    },
-    
-    // Dünya
-    map: [],
-    monsters: [],
-    npcs: [],
-    drops: [],
-    projectiles: [],
-    particles: [],
-    damageNumbers: [],
-    
-    // Kamera
-    camera: {x: 0, y: 0},
-    
-    // Kontroller
-    joystick: {active: false, dx: 0, dy: 0, id: null},
-    attackHeld: false,
-    
-    // UI
-    uiOpen: false,
-    chatOpen: false,
-    
-    // Zaman
-    gameTime: 0,
-    lastTime: 0,
-    deltaTime: 0,
-    
-    // ID'ler
-    animationId: null,
-    
-    /**
-     * OYUN BAŞLATMA
-     */
-    init: function() {
-        console.log('🎮 Knight Online Mobile Başlatılıyor...');
-        
-        this.canvas = document.getElementById('game');
-        this.ctx = this.canvas.getContext('2d');
-        this.minimapCanvas = document.getElementById('minimap');
-        this.minimapCtx = this.minimapCanvas.getContext('2d');
-        
-        this.resize();
-        window.addEventListener('resize', () => this.resize());
-        
-        // Yüklemeyi simüle et
-        setTimeout(() => {
-            document.getElementById('loading-screen').style.display = 'none';
-            this.state = GAME_STATE.CHARACTER_CREATE;
-            console.log('✅ Oyun hazır!');
-        }, 2000);
-    },
-    
-    /**
-     * EKRAN BOYUTLANDIRMA
-     */
-    resize: function() {
-        this.canvas.width = window.innerWidth;
-        this.canvas.height = window.innerHeight;
-        
-        if (window.innerWidth > window.innerHeight) {
-            this.minimapCanvas.style.width = '140px';
-            this.minimapCanvas.style.height = '100px';
-        }
-    },
-    
-    /**
-     * KARAKTER OLUŞTURMA
-     */
-    createCharacter: function(className) {
-        console.log('👤 Karakter oluşturuluyor:', className);
-        
-        const classData = DB.classes[className];
-        if (!classData) {
-            console.error('❌ Geçersiz sınıf:', className);
-            return;
-        }
-        
-        // Oyuncu ayarları
-        this.player.class = className;
-        this.player.name = 'Knight' + Math.floor(Math.random() * 10000);
-        this.player.maxHp = classData.baseStats.hp;
-        this.player.hp = this.player.maxHp;
-        this.player.maxMp = classData.baseStats.mp;
-        this.player.mp = this.player.maxMp;
-        this.player.str = classData.baseStats.str;
-        this.player.dex = classData.baseStats.dex;
-        this.player.int = classData.baseStats.int;
-        this.player.attack = Math.floor(classData.baseStats.str * 1.5);
-        this.player.defense = Math.floor(classData.baseStats.str * 0.8);
-        
-        // Başlangıç pozisyonu
-        this.player.x = 200 * CONFIG.TILE;
-        this.player.y = 200 * CONFIG.TILE;
-        
-        // Başlangıç eşyaları
-        this.player.inventory = [
-            {itemId: 'potion_hp', count: 5},
-            {itemId: 'potion_mp', count: 3}
-        ];
-        
-        // Başlangıç yetenekleri
-        this.player.skills = {};
-        classData.skills.forEach(skillId => {
-            this.player.skills[skillId] = 1;
-        });
-        
-        // UI güncelleme
-        document.getElementById('char-create').style.display = 'none';
-        document.getElementById('char-name').textContent = this.player.name;
-        document.getElementById('char-level').textContent = 'Level ' + this.player.level;
-        document.getElementById('char-avatar').textContent = classData.icon;
-        
-        // Dünyayı oluştur
-        this.generateWorld();
-        
-        // Kontrolleri ayarla
-        this.setupControls();
-        this.setupSkillBar();
-        this.updateCharUI();
-        
-        // Kamerayı ayarla
-        this.camera.x = this.player.x - this.canvas.width / 2;
-        this.camera.y = this.player.y - this.canvas.height / 2;
-        
-        // Sohbet mesajı
-        this.addChat('system', 'Karasu Training Ground\'a hoş geldin!');
-        this.addChat('system', 'Canavarları öldürerek level atla!');
-        
-        // Oyun durumunu değiştir
-        this.state = GAME_STATE.PLAYING;
-        
-        // UI'ları göster
-        document.querySelectorAll('.ui-hidden').forEach(el => {
-            el.classList.remove('ui-hidden');
-            el.classList.add('ui-visible');
-        });
-        
-        // Oyun döngüsünü başlat
-        this.lastTime = performance.now();
-        this.gameLoop();
-        
-        console.log('✅ Karakter oluşturuldu:', this.player.name);
-    },
-    
-    /**
-     * OYUN DÖNGÜSÜ
-     */
-    gameLoop: function(currentTime) {
-        if (this.state !== GAME_STATE.PLAYING) return;
-        
-        currentTime = currentTime || performance.now();
-        this.deltaTime = (currentTime - this.lastTime) / 1000;
-        this.lastTime = currentTime;
-        
-        this.update();
-        this.draw();
-        
-        this.animationId = requestAnimationFrame((t) => this.gameLoop(t));
-    },
-    
-    /**
-     * DÜNYA OLUŞTURMA
-     */
-    generateWorld: function() {
-        console.log('🗺️ Dünya oluşturuluyor...');
-        
-        // Harita
-        this.map = [];
-        for (let y = 0; y < CONFIG.ROWS; y++) {
-            this.map[y] = [];
-            for (let x = 0; x < CONFIG.COLS; x++) {
-                if (x === 0 || y === 0 || x === CONFIG.COLS - 1 || y === CONFIG.ROWS - 1) {
-                    this.map[y][x] = 1; // Duvar
-                } else {
-                    this.map[y][x] = 0; // Zemin
-                }
+    <!-- Three.js kütüphanesi -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.128.0/build/three.module.js"
             }
         }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'https://unpkg.com/three@0.128.0/examples/jsm/controls/OrbitControls.js';
         
-        // Yollar
-        for (let x = 10; x < CONFIG.COLS - 10; x++) {
-            this.map[200][x] = 2;
-            this.map[199][x] = 2;
-            this.map[201][x] = 2;
+        // --- Oyun Durumu ---
+        const gameState = {
+            health: 100,
+            maxHealth: 100,
+            level: 1,
+            xp: 0,
+            xpNeeded: 100,
+            gold: 0,
+            damage: 30,
+            attackSpeed: 1.0,
+            lastAttack: 0,
+            isAttacking: false
+        };
+        
+        // --- Three.js Kurulumu (Mobil için optimize) ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x071a3b);
+        scene.fog = new THREE.FogExp2(0x071a3b, 0.008);
+        
+        // Kamera (Third Person)
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 5, 10);
+        camera.lookAt(0, 0, 0);
+        
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true; // Gölgeler için
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Mobil performans
+        document.body.appendChild(renderer.domElement);
+        
+        // Işıklandırma (Yüksek grafik hissi)
+        // Ambient
+        const ambientLight = new THREE.AmbientLight(0x404060);
+        scene.add(ambientLight);
+        // Ana ışık (güneş)
+        const dirLight = new THREE.DirectionalLight(0xfff5e6, 1.2);
+        dirLight.position.set(10, 20, 5);
+        dirLight.castShadow = true;
+        dirLight.receiveShadow = true;
+        dirLight.shadow.mapSize.width = 1024;
+        dirLight.shadow.mapSize.height = 1024;
+        dirLight.shadow.camera.near = 0.5;
+        dirLight.shadow.camera.far = 30;
+        dirLight.shadow.camera.left = -10;
+        dirLight.shadow.camera.right = 10;
+        dirLight.shadow.camera.top = 10;
+        dirLight.shadow.camera.bottom = -10;
+        scene.add(dirLight);
+        // Arka ışık
+        const backLight = new THREE.PointLight(0x4466cc, 0.5);
+        backLight.position.set(-5, 5, -5);
+        scene.add(backLight);
+        // Yansıma
+        const fillLight = new THREE.PointLight(0xffaa66, 0.4);
+        fillLight.position.set(2, 3, 4);
+        scene.add(fillLight);
+        
+        // Zemin (taş doku benzeri)
+        const groundMat = new THREE.MeshStandardMaterial({ color: 0x4a3f35, roughness: 0.8, metalness: 0.1 });
+        const ground = new THREE.Mesh(new THREE.PlaneGeometry(30, 30), groundMat);
+        ground.rotation.x = -Math.PI / 2;
+        ground.position.y = -0.5;
+        ground.receiveShadow = true;
+        scene.add(ground);
+        
+        // Izgara yardımcı (görsel)
+        const gridHelper = new THREE.GridHelper(30, 20, 0xaa9977, 0x665544);
+        gridHelper.position.y = -0.4;
+        scene.add(gridHelper);
+        
+        // Çevre dekorasyonu (ağaçlar, taşlar)
+        const rockMat = new THREE.MeshStandardMaterial({ color: 0x7a6a5a, roughness: 0.9 });
+        for (let i = 0; i < 50; i++) {
+            const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(0.2 + Math.random() * 0.3), rockMat);
+            const angle = Math.random() * Math.PI * 2;
+            const rad = 8 + Math.random() * 12;
+            rock.position.x = Math.cos(angle) * rad;
+            rock.position.z = Math.sin(angle) * rad;
+            rock.position.y = -0.5 + Math.random() * 0.3;
+            rock.castShadow = true;
+            rock.receiveShadow = true;
+            scene.add(rock);
         }
-        for (let y = 10; y < CONFIG.ROWS - 10; y++) {
-            this.map[y][200] = 2;
-            this.map[y][199] = 2;
-            this.map[y][201] = 2;
-        }
         
-        // NPC'ler
-        this.npcs = [
-            {name: 'Captain', x: 198 * CONFIG.TILE, y: 198 * CONFIG.TILE, color: '#ffd700', type: 'quest', dialog: ['Görev: 5 Slime öldür', 'Ödül: 100 Gold, 50 XP']},
-            {name: 'Merchant', x: 202 * CONFIG.TILE, y: 198 * CONFIG.TILE, color: '#ff66aa', type: 'shop', dialog: ['Hoş geldin! Ne alırsın?']},
-            {name: 'Priest', x: 198 * CONFIG.TILE, y: 202 * CONFIG.TILE, color: '#44ff44', type: 'heal', dialog: ['Yaralarını iyileştireyim mi?']}
-        ];
+        // --- Oyuncu Karakteri (Şövalye görünümlü) ---
+        const playerGroup = new THREE.Group();
+        // Gövde
+        const bodyGeo = new THREE.CylinderGeometry(0.5, 0.6, 1.2, 8);
+        const bodyMat = new THREE.MeshStandardMaterial({ color: 0x3a6ea5, metalness: 0.7, roughness: 0.3 });
+        const body = new THREE.Mesh(bodyGeo, bodyMat);
+        body.castShadow = true;
+        body.receiveShadow = true;
+        body.position.y = 0;
+        playerGroup.add(body);
+        // Baş
+        const headGeo = new THREE.SphereGeometry(0.45, 24, 24);
+        const headMat = new THREE.MeshStandardMaterial({ color: 0xfdd7a8 });
+        const head = new THREE.Mesh(headGeo, headMat);
+        head.position.y = 0.8;
+        head.castShadow = true;
+        playerGroup.add(head);
+        // Kask
+        const helmetGeo = new THREE.CylinderGeometry(0.5, 0.55, 0.4, 8);
+        const helmetMat = new THREE.MeshStandardMaterial({ color: 0xccaa77, metalness: 0.9 });
+        const helmet = new THREE.Mesh(helmetGeo, helmetMat);
+        helmet.position.y = 1.0;
+        helmet.castShadow = true;
+        playerGroup.add(helmet);
+        // Kılıç
+        const swordGeo = new THREE.BoxGeometry(0.1, 0.1, 1.2);
+        const swordMat = new THREE.MeshStandardMaterial({ color: 0xddccaa, metalness: 0.9 });
+        const sword = new THREE.Mesh(swordGeo, swordMat);
+        sword.position.set(0.6, 0.2, 0.3);
+        sword.rotation.z = -0.4;
+        sword.castShadow = true;
+        playerGroup.add(sword);
         
-        // Canavarları oluştur
-        this.spawnMonsters();
+        playerGroup.position.set(0, 0, 0);
+        playerGroup.castShadow = true;
+        playerGroup.receiveShadow = true;
+        scene.add(playerGroup);
         
-        console.log('✅ Dünya oluşturuldu!');
-    },
-    
-    /**
-     * CANAVAR SPAWN
-     */
-    spawnMonsters: function() {
-        this.monsters = [];
-        const zone = DB.zones[this.player.zone];
-        const count = 30 + this.player.zone * 10;
-        
-        for (let i = 0; i < count; i++) {
-            const monsterType = zone.monsters[Math.floor(Math.random() * zone.monsters.length)];
-            const monsterData = DB.monsters[monsterType];
-            
-            if (monsterData) {
-                let mx, my, attempts = 0;
-                do {
-                    mx = Math.floor(Math.random() * (CONFIG.COLS - 20) + 10) * CONFIG.TILE;
-                    my = Math.floor(Math.random() * (CONFIG.ROWS - 20) + 10) * CONFIG.TILE;
-                    attempts++;
-                } while (this.dist({x: mx, y: my}, this.player) < 200 && attempts < 20);
+        // --- Düşmanlar (Orklar) ---
+        class Enemy {
+            constructor(x, z) {
+                this.group = new THREE.Group();
+                // Gövde
+                const eBody = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.65, 1.1, 8), new THREE.MeshStandardMaterial({ color: 0x6a4a3a, roughness: 0.6 }));
+                eBody.castShadow = true;
+                this.group.add(eBody);
+                // Baş
+                const eHead = new THREE.Mesh(new THREE.SphereGeometry(0.5, 24, 24), new THREE.MeshStandardMaterial({ color: 0x8a6a4a }));
+                eHead.position.y = 0.75;
+                eHead.castShadow = true;
+                this.group.add(eHead);
+                // Dişler
+                const toothMat = new THREE.MeshStandardMaterial({ color: 0xeeddcc });
+                const tooth = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.2, 4), toothMat);
+                tooth.position.set(0.2, 0.55, 0.45);
+                this.group.add(tooth);
+                const tooth2 = tooth.clone();
+                tooth2.position.set(-0.2, 0.55, 0.45);
+                this.group.add(tooth2);
                 
-                if (attempts < 20) {
-                    this.monsters.push({
-                        ...monsterData,
-                        type: monsterType,
-                        x: mx,
-                        y: my,
-                        maxHp: monsterData.hp,
-                        alive: true,
-                        deathTimer: 0,
-                        aggro: false,
-                        hitTimer: 0,
-                        poison: 0,
-                        slow: 0,
-                        frozen: 0
-                    });
+                this.group.position.set(x, 0, z);
+                this.health = 50;
+                this.maxHealth = 50;
+                this.level = 1;
+                this.damage = 15;
+                scene.add(this.group);
+                this.isAlive = true;
+                
+                // Sağlık barı (CSS2D ile yapmak daha kolay, ancak basit text label ekleyelim)
+                this.createHealthLabel();
+            }
+            
+            createHealthLabel() {
+                const canvas = document.createElement('canvas');
+                canvas.width = 64;
+                canvas.height = 32;
+                const ctx = canvas.getContext('2d');
+                this.canvas = canvas;
+                const texture = new THREE.CanvasTexture(canvas);
+                const material = new THREE.SpriteMaterial({ map: texture });
+                this.sprite = new THREE.Sprite(material);
+                this.sprite.scale.set(1, 0.5, 1);
+                this.sprite.position.y = 1.2;
+                this.group.add(this.sprite);
+                this.updateHealthBar();
+            }
+            
+            updateHealthBar() {
+                if (!this.canvas) return;
+                const ctx = this.canvas.getContext('2d');
+                ctx.clearRect(0, 0, 64, 32);
+                ctx.fillStyle = '#330000';
+                ctx.fillRect(0, 0, 64, 10);
+                ctx.fillStyle = '#ff3333';
+                const percent = this.health / this.maxHealth;
+                ctx.fillRect(0, 0, 64 * percent, 10);
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 12px monospace';
+                ctx.fillText(`${this.health}`, 5, 25);
+                this.canvas.texture.needsUpdate = true;
+            }
+            
+            takeDamage(amount, sourcePos) {
+                if (!this.isAlive) return false;
+                this.health -= amount;
+                this.updateHealthBar();
+                // Hasar efekti (vücut kızarma)
+                this.group.children[0].material.emissive = new THREE.Color(0xff0000);
+                setTimeout(() => {
+                    if(this.group.children[0]) this.group.children[0].material.emissive = new THREE.Color(0x000000);
+                }, 100);
+                // Hasar numarası gösterme
+                showDamageNumber(amount, this.group.position);
+                
+                if (this.health <= 0) {
+                    this.isAlive = false;
+                    this.die();
+                    return true;
                 }
-            }
-        }
-        
-        // Boss spawn (her 5 level'de)
-        if (this.player.level % 5 === 0 && this.player.zone < 8) {
-            const bossType = this.player.zone >= 7 ? 'boss_king' : 'boss_dragon';
-            const bossData = DB.monsters[bossType];
-            if (bossData) {
-                this.monsters.push({
-                    ...bossData,
-                    type: bossType,
-                    x: 250 * CONFIG.TILE,
-                    y: 250 * CONFIG.TILE,
-                    maxHp: bossData.hp,
-                    alive: true,
-                    deathTimer: 0,
-                    aggro: false,
-                    hitTimer: 0,
-                    poison: 0,
-                    slow: 0,
-                    frozen: 0,
-                    boss: true
-                });
-            }
-        }
-    }
-};
-
-// ============================================
-// 4. GAME LOGIC - OYUN MANTIĞI
-// ============================================
-
-/**
- * GÜNCELLEME
- */
-Game.update = function() {
-    this.gameTime++;
-    
-    // Cooldown'lar
-    if (this.player.invincible > 0) this.player.invincible--;
-    if (this.player.rollCooldown > 0) this.player.rollCooldown--;
-    if (this.player.roll > 0) this.player.roll--;
-    
-    // Yetenek cooldown'ları
-    for (let skillId in this.player.skills) {
-        const skill = DB.skills[skillId];
-        if (skill && skill.cd > 0) skill.cd--;
-    }
-    
-    // Hareket
-    let dx = 0, dy = 0;
-    if (this.joystick.active) {
-        dx = this.joystick.dx;
-        dy = this.joystick.dy;
-    }
-    
-    if (Math.abs(dx) > 0.15 || Math.abs(dy) > 0.15) {
-        let nx = this.player.x + dx * 3;
-        let ny = this.player.y + dy * 3;
-        
-        if (!this.isSolid(nx, this.player.y)) this.player.x = nx;
-        if (!this.isSolid(this.player.x, ny)) this.player.y = ny;
-    }
-    
-    // Yuvarlanma
-    if (this.player.roll > 0) {
-        let rx = 0, ry = 0;
-        if (dx > 0.5) rx = 1;
-        if (dx < -0.5) rx = -1;
-        if (dy > 0.5) ry = 1;
-        if (dy < -0.5) ry = -1;
-        
-        if (rx || ry) {
-            let nx = this.player.x + rx * 8;
-            let ny = this.player.y + ry * 8;
-            if (!this.isSolid(nx, this.player.y)) this.player.x = nx;
-            if (!this.isSolid(this.player.x, ny)) this.player.y = ny;
-        }
-    }
-    
-    // Saldırı
-    if (this.attackHeld && this.gameTime % 15 === 0) {
-        this.monsters.forEach(m => {
-            if (m.alive && this.dist(this.player, m) < 50) {
-                this.dealDamage(m, this.player.attack);
-            }
-        });
-    }
-    
-    // Canavar AI
-    this.monsters.forEach(m => {
-        if (!m.alive) {
-            if (m.deathTimer > 0) m.deathTimer--;
-            return;
-        }
-        
-        if (m.hitTimer > 0) m.hitTimer--;
-        
-        const d = this.dist(this.player, m);
-        
-        // Aggro
-        if (d < 150 && !m.aggro) m.aggro = true;
-        if (d > 300 && m.aggro) m.aggro = false;
-        
-        if (m.aggro && m.frozen <= 0) {
-            const angle = Math.atan2(this.player.y - m.y, this.player.x - m.x);
-            let speed = m.speed || 0.5;
-            if (m.slow > 0) speed *= 0.5;
-            
-            let nx = m.x + Math.cos(angle) * speed;
-            let ny = m.y + Math.sin(angle) * speed;
-            
-            if (!this.isSolid(nx, m.y)) m.x = nx;
-            if (!this.isSolid(m.x, ny)) m.y = ny;
-            
-            // Saldırı
-            if (d < 30 && this.gameTime % 60 === 0) {
-                if (!this.player.invincible) {
-                    this.player.hp -= m.attack;
-                    this.addDamage(this.player.x, this.player.y - 20, '-' + m.attack, '#f00');
-                    this.updateCharUI();
-                }
-            }
-        }
-        
-        // Efektler
-        if (m.poison > 0) {
-            m.poison--;
-            m.hp -= 2;
-        }
-        if (m.slow > 0) m.slow--;
-        if (m.frozen > 0) m.frozen--;
-        
-        if (m.hp <= 0) this.killMonster(m);
-    });
-    
-    // Mermiler
-    this.projectiles.forEach(p => {
-        p.x += p.vx;
-        p.y += p.vy;
-        p.traveled += Math.hypot(p.vx, p.vy);
-        
-        if (p.traveled > p.range || this.isSolid(p.x, p.y)) {
-            p.dead = true;
-            return;
-        }
-        
-        if (p.type === 'enemy') {
-            if (this.dist(p, this.player) < 15 && this.player.invincible <= 0) {
-                this.player.hp -= p.damage;
-                this.addDamage(this.player.x, this.player.y - 20, '-' + p.damage, '#f00');
-                p.dead = true;
-                this.updateCharUI();
-            }
-        } else {
-            this.monsters.forEach(m => {
-                if (!m.alive || p.dead) return;
-                if (this.dist(p, m) < m.size + 5) {
-                    this.dealDamage(m, p.damage);
-                    p.dead = true;
-                }
-            });
-        }
-    });
-    this.projectiles = this.projectiles.filter(p => !p.dead);
-    
-    // Eşya toplama
-    this.drops.forEach((d, i) => {
-        if (this.dist(this.player, d) < 30) {
-            this.addItem(d.itemId);
-            this.drops.splice(i, 1);
-            this.addChat('system', '+' + DB.items[d.itemId].name);
-        }
-    });
-    
-    // Bölge değişimi
-    const newZone = Math.floor(this.player.x / (CONFIG.COLS * CONFIG.TILE) * DB.zones.length);
-    if (newZone !== this.player.zone && newZone >= 0 && newZone < DB.zones.length) {
-        this.player.zone = newZone;
-        document.getElementById('zone-panel').textContent = DB.zones[this.player.zone].name;
-        this.spawnMonsters();
-        this.addChat('system', DB.zones[this.player.zone].name + '\'a giriş yaptın!');
-    }
-    
-    // Kamera
-    this.camera.x += (this.player.x - this.canvas.width / 2 - this.camera.x) * 0.1;
-    this.camera.y += (this.player.y - this.canvas.height / 2 - this.camera.y) * 0.1;
-    
-    // UI güncelleme
-    if (this.gameTime % 10 === 0) {
-        this.updateCharUI();
-        this.updateSkillUI();
-    }
-    
-    // Ölüm kontrolü
-    if (this.player.hp <= 0) {
-        document.getElementById('death-screen').style.display = 'flex';
-    }
-};
-
-/**
- * ÇİZİM
- */
-Game.draw = function() {
-    // Ekranı temizle
-    this.ctx.fillStyle = '#0a0a0a';
-    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-    
-    this.ctx.save();
-    this.ctx.translate(-this.camera.x, -this.camera.y);
-    
-    const sx = Math.max(0, Math.floor(this.camera.x / CONFIG.TILE));
-    const sy = Math.max(0, Math.floor(this.camera.y / CONFIG.TILE));
-    const ex = Math.min(CONFIG.COLS, Math.ceil((this.camera.x + this.canvas.width) / CONFIG.TILE) + 2);
-    const ey = Math.min(CONFIG.ROWS, Math.ceil((this.camera.y + this.canvas.height) / CONFIG.TILE) + 2);
-    
-    const zoneColor = DB.zones[this.player.zone].color;
-    
-    // Harita
-    for (let y = sy; y < ey; y++) {
-        for (let x = sx; x < ex; x++) {
-            if (y < 0 || y >= CONFIG.ROWS || x < 0 || x >= CONFIG.COLS) continue;
-            
-            const t = this.map[y][x];
-            const px = x * CONFIG.TILE;
-            const py = y * CONFIG.TILE;
-            
-            if (t === 1) {
-                this.ctx.fillStyle = '#444';
-                this.ctx.fillRect(px, py, CONFIG.TILE, CONFIG.TILE);
-                this.ctx.fillStyle = '#555';
-                this.ctx.fillRect(px + 4, py + 4, CONFIG.TILE - 8, CONFIG.TILE - 8);
-            } else if (t === 2) {
-                this.ctx.fillStyle = '#a08060';
-                this.ctx.fillRect(px, py, CONFIG.TILE, CONFIG.TILE);
-            } else {
-                this.ctx.fillStyle = zoneColor;
-                this.ctx.fillRect(px, py, CONFIG.TILE, CONFIG.TILE);
+                return false;
             }
             
-            this.ctx.strokeStyle = 'rgba(0,0,0,0.1)';
-            this.ctx.strokeRect(px, py, CONFIG.TILE, CONFIG.TILE);
-        }
-    }
-    
-    // Eşyalar
-    this.drops.forEach(d => {
-        const item = DB.items[d.itemId];
-        const bob = Math.sin(this.gameTime * 0.1 + d.x) * 5;
-        this.ctx.font = '24px sans-serif';
-        this.ctx.textAlign = 'center';
-        this.ctx.fillText(item.icon, d.x, d.y + bob);
-    });
-    
-    // NPC'ler
-    this.npcs.forEach(n => {
-        this.ctx.fillStyle = n.color;
-        this.ctx.beginPath();
-        this.ctx.arc(n.x, n.y, 15, 0, Math.PI * 2);
-        this.ctx.fill();
-        
-        this.ctx.fillStyle = '#fff';
-        this.ctx.font = 'bold 12px sans-serif';
-        this.ctx.textAlign = 'center';
-        this.ctx.fillText(n.name, n.x, n.y - 22);
-        
-        if (n.type === 'quest') {
-            this.ctx.fillStyle = '#ff0';
-            this.ctx.font = '16px sans-serif';
-            this.ctx.fillText('!', n.x, n.y - 35);
-        }
-    });
-    
-    // Canavarlar
-    this.monsters.forEach(m => {
-        if (!m.alive && m.deathTimer <= 0) return;
-        
-        const alpha = m.alive ? 1 : m.deathTimer / 30;
-        this.ctx.globalAlpha = alpha;
-        
-        if (m.hitTimer > 0 && m.hitTimer % 4 < 2) {
-            this.ctx.fillStyle = '#fff';
-        } else {
-            this.ctx.fillStyle = m.color;
-        }
-        
-        if (m.boss) {
-            this.ctx.beginPath();
-            this.ctx.arc(m.x, m.y, m.size, 0, Math.PI * 2);
-            this.ctx.fill();
-            this.ctx.strokeStyle = '#f00';
-            this.ctx.lineWidth = 4;
-            this.ctx.stroke();
+            die() {
+                // Ölüm animasyonu
+                this.group.visible = false;
+                // Altın ve XP kazan
+                gameState.gold += 20 + Math.floor(Math.random() * 30);
+                gameState.xp += 50;
+                document.getElementById('goldValue').innerText = gameState.gold;
+                updateXP();
+                // 3 saniye sonra yeniden doğur
+                setTimeout(() => {
+                    this.respawn();
+                }, 5000);
+            }
             
-            // Boss HP bar
-            const hpPct = m.hp / m.maxHp;
-            this.ctx.fillStyle = '#333';
-            this.ctx.fillRect(m.x - 40, m.y - m.size - 30, 80, 10);
-            this.ctx.fillStyle = hpPct > 0.5 ? '#4c4' : hpPct > 0.25 ? '#ca0' : '#c20';
-            this.ctx.fillRect(m.x - 40, m.y - m.size - 30, 80 * hpPct, 10);
-            this.ctx.strokeStyle = '#000';
-            this.ctx.strokeRect(m.x - 40, m.y - m.size - 30, 80, 10);
-            
-            this.ctx.fillStyle = '#fff';
-            this.ctx.font = 'bold 10px sans-serif';
-            this.ctx.textAlign = 'center';
-            this.ctx.fillText(m.name, m.x, m.y - m.size - 35);
-        } else {
-            this.ctx.beginPath();
-            this.ctx.arc(m.x, m.y, m.size, 0, Math.PI * 2);
-            this.ctx.fill();
-            
-            // HP bar
-            const hpPct = m.hp / m.maxHp;
-            this.ctx.fillStyle = '#333';
-            this.ctx.fillRect(m.x - 12, m.y - m.size - 12, 24, 4);
-            this.ctx.fillStyle = hpPct > 0.5 ? '#4c4' : hpPct > 0.25 ? '#ca0' : '#c20';
-            this.ctx.fillRect(m.x - 12, m.y - m.size - 12, 24 * hpPct, 4);
-        }
-        
-        this.ctx.globalAlpha = 1;
-    });
-    
-    // Oyuncu
-    const classData = DB.classes[this.player.class];
-    this.ctx.fillStyle = classData ? '#3366cc' : '#64a';
-    this.ctx.fillRect(this.player.x - 10, this.player.y - 15, 20, 30);
-    
-    this.ctx.fillStyle = '#fc8';
-    this.ctx.beginPath();
-    this.ctx.arc(this.player.x, this.player.y - 20, 10, 0, Math.PI * 2);
-    this.ctx.fill();
-    
-    // Yuvarlanma efekti
-    if (this.player.roll > 0) {
-        this.ctx.strokeStyle = 'rgba(200,200,255,' + (this.player.roll / 15) + ')';
-        this.ctx.lineWidth = 3;
-        this.ctx.beginPath();
-        this.ctx.arc(this.player.x, this.player.y, 25, 0, Math.PI * 2);
-        this.ctx.stroke();
-    }
-    
-    // Efektler
-    this.particles.forEach((p, i) => {
-        p.life--;
-        p.y += p.vy;
-        this.ctx.fillStyle = p.color;
-        this.ctx.font = '16px sans-serif';
-        this.ctx.fillText(p.text, p.x, p.y);
-        if (p.life <= 0) this.particles.splice(i, 1);
-    });
-    
-    this.damageNumbers.forEach((d, i) => {
-        d.life--;
-        d.y -= 1.5;
-        this.ctx.fillStyle = d.color;
-        this.ctx.font = 'bold 18px sans-serif';
-        this.ctx.strokeStyle = '#000';
-        this.ctx.lineWidth = 4;
-        this.ctx.strokeText(d.text, d.x, d.y);
-        this.ctx.fillText(d.text, d.x, d.y);
-        if (d.life <= 0) this.damageNumbers.splice(i, 1);
-    });
-    
-    this.projectiles.forEach(p => {
-        this.ctx.fillStyle = p.color;
-        this.ctx.beginPath();
-        this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        this.ctx.fill();
-    });
-    
-    this.ctx.restore();
-    
-    // Miniharita
-    this.drawMinimap();
-};
-
-/**
- * MİNİHARİTA ÇİZİMİ
- */
-Game.drawMinimap = function() {
-    const w = this.minimapCanvas.width;
-    const h = this.minimapCanvas.height;
-    
-    this.minimapCtx.fillStyle = '#111';
-    this.minimapCtx.fillRect(0, 0, w, h);
-    
-    const sx = w / CONFIG.COLS;
-    const sy = h / CONFIG.ROWS;
-    const zone = DB.zones[this.player.zone];
-    
-    this.minimapCtx.fillStyle = zone.color;
-    this.minimapCtx.fillRect(0, 0, w, h);
-    
-    // Canavarlar
-    this.monsters.forEach(m => {
-        if (!m.alive) return;
-        this.minimapCtx.fillStyle = m.boss ? '#f00' : '#f44';
-        this.minimapCtx.fillRect(m.x / CONFIG.TILE * sx - 1, m.y / CONFIG.TILE * sy - 1, m.boss ? 4 : 2, m.boss ? 4 : 2);
-    });
-    
-    // NPC'ler
-    this.npcs.forEach(n => {
-        this.minimapCtx.fillStyle = n.color;
-        this.minimapCtx.fillRect(n.x / CONFIG.TILE * sx - 2, n.y / CONFIG.TILE * sy - 2, 4, 4);
-    });
-    
-    // Oyuncu
-    this.minimapCtx.fillStyle = '#4f4';
-    this.minimapCtx.fillRect(this.player.x / CONFIG.TILE * sx - 2, this.player.y / CONFIG.TILE * sy - 2, 5, 5);
-};
-
-// ============================================
-// 5. YARDIMCI FONKSİYONLAR
-// ============================================
-
-/**
- * MESAFE HESAPLAMA
- */
-Game.dist = function(a, b) {
-    return Math.hypot(a.x - b.x, a.y - b.y);
-};
-
-/**
- * KATILAŞMA KONTROLÜ
- */
-Game.isSolid = function(px, py) {
-    const tx = Math.floor(px / CONFIG.TILE);
-    const ty = Math.floor(py / CONFIG.TILE);
-    if (tx < 0 || ty < 0 || tx >= CONFIG.COLS || ty >= CONFIG.ROWS) return true;
-    return this.map[ty][tx] === 1;
-};
-
-/**
- * HASAR VERME
- */
-Game.dealDamage = function(monster, amount) {
-    let dmg = Math.floor(amount * (1 + this.player.str * 0.05));
-    
-    // Kritik vuruş
-    if (Math.random() * 100 < this.player.dex) {
-        dmg *= 2;
-        this.addDamage(monster.x, monster.y - 20, 'KRİTİK!', '#ff0');
-    }
-    
-    monster.hp -= dmg;
-    monster.hitTimer = 10;
-    this.addDamage(monster.x, monster.y - 20, '-' + dmg, '#f44');
-};
-
-/**
- * CANAVAR ÖLDÜRME
- */
-Game.killMonster = function(m) {
-    m.alive = false;
-    m.deathTimer = 30;
-    
-    this.player.xp += m.xp;
-    this.player.gold += m.gold;
-    
-    this.addDamage(m.x, m.y - 30, '+' + m.xp + ' XP', '#ff0');
-    this.addDamage(m.x, m.y - 45, '+' + m.gold + ' Gold', '#ffd700');
-    
-    // Eşya düşürme
-    if (m.drops) {
-        m.drops.forEach(itemId => {
-            if (Math.random() < 0.5) {
-                this.drops.push({
-                    x: m.x + Math.random() * 40 - 20,
-                    y: m.y + Math.random() * 40 - 20,
-                    itemId: itemId
-                });
-            }
-        });
-    }
-    
-    // Boss öldürme
-    if (m.boss) {
-        this.addChat('global', this.player.name + ' ' + m.name + '\'ı öldürdü!');
-        this.showNotify('🏆 BOSS KILL: ' + m.name);
-    }
-    
-    // Level atlama
-    while (this.player.xp >= this.player.xpToNext) {
-        this.player.xp -= this.player.xpToNext;
-        this.player.level++;
-        this.player.xpToNext = Math.floor(this.player.xpToNext * 1.5);
-        this.player.skillPoints += 3;
-        this.player.maxHp += 20;
-        this.player.maxMp += 10;
-        this.player.hp = this.player.maxHp;
-        this.player.mp = this.player.maxMp;
-        this.player.str += 2;
-        this.player.dex += 2;
-        this.player.int += 2;
-        this.player.attack = Math.floor(this.player.str * 1.5);
-        this.player.defense = Math.floor(this.player.str * 0.8);
-        this.showNotify('🎉 LEVEL UP! ' + this.player.level);
-        this.addChat('system', 'Level ' + this.player.level + ' oldun!');
-    }
-    
-    this.updateCharUI();
-};
-
-/**
- * HASAR SAYISI EKLEME
- */
-Game.addDamage = function(x, y, text, color) {
-    this.damageNumbers.push({x: x, y: y, text: text, color: color, life: 40});
-};
-
-/**
- * PARÇACIK EKLEME
- */
-Game.addParticle = function(x, y, text, color) {
-    this.particles.push({x: x, y: y, text: text, color: color, life: 40, vy: -1.5});
-};
-
-/**
- * BİLDİRİM GÖSTERME
- */
-Game.showNotify = function(text) {
-    const n = document.getElementById('quest-notify');
-    n.textContent = text;
-    n.style.display = 'block';
-    setTimeout(() => n.style.display = 'none', 3000);
-};
-
-/**
- * YENİDEN DOĞMA
- */
-Game.respawnPlayer = function() {
-    this.player.hp = this.player.maxHp;
-    this.player.mp = this.player.maxMp;
-    this.player.x = 200 * CONFIG.TILE;
-    this.player.y = 200 * CONFIG.TILE;
-    this.player.gold = Math.floor(this.player.gold * 0.9);
-    document.getElementById('death-screen').style.display = 'none';
-    this.addChat('system', 'Şehre ışınlandın.');
-};
-
-/**
- * YUVARLANMA
- */
-Game.doRoll = function() {
-    if (this.player.rollCooldown <= 0) {
-        this.player.roll = 15;
-        this.player.rollCooldown = 40;
-        this.player.invincible = 15;
-    }
-};
-
-/**
- * ETKİLEŞİM
- */
-Game.doInteract = function() {
-    this.npcs.forEach(n => {
-        if (this.dist(this.player, n) < 60) {
-            if (n.type === 'shop') this.toggleShop();
-            else if (n.type === 'heal') {
-                this.player.hp = this.player.maxHp;
-                this.player.mp = this.player.maxMp;
-                this.addChat('system', 'Tamamen iyileştirildin.');
-                this.updateCharUI();
-            } else {
-                this.addChat('system', n.dialog[0]);
-                if (n.dialog[1]) this.addChat('system', n.dialog[1]);
+            respawn() {
+                this.health = this.maxHealth;
+                this.isAlive = true;
+                this.group.visible = true;
+                // Rastgele pozisyon
+                const angle = Math.random() * Math.PI * 2;
+                const rad = 6 + Math.random() * 8;
+                this.group.position.x = Math.cos(angle) * rad;
+                this.group.position.z = Math.sin(angle) * rad;
+                this.updateHealthBar();
             }
         }
-    });
-};
-
-// ============================================
-// 6. KONTROL SİSTEMİ
-// ============================================
-
-/**
- * KONTROLLERİ AYARLA
- */
-Game.setupControls = function() {
-    const zone = document.getElementById('joystick-zone');
-    const thumb = document.getElementById('joystick-thumb');
-    const base = document.getElementById('joystick-base');
-    
-    zone.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        const t = e.changedTouches[0];
-        this.joystick.id = t.identifier;
-        this.joystick.active = true;
-        this.updateJoy(t, base, thumb);
-    }, {passive: false});
-    
-    zone.addEventListener('touchmove', (e) => {
-        e.preventDefault();
-        for (let i = 0; i < e.changedTouches.length; i++) {
-            if (e.changedTouches[i].identifier === this.joystick.id) {
-                this.updateJoy(e.changedTouches[i], base, thumb);
-            }
-        }
-    }, {passive: false});
-    
-    zone.addEventListener('touchend', (e) => {
-        e.preventDefault();
-        this.joystick.active = false;
-        this.joystick.dx = 0;
-        this.joystick.dy = 0;
-        thumb.style.transform = 'translate(-50%,-50%)';
-    });
-    
-    const attackBtn = document.getElementById('attack-btn');
-    attackBtn.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        this.attackHeld = true;
-    }, {passive: false});
-    
-    attackBtn.addEventListener('touchend', (e) => {
-        e.preventDefault();
-        this.attackHeld = false;
-    });
-    
-    document.addEventListener('keydown', (e) => {
-        if (e.key >= '1' && e.key <= '5') this.useSkill(parseInt(e.key) - 1);
-        if (e.key === ' ') this.doRoll();
-        if (e.key === 'e' || e.key === 'E') this.doInteract();
-        if (e.key === 'i' || e.key === 'I') this.toggleInventory();
-        if (e.key === 'Enter') this.toggleChat();
-    });
-};
-
-/**
- * JOYSTICK GÜNCELLEME
- */
-Game.updateJoy = function(t, base, thumb) {
-    const r = base.getBoundingClientRect();
-    const cx = r.left + r.width / 2;
-    const cy = r.top + r.height / 2;
-    let dx = t.clientX - cx;
-    let dy = t.clientY - cy;
-    const dist = Math.hypot(dx, dy);
-    const max = 55;
-    
-    if (dist > max) {
-        dx = dx / dist * max;
-        dy = dy / dist * max;
-    }
-    
-    this.joystick.dx = dx / max;
-    this.joystick.dy = dy / max;
-    thumb.style.transform = 'translate(calc(-50% + ' + dx + 'px),calc(-50% + ' + dy + 'px))';
-};
-
-// ============================================
-// 7. UI SİSTEMİ
-// ============================================
-
-/**
- * KARAKTER UI GÜNCELLEME
- */
-Game.updateCharUI = function() {
-    document.getElementById('hp-bar').style.width = (this.player.hp / this.player.maxHp * 100) + '%';
-    document.getElementById('hp-text').textContent = Math.floor(this.player.hp) + '/' + this.player.maxHp;
-    document.getElementById('hp-percent').textContent = Math.floor(this.player.hp / this.player.maxHp * 100) + '%';
-    
-    document.getElementById('mp-bar').style.width = (this.player.mp / this.player.maxMp * 100) + '%';
-    document.getElementById('mp-text').textContent = Math.floor(this.player.mp) + '/' + this.player.maxMp;
-    document.getElementById('mp-percent').textContent = Math.floor(this.player.mp / this.player.maxMp * 100) + '%';
-    
-    document.getElementById('exp-bar').style.width = (this.player.xp / this.player.xpToNext * 100) + '%';
-    document.getElementById('exp-text').textContent = this.player.xp + '/' + this.player.xpToNext;
-    document.getElementById('exp-percent').textContent = Math.floor(this.player.xp / this.player.xpToNext * 100) + '%';
-    
-    document.getElementById('char-stats').textContent = 'STR:' + this.player.str + ' DEX:' + this.player.dex + ' INT:' + this.player.int;
-    document.getElementById('gold-display').textContent = '💰 ' + this.player.gold + ' Gold';
-};
-
-/**
- * SKILL BAR KURULUMU
- */
-Game.setupSkillBar = function() {
-    const bar = document.getElementById('skill-bar');
-    bar.innerHTML = '';
-    
-    const classData = DB.classes[this.player.class];
-    classData.skills.forEach((skillId, i) => {
-        const skill = DB.skills[skillId];
-        const slot = document.createElement('div');
-        slot.className = 'skill-slot';
-        slot.innerHTML = skill.icon + '<div class="skill-key">' + (i + 1) + '</div><div class="skill-cd" id="cd-' + i + '"></div><div class="skill-mp">' + skill.cost + '</div>';
-        slot.onclick = () => this.useSkill(i);
-        bar.appendChild(slot);
-    });
-};
-
-/**
- * SKILL UI GÜNCELLEME
- */
-Game.updateSkillUI = function() {
-    const classData = DB.classes[this.player.class];
-    classData.skills.forEach((skillId, i) => {
-        const skill = DB.skills[skillId];
-        const cdEl = document.getElementById('cd-' + i);
-        if (cdEl) {
-            cdEl.style.height = (skill.cd > 0 ? (skill.cd / skill.cooldown * 100) + '%' : '0%');
-            cdEl.style.opacity = skill.cd > 0 ? 1 : 0;
-        }
-    });
-};
-
-/**
- * YETENEK KULLANMA
- */
-Game.useSkill = function(i) {
-    const classData = DB.classes[this.player.class];
-    const skillId = classData.skills[i];
-    const skill = DB.skills[skillId];
-    
-    if (!skill || this.player.mp < skill.cost || skill.cd > 0) return;
-    
-    this.player.mp -= skill.cost;
-    skill.cd = skill.cooldown;
-    
-    if (skill.type === 'heal') {
-        this.player.hp = Math.min(this.player.maxHp, this.player.hp + skill.heal);
-        this.addParticle(this.player.x, this.player.y, '+' + skill.heal, '#4f4');
-    } else if (skill.type === 'attack') {
-        const target = this.monsters.filter(m => m.alive).sort((a, b) => this.dist(a, this.player) - this.dist(b, this.player))[0];
-        if (target) {
-            const angle = Math.atan2(target.y - this.player.y, target.x - this.player.x);
-            this.projectiles.push({
-                x: this.player.x,
-                y: this.player.y,
-                vx: Math.cos(angle) * 8,
-                vy: Math.sin(angle) * 8,
-                damage: skill.damage,
-                color: '#ff0',
-                range: skill.range || 200,
-                traveled: 0,
-                size: 8,
-                type: 'player'
-            });
-        }
-    } else if (skill.type === 'aoe') {
-        this.monsters.forEach(m => {
-            if (m.alive && this.dist(this.player, m) < (skill.range || 100)) {
-                this.dealDamage(m, skill.damage);
-            }
-        });
-        for (let j = 0; j < 10; j++) {
-            this.addParticle(this.player.x + Math.random() * 60 - 30, this.player.y + Math.random() * 60 - 30, '✨', '#ff0');
-        }
-    } else if (skill.type === 'buff') {
-        this.showNotify(skill.name + ' aktif!');
-        this.addParticle(this.player.x, this.player.y, '✨', '#44f');
-    }
-    
-    this.updateCharUI();
-};
-
-/**
- * CHAT AÇ/KAPA
- */
-Game.toggleChat = function() {
-    this.chatOpen = !this.chatOpen;
-    document.getElementById('chat-container').style.display = this.chatOpen ? 'block' : 'none';
-    if (this.chatOpen) document.getElementById('chat-input').focus();
-};
-
-/**
- * CHAT MESAJI EKLE
- */
-Game.addChat = function(type, msg) {
-    const chat = document.getElementById('chat-messages');
-    const div = document.createElement('div');
-    div.className = 'chat-msg chat-' + type;
-    
-    const time = new Date().toLocaleTimeString('tr-TR', {hour: '2-digit', minute: '2-digit'});
-    div.innerHTML = '[' + time + '] ' + msg;
-    
-    chat.appendChild(div);
-    chat.scrollTop = chat.scrollHeight;
-};
-
-/**
- * CHAT GÖNDER
- */
-Game.sendChat = function() {
-    const input = document.getElementById('chat-input');
-    const msg = input.value.trim();
-    if (msg) {
-        this.addChat('global', this.player.name + ': ' + msg);
-        input.value = '';
-    }
-    this.toggleChat();
-};
-
-// ============================================
-// 8. ENVANTER SİSTEMİ
-// ============================================
-
-let invPage = 0;
-const INV_PER_PAGE = 20;
-
-Game.toggleInventory = function() {
-    const panel = document.getElementById('inventory-panel');
-    panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
-    if (panel.style.display === 'block') {
-        invPage = 0;
-        this.renderInv();
-    }
-};
-
-Game.renderInv = function() {
-    const g = document.getElementById('inv-grid');
-    g.innerHTML = '';
-    
-    const start = invPage * INV_PER_PAGE;
-    const end = Math.min(start + INV_PER_PAGE, this.player.inventory.length);
-    const maxPage = Math.max(1, Math.ceil(this.player.inventory.length / INV_PER_PAGE));
-    
-    document.getElementById('inv-page').textContent = (invPage + 1) + ' / ' + maxPage;
-    
-    for (let i = start; i < end; i++) {
-        const it = this.player.inventory[i];
-        const item = DB.items[it.itemId];
         
-        const s = document.createElement('div');
-        const rarity = item.rarity || 1;
-        s.className = 'inv-slot rarity-' + rarity;
+        // --- Düşmanları oluştur ---
+        const enemies = [];
+        for (let i = 0; i < 8; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const rad = 5 + Math.random() * 7;
+            const x = Math.cos(angle) * rad;
+            const z = Math.sin(angle) * rad;
+            enemies.push(new Enemy(x, z));
+        }
         
-        let tip = '<b>' + item.name + '</b><br>';
-        if (item.type === 'weapon') tip += '⚔️ ATK:' + (item.attack || 0) + '<br>';
-        if (item.type === 'armor') tip += '🛡️ DEF:' + (item.defense || 0) + ' ❤️ HP:' + (item.hp || 0) + '<br>';
-        if (item.effect) {
-            if (item.effect.hp) tip += '❤️ +' + item.effect.hp + ' HP<br>';
-            if (item.effect.mp) tip += '💙 +' + item.effect.mp + ' MP<br>';
-        }
-        tip += '💰 Değer:' + item.value;
-        
-        s.innerHTML = item.icon + '<span class="count">' + (it.count > 1 ? it.count : '') + '</span><div class="tooltip">' + tip + '</div>';
-        s.onclick = () => this.useItem(i);
-        g.appendChild(s);
-    }
-};
-
-Game.invPage = function(d) {
-    invPage += d;
-    if (invPage < 0) invPage = 0;
-    this.renderInv();
-};
-
-Game.useItem = function(i) {
-    const it = this.player.inventory[i];
-    const item = DB.items[it.itemId];
-    
-    if (item.type === 'consumable') {
-        if (item.effect.hp) {
-            this.player.hp = Math.min(this.player.maxHp, this.player.hp + item.effect.hp);
-            this.addParticle(this.player.x, this.player.y, '+', '#4f4');
-        }
-        if (item.effect.mp) {
-            this.player.mp = Math.min(this.player.maxMp, this.player.mp + item.effect.mp);
-            this.addParticle(this.player.x, this.player.y, '+', '#44f');
-        }
-        it.count--;
-        if (it.count <= 0) this.player.inventory.splice(i, 1);
-        this.updateCharUI();
-        this.renderInv();
-    }
-};
-
-Game.addItem = function(itemId, count) {
-    if (!count) count = 1;
-    const existing = this.player.inventory.find(i => i.itemId === itemId);
-    if (existing) {
-        existing.count += count;
-    } else {
-        this.player.inventory.push({itemId: itemId, count: count});
-    }
-};
-
-// ============================================
-// 9. SKILL & SHOP SİSTEMLERİ
-// ============================================
-
-Game.toggleSkills = function() {
-    const panel = document.getElementById('skill-panel');
-    panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
-    if (panel.style.display === 'block') {
-        document.getElementById('sp-display').textContent = 'Skill Point: ' + this.player.skillPoints;
-        this.renderSkillTree();
-    }
-};
-
-Game.renderSkillTree = function() {
-    const t = document.getElementById('skill-tree');
-    t.innerHTML = '';
-    
-    const classData = DB.classes[this.player.class];
-    classData.skills.forEach(skillId => {
-        const skill = DB.skills[skillId];
-        const n = document.createElement('div');
-        n.className = 'skill-node';
-        n.style.cssText = 'padding:15px;background:rgba(22,33,62,0.8);border:2px solid #0f3460;border-radius:10px;text-align:center;cursor:pointer';
-        n.innerHTML = '<div style="font-size:32px">' + skill.icon + '</div><div style="color:#e94560;font-size:13px;font-weight:bold;margin:8px 0">' + skill.name + '</div><div style="color:#95a5a6;font-size:11px">' + skill.type.toUpperCase() + '</div>';
-        t.appendChild(n);
-    });
-};
-
-Game.toggleShop = function() {
-    const panel = document.getElementById('shop-panel');
-    panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
-    if (panel.style.display === 'block') this.renderShop();
-};
-
-Game.renderShop = function() {
-    const s = document.getElementById('shop-sell');
-    const b = document.getElementById('shop-buy');
-    s.innerHTML = '';
-    b.innerHTML = '';
-    
-    this.player.inventory.forEach((it, idx) => {
-        const item = DB.items[it.itemId];
-        if (item.value) {
+        // --- Hasar Numarası Sistemi ---
+        function showDamageNumber(damage, worldPos) {
             const div = document.createElement('div');
-            div.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:10px;background:rgba(22,33,62,0.5);border-radius:8px;margin-bottom:6px';
-            div.innerHTML = '<span>' + item.icon + ' ' + item.name + (it.count > 1 ? ' x' + it.count : '') + '</span><button onclick="Game.sellItem(' + idx + ')" style="padding:6px 14px;background:linear-gradient(135deg,#a54,#b65);border:none;border-radius:6px;color:#fff;cursor:pointer">Sat (' + Math.floor(item.value * 0.6) + 'g)</button>';
-            s.appendChild(div);
+            div.className = 'damage-number';
+            div.innerText = Math.floor(damage);
+            div.style.left = '50%';
+            div.style.top = '50%';
+            document.body.appendChild(div);
+            // 3D'den ekrana projeksiyon
+            const vector = worldPos.clone().project(camera);
+            const x = (vector.x * 0.5 + 0.5) * window.innerWidth;
+            const y = (-vector.y * 0.5 + 0.5) * window.innerHeight;
+            div.style.position = 'absolute';
+            div.style.left = x + 'px';
+            div.style.top = y + 'px';
+            setTimeout(() => div.remove(), 1000);
         }
-    });
-    
-    [{itemId: 'potion_hp', price: 10}, {itemId: 'potion_mp', price: 10}, {itemId: 'iron_sword', price: 80}, {itemId: 'steel_sword', price: 200}].forEach(it => {
-        const item = DB.items[it.itemId];
-        const div = document.createElement('div');
-        div.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:10px;background:rgba(22,33,62,0.5);border-radius:8px;margin-bottom:6px';
-        div.innerHTML = '<span>' + item.icon + ' ' + item.name + '</span><button onclick="Game.buyItem(\'' + it.itemId + '\',' + it.price + ')" style="padding:6px 14px;background:linear-gradient(135deg,#4a8,#5b9);border:none;border-radius:6px;color:#fff;cursor:pointer">Al (' + it.price + 'g)</button>';
-        b.appendChild(div);
-    });
-};
-
-Game.sellItem = function(i) {
-    const it = this.player.inventory[i];
-    const item = DB.items[it.itemId];
-    this.player.gold += Math.floor(item.value * 0.6);
-    this.player.inventory.splice(i, 1);
-    this.updateCharUI();
-    this.renderShop();
-};
-
-Game.buyItem = function(itemId, price) {
-    if (this.player.gold >= price) {
-        this.player.gold -= price;
-        this.addItem(itemId);
-        this.updateCharUI();
-        this.renderShop();
-    } else {
-        this.addChat('system', 'Yetersiz Gold!');
-    }
-};
-
-Game.toggleQuests = function() {
-    const panel = document.getElementById('quest-panel');
-    panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
-    if (panel.style.display === 'block') this.renderQuests();
-};
-
-Game.renderQuests = function() {
-    const list = document.getElementById('quest-list');
-    list.innerHTML = '';
-    
-    DB.quests.forEach(q => {
-        const div = document.createElement('div');
-        div.style.cssText = 'padding:15px;background:rgba(22,33,62,0.5);border-radius:10px;margin-bottom:10px;border:1px solid #0f3460';
-        div.innerHTML = '<div style="color:#e94560;font-size:16px;font-weight:bold;margin-bottom:8px">' + q.name + '</div><div style="color:#95a5a6;font-size:13px;margin-bottom:8px">' + q.description + '</div><div style="color:#f1c40f;font-size:12px">Ödül: ' + q.reward.xp + ' XP, ' + q.reward.gold + ' Gold</div>';
-        list.appendChild(div);
-    });
-};
-
-// ============================================
-// OYUNU BAŞLAT
-// ============================================
-window.onload = () => Game.init();
-</script>
+        
+        // --- Seviye atlama ---
+        function updateXP() {
+            let needed = gameState.xpNeeded;
+            while (gameState.xp >= needed) {
+                gameState.xp -= needed;
+                gameState.level++;
+                gameState.maxHealth += 20;
+                gameState.health = gameState.maxHealth;
+                gameState.damage += 5;
+                needed = Math.floor(100 + gameState.level * 20);
+                gameState.xpNeeded = needed;
+                document.getElementById('levelValue').innerText = gameState.level;
+                // Seviye atlama efekti
+                const msg = document.createElement('div');
+                msg.innerText = 'LEVEL UP!';
+                msg.style.position = 'absolute';
+                msg.style.top = '40%';
+                msg.style.left = '50%';
+                msg.style.transform = 'translate(-50%, -50%)';
+                msg.style.color = 'gold';
+                msg.style.fontSize = '40px';
+                msg.style.fontWeight = 'bold';
+                msg.style.textShadow = '2px 2px 0 black';
+                msg.style.zIndex = '100';
+                document.body.appendChild(msg);
+                setTimeout(() => msg.remove(), 1500);
+            }
+            document.getElementById('xpValue').innerText = `${gameState.xp}/${gameState.xpNeeded}`;
+            const percent = (gameState.xp / gameState.xpNeeded) * 100;
+            document.getElementById('xpFill').style.width = percent + '%';
+            document.getElementById('hpValue').innerText = `${gameState.health}/${gameState.maxHealth}`;
+            document.getElementById('healthFill').style.width = (gameState.health/gameState.maxHealth)*100 + '%';
+        }
+        
+        // --- Oyuncu saldırısı ---
+        function playerAttack() {
+            const now = Date.now() / 1000;
+            if (now - gameState.lastAttack < 1.0 / gameState.attackSpeed) return false;
+            gameState.lastAttack = now;
+            gameState.isAttacking = true;
+            // Animasyon: kılıç salla
+            sword.rotation.x = -Math.PI / 3;
+            setTimeout(() => { sword.rotation.x = 0; gameState.isAttacking = false; }, 200);
+            
+            let hitEnemy = false;
+            for (let i = 0; i < enemies.length; i++) {
+                const e = enemies[i];
+                if (!e.isAlive) continue;
+                const dist = playerGroup.position.distanceTo(e.group.position);
+                if (dist < 2.2) {
+                    const dmg = gameState.damage + Math.floor(Math.random() * 15);
+                    e.takeDamage(dmg, e.group.position);
+                    hitEnemy = true;
+                    break;
+                }
+            }
+            if (hitEnemy) {
+                // Vuruş efekti
+                const ringGeo = new THREE.SphereGeometry(0.5, 8, 8);
+                const ringMat = new THREE.MeshBasicMaterial({ color: 0xffaa44, transparent: true, opacity: 0.7 });
+                const ring = new THREE.Mesh(ringGeo, ringMat);
+                ring.position.copy(playerGroup.position);
+                ring.scale.set(0.5,0.5,0.5);
+                scene.add(ring);
+                setTimeout(() => scene.remove(ring), 200);
+            }
+            return hitEnemy;
+        }
+        
+        // --- Düşman saldırısı (AI) ---
+        function updateEnemies() {
+            for (let e of enemies) {
+                if (!e.isAlive) continue;
+                const dist = playerGroup.position.distanceTo(e.group.position);
+                if (dist < 2.0) {
+                    const now = Date.now() / 1000;
+                    if (!e.lastAttackTime) e.lastAttackTime = 0;
+                    if (now - e.lastAttackTime > 1.2) {
+                        e.lastAttackTime = now;
+                        gameState.health -= e.damage;
+                        if (gameState.health <= 0) {
+                            gameState.health = 0;
+                            document.getElementById('hpValue').innerText = '0';
+                            document.getElementById('healthFill').style.width = '0%';
+                            alert('Öldünüz! Yeniden başlatılıyor...');
+                            resetGame();
+                        } else {
+                            document.getElementById('hpValue').innerText = `${gameState.health}/${gameState.maxHealth}`;
+                            document.getElementById('healthFill').style.width = (gameState.health/gameState.maxHealth)*100 + '%';
+                            showDamageNumber(e.damage, playerGroup.position);
+                        }
+                    }
+                } else if (dist < 6) {
+                    // Düşman oyuncuya doğru yürüsün
+                    const dir = new THREE.Vector3().subVectors(playerGroup.position, e.group.position).normalize();
+                    e.group.position.x += dir.x * 0.03;
+                    e.group.position.z += dir.z * 0.03;
+                    e.group.lookAt(playerGroup.position);
+                }
+            }
+        }
+        
+        function resetGame() {
+            gameState.health = gameState.maxHealth;
+            gameState.xp = 0;
+            gameState.level = 1;
+            gameState.gold = 0;
+            gameState.damage = 30;
+            gameState.maxHealth = 100;
+            gameState.xpNeeded = 100;
+            document.getElementById('hpValue').innerText = `${gameState.health}/${gameState.maxHealth}`;
+            document.getElementById('healthFill').style.width = '100%';
+            document.getElementById('levelValue').innerText = '1';
+            document.getElementById('goldValue').innerText = '0';
+            updateXP();
+            playerGroup.position.set(0,0,0);
+            // düşmanları respawnla
+            for(let e of enemies) e.respawn();
+        }
+        
+        // --- Joystick Kontrolü (Mobil) ---
+        let moveVector = { x: 0, z: 0 };
+        const joystickArea = document.getElementById('joystickArea');
+        const thumb = document.getElementById('joystickThumb');
+        let activeTouch = null;
+        let centerX = 0, centerY = 0;
+        
+        function getJoystickPos(touchX, touchY) {
+            const rect = joystickArea.getBoundingClientRect();
+            const relativeX = touchX - rect.left - 70;
+            const relativeY = touchY - rect.top - 70;
+            const distance = Math.min(40, Math.hypot(relativeX, relativeY));
+            const angle = Math.atan2(relativeY, relativeX);
+            const thumbX = Math.cos(angle) * distance;
+            const thumbY = Math.sin(angle) * distance;
+            thumb.style.transform = `translate(${thumbX}px, ${thumbY}px)`;
+            const normX = thumbX / 40;
+            const normY = thumbY / 40;
+            moveVector.x = normX;
+            moveVector.z = normY;
+        }
+        
+        joystickArea.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const rect = joystickArea.getBoundingClientRect();
+            centerX = rect.left + 70;
+            centerY = rect.top + 70;
+            const touch = e.touches[0];
+            activeTouch = touch.identifier;
+            getJoystickPos(touch.clientX, touch.clientY);
+        });
+        
+        joystickArea.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            for(let i=0; i<e.touches.length; i++) {
+                if(e.touches[i].identifier === activeTouch) {
+                    getJoystickPos(e.touches[i].clientX, e.touches[i].clientY);
+                    break;
+                }
+            }
+        });
+        
+        joystickArea.addEventListener('touchend', (e) => {
+            thumb.style.transform = `translate(0px, 0px)`;
+            moveVector.x = 0;
+            moveVector.z = 0;
+            activeTouch = null;
+        });
+        
+        // --- Hareket ve Kamera takibi ---
+        let playerVelocity = { x: 0, z: 0 };
+        function updateMovement() {
+            const speed = 5.0;
+            playerVelocity.x = moveVector.x * speed * 0.016;
+            playerVelocity.z = moveVector.z * speed * 0.016;
+            let newX = playerGroup.position.x + playerVelocity.x;
+            let newZ = playerGroup.position.z + playerVelocity.z;
+            newX = Math.min(14, Math.max(-14, newX));
+            newZ = Math.min(14, Math.max(-14, newZ));
+            playerGroup.position.x = newX;
+            playerGroup.position.z = newZ;
+            
+            // Kamera takibi (Third person)
+            const targetCamPos = new THREE.Vector3(playerGroup.position.x, 5, playerGroup.position.z + 8);
+            camera.position.lerp(targetCamPos, 0.1);
+            camera.lookAt(playerGroup.position);
+            
+            // Oyuncu yönü (hareket yönüne dön)
+            if (Math.abs(moveVector.x) > 0.1 || Math.abs(moveVector.z) > 0.1) {
+                const angle = Math.atan2(moveVector.x, moveVector.z);
+                playerGroup.rotation.y = angle;
+            }
+        }
+        
+        // --- Saldırı ve Skill butonları ---
+        document.getElementById('attackBtn').addEventListener('click', () => {
+            playerAttack();
+        });
+        document.getElementById('skillBtn').addEventListener('click', () => {
+            // Yetenek: Alan hasarı
+            for(let e of enemies) {
+                if(e.isAlive && playerGroup.position.distanceTo(e.group.position) < 4) {
+                    e.takeDamage(45, e.group.position);
+                }
+            }
+            // Efekt
+            const ring = new THREE.Mesh(new THREE.RingGeometry(0.5, 2, 16), new THREE.MeshBasicMaterial({ color: 0x44aaff, transparent: true, side: THREE.DoubleSide }));
+            ring.position.copy(playerGroup.position);
+            ring.rotation.x = -Math.PI/2;
+            scene.add(ring);
+            setTimeout(() => scene.remove(ring), 300);
+        });
+        
+        // --- Animasyon döngüsü ---
+        let lastTime = performance.now();
+        function animate() {
+            const now = performance.now();
+            let delta = Math.min(0.033, (now - lastTime) / 1000);
+            lastTime = now;
+            updateMovement();
+            updateEnemies();
+            
+            // Hava efekti (parçacık)
+            renderer.render(scene, camera);
+            requestAnimationFrame(animate);
+        }
+        
+        // Rastgele efektler (yaprak, toz)
+        const particleGeo = new THREE.BufferGeometry();
+        const particleCount = 200;
+        const particlePositions = new Float32Array(particleCount * 3);
+        for(let i=0; i<particleCount; i++) {
+            particlePositions[i*3] = (Math.random() - 0.5) * 30;
+            particlePositions[i*3+1] = Math.random() * 5;
+            particlePositions[i*3+2] = (Math.random() - 0.5) * 30;
+        }
+        particleGeo.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
+        const particleMat = new THREE.PointsMaterial({ color: 0xaaffaa, size: 0.08 });
+        const particles = new THREE.Points(particleGeo, particleMat);
+        scene.add(particles);
+        
+        // Başlangıç mesajı
+        console.log('Oyun hazır! Knight Online tarzı mobil RPG');
+        animate();
+        
+        // Mobil performans için fps düşürme yok, gayet akıcı
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
 </body>
 </html>
