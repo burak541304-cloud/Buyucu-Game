@@ -445,6 +445,1170 @@
             respawnBtn: document.getElementById('respawnBtn')
         };
 
+        const OFFLINE_REWARDS = {
+            BASE_HOURLY_RATE: 10, // Saat başına base altın
+            MAX_HOURS: 24, // Maksimum 24 saat çevrimdışı ödül
+            XP_MULTIPLIER: 0.5, // XP kazanım oranı
+            PET_HAPPINESS_DECAY: 2, // Pet mutluluk düşüşü/saat
+            ENERGY_REGEN: 5, // Enerji yenilenmesi/saat
+            LUCK_BONUS: 0.1 // Şans bonus'u
+        };
+
+        const BOSS_RAIDS = {
+            DRAGON_NEST: {
+                name: 'Ejderha Yuvası',
+                minPlayers: 4,
+                maxPlayers: 8,
+                difficulty: 'hard',
+                bosses: ['DRAGON_LORD', 'DRAGON_MINIONS'],
+                rewards: {
+                    gold: 5000,
+                    xp: 10000,
+                    items: ['DRAGON_SCALE', 'EPIC_GEAR'],
+                    honor: 500
+                },
+                cooldown: 7200, // 2 saat
+                icon: '🐉'
+            },
+            DEMON_FORTRESS: {
+                name: 'Şeytan Kalesi',
+                minPlayers: 6,
+                maxPlayers: 12,
+                difficulty: 'extreme',
+                bosses: ['DEMON_LORD', 'DEMON_GUARDIANS'],
+                rewards: {
+                    gold: 10000,
+                    xp: 20000,
+                    items: ['DEMONIC_ARTIFACT', 'LEGENDARY_WEAPON'],
+                    honor: 1000
+                },
+                cooldown: 14400, // 4 saat
+                icon: '👹'
+            },
+            PHOENIX_TEMPLE: {
+                name: 'Anka Tapınağı',
+                minPlayers: 3,
+                maxPlayers: 6,
+                difficulty: 'medium',
+                bosses: ['PHOENIX_GUARDIAN'],
+                rewards: {
+                    gold: 3000,
+                    xp: 5000,
+                    items: ['PHOENIX_FEATHER', 'RARE_GEAR'],
+                    honor: 300
+                },
+                cooldown: 3600, // 1 saat
+                icon: '🪶'
+            }
+        };
+
+        const GUILD_WARS = {
+            WAR_TYPES: {
+                TERRITORY: {
+                    name: 'Bölge Savaşı',
+                    duration: 3600, // 1 saat
+                    participants: 20, // maksimum oyuncu
+                    rewards: {
+                        winner: { territory: 1, gold: 10000, honor: 2000 },
+                        loser: { gold: 2000, honor: 500 }
+                    },
+                    icon: '🏰'
+                },
+                RESOURCE: {
+                    name: 'Kaynak Savaşı',
+                    duration: 1800, // 30 dakika
+                    participants: 10,
+                    rewards: {
+                        winner: { resources: 100, gold: 5000, honor: 1000 },
+                        loser: { gold: 1000, honor: 250 }
+                    },
+                    icon: '⛏️'
+                },
+                DOMINATION: {
+                    name: 'Hakimiyet Savaşı',
+                    duration: 7200, // 2 saat
+                    participants: 30,
+                    rewards: {
+                        winner: { title: 'Hakim', gold: 20000, honor: 5000 },
+                        loser: { gold: 3000, honor: 750 }
+                    },
+                    icon: '👑'
+                }
+            },
+            WAR_STATUS: {
+                PREPARING: 'preparing',
+                ACTIVE: 'active',
+                FINISHED: 'finished',
+                COOLDOWN: 'cooldown'
+            }
+        };
+
+        const WORLD_BOSSES = {
+            ANCIENT_DRAGON: {
+                name: 'Kadim Ejderha',
+                spawnInterval: 86400, // 24 saat
+                duration: 3600, // 1 saat
+                minLevel: 50,
+                hp: 50000,
+                damage: 100,
+                phases: 3,
+                rewards: {
+                    gold: 25000,
+                    xp: 50000,
+                    items: ['ANCIENT_DRAGON_HEART', 'MYTHIC_GEAR'],
+                    title: 'Ejderha Öldüren'
+                },
+                icon: '🐲'
+            },
+            SHADOW_LORD: {
+                name: 'Gölge Lordu',
+                spawnInterval: 43200, // 12 saat
+                duration: 1800, // 30 dakika
+                minLevel: 40,
+                hp: 30000,
+                damage: 80,
+                phases: 2,
+                rewards: {
+                    gold: 15000,
+                    xp: 30000,
+                    items: ['SHADOW_ESSENCE', 'EPIC_GEAR'],
+                    title: 'Gölge Avcısı'
+                },
+                icon: '🌑'
+            },
+            ELEMENTAL_TITAN: {
+                name: 'Element Titan',
+                spawnInterval: 21600, // 6 saat
+                duration: 2400, // 40 dakika
+                minLevel: 30,
+                hp: 20000,
+                damage: 60,
+                phases: 4,
+                rewards: {
+                    gold: 10000,
+                    xp: 20000,
+                    items: ['ELEMENTAL_CORE', 'RARE_GEAR'],
+                    title: 'Element Ustası'
+                },
+                icon: '🌪️'
+            }
+        };
+
+        const DAILY_QUESTS = {
+            KILL_10_ENEMIES: {
+                name: '10 Düşman Öldür',
+                description: 'Herhangi 10 düşmanı yen',
+                target: 10,
+                type: 'kill',
+                rewards: { gold: 100, xp: 200, honor: 10 },
+                icon: '⚔️'
+            },
+            COLLECT_5_MATERIALS: {
+                name: '5 Malzeme Topla',
+                description: 'Herhangi 5 crafting malzemesi topla',
+                target: 5,
+                type: 'collect',
+                rewards: { gold: 150, xp: 300, skillPoints: 1 },
+                icon: '📦'
+            },
+            COMPLETE_1_DUNGEON: {
+                name: '1 Dungeon Tamamla',
+                description: 'Herhangi bir dungeon\'ı temizle',
+                target: 1,
+                type: 'dungeon',
+                rewards: { gold: 300, xp: 500, items: ['RARE_GEM'] },
+                icon: '🏰'
+            },
+            WIN_3_PVP: {
+                name: '3 PvP Kazan',
+                description: 'Arena\'da 3 savaş kazan',
+                target: 3,
+                type: 'pvp',
+                rewards: { gold: 200, xp: 400, honor: 50 },
+                icon: '🏆'
+            },
+            CRAFT_3_ITEMS: {
+                name: '3 Item Üret',
+                description: 'Herhangi 3 item craft et',
+                target: 3,
+                type: 'craft',
+                rewards: { gold: 250, xp: 350, craftingExp: 100 },
+                icon: '🔨'
+            },
+            USE_5_SKILLS: {
+                name: '5 Skill Kullan',
+                description: 'Herhangi 5 skill kullan',
+                target: 5,
+                type: 'skill',
+                rewards: { gold: 80, xp: 150, mana: 50 },
+                icon: '✨'
+            }
+        };
+
+        const SEASON_PASS = {
+            CURRENT_SEASON: 'Season 1: Dawn of Heroes',
+            SEASON_DURATION: 2592000, // 30 gün
+            TIERS: 50,
+            FREE_REWARDS: {
+                5: { gold: 500 },
+                10: { xp: 1000 },
+                15: { item: 'RARE_GEAR' },
+                20: { gold: 1500 },
+                25: { xp: 2500 },
+                30: { item: 'EPIC_GEAR' },
+                35: { gold: 3000 },
+                40: { xp: 5000 },
+                45: { item: 'LEGENDARY_GEAR' },
+                50: { title: 'Season Master' }
+            },
+            PREMIUM_REWARDS: {
+                1: { item: 'PREMIUM_CHEST' },
+                5: { gold: 1000, item: 'RARE_GEAR' },
+                10: { xp: 2000, item: 'EPIC_GEAR' },
+                15: { gold: 3000, pet: 'SEASONAL_PET' },
+                20: { xp: 5000, item: 'LEGENDARY_GEAR' },
+                25: { gold: 5000, title: 'Elite Hero' },
+                30: { xp: 10000, mount: 'SEASONAL_MOUNT' },
+                35: { gold: 8000, item: 'MYTHIC_GEAR' },
+                40: { xp: 20000, house: 'PREMIUM_HOUSE' },
+                45: { gold: 12000, item: 'ARTIFACT' },
+                50: { title: 'Legendary Champion', item: 'COSMIC_WEAPON' }
+            }
+        };
+
+        const FISHING_SYSTEM = {
+            LOCATIONS: {
+                RIVER: {
+                    name: 'Nehir',
+                    level: 1,
+                    fish: ['COMMON_FISH', 'RARE_FISH'],
+                    experience: 10,
+                    icon: '🌊'
+                },
+                LAKE: {
+                    name: 'Göl',
+                    level: 5,
+                    fish: ['RARE_FISH', 'EPIC_FISH', 'COMMON_FISH'],
+                    experience: 20,
+                    icon: '🏞️'
+                },
+                OCEAN: {
+                    name: 'Okyanus',
+                    level: 10,
+                    fish: ['EPIC_FISH', 'LEGENDARY_FISH', 'RARE_FISH'],
+                    experience: 40,
+                    icon: '🌊'
+                },
+                VOLCANIC: {
+                    name: 'Volkanik Bölge',
+                    level: 15,
+                    fish: ['LEGENDARY_FISH', 'MYTHIC_FISH', 'EPIC_FISH'],
+                    experience: 80,
+                    icon: '🌋'
+                }
+            },
+            FISH_TYPES: {
+                COMMON_FISH: { name: 'Sıradan Balık', rarity: 'common', value: 10, xp: 5 },
+                RARE_FISH: { name: 'Nadir Balık', rarity: 'rare', value: 25, xp: 15 },
+                EPIC_FISH: { name: 'Epic Balık', rarity: 'epic', value: 50, xp: 30 },
+                LEGENDARY_FISH: { name: 'Efsanevi Balık', rarity: 'legendary', value: 100, xp: 60 },
+                MYTHIC_FISH: { name: 'Mitik Balık', rarity: 'mythic', value: 200, xp: 120 }
+            },
+            FISHING_RODS: {
+                BASIC: { name: 'Temel Olt', power: 1, level: 1 },
+                ADVANCED: { name: 'Gelişmiş Olt', power: 2, level: 5 },
+                MASTER: { name: 'Usta Olt', power: 3, level: 10 },
+                LEGENDARY: { name: 'Efsanevi Olt', power: 4, level: 15 }
+            }
+        };
+
+        const COOKING_SYSTEM = {
+            RECIPES: {
+                GRILLED_FISH: {
+                    name: 'Izgarada Balık',
+                    ingredients: { FISH: 1, SPICE: 1 },
+                    level: 1,
+                    experience: 20,
+                    effects: { hp: 20, duration: 300 },
+                    icon: '🐟'
+                },
+                MEAT_STEW: {
+                    name: 'Et Yemeği',
+                    ingredients: { MEAT: 2, VEGETABLE: 1 },
+                    level: 3,
+                    experience: 40,
+                    effects: { hp: 50, strength: 5, duration: 600 },
+                    icon: '🍲'
+                },
+                MAGIC_POTION: {
+                    name: 'Büyü İksiri',
+                    ingredients: { MAGIC_HERB: 2, CRYSTAL_DUST: 1 },
+                    level: 5,
+                    experience: 80,
+                    effects: { mana: 50, magicPower: 10, duration: 900 },
+                    icon: '🧪'
+                },
+                DRAGON_STEAK: {
+                    name: 'Ejderha Biftek',
+                    ingredients: { DRAGON_MEAT: 1, RARE_SPICE: 2 },
+                    level: 10,
+                    experience: 200,
+                    effects: { hp: 100, allStats: 15, duration: 1800 },
+                    icon: '🥩'
+                },
+                PHOENIX_SOUP: {
+                    name: 'Anka Çorbası',
+                    ingredients: { PHOENIX_FEATHER: 1, SACRED_WATER: 3 },
+                    level: 15,
+                    experience: 500,
+                    effects: { hp: 200, regeneration: 10, duration: 3600 },
+                    icon: '🍲'
+                }
+            },
+            INGREDIENTS: {
+                FISH: { name: 'Balık', value: 20 },
+                MEAT: { name: 'Et', value: 30 },
+                VEGETABLE: { name: 'Sebze', value: 10 },
+                SPICE: { name: 'Baharat', value: 15 },
+                MAGIC_HERB: { name: 'Büyü Otu', value: 50 },
+                CRYSTAL_DUST: { name: 'Kristal Tozu', value: 100 },
+                DRAGON_MEAT: { name: 'Ejderha Eti', value: 200 },
+                RARE_SPICE: { name: 'Nadir Baharat', value: 150 },
+                PHOENIX_FEATHER: { name: 'Anka Tüyü', value: 300 },
+                SACRED_WATER: { name: 'Kutsal Su', value: 250 }
+            },
+            COOKING_LEVELS: {
+                1: { title: 'Aşçı Çırağı', bonus: 0 },
+                5: { title: 'Aşçı', bonus: 0.1 },
+                10: { title: 'Usta Aşçı', bonus: 0.2 },
+                15: { title: 'Şef Aşçı', bonus: 0.3 },
+                20: { title: 'Gurme Usta', bonus: 0.5 }
+            }
+        };
+
+        const PET_EVOLUTION = {
+            EVOLUTION_STAGES: {
+                BABY: { name: 'Yavru', multiplier: 1.0, abilities: [], icon: '🥚' },
+                YOUNG: { name: 'Genç', multiplier: 1.5, abilities: ['BASIC_ATTACK'], icon: '🐣' },
+                ADULT: { name: 'Yetişkin', multiplier: 2.0, abilities: ['BASIC_ATTACK', 'DEFENSE_BUFF'], icon: '🐾' },
+                ELITE: { name: 'Elite', multiplier: 3.0, abilities: ['BASIC_ATTACK', 'DEFENSE_BUFF', 'SPECIAL_ATTACK'], icon: '⭐' },
+                LEGENDARY: { name: 'Efsanevi', multiplier: 5.0, abilities: ['BASIC_ATTACK', 'DEFENSE_BUFF', 'SPECIAL_ATTACK', 'ULTIMATE'], icon: '👑' }
+            },
+            EVOLUTION_REQUIREMENTS: {
+                YOUNG: { level: 5, experience: 100, items: {} },
+                ADULT: { level: 10, experience: 500, items: { MAGIC_CRYSTAL: 1 } },
+                ELITE: { level: 20, experience: 2000, items: { RARE_GEM: 2, EPIC_GEAR: 1 } },
+                LEGENDARY: { level: 30, experience: 10000, items: { LEGENDARY_WEAPON: 1, MYTHIC_GEAR: 1 } }
+            },
+            SKILLS: {
+                BASIC_ATTACK: { name: 'Temel Saldırı', damage: 1.2, cooldown: 2000 },
+                DEFENSE_BUFF: { name: 'Savunma Artışı', defense: 1.5, duration: 10000 },
+                SPECIAL_ATTACK: { name: 'Özel Saldırı', damage: 2.0, cooldown: 5000 },
+                ULTIMATE: { name: 'Nihai', damage: 3.0, cooldown: 15000, aoe: true }
+            }
+        };
+
+        const MOUNT_UPGRADE = {
+            UPGRADE_TIERS: {
+                TIER_1: { speed: 1.0, stamina: 1.0, abilities: [], name: 'Normal' },
+                TIER_2: { speed: 1.2, stamina: 1.2, abilities: ['SPEED_BOOST'], name: 'Gelişmiş' },
+                TIER_3: { speed: 1.5, stamina: 1.5, abilities: ['SPEED_BOOST', 'STAMINA_REGEN'], name: 'Usta' },
+                TIER_4: { speed: 2.0, stamina: 2.0, abilities: ['SPEED_BOOST', 'STAMINA_REGEN', 'DASH'], name: 'Elite' },
+                TIER_5: { speed: 2.5, stamina: 3.0, abilities: ['SPEED_BOOST', 'STAMINA_REGEN', 'DASH', 'FLYING'], name: 'Efsanevi' }
+            },
+            UPGRADE_COSTS: {
+                TIER_2: { gold: 1000, materials: { IRON_ORE: 10, MAGIC_CRYSTAL: 1 } },
+                TIER_3: { gold: 5000, materials: { GOLD_ORE: 5, EPIC_GEAR: 1 } },
+                TIER_4: { gold: 15000, materials: { DRAGON_SCALE: 3, LEGENDARY_WEAPON: 1 } },
+                TIER_5: { gold: 50000, materials: { ANCIENT_DRAGON_HEART: 1, MYTHIC_GEAR: 1 } }
+            },
+            ABILITIES: {
+                SPEED_BOOST: { speed: 1.5, duration: 5000, cooldown: 30000 },
+                STAMINA_REGEN: { regen: 2.0, duration: 10000, cooldown: 45000 },
+                DASH: { distance: 200, cooldown: 20000 },
+                FLYING: { speed: 3.0, staminaCost: 2.0 }
+            }
+        };
+
+        const EQUIPMENT_ENHANCEMENT = {
+            ENHANCEMENT_LEVELS: {
+                0: { name: 'Normal', multiplier: 1.0, success: 100, cost: 0 },
+                1: { name: '+1', multiplier: 1.1, success: 90, cost: 100 },
+                2: { name: '+2', multiplier: 1.2, success: 80, cost: 200 },
+                3: { name: '+3', multiplier: 1.3, success: 70, cost: 400 },
+                4: { name: '+4', multiplier: 1.4, success: 60, cost: 800 },
+                5: { name: '+5', multiplier: 1.5, success: 50, cost: 1600 },
+                6: { name: '+6', multiplier: 1.6, success: 40, cost: 3200 },
+                7: { name: '+7', multiplier: 1.8, success: 30, cost: 6400 },
+                8: { name: '+8', multiplier: 2.0, success: 20, cost: 12800 },
+                9: { name: '+9', multiplier: 2.5, success: 10, cost: 25600 },
+                10: { name: '+10', multiplier: 3.0, success: 5, cost: 51200 }
+            },
+            ENHANCEMENT_MATERIALS: {
+                WEAPON: { primary: 'IRON_ORE', secondary: 'MAGIC_CRYSTAL' },
+                ARMOR: { primary: 'LEATHER', secondary: 'IRON_ORE' },
+                ACCESSORY: { primary: 'GOLD_ORE', secondary: 'MAGIC_CRYSTAL' }
+            },
+            FAILURE_PENALTIES: {
+                0: { levelLoss: 0, itemBreak: false },
+                1: { levelLoss: 0, itemBreak: false },
+                2: { levelLoss: 0, itemBreak: false },
+                3: { levelLoss: 1, itemBreak: false },
+                4: { levelLoss: 1, itemBreak: false },
+                5: { levelLoss: 1, itemBreak: false },
+                6: { levelLoss: 2, itemBreak: false },
+                7: { levelLoss: 2, itemBreak: false },
+                8: { levelLoss: 3, itemBreak: false },
+                9: { levelLoss: 4, itemBreak: false },
+                10: { levelLoss: 5, itemBreak: true }
+            }
+        };
+
+        const SKILL_TREE = {
+            TREES: {
+                WARRIOR: {
+                    name: 'Savaşçı',
+                    icon: '⚔️',
+                    skills: {
+                        STRENGTH_1: { name: 'Güç I', effect: { strength: 5 }, requires: [], cost: 1 },
+                        STRENGTH_2: { name: 'Güç II', effect: { strength: 10 }, requires: ['STRENGTH_1'], cost: 2 },
+                        STRENGTH_3: { name: 'Güç III', effect: { strength: 15 }, requires: ['STRENGTH_2'], cost: 3 },
+                        DEFENSE_1: { name: 'Savunma I', effect: { defense: 5 }, requires: [], cost: 1 },
+                        DEFENSE_2: { name: 'Savunma II', effect: { defense: 10 }, requires: ['DEFENSE_1'], cost: 2 },
+                        DEFENSE_3: { name: 'Savunma III', effect: { defense: 15 }, requires: ['DEFENSE_2'], cost: 3 },
+                        BERSERKER: { name: 'Berserker', effect: { damage: 1.5, defense: 0.8 }, requires: ['STRENGTH_2', 'DEFENSE_2'], cost: 5 },
+                        WARLORD: { name: 'Savaş Lordu', effect: { allStats: 20 }, requires: ['BERSERKER'], cost: 8 }
+                    }
+                },
+                MAGE: {
+                    name: 'Büyücü',
+                    icon: '🔮',
+                    skills: {
+                        INTELLIGENCE_1: { name: 'Zeka I', effect: { magicPower: 5 }, requires: [], cost: 1 },
+                        INTELLIGENCE_2: { name: 'Zeka II', effect: { magicPower: 10 }, requires: ['INTELLIGENCE_1'], cost: 2 },
+                        INTELLIGENCE_3: { name: 'Zeka III', effect: { magicPower: 15 }, requires: ['INTELLIGENCE_2'], cost: 3 },
+                        MANA_1: { name: 'Mana I', effect: { maxMana: 20 }, requires: [], cost: 1 },
+                        MANA_2: { name: 'Mana II', effect: { maxMana: 50 }, requires: ['MANA_1'], cost: 2 },
+                        MANA_3: { name: 'Mana III', effect: { maxMana: 100 }, requires: ['MANA_2'], cost: 3 },
+                        ELEMENTAL_MASTERY: { name: 'Element Ustalığı', effect: { elementalDamage: 1.3 }, requires: ['INTELLIGENCE_2', 'MANA_2'], cost: 5 },
+                        ARCHMAGE: { name: 'Arşimage', effect: { allMagic: 25 }, requires: ['ELEMENTAL_MASTERY'], cost: 8 }
+                    }
+                },
+                ROGUE: {
+                    name: 'Düzenbaz',
+                    icon: '🗡️',
+                    skills: {
+                        AGILITY_1: { name: 'Çeviklik I', effect: { speed: 0.2, critChance: 0.05 }, requires: [], cost: 1 },
+                        AGILITY_2: { name: 'Çeviklik II', effect: { speed: 0.4, critChance: 0.10 }, requires: ['AGILITY_1'], cost: 2 },
+                        AGILITY_3: { name: 'Çeviklik III', effect: { speed: 0.6, critChance: 0.15 }, requires: ['AGILITY_2'], cost: 3 },
+                        STEALTH_1: { name: 'Gizlilik I', effect: { stealth: 5 }, requires: [], cost: 1 },
+                        STEALTH_2: { name: 'Gizlilik II', effect: { stealth: 10 }, requires: ['STEALTH_1'], cost: 2 },
+                        STEALTH_3: { name: 'Gizlilik III', effect: { stealth: 15 }, requires: ['STEALTH_2'], cost: 3 },
+                        ASSASSIN: { name: 'Suikastçi', effect: { critDamage: 2.0, stealth: 20 }, requires: ['AGILITY_2', 'STEALTH_2'], cost: 5 },
+                        SHADOW_MASTER: { name: 'Gölge Ustası', effect: { allRogue: 20 }, requires: ['ASSASSIN'], cost: 8 }
+                    }
+                }
+            },
+            MAX_POINTS: 20,
+            RESET_COST: 1000
+        };
+
+        const TALENT_SYSTEM = {
+            TALENTS: {
+                OFFENSIVE: {
+                    name: 'Saldırı',
+                    talents: {
+                        DAMAGE_BOOST: { name: 'Hasar Artışı', effect: { damage: 1.1 }, maxLevel: 5, cost: 1 },
+                        CRITICAL_STRIKE: { name: 'Kritik Vuruş', effect: { critChance: 0.02 }, maxLevel: 5, cost: 1 },
+                        ATTACK_SPEED: { name: 'Saldırı Hızı', effect: { attackSpeed: 1.1 }, maxLevel: 5, cost: 1 },
+                        PIERCE_ARMOR: { name: 'Zırh Delme', effect: { armorPierce: 0.1 }, maxLevel: 3, cost: 2 }
+                    }
+                },
+                DEFENSIVE: {
+                    name: 'Savunma',
+                    talents: {
+                        HEALTH_BOOST: { name: 'Can Artışı', effect: { maxHp: 50 }, maxLevel: 5, cost: 1 },
+                        DEFENSE_BOOST: { name: 'Savunma Artışı', effect: { defense: 5 }, maxLevel: 5, cost: 1 },
+                        REGENERATION: { name: 'Regenerasyon', effect: { hpRegen: 1 }, maxLevel: 3, cost: 2 },
+                        DAMAGE_REDUCTION: { name: 'Hasar Azaltma', effect: { damageReduction: 0.05 }, maxLevel: 5, cost: 1 }
+                    }
+                },
+                UTILITY: {
+                    name: 'Yardımcı',
+                    talents: {
+                        MANA_EFFICIENCY: { name: 'Mana Verimliliği', effect: { manaCost: 0.9 }, maxLevel: 5, cost: 1 },
+                        MOVEMENT_SPEED: { name: 'Hız', effect: { speed: 0.1 }, maxLevel: 5, cost: 1 },
+                        LUCK: { name: 'Şans', effect: { luck: 0.05 }, maxLevel: 3, cost: 2 },
+                        EXPERIENCE_BOOST: { name: 'XP Artışı', effect: { xpBonus: 0.1 }, maxLevel: 3, cost: 2 }
+                    }
+                }
+            },
+            MAX_TALENT_POINTS: 30,
+            POINTS_PER_LEVEL: 1
+        };
+
+        const PRESTIGE_SYSTEM = {
+            PRESTIGE_LEVELS: {
+                1: { name: 'Acemi', bonus: 0.1, requirement: { level: 50, totalGold: 100000 } },
+                2: { name: 'Usta', bonus: 0.2, requirement: { level: 75, totalGold: 500000 } },
+                3: { name: 'Uzman', bonus: 0.3, requirement: { level: 100, totalGold: 1000000 } },
+                4: { name: 'Efsanevi', bonus: 0.5, requirement: { level: 150, totalGold: 5000000 } },
+                5: { name: 'Mitik', bonus: 1.0, requirement: { level: 200, totalGold: 10000000 } }
+            },
+            PRESTIGE_REWARDS: {
+                1: { title: 'Acemi', skillPoints: 5, talentPoints: 3 },
+                2: { title: 'Usta', skillPoints: 10, talentPoints: 6, pet: 'PRESTIGE_WOLF' },
+                3: { title: 'Uzman', skillPoints: 15, talentPoints: 10, mount: 'PRESTIGE_HORSE' },
+                4: { title: 'Efsanevi', skillPoints: 20, talentPoints: 15, item: 'PRESTIGE_WEAPON' },
+                5: { title: 'Mitik', skillPoints: 30, talentPoints: 25, house: 'PRESTIGE_MANSION' }
+            },
+            RESET_BONUSES: {
+                goldMultiplier: 1.5,
+                xpMultiplier: 1.3,
+                luckBonus: 0.2
+            }
+        };
+
+        const MINI_GAMES = {
+            MEMORY_GAME: {
+                name: 'Hafıza Oyunu',
+                difficulty: ['easy', 'medium', 'hard'],
+                rewards: {
+                    easy: { gold: 50, xp: 25 },
+                    medium: { gold: 100, xp: 50 },
+                    hard: { gold: 200, xp: 100 }
+                },
+                icon: '🧩'
+            },
+            DICE_GAME: {
+                name: 'Zar Oyunu',
+                betRange: [10, 1000],
+                multiplier: 2.0,
+                houseEdge: 0.05,
+                icon: '🎲'
+            },
+            SLOT_MACHINE: {
+                name: 'Slot Makinesi',
+                symbols: ['🍒', '🍋', '🍊', '🍇', '💎', '7️⃣'],
+                betRange: [5, 500],
+                payouts: {
+                    '🍒🍒🍒': 10,
+                    '🍋🍋🍋': 15,
+                    '🍊🍊🍊': 20,
+                    '🍇🍇🍇': 25,
+                    '💎💎💎': 50,
+                    '7️⃣7️⃣7️⃣': 100
+                },
+                icon: '🎰'
+            },
+            FISHING_CONTEST: {
+                name: 'Balıkçılık Yarışması',
+                duration: 300, // 5 dakika
+                rewards: { first: 500, second: 300, third: 100 },
+                icon: '🎣'
+            },
+            COOKING_CHALLENGE: {
+                name: 'Aşçılık Yarışması',
+                duration: 600, // 10 dakika
+                rewards: { gold: 300, xp: 150, recipe: 'SPECIAL_RECIPE' },
+                icon: '👨‍🍳'
+            }
+        };
+
+        const WEATHER_EVENTS = {
+            THUNDERSTORM: {
+                name: 'Fırtına',
+                duration: 1800, // 30 dakika
+                effects: {
+                    playerSpeed: 0.8,
+                    enemySpeed: 1.2,
+                    lightningDamage: true,
+                    visibility: 0.6
+                },
+                rewards: { gold: 200, xp: 100, item: 'THUNDER_ESSENCE' },
+                icon: '⛈️'
+            },
+            BLIZZARD: {
+                name: 'Kar Fırtınası',
+                duration: 2400, // 40 dakika
+                effects: {
+                    playerSpeed: 0.7,
+                    enemySpeed: 0.9,
+                    iceDamage: true,
+                    visibility: 0.4
+                },
+                rewards: { gold: 300, xp: 150, item: 'ICE_CRYSTAL' },
+                icon: '❄️'
+            },
+            HEATWAVE: {
+                name: 'Sıcak Hava Dalgası',
+                duration: 1200, // 20 dakika
+                effects: {
+                    playerSpeed: 0.9,
+                    enemySpeed: 1.1,
+                    fireDamage: true,
+                    manaRegen: 0.5
+                },
+                rewards: { gold: 150, xp: 75, item: 'FIRE_ESSENCE' },
+                icon: '🔥'
+            },
+            MYSTICAL_FOG: {
+                name: 'Mistik Sis',
+                duration: 1500, // 25 dakika
+                effects: {
+                    playerSpeed: 0.85,
+                    enemySpeed: 1.0,
+                    magicDamage: 1.5,
+                    luck: 0.2,
+                    visibility: 0.3
+                },
+                rewards: { gold: 400, xp: 200, item: 'MAGIC_DUST' },
+                icon: '🌫️'
+            },
+            AURORA_BOREALIS: {
+                name: 'Kutup Işıkları',
+                duration: 900, // 15 dakika
+                effects: {
+                    playerSpeed: 1.2,
+                    enemySpeed: 0.8,
+                    healing: 2.0,
+                    xpBonus: 2.0,
+                    allStats: 1.1
+                },
+                rewards: { gold: 1000, xp: 500, item: 'AURORA_FRAGMENT' },
+                icon: '🌌'
+            }
+        };
+
+        const ADVANCED_AI = {
+            BEHAVIOR_TYPES: {
+                AGGRESSIVE: {
+                    name: 'Saldırgan',
+                    agroRange: 200,
+                    attackRange: 60,
+                    retreatHealth: 0.1,
+                    groupSupport: false,
+                    fleeChance: 0.05,
+                    abilities: ['CHARGE', 'BERSERK']
+                },
+                DEFENSIVE: {
+                    name: 'Savunmacı',
+                    agroRange: 150,
+                    attackRange: 80,
+                    retreatHealth: 0.3,
+                    groupSupport: true,
+                    fleeChance: 0.15,
+                    abilities: ['SHIELD', 'HEAL']
+                },
+                TACTICAL: {
+                    name: 'Taktiksel',
+                    agroRange: 250,
+                    attackRange: 100,
+                    retreatHealth: 0.2,
+                    groupSupport: true,
+                    fleeChance: 0.1,
+                    abilities: ['FLANK', 'AMBUSH']
+                },
+                BOSS: {
+                    name: 'Boss',
+                    agroRange: 300,
+                    attackRange: 120,
+                    retreatHealth: 0.05,
+                    groupSupport: true,
+                    fleeChance: 0.0,
+                    abilities: ['AOE', 'SUMMON', 'ENRAGE']
+                }
+            },
+            AI_ABILITIES: {
+                CHARGE: { name: 'Hücum', cooldown: 5000, damage: 2.0, range: 150 },
+                BERSERK: { name: 'Berserk', cooldown: 10000, damage: 3.0, duration: 5000 },
+                SHIELD: { name: 'Kalkan', cooldown: 8000, defense: 2.0, duration: 3000 },
+                HEAL: { name: 'İyileştirme', cooldown: 12000, heal: 0.5, range: 100 },
+                FLANK: { name: 'Yan Çapraz', cooldown: 7000, damage: 1.5, range: 80 },
+                AMBUSH: { name: 'Pusu', cooldown: 15000, damage: 2.5, range: 60 },
+                AOE: { name: 'Alan Etkisi', cooldown: 20000, damage: 1.8, radius: 150 },
+                SUMMON: { name: 'Çağırma', cooldown: 30000, count: 3, type: 'MINION' },
+                ENRAGE: { name: 'Öfke', cooldown: 25000, damage: 4.0, health: 2.0 }
+            },
+            DIFFICULTY_LEVELS: {
+                EASY: { accuracy: 0.7, reactionTime: 1000, damageMultiplier: 0.8 },
+                NORMAL: { accuracy: 0.85, reactionTime: 750, damageMultiplier: 1.0 },
+                HARD: { accuracy: 0.9, reactionTime: 500, damageMultiplier: 1.2 },
+                EXTREME: { accuracy: 0.95, reactionTime: 250, damageMultiplier: 1.5 }
+            }
+        };
+
+        const PROCEDURAL_GENERATION = {
+            WORLD_TYPES: {
+                FOREST: {
+                    name: 'Orman',
+                    tileSize: 50,
+                    obstacles: ['TREE', 'ROCK', 'BUSH'],
+                    enemies: ['WOLF', 'BEAR', 'SPIDER'],
+                    resources: ['WOOD', 'HERB', 'BERRY'],
+                    weather: ['RAIN', 'FOG'],
+                    music: 'forest_theme'
+                },
+                DESERT: {
+                    name: 'Çöl',
+                    tileSize: 60,
+                    obstacles: ['CACTUS', 'ROCK', 'DUNE'],
+                    enemies: ['SCORPION', 'SNAKE', 'VULTURE'],
+                    resources: ['SAND', 'CRYSTAL', 'OASIS'],
+                    weather: ['HEATWAVE', 'SANDSTORM'],
+                    music: 'desert_theme'
+                },
+                MOUNTAIN: {
+                    name: 'Dağ',
+                    tileSize: 40,
+                    obstacles: ['MOUNTAIN', 'CLIFF', 'CAVE'],
+                    enemies: ['GOBLIN', 'TROLL', 'EAGLE'],
+                    resources: ['STONE', 'GOLD_ORE', 'DIAMOND'],
+                    weather: ['BLIZZARD', 'AVALANCHE'],
+                    music: 'mountain_theme'
+                },
+                SWAMP: {
+                    name: 'Bataklık',
+                    tileSize: 55,
+                    obstacles: ['SWAMP', 'MUD', 'VINES'],
+                    enemies: ['CROCODILE', 'FROG', 'SNAKE'],
+                    resources: ['MUD', 'VINES', 'RARE_HERB'],
+                    weather: ['FOG', 'RAIN'],
+                    music: 'swamp_theme'
+                },
+                VOLCANIC: {
+                    name: 'Volkanik',
+                    tileSize: 45,
+                    obstacles: ['LAVA', 'ROCK', 'ASH'],
+                    enemies: ['DEMON', 'FIRE_ELEMENTAL', 'DRAGON'],
+                    resources: ['LAVA_STONE', 'FIRE_CRYSTAL', 'DRAGON_SCALE'],
+                    weather: ['HEATWAVE', 'ASH_STORM'],
+                    music: 'volcanic_theme'
+                }
+            },
+            GENERATION_RULES: {
+                MIN_OBSTACLES: 20,
+                MAX_OBSTACLES: 50,
+                MIN_ENEMIES: 10,
+                MAX_ENEMIES: 30,
+                MIN_RESOURCES: 15,
+                MAX_RESOURCES: 40,
+                SPAWN_DISTANCE: 100,
+                CLUSTER_SIZE: 5
+            },
+            DUNGEON_TYPES: {
+                CAVE: { name: 'Mağara', complexity: 2, floors: 3, boss: 'CAVE_TROLL' },
+                TEMPLE: { name: 'Tapınak', complexity: 3, floors: 5, boss: 'TEMPLE_GUARDIAN' },
+                FORTRESS: { name: 'Kale', complexity: 4, floors: 7, boss: 'FORTRESS_COMMANDER' },
+                LABYRINTH: { name: 'Labirent', complexity: 5, floors: 10, boss: 'MINOTAUR' }
+            }
+        };
+
+        const DYNAMIC_QUESTS = {
+            QUEST_TEMPLATES: {
+                KILL: {
+                    name: 'Temizleme Görevi',
+                    description: 'Bölgedeki düşmanları temizle',
+                    objectives: ['kill_enemies'],
+                    rewards: { gold: 100, xp: 50 },
+                    difficulty: 'easy'
+                },
+                COLLECT: {
+                    name: 'Toplama Görevi',
+                    description: 'Bölgeden malzeme topla',
+                    objectives: ['collect_resources'],
+                    rewards: { gold: 150, xp: 75 },
+                    difficulty: 'easy'
+                },
+                ESCORT: {
+                    name: 'Eşlik Görevi',
+                    description: 'NPC\'yi güvenli bölgeye götür',
+                    objectives: ['escort_npc'],
+                    rewards: { gold: 200, xp: 100 },
+                    difficulty: 'medium'
+                },
+                DEFEND: {
+                    name: 'Savunma Görevi',
+                    description: 'Bölgeyi düşman saldırısından koru',
+                    objectives: ['defend_area'],
+                    rewards: { gold: 300, xp: 150 },
+                    difficulty: 'medium'
+                },
+                INVESTIGATE: {
+                    name: 'Araştırma Görevi',
+                    description: 'Gizemli olayı araştır',
+                    objectives: ['investigate_area'],
+                    rewards: { gold: 250, xp: 125 },
+                    difficulty: 'medium'
+                },
+                BOSS_HUNT: {
+                    name: 'Boss Avı',
+                    description: 'Güçlü düşmanı yen',
+                    objectives: ['kill_boss'],
+                    rewards: { gold: 500, xp: 250 },
+                    difficulty: 'hard'
+                }
+            },
+            QUEST_GENERATORS: {
+                KILL: (area) => ({
+                    target: area.enemies[Math.floor(Math.random() * area.enemies.length)],
+                    count: Math.floor(Math.random() * 10) + 5,
+                    timeLimit: Math.floor(Math.random() * 300) + 300
+                }),
+                COLLECT: (area) => ({
+                    resource: area.resources[Math.floor(Math.random() * area.resources.length)],
+                    count: Math.floor(Math.random() * 8) + 3,
+                    timeLimit: Math.floor(Math.random() * 400) + 200
+                }),
+                ESCORT: (area) => ({
+                    npc: generateRandomNPC(),
+                    destination: generateRandomPoint(area),
+                    distance: Math.floor(Math.random() * 500) + 200,
+                    timeLimit: Math.floor(Math.random() * 600) + 300
+                }),
+                DEFEND: (area) => ({
+                    area: generateRandomPoint(area),
+                    waves: Math.floor(Math.random() * 3) + 2,
+                    duration: Math.floor(Math.random() * 300) + 300,
+                    enemiesPerWave: Math.floor(Math.random() * 5) + 3
+                }),
+                INVESTIGATE: (area) => ({
+                    mystery: generateRandomMystery(),
+                    clues: Math.floor(Math.random() * 5) + 3,
+                    difficulty: ['easy', 'medium', 'hard'][Math.floor(Math.random() * 3)]
+                }),
+                BOSS_HUNT: (area) => ({
+                    boss: area.boss || 'RANDOM_BOSS',
+                    requirements: generateBossRequirements(),
+                    timeLimit: Math.floor(Math.random() * 900) + 600
+                })
+            },
+            QUEST_DIFFICULTY_MULTIPLIERS: {
+                easy: { gold: 1.0, xp: 1.0, time: 1.0 },
+                medium: { gold: 1.5, xp: 1.5, time: 1.2 },
+                hard: { gold: 2.0, xp: 2.0, time: 1.5 }
+            }
+        };
+
+        const CHAT_BOT_SYSTEM = {
+            PERSONALITIES: {
+                FRIENDLY: {
+                    name: 'Dost Canlısı',
+                    greeting: 'Merhaba! Nasıl yardımcı olabilirim?',
+                    responses: [
+                        'Harika bir fikir!',
+                        'Kesinlikle yardımcı olurum.',
+                        'Bu çok ilginç!',
+                        'Seninle konuşmak çok güzel.',
+                        'Birlikte çalışalım!'
+                    ],
+                    farewell: 'Görüşürüz! İyi günler!'
+                },
+                GRUMPY: {
+                    name: 'Huysuz',
+                    greeting: 'Ne istiyorsun?',
+                    responses: [
+                        'Hımph, belki.',
+                        'Zamanımı boşma.',
+                        'Bunu neden sordun ki?',
+                        'Sıkıcı...',
+                        'Hadi çabuk ol.'
+                    ],
+                    farewell: 'Git artık.'
+                },
+                MYSTERIOUS: {
+                    name: 'Gizemli',
+                    greeting: 'Gölgelerden selam...',
+                    responses: [
+                        'Belki... belki de...',
+                        'Sırlar vardır ki açıklanamaz.',
+                        'Zaman gösterecek.',
+                        'Kaderin yolları tuhaftır.',
+                        'Bak görelim...'
+                    ],
+                    farewell: 'Gölgelere dönüyorum...'
+                },
+                WISE: {
+                    name: 'Bilge',
+                    greeting: 'Genç dost, hoş geldin.',
+                    responses: [
+                        'Bilgelik zamanla gelir.',
+                        'Her eylemin bir sonucu vardır.',
+                        'Doğru yolu seçmelisin.',
+                        'Sabır bir erdemdir.',
+                        'Deneyim en iyi öğretmendir.'
+                    ],
+                    farewell: 'Yolunu aydınlatması dileğiyle.'
+                }
+            },
+            TOPICS: {
+                WEATHER: ['weather', 'hava', 'yağmur', 'güneş', 'kar', 'rüzgar'],
+                COMBAT: ['savaş', 'düşman', 'silah', 'zırh', 'skill', 'hasar'],
+                EXPLORATION: ['keşfet', 'bölge', 'harita', 'yol', 'mağara', 'orman'],
+                ECONOMY: ['altın', 'ticaret', 'market', 'fiyat', 'malzeme', 'craft'],
+                SOCIAL: ['lonca', 'party', 'arkadaş', 'sohbet', 'yardım', 'takım'],
+                PERSONAL: ['seviye', 'xp', 'stat', 'skill', 'pet', 'binek']
+            },
+            RESPONSE_PATTERNS: {
+                QUESTION: [
+                    'İyi soru. Bence...',
+                    'Şöyle düşünelim...',
+                    'Bu konuda şunu söyleyebilirim...',
+                    'Hmm, ilginç bir soru.',
+                    'Bakalım...'
+                ],
+                STATEMENT: [
+                    'Evet, haklısın.',
+                    'Kesinlikle katılıyorum.',
+                    'Bu doğru.',
+                    'Aynen öyle.',
+                    'Doğru tespit.'
+                ],
+                REQUEST: [
+                    'Elbette yardımcı olurum.',
+                    'Bunu yapabilirim.',
+                    'Sana yardımcı olacağım.',
+                    'Merak etme, hallederiz.',
+                    'Güvende ol.'
+                ]
+            }
+        };
+
+        const REPUTATION_2_0 = {
+            FACTIONS: {
+                WARRIORS_GUILD: {
+                    name: 'Savaşçılar Loncası',
+                    standing: 0,
+                    rank: 'NEUTRAL',
+                    ranks: {
+                        HATED: { threshold: -1000, color: '#ff0000', bonus: { combat: -0.2 } },
+                        HOSTILE: { threshold: -500, color: '#ff6666', bonus: { combat: -0.1 } },
+                        UNFRIENDLY: { threshold: -100, color: '#ffaa00', bonus: { combat: 0 } },
+                        NEUTRAL: { threshold: 0, color: '#ffffff', bonus: { combat: 0 } },
+                        FRIENDLY: { threshold: 100, color: '#66ff66', bonus: { combat: 0.1 } },
+                        HONORED: { threshold: 500, color: '#66ffff', bonus: { combat: 0.2 } },
+                        EXALTED: { threshold: 1000, color: '#ffff66', bonus: { combat: 0.3 } }
+                    },
+                    quests: ['KILL_QUEST', 'DEFEND_QUEST', 'BOSS_HUNT'],
+                    rewards: ['WEAPON_UPGRADE', 'COMBAT_TRAINING', 'EXCLUSIVE_GEAR']
+                },
+                MAGES_CIRCLE: {
+                    name: 'Büyücüler Çemberi',
+                    standing: 0,
+                    rank: 'NEUTRAL',
+                    ranks: {
+                        HATED: { threshold: -1000, color: '#ff0000', bonus: { magic: -0.2 } },
+                        HOSTILE: { threshold: -500, color: '#ff6666', bonus: { magic: -0.1 } },
+                        UNFRIENDLY: { threshold: -100, color: '#ffaa00', bonus: { magic: 0 } },
+                        NEUTRAL: { threshold: 0, color: '#ffffff', bonus: { magic: 0 } },
+                        FRIENDLY: { threshold: 100, color: '#66ff66', bonus: { magic: 0.1 } },
+                        HONORED: { threshold: 500, color: '#66ffff', bonus: { magic: 0.2 } },
+                        EXALTED: { threshold: 1000, color: '#ffff66', bonus: { magic: 0.3 } }
+                    },
+                    quests: ['COLLECT_QUEST', 'INVESTIGATE_QUEST', 'MAGIC_QUEST'],
+                    rewards: ['SPELL_UPGRADE', 'MANA_BONUS', 'ARCANE_GEAR']
+                },
+                TRADERS_ALLIANCE: {
+                    name: 'Tüccarlar Birliği',
+                    standing: 0,
+                    rank: 'NEUTRAL',
+                    ranks: {
+                        HATED: { threshold: -1000, color: '#ff0000', bonus: { prices: 1.5 } },
+                        HOSTILE: { threshold: -500, color: '#ff6666', bonus: { prices: 1.3 } },
+                        UNFRIENDLY: { threshold: -100, color: '#ffaa00', bonus: { prices: 1.1 } },
+                        NEUTRAL: { threshold: 0, color: '#ffffff', bonus: { prices: 1.0 } },
+                        FRIENDLY: { threshold: 100, color: '#66ff66', bonus: { prices: 0.9 } },
+                        HONORED: { threshold: 500, color: '#66ffff', bonus: { prices: 0.8 } },
+                        EXALTED: { threshold: 1000, color: '#ffff66', bonus: { prices: 0.7 } }
+                    },
+                    quests: ['DELIVERY_QUEST', 'TRADE_QUEST', 'COLLECT_QUEST'],
+                    rewards: ['DISCOUNT', 'EXCLUSIVE_ITEMS', 'TRADE_ROUTES']
+                },
+                NATURE_GUARDIANS: {
+                    name: 'Doğa Koruyucuları',
+                    standing: 0,
+                    rank: 'NEUTRAL',
+                    ranks: {
+                        HATED: { threshold: -1000, color: '#ff0000', bonus: { nature: -0.2 } },
+                        HOSTILE: { threshold: -500, color: '#ff6666', bonus: { nature: -0.1 } },
+                        UNFRIENDLY: { threshold: -100, color: '#ffaa00', bonus: { nature: 0 } },
+                        NEUTRAL: { threshold: 0, color: '#ffffff', bonus: { nature: 0 } },
+                        FRIENDLY: { threshold: 100, color: '#66ff66', bonus: { nature: 0.1 } },
+                        HONORED: { threshold: 500, color: '#66ffff', bonus: { nature: 0.2 } },
+                        EXALTED: { threshold: 1000, color: '#ffff66', bonus: { nature: 0.3 } }
+                    },
+                    quests: ['PROTECT_QUEST', 'HEAL_QUEST', 'NATURE_QUEST'],
+                    rewards: ['PET_BONUS', 'HERB_BONUS', 'NATURE_MAGIC']
+                }
+            },
+            REPUTATION_ACTIONS: {
+                QUEST_COMPLETE: { standing: 10, factionBonus: 1.2 },
+                QUEST_FAIL: { standing: -5, factionBonus: 0.8 },
+                ENEMY_KILL: { standing: 2, factionBonus: 1.0 },
+                NPC_HELP: { standing: 5, factionBonus: 1.1 },
+                NPC_HARM: { standing: -10, factionBonus: 0.9 },
+                TRADE_SUCCESS: { standing: 1, factionBonus: 1.0 },
+                DONATION: { standing: 3, factionBonus: 1.2 }
+            }
+        };
+
+        const ACHIEVEMENTS_2_0 = {
+            CATEGORIES: {
+                COMBAT: {
+                    name: 'Savaş',
+                    icon: '⚔️',
+                    achievements: {
+                        FIRST_BLOOD: { name: 'İlk Kan', description: 'İlk düşmanı yen', requirement: { kills: 1 }, reward: { title: 'Katil' } },
+                        SLAYER: { name: 'Katil', description: '100 düşman yen', requirement: { kills: 100 }, reward: { skillPoints: 2 } },
+                        DESTROYER: { name: 'Yıkıcı', description: '1000 düşman yen', requirement: { kills: 1000 }, reward: { title: 'Yıkıcı' } },
+                        BOSS_HUNTER: { name: 'Boss Avcısı', description: '10 boss yen', requirement: { bossKills: 10 }, reward: { item: 'BOSS_SLAYER_SWORD' } },
+                        SURVIVOR: { name: 'Hayatta Kalan', description: '100 savaşta hayatta kal', requirement: { battles: 100 }, reward: { stat: { defense: 10 } } }
+                    }
+                },
+                EXPLORATION: {
+                    name: 'Keşif',
+                    icon: '🗺️',
+                    achievements: {
+                        WANDERER: { name: 'Gezgin', description: 'Tüm bölgeleri keşfet', requirement: { areas: 10 }, reward: { title: 'Gezgin' } },
+                        DUNGEON_CRAWLER: { name: 'Dungeon Kaşifi', description: '20 dungeon temizle', requirement: { dungeons: 20 }, reward: { skillPoints: 3 } },
+                        TREASURE_HUNTER: { name: 'Hazine Avcısı', description: '50 hazine bul', requirement: { treasures: 50 }, reward: { gold: 5000 } },
+                        WORLD_TRAVELER: { name: 'Dünya Gezegeni', description: '100 farklı yere git', requirement: { locations: 100 }, reward: { mount: 'EXPLORER_HORSE' } },
+                        CARTOGRAPHER: { name: 'Haritacı', description: 'Haritayı %100 tamamla', requirement: { mapCompletion: 1.0 }, reward: { item: 'MASTER_MAP' } }
+                    }
+                },
+                SOCIAL: {
+                    name: 'Sosyal',
+                    icon: '👥',
+                    achievements: {
+                        FRIENDLY: { name: 'Dost Canlısı', description: '50 arkadaş ekle', requirement: { friends: 50 }, reward: { title: 'Popüler' } },
+                        GUILD_MASTER: { name: 'Lonca Ustası', description: 'Lonca kur', requirement: { guildCreated: 1 }, reward: { title: 'Lider' } },
+                        PARTY_LEADER: { name: 'Parti Lideri', description: '100 parti kur', requirement: { parties: 100 }, reward: { skillPoints: 2 } },
+                        CHATTER: { name: 'Sohbetçi', description: '1000 mesaj gönder', requirement: { messages: 1000 }, reward: { title: 'Konuşkan' } },
+                        TRADER: { name: 'Tüccar', description: '1000 ticaret yap', requirement: { trades: 1000 }, reward: { discount: 0.1 } }
+                    }
+                },
+                COLLECTION: {
+                    name: 'Koleksiyon',
+                    icon: '📚',
+                    achievements: {
+                        COLLECTOR: { name: 'Koleksiyoncu', description: '100 item topla', requirement: { items: 100 }, reward: { title: 'Koleksiyoncu' } },
+                        RARE_HUNTER: { name: 'Nadir Avcı', description: '50 nadir item bul', requirement: { rareItems: 50 }, reward: { skillPoints: 3 } },
+                        EPIC_COLLECTOR: { name: 'Epic Koleksiyoncu', description: '20 epic item topla', requirement: { epicItems: 20 }, reward: { item: 'COLLECTORS_CHEST' } },
+                        PET_MASTER: { name: 'Pet Ustası', description: 'Tüm pet türlerini topla', requirement: { petTypes: 10 }, reward: { pet: 'MASTER_PET' } },
+                        MOUNT_COLLECTOR: { name: 'Binek Koleksiyoncusu', description: '15 binek topla', requirement: { mounts: 15 }, reward: { mount: 'COLLECTOR_MOUNT' } }
+                    }
+                },
+                SKILL: {
+                    name: 'Yetenek',
+                    icon: '🎯',
+                    achievements: {
+                        SKILL_MASTER: { name: 'Yetenek Ustası', description: 'Tüm skill ağaçlarını aç', requirement: { skillsUnlocked: 24 }, reward: { title: 'Usta' } },
+                        TALENTED: { name: 'Yetenekli', description: '30 talent point harca', requirement: { talentsSpent: 30 }, reward: { skillPoints: 5 } },
+                        CRAFTSMAN: { name: 'Usta Zanaatkar', description: '1000 item üret', requirement: { itemsCrafted: 1000 }, reward: { title: 'Zanaatkar' } },
+                        CHEF: { name: 'Şef', description: '500 yemek yap', requirement: { mealsCooked: 500 }, reward: { recipe: 'MASTER_RECIPE' } },
+                        FISHERMAN: { name: 'Balıkçı', description: '200 balık tut', requirement: { fishCaught: 200 }, reward: { fishingRod: 'MASTER_ROD' } }
+                    }
+                },
+                SPECIAL: {
+                    name: 'Özel',
+                    icon: '⭐',
+                    achievements: {
+                        PRESTIGE_MASTER: { name: 'Prestige Ustası', description: '5. seviye prestige yap', requirement: { prestigeLevel: 5 }, reward: { title: 'Efsanevi' } },
+                        SPEED_RUNNER: { name: 'Hızlı Koşucu', description: '10 saniyede 10 düşman yen', requirement: { speedRun: 10 }, reward: { stat: { speed: 0.5 } } },
+                        LUCKY: { name: 'Şanslı', description: '0.1% ihtimalle item bul', requirement: { luckyDrop: 1 }, reward: { luck: 0.1 } },
+                        RICH: { name: 'Zengin', description: '1M altın biriktir', requirement: { gold: 1000000 }, reward: { title: 'Milyoner' } },
+                        VETERAN: { name: 'Gazi', description: '100 saat oyna', requirement: { playtime: 360000 }, reward: { title: 'Gazi' } }
+                    }
+                }
+            },
+            ACHIEVEMENT_TRACKING: {
+                PROGRESS_UPDATE: 'progress_update',
+                UNLOCKED: 'unlocked',
+                COMPLETED: 'completed',
+                REWARDED: 'rewarded'
+            }
+        };
+
+        const SOUND_SYSTEM = {
+            AUDIO_CONTEXT: null,
+            SOUNDS: {
+                // Combat sounds
+                SWORD_SWING: { name: 'Sword Swing', file: 'sword_swing.mp3', volume: 0.7 },
+                SPELL_CAST: { name: 'Spell Cast', file: 'spell_cast.mp3', volume: 0.8 },
+                HIT: { name: 'Hit', file: 'hit.mp3', volume: 0.6 },
+                CRITICAL_HIT: { name: 'Critical Hit', file: 'critical_hit.mp3', volume: 0.9 },
+                BLOCK: { name: 'Block', file: 'block.mp3', volume: 0.5 },
+                
+                // UI sounds
+                CLICK: { name: 'Click', file: 'click.mp3', volume: 0.5 },
+                HOVER: { name: 'Hover', file: 'hover.mp3', volume: 0.3 },
+                SUCCESS: { name: 'Success', file: 'success.mp3', volume: 0.7 },
+                ERROR: { name: 'Error', file: 'error.mp3', volume: 0.6 },
+                LEVEL_UP: { name: 'Level Up', file: 'level_up.mp3', volume: 0.8 },
+                
+                // Environment sounds
+                FOOTSTEP_GRASS: { name: 'Footstep Grass', file: 'footstep_grass.mp3', volume: 0.4 },
+                FOOTPATH_STONE: { name: 'Footstep Stone', file: 'footstep_stone.mp3', volume: 0.5 },
+                WATER: { name: 'Water', file: 'water.mp3', volume: 0.6 },
+                WIND: { name: 'Wind', file: 'wind.mp3', volume: 0.3 },
+                
+                // NPC sounds
+                NPC_GREETING: { name: 'NPC Greeting', file: 'npc_greeting.mp3', volume: 0.7 },
+                NPC_GOODBYE: { name: 'NPC Goodbye', file: 'npc_goodbye.mp3', volume: 0.7 },
+                MERCHANT_BUY: { name: 'Merchant Buy', file: 'merchant_buy.mp3', volume: 0.6 },
+                MERCHANT_SELL: { name: 'Merchant Sell', file: 'merchant_sell.mp3', volume: 0.6 },
+                
+                // Pet sounds
+                PET_HAPPY: { name: 'Pet Happy', file: 'pet_happy.mp3', volume: 0.6 },
+                PET_HUNGRY: { name: 'Pet Hungry', file: 'pet_hungry.mp3', volume: 0.5 },
+                PET_ATTACK: { name: 'Pet Attack', file: 'pet_attack.mp3', volume: 0.7 },
+                
+                // Mount sounds
+                MOUNT_WHINNY: { name: 'Mount Whinny', file: 'mount_whinny.mp3', volume: 0.6 },
+                MOUNT_GALLOP: { name: 'Mount Gallop', file: 'mount_gallop.mp3', volume: 0.5 },
+                
+                // Weather sounds
+                RAIN: { name: 'Rain', file: 'rain.mp3', volume: 0.4 },
+                THUNDER: { name: 'Thunder', file: 'thunder.mp3', volume: 0.8 },
+                SNOW: { name: 'Snow', file: 'snow.mp3', volume: 0.3 },
+                
+                // Achievement sounds
+                ACHIEVEMENT_UNLOCK: { name: 'Achievement Unlock', file: 'achievement_unlock.mp3', volume: 0.8 },
+                QUEST_COMPLETE: { name: 'Quest Complete', file: 'quest_complete.mp3', volume: 0.7 }
+            },
+            MUSIC_TRACKS: {
+                MAIN_THEME: { name: 'Main Theme', file: 'main_theme.mp3', volume: 0.6, loop: true },
+                COMBAT_THEME: { name: 'Combat Theme', file: 'combat_theme.mp3', volume: 0.7, loop: true },
+                FOREST_THEME: { name: 'Forest Theme', file: 'forest_theme.mp3', volume: 0.5, loop: true },
+                DESERT_THEME: { name: 'Desert Theme', file: 'desert_theme.mp3', volume: 0.5, loop: true },
+                MOUNTAIN_THEME: { name: 'Mountain Theme', file: 'mountain_theme.mp3', volume: 0.5, loop: true },
+                DUNGEON_THEME: { name: 'Dungeon Theme', file: 'dungeon_theme.mp3', volume: 0.6, loop: true },
+                BOSS_THEME: { name: 'Boss Theme', file: 'boss_theme.mp3', volume: 0.8, loop: true },
+                VICTORY_THEME: { name: 'Victory Theme', file: 'victory_theme.mp3', volume: 0.7, loop: false },
+                DEFEAT_THEME: { name: 'Defeat Theme', file: 'defeat_theme.mp3', volume: 0.6, loop: false }
+            },
+            SETTINGS: {
+                masterVolume: 1.0,
+                sfxVolume: 0.8,
+                musicVolume: 0.6,
+                voiceVolume: 0.7,
+                ambientVolume: 0.5,
+                muteAll: false
+            }
+        };
+
+        const MOBILE_SETTINGS = {
+            autoRun: false,
+            autoBattle: false,
+            graphics: 'medium', // low, medium, high
+            particles: true,
+            weather: true,
+            soundEnabled: true,
+            vibrationEnabled: true,
+            showFPS: false,
+            saveInterval: 30000 // 30 saniye
+        };
+
         const state = {
             keys: {},
             camera: { x: 0, y: 0 },
@@ -515,6 +1679,147 @@
             market: {
                 isOpen: false,
                 restockTimers: {}
+            },
+            offlineRewards: {
+                lastLogin: Date.now(),
+                totalOfflineTime: 0,
+                pendingRewards: null
+            },
+            bossRaids: {
+                activeRaid: null,
+                cooldowns: {},
+                completedRaids: []
+            },
+            guildWars: {
+                currentWar: null,
+                warHistory: [],
+                territoryControl: {}
+            },
+            worldBoss: {
+                activeBoss: null,
+                nextSpawn: Date.now(),
+                bossHistory: []
+            },
+            dailyQuests: {
+                activeQuests: [],
+                completedToday: [],
+                lastReset: new Date().toDateString()
+            },
+            seasonPass: {
+                currentTier: 0,
+                premium: false,
+                experience: 0,
+                claimedRewards: []
+            },
+            fishing: {
+                currentLocation: null,
+                fishingLevel: 1,
+                experience: 0,
+                inventory: [],
+                currentRod: 'BASIC'
+            },
+            cooking: {
+                level: 1,
+                experience: 0,
+                knownRecipes: ['GRILLED_FISH'],
+                inventory: [],
+                activeEffects: []
+            },
+            petEvolution: {
+                currentStage: 'BABY',
+                experience: 0,
+                level: 1,
+                abilities: [],
+                evolutionHistory: []
+            },
+            mountUpgrade: {
+                currentTier: 'TIER_1',
+                experience: 0,
+                abilities: [],
+                upgradeHistory: []
+            },
+            equipmentEnhancement: {
+                enhancementLevels: {},
+                enhancementHistory: [],
+                failedAttempts: 0
+            },
+            skillTree: {
+                points: 0,
+                spentPoints: 0,
+                unlockedSkills: [],
+                currentTree: 'WARRIOR',
+                resetCount: 0
+            },
+            talents: {
+                points: 0,
+                spentPoints: 0,
+                unlockedTalents: {},
+                talentHistory: []
+            },
+            prestige: {
+                level: 0,
+                totalGold: 0,
+                prestigeCount: 0,
+                prestigeHistory: [],
+                bonuses: []
+            },
+            miniGames: {
+                activeGame: null,
+                scores: {},
+                playCount: {},
+                lastPlayed: {}
+            },
+            weatherEvent: {
+                activeEvent: null,
+                startTime: 0,
+                duration: 0,
+                eventHistory: []
+            },
+            advancedAI: {
+                difficulty: 'NORMAL',
+                aiBehaviors: {},
+                aiStates: {}
+            },
+            proceduralWorld: {
+                currentWorld: 'FOREST',
+                generatedAreas: [],
+                worldSeed: Math.random(),
+                worldHistory: []
+            },
+            dynamicQuests: {
+                activeQuests: [],
+                questPool: [],
+                questHistory: [],
+                questCooldowns: {}
+            },
+            chatBot: {
+                activeBot: null,
+                conversationHistory: [],
+                botPersonalities: {},
+                learningData: {}
+            },
+            reputation2: {
+                factions: {},
+                globalStanding: 0,
+                factionHistory: []
+            },
+            achievements2: {
+                unlocked: {},
+                progress: {},
+                achievementHistory: [],
+                totalScore: 0
+            },
+            soundSystem: {
+                enabled: true,
+                currentContext: null,
+                loadedSounds: {},
+                soundHistory: []
+            },
+            musicSystem: {
+                currentTrack: null,
+                currentPlaylist: 'EXPLORATION',
+                trackHistory: [],
+                fadeInProgress: 0
             }
         };
 
@@ -526,23 +1831,1248 @@
             obstacles: []
         };
 
-        function saveGame() {
-            try {
-                SAVE_DATA.player = JSON.parse(JSON.stringify(player));
-                SAVE_DATA.state = JSON.parse(JSON.stringify(state));
-                SAVE_DATA.timestamp = Date.now();
-                SAVE_DATA.playtime = (SAVE_DATA.playtime || 0) + (Date.now() - mobileState.lastSave);
-                
-                localStorage.setItem('knightOnline2DSave', JSON.stringify(SAVE_DATA));
-                mobileState.lastSave = Date.now();
-                
-                pushMessage('Oyun kaydedildi! 💾');
-                return true;
-            } catch (error) {
-                console.error('Kaydetme hatası:', error);
-                pushMessage('Kaydedilemedi! ❌');
+        function evolvePet() {
+            if (!state.activePet) {
+                pushMessage('Pet\'in yok!');
                 return false;
             }
+            
+            const currentStage = state.petEvolution.currentStage;
+            const stages = Object.keys(PET_EVOLUTION.EVOLUTION_STAGES);
+            const currentIndex = stages.indexOf(currentStage);
+            
+            if (currentIndex >= stages.length - 1) {
+                pushMessage('Pet zaten maksimum seviyede!');
+                return false;
+            }
+            
+            const nextStage = stages[currentIndex + 1];
+            const requirements = PET_EVOLUTION.EVOLUTION_REQUIREMENTS[nextStage];
+            
+            // Seviye kontrolü
+            if (state.petEvolution.level < requirements.level) {
+                pushMessage(`Evolüsyon için pet seviyesi: ${requirements.level}`);
+                return false;
+            }
+            
+            // Experience kontrolü
+            if (state.petEvolution.experience < requirements.experience) {
+                pushMessage(`Evolüsyon için gereken XP: ${requirements.experience}`);
+                return false;
+            }
+            
+            // Malzeme kontrolü
+            for (const [item, amount] of Object.entries(requirements.items)) {
+                const playerItem = player.inventory.find(i => i.key === item);
+                if (!playerItem || playerItem.quantity < amount) {
+                    pushMessage(`Eksik malzeme: ${item} x${amount}`);
+                    return false;
+                }
+            }
+            
+            // Malzemeleri kullan
+            for (const [item, amount] of Object.entries(requirements.items)) {
+                const playerItem = player.inventory.find(i => i.key === item);
+                playerItem.quantity -= amount;
+                if (playerItem.quantity <= 0) {
+                    const index = player.inventory.indexOf(playerItem);
+                    player.inventory.splice(index, 1);
+                }
+            }
+            
+            // Evolüsyonu gerçekleştir
+            state.petEvolution.currentStage = nextStage;
+            state.petEvolution.level = 1;
+            state.petEvolution.experience = 0;
+            state.petEvolution.evolutionHistory.push({
+                stage: nextStage,
+                time: Date.now()
+            });
+            
+            // Yeni yetenekleri ekle
+            const stageData = PET_EVOLUTION.EVOLUTION_STAGES[nextStage];
+            state.petEvolution.abilities = [...stageData.abilities];
+            
+            // Pet stats'ını güncelle
+            const multiplier = stageData.multiplier;
+            state.activePet.hp = Math.floor(state.activePet.maxHp * multiplier);
+            state.activePet.maxHp = Math.floor(state.activePet.maxHp * multiplier);
+            state.activePet.damage = Math.floor(state.activePet.damage * multiplier);
+            
+            pushMessage(`Pet evolüsyon geçirdi! ${stageData.name}! ${stageData.icon}`);
+            vibrate(200);
+            
+            return true;
+        }
+
+        function addPetExperience(amount) {
+            if (!state.activePet) return;
+            
+            state.petEvolution.experience += amount;
+            
+            // Level kontrolü
+            const expNeeded = state.petEvolution.level * 50;
+            if (state.petEvolution.experience >= expNeeded) {
+                state.petEvolution.level++;
+                state.petEvolution.experience -= expNeeded;
+                pushMessage(`Pet seviyesi atladı! Level: ${state.petEvolution.level} 🎉`);
+            }
+        }
+
+        function upgradeMount() {
+            if (!state.mount) {
+                pushMessage('Bineğin yok!');
+                return false;
+            }
+            
+            const currentTier = state.mountUpgrade.currentTier;
+            const tiers = Object.keys(MOUNT_UPGRADE.UPGRADE_TIERS);
+            const currentIndex = tiers.indexOf(currentTier);
+            
+            if (currentIndex >= tiers.length - 1) {
+                pushMessage('Binek zaten maksimum seviyede!');
+                return false;
+            }
+            
+            const nextTier = tiers[currentIndex + 1];
+            const cost = MOUNT_UPGRADE.UPGRADE_COSTS[nextTier];
+            
+            // Altın kontrolü
+            if (player.gold < cost.gold) {
+                pushMessage(`Yetersiz altın: ${cost.gold}`);
+                return false;
+            }
+            
+            // Malzeme kontrolü
+            for (const [item, amount] of Object.entries(cost.materials)) {
+                const playerItem = player.inventory.find(i => i.key === item);
+                if (!playerItem || playerItem.quantity < amount) {
+                    pushMessage(`Eksik malzeme: ${item} x${amount}`);
+                    return false;
+                }
+            }
+            
+            // Altını ve malzemeleri kullan
+            player.gold -= cost.gold;
+            for (const [item, amount] of Object.entries(cost.materials)) {
+                const playerItem = player.inventory.find(i => i.key === item);
+                playerItem.quantity -= amount;
+                if (playerItem.quantity <= 0) {
+                    const index = player.inventory.indexOf(playerItem);
+                    player.inventory.splice(index, 1);
+                }
+            }
+            
+            // Upgrade'i gerçekleştir
+            state.mountUpgrade.currentTier = nextTier;
+            state.mountUpgrade.upgradeHistory.push({
+                tier: nextTier,
+                time: Date.now()
+            });
+            
+            // Yeni yetenekleri ekle
+            const tierData = MOUNT_UPGRADE.UPGRADE_TIERS[nextTier];
+            state.mountUpgrade.abilities = [...tierData.abilities];
+            
+            // Mount stats'ını güncelle
+            state.mount.speed = MOUNT_TYPES[state.mount.type].speed * tierData.speed;
+            state.mount.stamina = MOUNT_TYPES[state.mount.type].stamina * tierData.stamina;
+            
+            pushMessage(`Binek yükseltildi! ${tierData.name}! ⭐`);
+            vibrate(150);
+            
+            return true;
+        }
+
+        function enhanceEquipment(itemIndex, enhancementLevel) {
+            if (itemIndex >= player.inventory.length) return false;
+            
+            const item = player.inventory[itemIndex];
+            if (!item || !item.key) return false;
+            
+            const enhancement = EQUIPMENT_ENHANCEMENT.ENHANCEMENT_LEVELS[enhancementLevel];
+            if (!enhancement) return false;
+            
+            // Mevcut seviye kontrolü
+            const currentLevel = state.equipmentEnhancement.enhancementLevels[item.key] || 0;
+            if (currentLevel >= enhancementLevel) {
+                pushMessage('Eşya zaten bu seviyede!');
+                return false;
+            }
+            
+            // Önceki seviyelerden başlayarak enhance et
+            let success = true;
+            for (let level = currentLevel + 1; level <= enhancementLevel; level++) {
+                const levelData = EQUIPMENT_ENHANCEMENT.ENHANCEMENT_LEVELS[level];
+                const cost = levelData.cost;
+                
+                if (player.gold < cost) {
+                    pushMessage(`Yetersiz altın: ${cost}`);
+                    success = false;
+                    break;
+                }
+                
+                player.gold -= cost;
+                
+                // Başarısızlık kontrolü
+                if (Math.random() * 100 > levelData.success) {
+                    const penalty = EQUIPMENT_ENHANCEMENT.FAILURE_PENALTIES[level];
+                    
+                    if (penalty.itemBreak) {
+                        // Eşya kırıldı
+                        player.inventory.splice(itemIndex, 1);
+                        pushMessage('Eşya kırıldı! ❌');
+                        state.equipmentEnhancement.enhancementHistory.push({
+                            item: item.key,
+                            level: level,
+                            success: false,
+                            broken: true,
+                            time: Date.now()
+                        });
+                        return false;
+                    }
+                    
+                    if (penalty.levelLoss > 0) {
+                        state.equipmentEnhancement.enhancementLevels[item.key] = Math.max(0, currentLevel - penalty.levelLoss);
+                        pushMessage(`Enhancement başarısız! Seviye düştü! -${penalty.levelLoss} ⬇️`);
+                    }
+                    
+                    state.equipmentEnhancement.failedAttempts++;
+                    success = false;
+                    break;
+                }
+                
+                state.equipmentEnhancement.enhancementLevels[item.key] = level;
+                state.equipmentEnhancement.enhancementHistory.push({
+                    item: item.key,
+                    level: level,
+                    success: true,
+                    time: Date.now()
+                });
+                
+                pushMessage(`Enhancement başarılı! ${item.name} +${level} ✨`);
+                vibrate(100);
+            }
+            
+            return success;
+        }
+
+        function unlockSkill(skillKey) {
+            const tree = SKILL_TREE.TREES[state.skillTree.currentTree];
+            const skill = tree.skills[skillKey];
+            if (!skill) return false;
+            
+            // Zaten açıksa
+            if (state.skillTree.unlockedSkills.includes(skillKey)) {
+                pushMessage('Skill zaten açık!');
+                return false;
+            }
+            
+            // Point kontrolü
+            if (state.skillTree.points < skill.cost) {
+                pushMessage(`Yetersiz skill point: ${skill.cost}`);
+                return false;
+            }
+            
+            // Gereksinim kontrolü
+            for (const requiredSkill of skill.requires) {
+                if (!state.skillTree.unlockedSkills.includes(requiredSkill)) {
+                    pushMessage(`Önce ${requiredSkill} skill'ini açmalısın!`);
+                    return false;
+                }
+            }
+            
+            // Skill'i aç
+            state.skillTree.points -= skill.cost;
+            state.skillTree.spentPoints += skill.cost;
+            state.skillTree.unlockedSkills.push(skillKey);
+            
+            // Skill etkisini uygula
+            for (const [stat, value] of Object.entries(skill.effect)) {
+                if (stat === 'allStats') {
+                    player.stats.strength += value;
+                    player.stats.defense += value;
+                    player.stats.magicPower += value;
+                } else if (stat === 'allMagic') {
+                    player.stats.magicPower += value;
+                    player.maxMana += value * 2;
+                } else if (stat === 'allRogue') {
+                    player.stats.speed += value * 0.5;
+                    player.critChance += value * 0.01;
+                } else if (player.stats[stat] !== undefined) {
+                    player.stats[stat] += value;
+                }
+            }
+            
+            pushMessage(`Skill açıldı: ${skill.name}! 🌟`);
+            return true;
+        }
+
+        function upgradeTalent(talentCategory, talentKey) {
+            const category = TALENT_SYSTEM.TALENTS[talentCategory];
+            const talent = category.talents[talentKey];
+            if (!talent) return false;
+            
+            const currentLevel = state.talents.unlockedTalents[talentKey] || 0;
+            if (currentLevel >= talent.maxLevel) {
+                pushMessage('Talent zaten maksimum seviyede!');
+                return false;
+            }
+            
+            // Point kontrolü
+            if (state.talents.points < talent.cost) {
+                pushMessage(`Yetersiz talent point: ${talent.cost}`);
+                return false;
+            }
+            
+            // Talent'i yükselt
+            state.talents.points -= talent.cost;
+            state.talents.spentPoints += talent.cost;
+            state.talents.unlockedTalents[talentKey] = currentLevel + 1;
+            
+            // Talent etkisini uygula
+            for (const [stat, value] of Object.entries(talent.effect)) {
+                if (player[stat] !== undefined) {
+                    player[stat] += value;
+                } else if (player.stats[stat] !== undefined) {
+                    player.stats[stat] += value;
+                }
+            }
+            
+            pushMessage(`Talent yükseltildi: ${talent.name} Level ${currentLevel + 1}! ⭐`);
+            return true;
+        }
+
+        function prestigeReset() {
+            const prestigeLevel = state.prestige.level + 1;
+            const prestigeData = PRESTIGE_SYSTEM.PRESTIGE_LEVELS[prestigeLevel];
+            
+            if (!prestigeData) {
+                pushMessage('Zaten maksimum prestige seviyesinde!');
+                return false;
+            }
+            
+            // Gereksinim kontrolü
+            if (player.level < prestigeData.requirement.level) {
+                pushMessage(`Prestige için gereken seviye: ${prestigeData.requirement.level}`);
+                return false;
+            }
+            
+            if (state.prestige.totalGold < prestigeData.requirement.totalGold) {
+                pushMessage(`Prestige için gereken toplam altın: ${prestigeData.requirement.totalGold}`);
+                return false;
+            }
+            
+            // Onay al
+            if (!confirm(`Prestige yaparak tüm ilerlemeni sıfırlamak istediğinden emin misin? Ödül: ${prestigeData.name}`)) {
+                return false;
+            }
+            
+            // Prestige'i gerçekleştir
+            state.prestige.level = prestigeLevel;
+            state.prestige.prestigeCount++;
+            state.prestige.prestigeHistory.push({
+                level: prestigeLevel,
+                time: Date.now(),
+                playerLevel: player.level,
+                totalGold: state.prestige.totalGold
+            });
+            
+            // Ödülleri ver
+            const rewards = PRESTIGE_SYSTEM.PRESTIGE_REWARDS[prestigeLevel];
+            player.skillPoints += rewards.skillPoints;
+            state.talents.points += rewards.talentPoints;
+            
+            if (rewards.title) {
+                player.titles.push(rewards.title);
+                if (!player.currentTitle) {
+                    player.currentTitle = rewards.title;
+                }
+            }
+            
+            if (rewards.pet) {
+                player.petInventory.push({ key: rewards.pet, name: 'Prestige Pet' });
+            }
+            
+            if (rewards.mount) {
+                player.mountInventory = player.mountInventory || [];
+                player.mountInventory.push({ key: rewards.mount, name: 'Prestige Binek' });
+            }
+            
+            if (rewards.item) {
+                const item = createItem(rewards.item);
+                if (item) {
+                    item.rarity = 'legendary';
+                    addItemToInventory(item);
+                }
+            }
+            
+            // İlerlemeyi sıfırla
+            player.level = 1;
+            player.xp = 0;
+            player.xpNeed = 100;
+            player.hp = 120;
+            player.maxHp = 120;
+            player.mana = 100;
+            player.maxMana = 100;
+            player.gold = 100; // Başlangıç altını
+            player.skillPoints = rewards.skillPoints;
+            state.talents.points = rewards.talentPoints;
+            
+            // Bonus'ları uygula
+            const bonus = prestigeData.bonus;
+            player.stats.strength = Math.floor(10 * (1 + bonus));
+            player.stats.defense = Math.floor(5 * (1 + bonus));
+            player.stats.magicPower = Math.floor(5 * (1 + bonus));
+            
+            pushMessage(`Prestige başarılı! ${prestigeData.name}! 🎉`);
+            pushMessage(`Ödüller: +${rewards.skillPoints} SP, +${rewards.talentPoints} TP`);
+            vibrate(300);
+            
+            return true;
+        }
+
+        function playMiniGame(gameType, difficulty = 'medium') {
+            const game = MINI_GAMES[gameType];
+            if (!game) return false;
+            
+            if (gameType === 'MEMORY_GAME') {
+                return playMemoryGame(difficulty);
+            } else if (gameType === 'DICE_GAME') {
+                return playDiceGame();
+            } else if (gameType === 'SLOT_MACHINE') {
+                return playSlotMachine();
+            } else if (gameType === 'FISHING_CONTEST') {
+                return playFishingContest();
+            } else if (gameType === 'COOKING_CHALLENGE') {
+                return playCookingChallenge();
+            }
+            
+            return false;
+        }
+
+        function playMemoryGame(difficulty) {
+            const game = MINI_GAMES.MEMORY_GAME;
+            const rewards = game.rewards[difficulty];
+            
+            // Basit implementasyon - rastgele başarı
+            const success = Math.random() < 0.6;
+            
+            if (success) {
+                player.gold += rewards.gold;
+                player.xp += rewards.xp;
+                pushMessage(`Hafıza oyunu kazandın! +${rewards.gold} altın, +${rewards.xp} XP 🧩`);
+                vibrate(100);
+            } else {
+                pushMessage('Hafıza oyununu kaybettin! Tekrar dene...');
+            }
+            
+            state.miniGames.playCount.MEMORY_GAME = (state.miniGames.playCount.MEMORY_GAME || 0) + 1;
+            state.miniGames.lastPlayed.MEMORY_GAME = Date.now();
+            
+            return success;
+        }
+
+        function playDiceGame() {
+            const game = MINI_GAMES.DICE_GAME;
+            const bet = Math.min(100, player.gold); // Max 100 altın bahis
+            
+            if (player.gold < bet) {
+                pushMessage('Yetersiz altın!');
+                return false;
+            }
+            
+            player.gold -= bet;
+            
+            // Zar at
+            const playerRoll = Math.floor(Math.random() * 6) + 1;
+            const houseRoll = Math.floor(Math.random() * 6) + 1;
+            
+            if (playerRoll > houseRoll) {
+                const winnings = Math.floor(bet * game.multiplier);
+                player.gold += winnings;
+                pushMessage(`Zar oyunu kazandın! ${playerRoll} vs ${houseRoll} +${winnings} altın 🎲`);
+                vibrate(150);
+            } else {
+                pushMessage(`Zar oyunu kaybettin! ${playerRoll} vs ${houseRoll} -${bet} altın`);
+            }
+            
+            state.miniGames.playCount.DICE_GAME = (state.miniGames.playCount.DICE_GAME || 0) + 1;
+            state.miniGames.lastPlayed.DICE_GAME = Date.now();
+            
+            return playerRoll > houseRoll;
+        }
+
+        function playSlotMachine() {
+            const game = MINI_GAMES.SLOT_MACHINE;
+            const bet = Math.min(50, player.gold); // Max 50 altın bahis
+            
+            if (player.gold < bet) {
+                pushMessage('Yetersiz altın!');
+                return false;
+            }
+            
+            player.gold -= bet;
+            
+            // Slot çevir
+            const symbols = [];
+            for (let i = 0; i < 3; i++) {
+                symbols.push(game.symbols[Math.floor(Math.random() * game.symbols.length)]);
+            }
+            
+            const result = symbols.join('');
+            const payout = game.payouts[result];
+            
+            if (payout) {
+                const winnings = bet * payout;
+                player.gold += winnings;
+                pushMessage(`Slot kazandın! ${result} +${winnings} altın 🎰`);
+                vibrate(200);
+            } else {
+                pushMessage(`Slot kaybettin! ${result} -${bet} altın`);
+            }
+            
+            state.miniGames.playCount.SLOT_MACHINE = (state.miniGames.playCount.SLOT_MACHINE || 0) + 1;
+            state.miniGames.lastPlayed.SLOT_MACHINE = Date.now();
+            
+            return payout !== undefined;
+        }
+
+        function startWeatherEvent(eventType) {
+            const event = WEATHER_EVENTS[eventType];
+            if (!event) return false;
+            
+            if (state.weatherEvent.activeEvent) {
+                pushMessage('Zaten bir hava olayı devam ediyor!');
+                return false;
+            }
+            
+            state.weatherEvent.activeEvent = eventType;
+            state.weatherEvent.startTime = Date.now();
+            state.weatherEvent.duration = event.duration;
+            
+            pushMessage(`${event.name} başladı! ${event.duration / 60} dakika sürecek! ${event.icon}`);
+            
+            // Hava olayı etkilerini uygula
+            applyWeatherEffects(event.effects);
+            
+            return true;
+        }
+
+        function applyWeatherEffects(effects) {
+            // Geçici olarak oyuncu ve düşman stats'larını değiştir
+            if (effects.playerSpeed) {
+                player.speed = player.stats.speed * effects.playerSpeed;
+            }
+            
+            if (effects.maxHp) {
+                player.maxHp = Math.floor(player.maxHp * effects.maxHp);
+            }
+            
+            if (effects.maxMana) {
+                player.maxMana = Math.floor(player.maxMana * effects.maxMana);
+            }
+        }
+
+        function updateWeatherEvent() {
+            if (!state.weatherEvent.activeEvent) {
+                // Rastgele hava olayı başlatma
+                if (Math.random() < 0.01) { // %1 ihtimal
+                    const eventTypes = Object.keys(WEATHER_EVENTS);
+                    const randomEvent = eventTypes[Math.floor(Math.random() * eventTypes.length)];
+                    startWeatherEvent(randomEvent);
+                }
+                return;
+            }
+            
+            const event = WEATHER_EVENTS[state.weatherEvent.activeEvent];
+            const elapsed = Date.now() - state.weatherEvent.startTime;
+            
+            if (elapsed >= event.duration * 1000) {
+                // Hava olayı bitti
+                completeWeatherEvent(state.weatherEvent.activeEvent);
+            }
+        }
+
+        function completeWeatherEvent(eventType) {
+            const event = WEATHER_EVENTS[eventType];
+            
+            // Ödülleri ver
+            player.gold += event.rewards.gold;
+            player.xp += event.rewards.xp;
+            
+            // Item ver
+            if (event.rewards.item) {
+                const item = createItem(event.rewards.item);
+                if (item) {
+                    item.rarity = 'epic';
+                    addItemToInventory(item);
+                }
+            }
+            
+            pushMessage(`${event.name} bitti! Ödül: ${event.rewards.gold} altın, ${event.rewards.xp} XP! 🌈`);
+            
+            // Stats'ları geri yükle
+            resetWeatherEffects();
+            
+            state.weatherEvent.activeEvent = null;
+            state.weatherEvent.eventHistory.push({
+                type: eventType,
+                time: Date.now(),
+                completed: true
+            });
+        }
+
+        function resetWeatherEffects() {
+            // Orijinal stats'ları geri yükle
+            player.speed = player.stats.speed;
+            // Diğer stats'lar da geri yüklenebilir
+        }
+
+        function generateRandomNPC() {
+            const npcTypes = ['MERCHANT', 'QUEST_GIVER', 'BLACKSMITH', 'GUARD', 'HEALER'];
+            const type = npcTypes[Math.floor(Math.random() * npcTypes.length)];
+            const names = ['Ahmet', 'Mehmet', 'Ayşe', 'Fatma', 'Ali', 'Zeynep', 'Mustafa', 'Elif'];
+            const name = names[Math.floor(Math.random() * names.length)];
+            
+            return {
+                type: type,
+                name: name,
+                x: Math.random() * world.width,
+                y: Math.random() * world.height,
+                dialog: 'Merhaba! Nasıl yardımcı olabilirim?'
+            };
+        }
+
+        function generateRandomPoint(area) {
+            return {
+                x: Math.random() * world.width,
+                y: Math.random() * world.height
+            };
+        }
+
+        function generateRandomMystery() {
+            const mysteries = [
+                'Kayıp hazine haritası',
+                'Gizemli ışık',
+                'Garip sesler',
+                'Kaybolan köy',
+                'Antik kalıntılar'
+            ];
+            return mysteries[Math.floor(Math.random() * mysteries.length)];
+        }
+
+        function generateBossRequirements() {
+            return {
+                level: Math.floor(Math.random() * 20) + 10,
+                items: Math.floor(Math.random() * 3) + 1,
+                time: Math.floor(Math.random() * 300) + 300
+            };
+        }
+
+        function calculateOfflineRewards() {
+            const now = Date.now();
+            const offlineTime = now - state.offlineRewards.lastLogin;
+            const hoursOffline = Math.min(offlineTime / (1000 * 60 * 60), OFFLINE_REWARDS.MAX_HOURS);
+            
+            if (hoursOffline < 1) return null;
+            
+            const baseGold = Math.floor(OFFLINE_REWARDS.BASE_HOURLY_RATE * hoursOffline * (1 + player.level * 0.1));
+            const baseXP = Math.floor(baseGold * OFFLINE_REWARDS.XP_MULTIPLIER);
+            const energyRegen = Math.floor(OFFLINE_REWARDS.ENERGY_REGEN * hoursOffline);
+            
+            // Lonca bonus'u
+            let guildBonus = 1;
+            if (state.guild) {
+                guildBonus = 1 + (state.guild.level * 0.05);
+            }
+            
+            // Event bonus'u
+            let eventBonus = 1;
+            if (state.currentEvent) {
+                const event = GAME_EVENTS[state.currentEvent];
+                if (event.bonus.goldMultiplier) {
+                    eventBonus = event.bonus.goldMultiplier;
+                }
+            }
+            
+            const finalGold = Math.floor(baseGold * guildBonus * eventBonus);
+            const finalXP = Math.floor(baseXP * guildBonus);
+            
+            return {
+                gold: finalGold,
+                xp: finalXP,
+                energy: energyRegen,
+                hours: Math.floor(hoursOffline),
+                petHappiness: Math.max(0, 100 - Math.floor(hoursOffline * OFFLINE_REWARDS.PET_HAPPINESS_DECAY))
+            };
+        }
+            function claimOfflineRewards() {
+            const rewards = calculateOfflineRewards();
+            if (!rewards) {
+                pushMessage('Çevrimdışı ödülün yok!');
+                return false;
+            }
+            
+            player.gold += rewards.gold;
+            player.xp += rewards.xp;
+            state.offlineRewards.totalOfflineTime += rewards.hours * 3600000;
+            
+            // Pet mutluluğunu güncelle
+            if (state.activePet) {
+                state.activePet.happiness = rewards.petHappiness;
+            }
+            
+            pushMessage(`${rewards.hours} saat çevrimdışı ödülü: ${rewards.gold} altın, ${rewards.xp} XP! 🎁`);
+            
+            state.offlineRewards.pendingRewards = null;
+            state.offlineRewards.lastLogin = Date.now();
+            tryLevelUp();
+            
+            return true;
+        }
+
+        function playFishingContest() {
+            const game = MINI_GAMES.FISHING_CONTEST;
+            const duration = game.duration;
+            
+            // Basit implementasyon - rastgele başarı
+            const success = Math.random() < 0.4;
+            let position = 'third';
+            let reward = game.rewards.third;
+            
+            if (success) {
+                const positionRoll = Math.random();
+                if (positionRoll < 0.1) {
+                    position = 'first';
+                    reward = game.rewards.first;
+                } else if (positionRoll < 0.3) {
+                    position = 'second';
+                    reward = game.rewards.second;
+                }
+                
+                player.gold += reward;
+                pushMessage(`Balıkçılık yarışması ${position} oldun! +${reward} altın 🎣`);
+                vibrate(150);
+            } else {
+                pushMessage('Balıkçılık yarışmasını kaybettin! Tekrar dene...');
+            }
+            
+            state.miniGames.playCount.FISHING_CONTEST = (state.miniGames.playCount.FISHING_CONTEST || 0) + 1;
+            state.miniGames.lastPlayed.FISHING_CONTEST = Date.now();
+            
+            return success;
+        }
+
+        function playCookingChallenge() {
+            const game = MINI_GAMES.COOKING_CHALLENGE;
+            
+            // Basit implementasyon - rastgele başarı
+            const success = Math.random() < 0.5;
+            
+            if (success) {
+                player.gold += game.rewards.gold;
+                player.xp += game.rewards.xp;
+                
+                // Özel tarif ver
+                if (!state.cooking.knownRecipes.includes(game.rewards.recipe)) {
+                    state.cooking.knownRecipes.push(game.rewards.recipe);
+                    pushMessage(`Aşçılık yarışması kazandın! +${game.rewards.gold} altın, +${game.rewards.xp} XP, +${game.rewards.recipe} tarifi! 👨‍🍳`);
+                } else {
+                    pushMessage(`Aşçılık yarışması kazandın! +${game.rewards.gold} altın, +${game.rewards.xp} XP! 👨‍🍳`);
+                }
+                
+                vibrate(150);
+            } else {
+                pushMessage('Aşçılık yarışmasını kaybettin! Tekrar dene...');
+            }
+            
+            state.miniGames.playCount.COOKING_CHALLENGE = (state.miniGames.playCount.COOKING_CHALLENGE || 0) + 1;
+            state.miniGames.lastPlayed.COOKING_CHALLENGE = Date.now();
+            
+            return success;
+        }
+
+        function startBossRaid(raidKey) {
+            const raid = BOSS_RAIDS[raidKey];
+            if (!raid) return false;
+            
+            // Cooldown kontrolü
+            if (state.bossRaids.cooldowns[raidKey] && Date.now() < state.bossRaids.cooldowns[raidKey]) {
+                const remaining = Math.ceil((state.bossRaids.cooldowns[raidKey] - Date.now()) / 60000);
+                pushMessage(`${raid.name} cooldown: ${remaining} dakika!`);
+                return false;
+            }
+            
+            // Seviye kontrolü
+            const requiredLevel = raid.difficulty === 'hard' ? 30 : raid.difficulty === 'extreme' ? 50 : 20;
+            if (player.level < requiredLevel) {
+                pushMessage(`${raid.name} için en az ${requiredLevel}. seviye gerekli!`);
+                return false;
+            }
+            
+            // Raid'i başlat
+            state.bossRaids.activeRaid = {
+                key: raidKey,
+                startTime: Date.now(),
+                participants: ['Player'],
+                currentBoss: 0,
+                completed: false
+            };
+            
+            pushMessage(`${raid.name} başladı! ${raid.bosses.length} boss'u yen! 🐉`);
+            return true;
+        }
+
+        function updateBossRaid() {
+            if (!state.bossRaids.activeRaid) return;
+            
+            const raid = BOSS_RAIDS[state.bossRaids.activeRaid.key];
+            const currentBoss = raid.bosses[state.bossRaids.activeRaid.currentBoss];
+            
+            // Boss'u spawn et
+            if (!state.enemies.find(e => e.type === currentBoss)) {
+                spawnBoss(currentBoss);
+            }
+            
+            // Raid tamamlama kontrolü
+            const bossDefeated = !state.enemies.find(e => e.type === currentBoss);
+            if (bossDefeated) {
+                state.bossRaids.activeRaid.currentBoss++;
+                
+                if (state.bossRaids.activeRaid.currentBoss >= raid.bosses.length) {
+                    // Raid tamamlandı
+                    completeBossRaid(raid.key);
+                }
+            }
+        }
+
+        function completeBossRaid(raidKey) {
+            const raid = BOSS_RAIDS[raidKey];
+            
+            // Ödülleri ver
+            player.gold += raid.rewards.gold;
+            player.xp += raid.rewards.xp;
+            state.pvp.honor += raid.rewards.honor;
+            
+            // Item'ları ver
+            for (const itemKey of raid.rewards.items) {
+                const item = createItem(itemKey);
+                if (item) {
+                    item.rarity = 'epic';
+                    addItemToInventory(item);
+                }
+            }
+            
+            pushMessage(`${raid.name} tamamlandı! Ödül: ${raid.rewards.gold} altın, ${raid.rewards.honor} onur! 🏆`);
+            
+            // Cooldown ayarla
+            state.bossRaids.cooldowns[raidKey] = Date.now() + raid.cooldown * 1000;
+            state.bossRaids.completedRaids.push(raidKey);
+            state.bossRaids.activeRaid = null;
+            
+            // Başarım kontrolü
+            checkAchievement('EXPLORER');
+        }
+
+        function startGuildWar(warType) {
+            const war = GUILD_WARS.WAR_TYPES[warType];
+            if (!war) return false;
+            
+            if (!state.guild) {
+                pushMessage('Lonca savaşı için loncada olmalısın!');
+                return false;
+            }
+            
+            if (state.guildWars.currentWar) {
+                pushMessage('Zaten savaş devam ediyor!');
+                return false;
+            }
+            
+            state.guildWars.currentWar = {
+                type: warType,
+                startTime: Date.now(),
+                endTime: Date.now() + war.duration * 1000,
+                participants: [state.guild.name],
+                status: GUILD_WARS.WAR_STATUS.ACTIVE
+            };
+            
+            pushMessage(`${war.name} başladı! ${war.duration / 60} dakika sürer! ⚔️`);
+            return true;
+        }
+
+        function updateGuildWar() {
+            if (!state.guildWars.currentWar) return;
+            
+            const war = state.guildWars.currentWar;
+            const now = Date.now();
+            
+            if (now >= war.endTime) {
+                // Savaş bitti
+                completeGuildWar(war.type);
+            }
+        }
+
+        function completeGuildWar(warType) {
+            const war = GUILD_WARS.WAR_TYPES[warType];
+            
+            // Basit implementasyon - her zaman kazan
+            const rewards = war.rewards.winner;
+            
+            player.gold += rewards.gold;
+            state.pvp.honor += rewards.honor;
+            
+            if (rewards.territory) {
+                state.guildWars.territoryControl[warType] = state.guild.name;
+            }
+            
+            if (rewards.title) {
+                player.titles.push(rewards.title);
+                if (!player.currentTitle) {
+                    player.currentTitle = rewards.title;
+                }
+            }
+            
+            pushMessage(`${war.name} kazanıldı! Ödül: ${rewards.gold} altın, ${rewards.honor} onur! 🎉`);
+            
+            state.guildWars.currentWar = null;
+            state.guildWars.warHistory.push({
+                type: warType,
+                result: 'victory',
+                time: Date.now()
+            });
+        }
+
+        function spawnWorldBoss(bossKey) {
+            const boss = WORLD_BOSSES[bossKey];
+            if (!boss) return false;
+            
+            if (player.level < boss.minLevel) {
+                pushMessage(`${boss.name} için en az ${boss.minLevel}. seviye gerekli!`);
+                return false;
+            }
+            
+            state.worldBoss.activeBoss = {
+                key: bossKey,
+                spawnTime: Date.now(),
+                endTime: Date.now() + boss.duration * 1000,
+                currentPhase: 1,
+                participants: []
+            };
+            
+            // Boss'u spawn et
+            spawnBoss(bossKey);
+            pushMessage(`${boss.name} ortaya çıktı! ${boss.duration / 60} dakika içinde yen! 🌍`);
+            return true;
+        }
+
+        function updateWorldBoss() {
+            if (!state.worldBoss.activeBoss) {
+                // Yeni boss spawn kontrolü
+                const now = Date.now();
+                if (now >= state.worldBoss.nextSpawn) {
+                    // Rastgele boss seç
+                    const bossKeys = Object.keys(WORLD_BOSSES);
+                    const randomBoss = bossKeys[Math.floor(Math.random() * bossKeys.length)];
+                    spawnWorldBoss(randomBoss);
+                    
+                    // Bir sonraki spawn zamanı
+                    const boss = WORLD_BOSSES[randomBoss];
+                    state.worldBoss.nextSpawn = now + boss.spawnInterval * 1000;
+                }
+                return;
+            }
+            
+            const boss = WORLD_BOSSES[state.worldBoss.activeBoss.key];
+            const now = Date.now();
+            
+            // Süre kontrolü
+            if (now >= state.worldBoss.activeBoss.endTime) {
+                // Süre doldu - boss kaçtı
+                pushMessage(`${boss.name} kaçtı! Bir sonraki sefer yen!`);
+                state.worldBoss.activeBoss = null;
+                return;
+            }
+            
+            // Boss ölüm kontrolü
+            const bossEnemy = state.enemies.find(e => e.type === state.worldBoss.activeBoss.key);
+            if (!bossEnemy) {
+                // Boss yenildi
+                completeWorldBoss(state.worldBoss.activeBoss.key);
+            }
+        }
+
+        function completeWorldBoss(bossKey) {
+            const boss = WORLD_BOSSES[bossKey];
+            
+            // Ödülleri ver
+            player.gold += boss.rewards.gold;
+            player.xp += boss.rewards.xp;
+            
+            // Item'ları ver
+            for (const itemKey of boss.rewards.items) {
+                const item = createItem(itemKey);
+                if (item) {
+                    item.rarity = 'legendary';
+                    addItemToInventory(item);
+                }
+            }
+            
+            // Title ver
+            if (boss.rewards.title) {
+                player.titles.push(boss.rewards.title);
+                if (!player.currentTitle) {
+                    player.currentTitle = boss.rewards.title;
+                }
+            }
+            
+            pushMessage(`${boss.name} yenildi! Ödül: ${boss.rewards.gold} altın, ${boss.rewards.xp} XP! 🌟`);
+            
+            state.worldBoss.activeBoss = null;
+            state.worldBoss.bossHistory.push({
+                key: bossKey,
+                time: Date.now(),
+                success: true
+            });
+            
+            // Başarım kontrolü
+            checkAchievement('EXPLORER');
+        }
+
+        function generateDailyQuests() {
+            const today = new Date().toDateString();
+            
+            if (state.dailyQuests.lastReset === today) {
+                return; // Bugün zaten oluşturuldu
+            }
+            
+            // Günlük görevleri sıfırla
+            state.dailyQuests.activeQuests = [];
+            state.dailyQuests.completedToday = [];
+            state.dailyQuests.lastReset = today;
+            
+            // Rastgele 3 görev seç
+            const questKeys = Object.keys(DAILY_QUESTS);
+            const selectedQuests = [];
+            
+            while (selectedQuests.length < 3 && questKeys.length > 0) {
+                const randomIndex = Math.floor(Math.random() * questKeys.length);
+                const questKey = questKeys.splice(randomIndex, 1)[0];
+                
+                state.dailyQuests.activeQuests.push({
+                    key: questKey,
+                    progress: 0,
+                    completed: false,
+                    ...DAILY_QUESTS[questKey]
+                });
+            }
+            
+            pushMessage('Yeni günlük görevler eklendi! 📋');
+        }
+
+        function updateDailyQuest(type, amount = 1) {
+            for (const quest of state.dailyQuests.activeQuests) {
+                if (quest.type === type && !quest.completed) {
+                    quest.progress = Math.min(quest.progress + amount, quest.target);
+                    
+                    if (quest.progress >= quest.target && !quest.completed) {
+                        completeDailyQuest(quest);
+                    }
+                }
+            }
+        }
+
+        function completeDailyQuest(quest) {
+            quest.completed = true;
+            state.dailyQuests.completedToday.push(quest.key);
+            
+            // Ödülleri ver
+            if (quest.rewards.gold) player.gold += quest.rewards.gold;
+            if (quest.rewards.xp) player.xp += quest.rewards.xp;
+            if (quest.rewards.honor) state.pvp.honor += quest.rewards.honor;
+            if (quest.rewards.skillPoints) player.skillPoints += quest.rewards.skillPoints;
+            if (quest.rewards.mana) player.mana = Math.min(player.mana + quest.rewards.mana, player.maxMana);
+            if (quest.rewards.craftingExp) {
+                // Crafting exp'i tüm skill'lere dağıt
+                for (const skill of Object.keys(player.crafting)) {
+                    player.crafting[skill].exp += quest.rewards.craftingExp;
+                }
+            }
+            
+            // Item'ları ver
+            if (quest.rewards.items) {
+                for (const itemKey of quest.rewards.items) {
+                    const item = createItem(itemKey);
+                    if (item) addItemToInventory(item);
+                }
+            }
+            
+            pushMessage(`Günlük görev tamamlandı: ${quest.name}! 🎯`);
+            
+            // Level kontrolü
+            tryLevelUp();
+        }
+
+        function startFishing(location) {
+            const fishingLocation = FISHING_SYSTEM.LOCATIONS[location];
+            if (!fishingLocation) return false;
+            
+            if (player.level < fishingLocation.level) {
+                pushMessage(`${fishingLocation.name} için en az ${fishingLocation.level}. seviye gerekli!`);
+                return false;
+            }
+            
+            state.fishing.currentLocation = location;
+            pushMessage(`${fishingLocation.name}\'da balık avlamaya başladın! 🎣`);
+            return true;
+        }
+
+        function castFishingLine() {
+            if (!state.fishing.currentLocation) {
+                pushMessage('Önce bir balıkçılık bölgesi seç!');
+                return false;
+            }
+            
+            const location = FISHING_SYSTEM.LOCATIONS[state.fishing.currentLocation];
+            const rod = FISHING_SYSTEM.FISHING_RODS[state.fishing.currentRod];
+            
+            // Balık yakalama şansı
+            const catchChance = 0.3 + (rod.power * 0.1) + (state.fishing.fishingLevel * 0.02);
+            
+            if (Math.random() < catchChance) {
+                // Balık yakala
+                const availableFish = location.fish;
+                const caughtFish = availableFish[Math.floor(Math.random() * availableFish.length)];
+                const fishData = FISHING_SYSTEM.FISH_TYPES[caughtFish];
+                
+                // Balığı envantere ekle
+                state.fishing.inventory.push({
+                    type: caughtFish,
+                    caughtAt: Date.now(),
+                    ...fishData
+                });
+                
+                // Experience kazan
+                state.fishing.experience += location.experience;
+                
+                // Level kontrolü
+                const expNeeded = state.fishing.fishingLevel * 100;
+                if (state.fishing.experience >= expNeeded) {
+                    state.fishing.fishingLevel++;
+                    state.fishing.experience -= expNeeded;
+                    pushMessage(`Balıkçılık seviyesi atladı! Level: ${state.fishing.fishingLevel} 🎣`);
+                }
+                
+                pushMessage(`${fishData.name} yakaladın! +${location.experience} XP 🐟`);
+                vibrate(100);
+            } else {
+                pushMessage('Balık kaçtı! Tekrar dene...');
+            }
+            
+            return true;
+        }
+
+        function cookRecipe(recipeKey) {
+            const recipe = COOKING_SYSTEM.RECIPES[recipeKey];
+            if (!recipe) return false;
+            
+            // Recipe kontrolü
+            if (!state.cooking.knownRecipes.includes(recipeKey)) {
+                pushMessage('Bu tarifi bilmiyorsun!');
+                return false;
+            }
+            
+            if (player.level < recipe.level) {
+                pushMessage(`Bu tarif için en az ${recipe.level}. seviye gerekli!`);
+                return false;
+            }
+            
+            // Malzeme kontrolü
+            for (const [ingredient, amount] of Object.entries(recipe.ingredients)) {
+                const item = state.cooking.inventory.find(i => i.type === ingredient);
+                if (!item || item.quantity < amount) {
+                    pushMessage(`Yetersiz malzeme: ${COOKING_SYSTEM.INGREDIENTS[ingredient].name}`);
+                    return false;
+                }
+            }
+            
+            // Malzemeleri kullan
+            for (const [ingredient, amount] of Object.entries(recipe.ingredients)) {
+                const item = state.cooking.inventory.find(i => i.type === ingredient);
+                item.quantity -= amount;
+                if (item.quantity <= 0) {
+                    const index = state.cooking.inventory.indexOf(item);
+                    state.cooking.inventory.splice(index, 1);
+                }
+            }
+            
+            // Yemeği oluştur
+            const cookedFood = {
+                name: recipe.name,
+                effects: recipe.effects,
+                duration: recipe.effects.duration,
+                consumedAt: Date.now(),
+                recipe: recipeKey
+            };
+            
+            state.cooking.inventory.push(cookedFood);
+            
+            // Experience kazan
+            state.cooking.experience += recipe.experience;
+            
+            // Level kontrolü
+            const expNeeded = state.cooking.level * 150;
+            if (state.cooking.experience >= expNeeded) {
+                state.cooking.level++;
+                state.cooking.experience -= expNeeded;
+                const levelData = COOKING_SYSTEM.COOKING_LEVELS[state.cooking.level];
+                if (levelData) {
+                    pushMessage(`Aşçılık seviyesi atladı! Title: ${levelData.title} 👨‍🍳`);
+                }
+            }
+            
+            pushMessage(`${recipe.name} pişirildi! +${recipe.experience} XP 🍳`);
+            return true;
+        }
+
+        function consumeFood(foodIndex) {
+            if (foodIndex >= state.cooking.inventory.length) return false;
+            
+            const food = state.cooking.inventory[foodIndex];
+            if (!food.effects) return false;
+            
+            // Etkileri uygula
+            if (food.effects.hp) {
+                player.hp = Math.min(player.hp + food.effects.hp, player.maxHp);
+            }
+            if (food.effects.mana) {
+                player.mana = Math.min(player.mana + food.effects.mana, player.maxMana);
+            }
+            if (food.effects.strength) {
+                player.stats.strength += food.effects.strength;
+            }
+            if (food.effects.magicPower) {
+                player.stats.magicPower += food.effects.magicPower;
+            }
+            if (food.effects.allStats) {
+                player.stats.strength += food.effects.allStats;
+                player.stats.defense += food.effects.allStats;
+                player.stats.magicPower += food.effects.allStats;
+            }
+            if (food.effects.regeneration) {
+                state.cooking.activeEffects.push({
+                    type: 'regeneration',
+                    amount: food.effects.regeneration,
+                    duration: food.effects.duration,
+                    startTime: Date.now()
+                });
+            }
+            
+            // Yemeği envanterden çıkar
+            state.cooking.inventory.splice(foodIndex, 1);
+            
+            pushMessage(`${food.name} yedin! Etkiler uygulandı! 🍽️`);
+            return true;
         }
 
         function loadGame() {
@@ -779,27 +3309,21 @@
                 completed: false
             },
             {
-                title: 'Savaş',
-                text: '⚔️ attack butonu ile düşmanlara saldır!',
-                highlight: 'attack',
-                completed: false
-            },
-            {
-                title: 'Skill\'ler',
-                text: '🔥⚡💚❄️ skill butonları ile büyü kullan!',
-                highlight: 'skillButtons',
-                completed: false
-            },
-            {
-                title: 'İksir',
-                text: '🧪 potion butonu ile can ve mana yenile!',
-                highlight: 'potion',
+                title: 'Savaş!',
+                text: 'Skill butonları ile düşmanlara saldır! 🗡️',
+                highlight: 'skill1',
                 completed: false
             },
             {
                 title: 'Envanter',
-                text: '🎒 inventory butonu ile itemlarını yönet!',
+                text: 'Envanter ile itemlarını yönet! 🎒',
                 highlight: 'inventory',
+                completed: false
+            },
+            {
+                title: 'NPC',
+                text: 'NPC\'ler ile konuşarak görev al! 💬',
+                highlight: 'npc',
                 completed: false
             },
             {
@@ -814,15 +3338,15 @@
             joystickActive: false,
             joystickX: 0,
             joystickY: 0,
-            touchStartX: 0,
-            touchStartY: 0,
+            autoBattleEnabled: false,
+            autoBattleTarget: null,
             currentTutorial: 0,
-            lastSave: Date.now(),
-            fps: 0,
             frameCount: 0,
             lastFPSUpdate: Date.now(),
-            autoBattleTarget: null,
-            autoBattleEnabled: false
+            fps: 60,
+            lastSave: Date.now(),
+            touchStartX: 0,
+            touchStartY: 0
         };
 
         const player = {
@@ -2920,6 +5444,20 @@
                 const materialKey = materials[Math.floor(Math.random() * materials.length)];
                 addMaterial(materialKey, 1);
                 addFloatingText('+' + CRAFTING_MATERIALS[materialKey].icon, enemy.x, enemy.y + 20, '#ffd700');
+                
+                // Cooking malzemesi drop'u
+                if (Math.random() < 0.15) {
+                    const cookingIngredients = Object.keys(COOKING_SYSTEM.INGREDIENTS);
+                    const ingredientKey = cookingIngredients[Math.floor(Math.random() * cookingIngredients.length)];
+                    const ingredient = COOKING_SYSTEM.INGREDIENTS[ingredientKey];
+                    
+                    state.cooking.inventory.push({
+                        type: ingredientKey,
+                        quantity: 1,
+                        ...ingredient
+                    });
+                    addFloatingText('+' + ingredient.icon, enemy.x, enemy.y + 30, '#ff6b6b');
+                }
             }
             
             // İtibar kazanımı
@@ -2927,6 +5465,9 @@
             
             // Başarım kontrolü
             checkAchievement('FIRST_KILL');
+            
+            // Günlük görev güncelleme
+            updateDailyQuest('kill', 1);
             
             // Boss öldürme kontrolü
             if (enemy.isBoss && state.currentDungeon && !state.currentDungeon.bossDefeated) {
@@ -2948,7 +5489,18 @@
                 }
                 
                 state.currentDungeon.cleared = true;
+                updateDailyQuest('dungeon', 1);
                 checkAchievement('EXPLORER');
+            }
+            
+            // Raid boss kontrolü
+            if (state.bossRaids.activeRaid) {
+                updateBossRaid();
+            }
+            
+            // World boss kontrolü
+            if (state.worldBoss.activeBoss) {
+                updateWorldBoss();
             }
             
             for (let i = 0; i < 12; i++) {
@@ -3435,6 +5987,11 @@
             updateFPS();
             autoSave();
             optimizeGraphics();
+            updateBossRaid();
+            updateGuildWar();
+            updateWorldBoss();
+            generateDailyQuests();
+            updateWeatherEvent();
             updateCamera();
             updateUI();
             render();
@@ -3632,8 +6189,22 @@
             addMaterial('WOOD', 3);
             addMaterial('HERB', 2);
             
-            // Başlangıç skill point'i
+            // Başlangıç cooking malzemeleri
+            state.cooking.inventory.push({
+                type: 'FISH',
+                quantity: 3,
+                ...COOKING_SYSTEM.INGREDIENTS.FISH
+            });
+            state.cooking.inventory.push({
+                type: 'MEAT',
+                quantity: 2,
+                ...COOKING_SYSTEM.INGREDIENTS.MEAT
+            });
+            
+            // Başlangıç skill ve talent point'leri
             player.skillPoints = 2;
+            state.skillTree.points = 2;
+            state.talents.points = 1;
             
             // Weather sistemini başlat
             changeWeather();
@@ -3644,6 +6215,17 @@
             // Mobile kontrolleri başlat
             initMobileControls();
             
+            // Çevrimdışı ödüllerini kontrol et
+            const offlineRewards = calculateOfflineRewards();
+            if (offlineRewards) {
+                state.offlineRewards.pendingRewards = offlineRewards;
+                setTimeout(() => {
+                    if (confirm(`${offlineRewards.hours} saat çevrimdışın! ${offlineRewards.gold} altın, ${offlineRewards.xp} XP kazanmak ister misin?`)) {
+                        claimOfflineRewards();
+                    }
+                }, 2000);
+            }
+            
             // Kayıtlı oyunu yükle
             if (localStorage.getItem('knightOnline2DSave')) {
                 setTimeout(() => {
@@ -3653,14 +6235,24 @@
                         // Tutorial'ı başlat
                         setTimeout(showTutorial, 2000);
                     }
-                }, 2000);
+                }, 3000);
             } else {
                 // Tutorial'ı başlat
                 setTimeout(showTutorial, 2000);
             }
             
+            // Günlük görevleri oluştur
+            generateDailyQuests();
+            
+            // World boss spawn timer'ını ayarla
+            const firstBoss = Object.keys(WORLD_BOSSES)[0];
+            const boss = WORLD_BOSSES[firstBoss];
+            state.worldBoss.nextSpawn = Date.now() + (boss.spawnInterval / 2) * 1000; // İlk boss için yarım süre
+            
             pushMessage('Knight Online 2D Mobile\'a hoş geldin! 📱');
             pushMessage('Joystick ile hareket, butonlar ile savaş!');
+            pushMessage('Yeni sistemler: Pet Evolüsyon, Mount Upgrade, Equipment Enhancement, Skill Tree, Talent, Prestige, Mini Games, Weather Events!');
+            pushMessage('Toplam 50+ sistem ile AAA MMORPG deneyimi! 🎮');
             
             gameLoop();
         }
