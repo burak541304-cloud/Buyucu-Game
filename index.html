@@ -245,21 +245,21 @@ const CLASSES={
 
 // ============ SKİLL VERİLERİ ============
 const SKILLS={
-    power_strike:{name:'Power Strike',icon:'⚔️',cost:10,dmg:150,cd:30,type:'attack'},
-    war_cry:{name:'War Cry',icon:'📢',cost:15,buff:'atk',cd:60,type:'buff'},
-    whirlwind:{name:'Whirlwind',icon:'🌪️',cost:20,dmg:120,cd:45,type:'aoe'},
-    power_shot:{name:'Power Shot',icon:'🏹',cost:10,dmg:180,cd:30,type:'attack'},
-    multi_shot:{name:'Multi Shot',icon:'🏹',cost:15,dmg:100,cd:40,type:'multi'},
-    poison_arrow:{name:'Poison Arrow',icon:'☠️',cost:12,dmg:80,cd:35,type:'dot'},
-    fireball:{name:'Fireball',icon:'🔥',cost:15,dmg:200,cd:35,type:'attack'},
-    ice_storm:{name:'Ice Storm',icon:'❄️',cost:25,dmg:150,cd:50,type:'aoe'},
-    lightning:{name:'Lightning',icon:'⚡',cost:18,dmg:220,cd:40,type:'attack'},
-    heal:{name:'Heal',icon:'✝️',cost:20,heal:50,cd:30,type:'heal'},
-    bless:{name:'Bless',icon:'✨',cost:25,buff:'all',cd:90,type:'buff'},
-    holy_light:{name:'Holy Light',icon:'☀️',cost:30,dmg:180,cd:55,type:'aoe'},
-    stealth:{name:'Stealth',icon:'👤',cost:15,buff:'stealth',cd:60,type:'buff'},
-    backstab:{name:'Backstab',icon:'🗡️',cost:12,dmg:250,cd:40,type:'attack'},
-    poison:{name:'Poison',icon:'🧪',cost:10,dmg:60,cd:35,type:'dot'}
+    power_strike:{name:'Power Strike',icon:'⚔️',cost:10,dmg:150,cd:0,maxCd:30,type:'attack'},
+    war_cry:{name:'War Cry',icon:'📢',cost:15,buff:'atk',cd:0,maxCd:60,type:'buff'},
+    whirlwind:{name:'Whirlwind',icon:'🌪️',cost:20,dmg:120,cd:0,maxCd:45,type:'aoe'},
+    power_shot:{name:'Power Shot',icon:'🏹',cost:10,dmg:180,cd:0,maxCd:30,type:'attack'},
+    multi_shot:{name:'Multi Shot',icon:'🏹',cost:15,dmg:100,cd:0,maxCd:40,type:'multi'},
+    poison_arrow:{name:'Poison Arrow',icon:'☠️',cost:12,dmg:80,cd:0,maxCd:35,type:'dot'},
+    fireball:{name:'Fireball',icon:'🔥',cost:15,dmg:200,cd:0,maxCd:35,type:'attack'},
+    ice_storm:{name:'Ice Storm',icon:'❄️',cost:25,dmg:150,cd:0,maxCd:50,type:'aoe'},
+    lightning:{name:'Lightning',icon:'⚡',cost:18,dmg:220,cd:0,maxCd:40,type:'attack'},
+    heal:{name:'Heal',icon:'✝️',cost:20,heal:50,cd:0,maxCd:30,type:'heal'},
+    bless:{name:'Bless',icon:'✨',cost:25,buff:'all',cd:0,maxCd:90,type:'buff'},
+    holy_light:{name:'Holy Light',icon:'☀️',cost:30,dmg:180,cd:0,maxCd:55,type:'aoe'},
+    stealth:{name:'Stealth',icon:'👤',cost:15,buff:'stealth',cd:0,maxCd:60,type:'buff'},
+    backstab:{name:'Backstab',icon:'🗡️',cost:12,dmg:250,cd:0,maxCd:40,type:'attack'},
+    poison:{name:'Poison',icon:'🧪',cost:10,dmg:60,cd:0,maxCd:35,type:'dot'}
 };
 
 // ============ ZONE VERİLERİ ============
@@ -277,24 +277,24 @@ const ZONES=[
 
 // ============ MONSTER VERİLERİ ============
 const MONSTERS={
-    slime:{name:'Slime',hp:30,atk:5,def:2,xp:10,gold:5,color:'#44cc44',size:12,drop:['potion_hp','potion_mp']},
-    wolf:{name:'Wolf',hp:50,atk:10,def:4,xp:20,gold:10,color:'#888',size:14,drop:['wolf_pelt','potion_hp']},
-    spider:{name:'Giant Spider',hp:70,atk:12,def:5,xp:35,gold:15,color:'#664422',size:16,drop:['spider_silk','potion_mp']},
-    bear:{name:'Brown Bear',hp:120,atk:18,def:8,xp:60,gold:25,color:'#8B4513',size:20,drop:['bear_pelt','meat']},
-    scorpion:{name:'Desert Scorpion',hp:90,atk:15,def:6,xp:45,gold:20,color:'#d4a843',size:18,drop:['scorpion_tail','potion_hp']},
-    snake:{name:'Giant Snake',hp:80,atk:14,def:4,xp:40,gold:18,color:'#228822',size:16,drop:['snake_skin','potion_mp']},
-    skeleton:{name:'Skeleton Warrior',hp:100,atk:16,def:8,xp:55,gold:25,color:'#ddd',size:18,drop:['bone','iron_sword']},
-    zombie:{name:'Zombie',hp:130,atk:14,def:10,xp:65,gold:30,color:'#556644',size:18,drop:['rotten_meat','potion_hp']},
-    ice_golem:{name:'Ice Golem',hp:180,atk:20,def:15,xp:90,gold:45,color:'#88ccff',size:22,drop:['ice_crystal','frost_armor']},
-    frost_wolf:{name:'Frost Wolf',hp:140,atk:22,def:10,xp:75,gold:35,color:'#aaddff',size:20,drop:['frost_fang','potion_mp']},
-    demon:{name:'Demon',hp:200,atk:28,def:12,xp:120,gold:60,color:'#cc2200',size:20,drop:['demon_horn','fire_sword']},
-    fire_elemental:{name:'Fire Elemental',hp:160,atk:25,def:8,xp:100,gold:50,color:'#ff6600',size:18,drop:['fire_essence','potion_hp']},
-    drake:{name:'Drake',hp:250,atk:30,def:15,xp:150,gold:80,color:'#4488cc',size:24,drop:['drake_scale','dragon_potion']},
-    dragon:{name:'Young Dragon',hp:350,atk:38,def:20,xp:250,gold:150,color:'#44aa44',size:28,drop:['dragon_scale','dragon_sword']},
-    lich:{name:'Lich',hp:300,atk:35,def:15,xp:200,gold:120,color:'#aa44ff',size:22,drop:['lich_heart','staff_power']},
-    death_knight:{name:'Death Knight',hp:400,atk:40,def:22,xp:280,gold:180,color:'#333',size:24,drop:['death_blade','dark_armor']},
-    boss_dragon:{name:'🐉 Ancient Dragon',hp:2000,atk:60,def:35,xp:2000,gold:1000,color:'#ff4400',size:40,boss:true,drop:['dragon_helm','dragon_armor','legendary_sword']},
-    boss_king:{name:'👑 Dark King',hp:2500,atk:70,def:40,xp:3000,gold:1500,color:'#ff0000',size:45,boss:true,drop:['king_crown','king_sword','royal_armor']}
+    slime:{name:'Slime',hp:30,atk:5,def:2,xp:10,gold:5,color:'#44cc44',size:12,drop:['potion_hp','potion_mp'],speed:0.5},
+    wolf:{name:'Wolf',hp:50,atk:10,def:4,xp:20,gold:10,color:'#888',size:14,drop:['wolf_pelt','potion_hp'],speed:0.8},
+    spider:{name:'Giant Spider',hp:70,atk:12,def:5,xp:35,gold:15,color:'#664422',size:16,drop:['spider_silk','potion_mp'],speed:0.6},
+    bear:{name:'Brown Bear',hp:120,atk:18,def:8,xp:60,gold:25,color:'#8B4513',size:20,drop:['bear_pelt','meat'],speed:0.4},
+    scorpion:{name:'Desert Scorpion',hp:90,atk:15,def:6,xp:45,gold:20,color:'#d4a843',size:18,drop:['scorpion_tail','potion_hp'],speed:0.5},
+    snake:{name:'Giant Snake',hp:80,atk:14,def:4,xp:40,gold:18,color:'#228822',size:16,drop:['snake_skin','potion_mp'],speed:0.7},
+    skeleton:{name:'Skeleton Warrior',hp:100,atk:16,def:8,xp:55,gold:25,color:'#ddd',size:18,drop:['bone','iron_sword'],speed:0.4},
+    zombie:{name:'Zombie',hp:130,atk:14,def:10,xp:65,gold:30,color:'#556644',size:18,drop:['rotten_meat','potion_hp'],speed:0.3},
+    ice_golem:{name:'Ice Golem',hp:180,atk:20,def:15,xp:90,gold:45,color:'#88ccff',size:22,drop:['ice_crystal','frost_armor'],speed:0.3},
+    frost_wolf:{name:'Frost Wolf',hp:140,atk:22,def:10,xp:75,gold:35,color:'#aaddff',size:20,drop:['frost_fang','potion_mp'],speed:0.7},
+    demon:{name:'Demon',hp:200,atk:28,def:12,xp:120,gold:60,color:'#cc2200',size:20,drop:['demon_horn','fire_sword'],speed:0.6},
+    fire_elemental:{name:'Fire Elemental',hp:160,atk:25,def:8,xp:100,gold:50,color:'#ff6600',size:18,drop:['fire_essence','potion_hp'],speed:0.5},
+    drake:{name:'Drake',hp:250,atk:30,def:15,xp:150,gold:80,color:'#4488cc',size:24,drop:['drake_scale','dragon_potion'],speed:0.6},
+    dragon:{name:'Young Dragon',hp:350,atk:38,def:20,xp:250,gold:150,color:'#44aa44',size:28,drop:['dragon_scale','dragon_sword'],speed:0.5},
+    lich:{name:'Lich',hp:300,atk:35,def:15,xp:200,gold:120,color:'#aa44ff',size:22,drop:['lich_heart','staff_power'],speed:0.4},
+    death_knight:{name:'Death Knight',hp:400,atk:40,def:22,xp:280,gold:180,color:'#333',size:24,drop:['death_blade','dark_armor'],speed:0.4},
+    boss_dragon:{name:'🐉 Ancient Dragon',hp:2000,atk:60,def:35,xp:2000,gold:1000,color:'#ff4400',size:40,boss:true,drop:['dragon_helm','dragon_armor','legendary_sword'],speed:0.3},
+    boss_king:{name:'👑 Dark King',hp:2500,atk:70,def:40,xp:3000,gold:1500,color:'#ff0000',size:45,boss:true,drop:['king_crown','king_sword','royal_armor'],speed:0.3}
 };
 
 // ============ EŞYA VERİLERİ ============
@@ -348,9 +348,14 @@ let player={
 let map=[],monsters=[],npcs=[],drops=[],
     particles=[],damageNums=[],projectiles=[],
     camera={x:0,y:0},gameTime=0,uiOpen=false,
-    chatOpen=false,charCreated=false;
+    chatOpen=false,charCreated=false,
+    joystick={active:false,dx:0,dy:0,id:null},
+    attackHeld=false,gameLoopId=null;
 
 // ============ BAŞLANGIÇ ============
+window.addEventListener('resize',resize);
+resize();
+
 function resize(){
     canvas.width=window.innerWidth;
     canvas.height=window.innerHeight;
@@ -360,39 +365,63 @@ function resize(){
     }
 }
 
+// ============ KARAKTER OLUŞTURMA (DÜZELTİLDİ) ============
 function createChar(cls){
-    player.class=cls;
-    const c=CLASSES[cls];
-    player.name='Knight'+Math.floor(Math.random()*1000);
-    player.maxHp=c.hp;player.hp=c.hp;
-    player.maxMp=c.mp;player.mp=c.mp;
-    player.str=c.str;player.dex=c.dex;player.int=c.int;
-    player.atk=Math.floor(c.str*1.5);
-    player.def=Math.floor(c.str*0.8);
+    try{
+        player.class=cls;
+        const c=CLASSES[cls];
+        player.name='Knight'+Math.floor(Math.random()*1000);
+        player.maxHp=c.hp;player.hp=c.hp;
+        player.maxMp=c.mp;player.mp=c.mp;
+        player.str=c.str;player.dex=c.dex;player.int=c.int;
+        player.atk=Math.floor(c.str*1.5);
+        player.def=Math.floor(c.str*0.8);
+        
+        // Başlangıç eşyaları
+        player.inv=[];
+        player.inv.push({id:'potion_hp',count:5});
+        player.inv.push({id:'potion_mp',count:3});
+        
+        // Skill ekle
+        player.skills={};
+        c.skills.forEach(s=>{player.skills[s]=1;});
+        
+        document.getElementById('char-create').style.display='none';
+        charCreated=true;
+        
+        generateWorld();
+        setupControls();
+        setupSkillBar();
+        updateCharUI();
+        
+        // Kamera ayarla
+        camera.x=player.x-canvas.width/2;
+        camera.y=player.y-canvas.height/2;
+        
+        addChat('system','Karasu Training Ground\'a hoş geldin!');
+        addChat('system','Monsters\'ları öldürerek level atla!');
+        
+        // Oyun döngüsünü başlat
+        if(gameLoopId)cancelAnimationFrame(gameLoopId);
+        gameLoop();
+        
+        console.log('Karakter oluşturuldu: '+cls);
+    }catch(e){
+        console.error('Karakter oluşturma hatası:',e);
+        alert('Karakter oluşturma hatası: '+e.message);
+    }
+}
+
+// ============ OYUN DÖNGÜSÜ (DÜZELTİLDİ) ============
+function gameLoop(){
+    if(!charCreated){
+        gameLoopId=requestAnimationFrame(gameLoop);
+        return;
+    }
     
-    // Başlangıç eşyaları
-    player.inv.push({id:'potion_hp',count:5});
-    player.inv.push({id:'potion_mp',count:3});
-    
-    // Skill ekle
-    c.skills.forEach(s=>{player.skills[s]=1;});
-    
-    document.getElementById('char-create').style.display='none';
-    charCreated=true;
-    
-    generateWorld();
-    setupControls();
-    setupSkillBar();
-    updateCharUI();
-    
-    // Kamera ayarla
-    camera.x=player.x-canvas.width/2;
-    camera.y=player.y-canvas.height/2;
-    
-    addChat('system','Karasu Training Ground\'a hoş geldin!');
-    addChat('system','Monsters\'ları öldürerek level atla!');
-    
-    loop();
+    update();
+    draw();
+    gameLoopId=requestAnimationFrame(gameLoop);
 }
 
 function generateWorld(){
@@ -442,7 +471,7 @@ function spawnMonsters(){
             monsters.push({
                 ...m,type:mType,x:mx,y:my,maxHp:m.hp,
                 alive:true,deathTimer:0,aggro:false,
-                poison:0,slow:0,frozen:0
+                poison:0,slow:0,frozen:0,hitTimer:0
             });
         }
     }
@@ -454,7 +483,7 @@ function spawnMonsters(){
         monsters.push({
             ...b,type:bossType,x:200*TILE,y:200*TILE,maxHp:b.hp,
             alive:true,deathTimer:0,aggro:false,
-            poison:0,slow:0,frozen:0,boss:true
+            poison:0,slow:0,frozen:0,hitTimer:0,boss:true
         });
     }
 }
@@ -465,29 +494,36 @@ function setupControls(){
     const base=document.getElementById('joystick-base');
     const attackBtn=document.getElementById('attack-btn');
     
-    zone.addEventListener('touchstart',e=>{
+    // Temizle
+    zone.replaceWith(zone.cloneNode(true));
+    
+    const newZone=document.getElementById('joystick-zone');
+    const newThumb=document.getElementById('joystick-thumb');
+    const newBase=document.getElementById('joystick-base');
+    
+    newZone.addEventListener('touchstart',e=>{
         e.preventDefault();
         const t=e.changedTouches[0];
         joystick.id=t.identifier;
         joystick.active=true;
-        updateJoy(t,base,thumb);
+        updateJoy(t,newBase,newThumb);
     },{passive:false});
     
-    zone.addEventListener('touchmove',e=>{
+    newZone.addEventListener('touchmove',e=>{
         e.preventDefault();
         for(let i=0;i<e.changedTouches.length;i++){
             if(e.changedTouches[i].identifier===joystick.id){
-                updateJoy(e.changedTouches[i],base,thumb);
+                updateJoy(e.changedTouches[i],newBase,newThumb);
             }
         }
     },{passive:false});
     
-    zone.addEventListener('touchend',e=>{
+    newZone.addEventListener('touchend',e=>{
         e.preventDefault();
         joystick.active=false;
         joystick.dx=0;
         joystick.dy=0;
-        thumb.style.transform='translate(-50%,-50%)';
+        newThumb.style.transform='translate(-50%,-50%)';
     });
     
     attackBtn.addEventListener('touchstart',e=>{e.preventDefault();attackHeld=true;},{passive:false});
@@ -504,9 +540,6 @@ function setupControls(){
         if(e.key==='Enter')toggleChat();
     });
 }
-
-let joystick={active:false,dx:0,dy:0,id:null};
-let attackHeld=false;
 
 function updateJoy(t,base,thumb){
     const r=base.getBoundingClientRect();
@@ -527,14 +560,7 @@ function updateJoy(t,base,thumb){
     thumb.style.transform='translate(calc(-50% + '+dx+'px),calc(-50% + '+dy+'px))';
 }
 
-// ============ OYUN DÖNGÜSÜ ============
-function loop(){
-    if(!charCreated)return;
-    update();
-    draw();
-    requestAnimationFrame(loop);
-}
-
+// ============ UPDATE ============
 function update(){
     gameTime++;
     
@@ -542,6 +568,12 @@ function update(){
     if(player.invuln>0)player.invuln--;
     if(player.rollCd>0)player.rollCd--;
     if(player.roll>0)player.roll--;
+    
+    // Skill cooldowns
+    const classSkills=CLASSES[player.class].skills;
+    classSkills.forEach((s,i)=>{
+        if(SKILLS[s].cd>0)SKILLS[s].cd--;
+    });
     
     // Hareket
     let dx=0,dy=0;
@@ -587,15 +619,17 @@ function update(){
             return;
         }
         
+        if(m.hitTimer>0)m.hitTimer--;
+        
         const d=dist(player,m);
         
         // Aggro
         if(d<150&&!m.aggro)m.aggro=true;
         if(d>300&&m.aggro)m.aggro=false;
         
-        if(m.aggro){
+        if(m.aggro&&m.frozen<=0){
             const a=Math.atan2(player.y-m.y,player.x-m.x);
-            let spd=m.aggro?m.speed*1.5:m.speed*0.3;
+            let spd=m.speed||(m.aggro?1.5:0.3);
             if(m.slow>0)spd*=0.5;
             
             let nx=m.x+Math.cos(a)*spd;
@@ -686,6 +720,7 @@ function update(){
     }
 }
 
+// ============ DRAW ============
 function draw(){
     ctx.fillStyle='#0a0a0a';
     ctx.fillRect(0,0,canvas.width,canvas.height);
@@ -890,7 +925,7 @@ function drawMinimap(){
     mCtx.fillRect(player.x/TILE*sx-2,player.y/TILE*sy-2,5,5);
 }
 
-// ============ YARDIMCI ============
+// ============ YARDIMCI FONKSİYONLAR ============
 function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y);}
 function isSolid(px,py){
     const tx=Math.floor(px/TILE);
@@ -1054,10 +1089,9 @@ function updateSkillUI(){
     const skills=CLASSES[player.class].skills;
     skills.forEach((s,i)=>{
         const skill=SKILLS[s];
-        if(skill.cd>0)skill.cd--;
         const cdEl=document.getElementById('cd-'+i);
         if(cdEl){
-            cdEl.style.height=(skill.cd>0?(skill.cd/60*100)+'%':'0%');
+            cdEl.style.height=(skill.cd>0?(skill.cd/skill.maxCd*100)+'%':'0%');
             cdEl.style.opacity=skill.cd>0?1:0;
         }
     });
@@ -1068,10 +1102,11 @@ function useSkill(i){
     const skillName=skills[i];
     const skill=SKILLS[skillName];
     
+    if(!skill)return;
     if(player.mp<skill.cost||skill.cd>0)return;
     
     player.mp-=skill.cost;
-    skill.cd=skill.cd;
+    skill.cd=skill.maxCd;
     
     if(skill.type==='heal'){
         player.hp=Math.min(player.maxHp,player.hp+skill.heal);
@@ -1293,10 +1328,6 @@ function buyItem(id,p){
         addChat('system','Yetersiz Gold!');
     }
 }
-
-// Başlat
-window.addEventListener('resize',resize);
-resize();
 </script>
 </body>
 </html>
