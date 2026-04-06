@@ -1,130 +1,141 @@
+```html
 <!DOCTYPE html>
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Karanlık Diyar - 2D RPG</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0a0a0a">
+<meta name="orientation" content="portrait">
+<title>Karanlık Diyar - Büyücü</title>
 <style>
-*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{background:#0a0a0a;display:flex;justify-content:center;align-items:center;height:100vh;overflow:hidden;font-family:'Segoe UI',sans-serif;touch-action:none;user-select:none;-webkit-user-select:none}
-canvas{border:2px solid #333;image-rendering:pixelated;touch-action:none;position:absolute}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;touch-action:none}
+html,body{width:100%;height:100%;overflow:hidden;background:#0a0a0a;font-family:'Segoe UI',sans-serif;touch-action:none;user-select:none;-webkit-user-select:none;position:fixed}
+body{display:flex;justify-content:center;align-items:center}
+canvas{image-rendering:pixelated;touch-action:none;position:absolute}
 
-/* KARAKTER SEÇİM EKRANI */
-#class-select{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:100;color:#fff;overflow-y:auto}
-#class-select h1{font-size:28px;color:#ffd700;margin-bottom:8px;text-shadow:0 0 20px #ffd700;text-align:center}
-#class-select p{color:#aaa;margin-bottom:20px;font-size:13px;text-align:center}
-.class-cards{display:flex;gap:15px;flex-wrap:wrap;justify-content:center;padding:0 15px}
-.class-card{width:160px;padding:18px;background:rgba(40,30,20,0.9);border:2px solid #5a4a3a;border-radius:12px;cursor:pointer;text-align:center;transition:all 0.3s}
-.class-card:hover,.class-card:active{border-color:#ffd700;transform:scale(1.05);box-shadow:0 0 20px rgba(255,215,0,0.3)}
-.class-card .icon{font-size:42px;margin-bottom:8px}
-.class-card .name{font-size:16px;font-weight:bold;color:#ffd700;margin-bottom:6px}
-.class-card .desc{font-size:11px;color:#aaa;line-height:1.4}
-.class-card .stats{font-size:10px;color:#888;margin-top:6px;text-align:left;line-height:1.7}
-
-#dialog-box{position:fixed;bottom:200px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.9);border:2px solid #8B7355;border-radius:8px;padding:12px 20px;color:#f0e6d2;font-size:13px;max-width:90%;width:320px;display:none;text-align:center;pointer-events:auto;line-height:1.5;z-index:20}
+#dialog-box{position:fixed;bottom:180px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.9);border:2px solid #8B7355;border-radius:8px;padding:12px 20px;color:#f0e6d2;font-size:13px;max-width:90%;width:300px;display:none;text-align:center;pointer-events:auto;line-height:1.5;z-index:20}
 #dialog-box .name{color:#ffd700;font-weight:bold;font-size:12px;margin-bottom:3px}
 #dialog-box .tap-hint{color:#888;font-size:10px;margin-top:4px}
 
-#inventory-panel{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(20,15,10,0.97);border:2px solid #8B7355;border-radius:10px;padding:12px;color:#f0e6d2;display:none;min-width:300px;max-width:95%;z-index:30;max-height:80vh;overflow-y:auto}
+#inventory-panel{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(20,15,10,0.97);border:2px solid #8B7355;border-radius:10px;padding:12px;color:#f0e6d2;display:none;min-width:280px;max-width:90%;z-index:30;max-height:70vh;overflow-y:auto}
 #inventory-panel h2{color:#ffd700;text-align:center;margin-bottom:6px;font-size:15px}
 .inv-page-info{text-align:center;color:#aaa;font-size:11px;margin-bottom:4px}
-.inv-grid{display:grid;grid-template-columns:repeat(6,44px);gap:4px;justify-content:center;margin-bottom:8px}
-.inv-slot{width:44px;height:44px;background:rgba(60,50,40,0.8);border:1px solid #5a4a3a;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;position:relative}
+.inv-grid{display:grid;grid-template-columns:repeat(6,40px);gap:4px;justify-content:center;margin-bottom:8px}
+.inv-slot{width:40px;height:40px;background:rgba(60,50,40,0.8);border:1px solid #5a4a3a;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;position:relative}
 .inv-slot.rarity-common{border-color:#9d9d9d}
 .inv-slot.rarity-uncommon{border-color:#1eff00}
 .inv-slot.rarity-rare{border-color:#0070ff}
 .inv-slot.rarity-epic{border-color:#a335ee}
 .inv-slot.rarity-legendary{border-color:#ff8000}
-.inv-slot .count{position:absolute;bottom:1px;right:2px;font-size:8px;color:#aaa}
-.inv-slot .tooltip{display:none;position:absolute;bottom:48px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.95);border:1px solid #8B7355;border-radius:5px;padding:6px 8px;white-space:nowrap;font-size:10px;z-index:100;pointer-events:none;max-width:180px;white-space:normal}
+.inv-slot .count{position:absolute;bottom:1px;right:2px;font-size:7px;color:#aaa}
+.inv-slot .tooltip{display:none;position:absolute;bottom:44px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.95);border:1px solid #8B7355;border-radius:5px;padding:6px 8px;white-space:nowrap;font-size:9px;z-index:100;pointer-events:none;max-width:160px;white-space:normal}
 .inv-nav{display:flex;justify-content:center;gap:8px;margin-bottom:6px}
-.inv-nav button{padding:4px 12px;background:#5a4a3a;border:none;border-radius:4px;color:#fff;cursor:pointer;font-size:11px}
+.inv-nav button{padding:4px 10px;background:#5a4a3a;border:none;border-radius:4px;color:#fff;cursor:pointer;font-size:10px}
 .inv-nav button:disabled{opacity:0.3}
-.close-btn{display:block;margin:0 auto;padding:7px 22px;background:#8B7355;border:none;border-radius:5px;color:#fff;font-size:12px;cursor:pointer}
+.close-btn{display:block;margin:0 auto;padding:7px 20px;background:#8B7355;border:none;border-radius:5px;color:#fff;font-size:11px;cursor:pointer}
 
-#skill-panel{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(15,10,5,0.97);border:2px solid #a335ee;border-radius:10px;padding:12px;color:#f0e6d2;display:none;min-width:320px;max-width:95%;z-index:30;max-height:80vh;overflow-y:auto}
-#skill-panel h2{color:#a335ee;text-align:center;margin-bottom:8px;font-size:16px}
-.skill-tree{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
-.skill-node{padding:8px;background:rgba(40,30,20,0.9);border:2px solid #5a4a3a;border-radius:8px;text-align:center;cursor:pointer;transition:all 0.2s}
+#skill-panel{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(15,10,5,0.97);border:2px solid #a335ee;border-radius:10px;padding:12px;color:#f0e6d2;display:none;min-width:280px;max-width:90%;z-index:30;max-height:70vh;overflow-y:auto}
+#skill-panel h2{color:#a335ee;text-align:center;margin-bottom:8px;font-size:15px}
+.skill-tree{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:12px}
+.skill-node{padding:6px;background:rgba(40,30,20,0.9);border:2px solid #5a4a3a;border-radius:8px;text-align:center;cursor:pointer;transition:all 0.2s}
 .skill-node.unlocked{border-color:#ffd700;background:rgba(80,60,20,0.9)}
 .skill-node.locked{opacity:0.4;cursor:not-allowed}
 .skill-node:hover:not(.locked){border-color:#a335ee}
-.skill-node .sk-icon{font-size:20px}
-.skill-node .sk-name{font-size:10px;color:#ffd700;margin:3px 0}
-.skill-node .sk-desc{font-size:8px;color:#aaa}
-.skill-points{text-align:center;color:#a335ee;font-size:13px;margin-bottom:8px}
+.skill-node .sk-icon{font-size:18px}
+.skill-node .sk-name{font-size:9px;color:#ffd700;margin:2px 0}
+.skill-node .sk-desc{font-size:7px;color:#aaa}
+.skill-points{text-align:center;color:#a335ee;font-size:12px;margin-bottom:8px}
 
-#shop-panel{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(15,10,5,0.97);border:2px solid #ffd700;border-radius:10px;padding:12px;color:#f0e6d2;display:none;min-width:320px;max-width:95%;z-index:30;max-height:80vh;overflow-y:auto}
-#shop-panel h2{color:#ffd700;text-align:center;margin-bottom:8px}
-.shop-item{display:flex;align-items:center;padding:6px;background:rgba(40,30,20,0.6);border:1px solid #5a4a3a;border-radius:6px;margin-bottom:4px;justify-content:space-between}
-.shop-item .si-left{display:flex;align-items:center;gap:6px}
-.shop-item .si-icon{font-size:20px}
-.shop-item .si-info{font-size:11px}
+#shop-panel{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(15,10,5,0.97);border:2px solid #ffd700;border-radius:10px;padding:12px;color:#f0e6d2;display:none;min-width:280px;max-width:90%;z-index:30;max-height:70vh;overflow-y:auto}
+#shop-panel h2{color:#ffd700;text-align:center;margin-bottom:8px;font-size:15px}
+.shop-item{display:flex;align-items:center;padding:5px;background:rgba(40,30,20,0.6);border:1px solid #5a4a3a;border-radius:6px;margin-bottom:4px;justify-content:space-between}
+.shop-item .si-left{display:flex;align-items:center;gap:5px}
+.shop-item .si-icon{font-size:18px}
+.shop-item .si-info{font-size:10px}
 .shop-item .si-name{color:#ffd700}
-.shop-item .si-price{color:#aaa;font-size:10px}
-.shop-buy{padding:3px 10px;background:#4a8;border:none;border-radius:4px;color:#fff;cursor:pointer;font-size:10px}
-.shop-sell{padding:3px 10px;background:#a54;border:none;border-radius:4px;color:#fff;cursor:pointer;font-size:10px}
-.shop-close{display:block;margin:8px auto 0;padding:7px 22px;background:#8B7355;border:none;border-radius:5px;color:#fff;cursor:pointer}
+.shop-item .si-price{color:#aaa;font-size:9px}
+.shop-buy{padding:3px 8px;background:#4a8;border:none;border-radius:4px;color:#fff;cursor:pointer;font-size:9px}
+.shop-sell{padding:3px 8px;background:#a54;border:none;border-radius:4px;color:#fff;cursor:pointer;font-size:9px}
+.shop-close{display:block;margin:8px auto 0;padding:7px 20px;background:#8B7355;border:none;border-radius:5px;color:#fff;cursor:pointer;font-size:11px}
 
 #death-screen{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(80,0,0,0.85);display:none;justify-content:center;align-items:center;flex-direction:column;color:white;z-index:40}
-#death-screen h1{font-size:40px;color:#ff3333;margin-bottom:12px}
-#death-screen button{padding:12px 35px;background:#8B0000;border:2px solid #ff3333;border-radius:8px;color:#fff;font-size:16px;cursor:pointer}
+#death-screen h1{font-size:32px;color:#ff3333;margin-bottom:10px}
+#death-screen p{font-size:13px;margin-bottom:15px}
+#death-screen button{padding:10px 30px;background:#8B0000;border:2px solid #ff3333;border-radius:8px;color:#fff;font-size:15px;cursor:pointer}
 
-#minimap{position:fixed;top:5px;right:5px;border:2px solid #555;border-radius:4px;pointer-events:none;z-index:5}
+#minimap{position:fixed;top:5px;left:5px;border:2px solid #555;border-radius:4px;pointer-events:none;z-index:5}
 
 #mobile-controls{position:fixed;bottom:0;left:0;width:100%;height:100%;pointer-events:none;z-index:10;display:none}
-#joystick-area{position:fixed;bottom:15px;left:15px;width:130px;height:130px;pointer-events:auto;z-index:11}
-#joystick-base{width:130px;height:130px;border-radius:50%;background:rgba(255,255,255,0.1);border:3px solid rgba(255,255,255,0.25);position:relative}
-#joystick-thumb{width:50px;height:50px;border-radius:50%;background:rgba(255,255,255,0.35);border:2px solid rgba(255,255,255,0.5);position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}
+#joystick-area{position:fixed;bottom:20px;left:20px;width:120px;height:120px;pointer-events:auto;z-index:11}
+#joystick-base{width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,0.1);border:3px solid rgba(255,255,255,0.25);position:relative}
+#joystick-thumb{width:45px;height:45px;border-radius:50%;background:rgba(255,255,255,0.35);border:2px solid rgba(255,255,255,0.5);position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}
 
 .mobile-btn{pointer-events:auto;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;border:2px solid rgba(255,255,255,0.3);position:fixed;touch-action:none;z-index:11}
 .mobile-btn:active{transform:scale(0.9);opacity:0.8}
-#btn-attack{width:68px;height:68px;bottom:20px;right:20px;background:rgba(200,50,50,0.6);font-size:26px}
-#btn-roll{width:50px;height:50px;bottom:100px;right:80px;background:rgba(50,100,200,0.6);font-size:18px}
-#btn-interact{width:46px;height:46px;bottom:100px;right:20px;background:rgba(50,180,50,0.6);font-size:20px}
-#btn-inv{width:40px;height:40px;bottom:160px;right:140px;background:rgba(180,150,50,0.6);font-size:15px}
-#btn-skill{width:40px;height:40px;bottom:160px;right:188px;background:rgba(160,60,160,0.6);font-size:15px}
-#btn-shop{width:40px;height:40px;bottom:160px;right:95px;background:rgba(255,200,50,0.6);font-size:15px}
+#btn-attack{width:60px;height:60px;bottom:25px;right:25px;background:rgba(200,50,50,0.6);font-size:24px}
+#btn-roll{width:45px;height:45px;bottom:95px;right:75px;background:rgba(50,100,200,0.6);font-size:16px}
+#btn-interact{width:42px;height:42px;bottom:95px;right:25px;background:rgba(50,180,50,0.6);font-size:18px}
+#btn-inv{width:38px;height:38px;bottom:150px;right:130px;background:rgba(180,150,50,0.6);font-size:14px}
+#btn-skill{width:38px;height:38px;bottom:150px;right:175px;background:rgba(160,60,160,0.6);font-size:14px}
+#btn-shop{width:38px;height:38px;bottom:150px;right:85px;background:rgba(255,200,50,0.6);font-size:14px}
 
-.spell-btn{pointer-events:auto;border-radius:10px;width:48px;height:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;font-size:18px;border:2px solid rgba(255,255,255,0.3);position:fixed;touch-action:none;background:rgba(0,0,0,0.6);z-index:11}
+.spell-btn{pointer-events:auto;border-radius:8px;width:44px;height:44px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;font-size:16px;border:2px solid rgba(255,255,255,0.3);position:fixed;touch-action:none;background:rgba(0,0,0,0.6);z-index:11}
 .spell-btn:active{transform:scale(0.9)}
-.spell-btn .sn{font-size:6px;margin-top:1px}
-#spell-0{bottom:165px;right:18px}
-#spell-1{bottom:165px;right:72px}
-#spell-2{bottom:165px;right:126px}
+.spell-btn .sn{font-size:5px;margin-top:1px}
+#spell-0{bottom:155px;right:20px}
+#spell-1{bottom:155px;right:70px}
+#spell-2{bottom:155px;right:120px}
 
-#quest-notify{position:fixed;top:60px;left:50%;transform:translateX(-50%);color:#ffd700;font-size:12px;display:none;z-index:25;pointer-events:none;text-align:center;background:rgba(0,0,0,0.7);padding:6px 14px;border-radius:6px;animation:fadeInOut 3s forwards}
+#quest-notify{position:fixed;top:50px;left:50%;transform:translateX(-50%);color:#ffd700;font-size:11px;display:none;z-index:25;pointer-events:none;text-align:center;background:rgba(0,0,0,0.7);padding:5px 12px;border-radius:6px;animation:fadeInOut 3s forwards}
 @keyframes fadeInOut{0%{opacity:0}15%{opacity:1}85%{opacity:1}100%{opacity:0}}
-#ground-items-notify{position:fixed;bottom:190px;left:50%;transform:translateX(-50%);color:#44ff44;font-size:10px;display:none;z-index:12;pointer-events:none}
+#ground-items-notify{position:fixed;bottom:175px;left:50%;transform:translateX(-50%);color:#44ff44;font-size:9px;display:none;z-index:12;pointer-events:none}
+
+/* Dikey ekran optimizasyonu */
+@media (orientation: portrait) {
+    #mobile-controls{display:block!important}
+    #joystick-area{bottom:15px;left:15px;width:110px;height:110px}
+    #joystick-base{width:110px;height:110px}
+    #joystick-thumb{width:40px;height:40px}
+    #btn-attack{width:55px;height:55px;bottom:20px;right:20px;font-size:22px}
+    #btn-roll{width:40px;height:40px;bottom:85px;right:65px;font-size:14px}
+    #btn-interact{width:38px;height:38px;bottom:85px;right:20px;font-size:16px}
+    #btn-inv{width:35px;height:35px;bottom:135px;right:115px;font-size:12px}
+    #btn-skill{width:35px;height:35px;bottom:135px;right:155px;font-size:12px}
+    #btn-shop{width:35px;height:35px;bottom:135px;right:75px;font-size:12px}
+    .spell-btn{width:40px;height:40px;font-size:14px}
+    #spell-0{bottom:140px;right:15px}
+    #spell-1{bottom:140px;right:60px}
+    #spell-2{bottom:140px;right:105px}
+    #dialog-box{bottom:165px;width:280px;font-size:12px}
+    #minimap{width:100px!important;height:66px!important}
+}
+
+/* Yatay ekran uyarısı */
+@media (orientation: landscape) {
+    #rotate-message{display:flex}
+}
+
+#rotate-message{
+    display:none;position:fixed;top:0;left:0;width:100%;height:100%;
+    background:rgba(0,0,0,0.95);z-index:100;justify-content:center;
+    align-items:center;flex-direction:column;color:#fff;text-align:center
+}
+#rotate-message .icon{font-size:60px;margin-bottom:20px}
+#rotate-message .text{font-size:18px;margin-bottom:10px}
+#rotate-message .sub{font-size:14px;color:#aaa}
 </style>
 </head>
 <body>
 <canvas id="game"></canvas>
-<canvas id="minimap" width="120" height="80"></canvas>
+<canvas id="minimap" width="100" height="66"></canvas>
 
-<div id="class-select">
-    <h1>⚔️ Karanlık Diyar ⚔️</h1>
-    <p>Sınıfını seç ve maceraya başla!</p>
-    <div class="class-cards">
-        <div class="class-card" onclick="selectClass('warrior')">
-            <div class="icon">⚔️</div>
-            <div class="name">Savaşçı</div>
-            <div class="desc">Yüksek HP ve yakın saldırı. Tank.</div>
-            <div class="stats">❤️ HP: 150<br>⚔️ ATK: 15<br>🛡️ DEF: 10<br>💎 MP: 30</div>
-        </div>
-        <div class="class-card" onclick="selectClass('archer')">
-            <div class="icon">🏹</div>
-            <div class="name">Okçu</div>
-            <div class="desc">Hızlı ve menzilli. Kritik uzmanı.</div>
-            <div class="stats">❤️ HP: 100<br>⚔️ ATK: 12<br>🛡️ DEF: 5<br>💎 MP: 40<br>🎯 Kritik: %20</div>
-        </div>
-        <div class="class-card" onclick="selectClass('mage')">
-            <div class="icon">🔮</div>
-            <div class="name">Büyücü</div>
-            <div class="desc">Güçlü büyüler. Alan hasarı.</div>
-            <div class="stats">❤️ HP: 80<br>⚔️ ATK: 8<br>🛡️ DEF: 3<br>💎 MP: 80<br>✨ Büyü: +30%</div>
-        </div>
-    </div>
+<div id="rotate-message">
+    <div class="icon">📱</div>
+    <div class="text">Lütfen telefonunuzu dikey tutun</div>
+    <div class="sub">Oyun dikey ekran için optimize edilmiştir</div>
 </div>
 
 <div id="dialog-box"><div class="name"></div><div class="text"></div><div class="tap-hint">Devam için dokun</div></div>
@@ -134,7 +145,7 @@ canvas{border:2px solid #333;image-rendering:pixelated;touch-action:none;positio
     <div class="inv-page-info" id="inv-page-info"></div>
     <div class="inv-nav">
         <button onclick="invNav(-1)">◀</button>
-        <span id="inv-page-num" style="color:#ffd700;font-size:12px;line-height:22px"></span>
+        <span id="inv-page-num" style="color:#ffd700;font-size:11px;line-height:20px"></span>
         <button onclick="invNav(1)">▶</button>
     </div>
     <div class="inv-grid" id="inv-grid"></div>
@@ -150,9 +161,9 @@ canvas{border:2px solid #333;image-rendering:pixelated;touch-action:none;positio
 
 <div id="shop-panel">
     <h2>🏪 Tüccar</h2>
-    <h3 style="color:#aaa;font-size:12px;margin-bottom:6px">Satış</h3>
+    <h3 style="color:#aaa;font-size:11px;margin-bottom:5px">Satış</h3>
     <div id="shop-sell-items"></div>
-    <h3 style="color:#aaa;font-size:12px;margin:8px 0 6px">Alış</h3>
+    <h3 style="color:#aaa;font-size:11px;margin:7px 0 5px">Alış</h3>
     <div id="shop-buy-items"></div>
     <button class="shop-close" onclick="toggleShop()">Kapat</button>
 </div>
@@ -177,35 +188,73 @@ canvas{border:2px solid #333;image-rendering:pixelated;touch-action:none;positio
 <script>
 // ============ AYARLAR ============
 const TILE=32, COLS=200, ROWS=200;
-const canvas=document.getElementById('game'), ctx=canvas.getContext('2d');
-const mCanvas=document.getElementById('minimap'), mCtx=mCanvas.getContext('2d');
+const canvas=document.getElementById('game');
+const ctx=canvas.getContext('2d');
+const mCanvas=document.getElementById('minimap');
+const mCtx=mCanvas.getContext('2d');
 
-let isMobile=('ontouchstart' in window)||navigator.maxTouchPoints>0||window.innerWidth<900;
-let gameStarted=false;
+let isMobile=false;
 let mobileControlsSetup=false;
+let isPortrait=true;
+
+function checkOrientation(){
+    isPortrait=window.innerHeight>window.innerWidth;
+    document.getElementById('rotate-message').style.display=isPortrait?'none':'flex';
+}
+
+function checkMobile(){
+    isMobile=('ontouchstart' in window)||navigator.maxTouchPoints>0||window.innerWidth<900;
+}
 
 function resizeCanvas(){
-    const w=window.innerWidth, h=window.innerHeight, r=960/640;
-    if(w/h>r){canvas.height=h;canvas.width=h*r}else{canvas.width=w;canvas.height=w/r}
-    canvas.style.left=((window.innerWidth-canvas.width)/2)+'px';
-    canvas.style.top=((window.innerHeight-canvas.height)/2)+'px';
-    const ms=Math.min(120,canvas.width*0.16);
-    mCanvas.width=ms;mCanvas.height=ms*0.66;
+    if(!isPortrait)return;
+    
+    const w=window.innerWidth;
+    const h=window.innerHeight;
+    
+    // Dikey ekran için canvas boyutlandırma
+    canvas.width=w;
+    canvas.height=h-180; // Kontroller için yer bırak
+    
+    canvas.style.left='0px';
+    canvas.style.top='0px';
+    canvas.style.width=w+'px';
+    canvas.style.height=canvas.height+'px';
+    
+    // Minimap boyutu
+    const ms=Math.min(100,w*0.25);
+    mCanvas.width=ms;
+    mCanvas.height=ms*0.66;
+    mCanvas.style.width=ms+'px';
+    mCanvas.style.height=(ms*0.66)+'px';
 }
-window.addEventListener('resize',resizeCanvas);
-resizeCanvas();
 
 // ============ TİPLER ============
 const TILES={GRASS:0,DIRT:1,WATER:2,STONE:3,TREE:4,WALL:5,FLOOR:6,PATH:10,SAND:9,LAVA:12,ICE:13,FLOWER:14,MUSHROOM:15,CRYSTAL:16,BRIDGE:11,SNOW:17,SWAMP:18};
 const TC={0:'#2d5a1e',1:'#8B6914',2:'#1a5276',3:'#666',4:'#1a3a0a',5:'#444',6:'#5a4a3a',10:'#a08060',9:'#d4a843',12:'#cc3300',13:'#a0d8ef',14:'#2d5a1e',15:'#2d5a1e',16:'#2d5a1e',11:'#8B6914',17:'#e8e8f0',18:'#3a5a2a'};
 const SOLID=new Set([2,4,5,12,15,16]);
-const randInt=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
-const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
-const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
-const lerp=(a,b,t)=>a+(b-a)*t;
 
-const RARITY={common:{name:'Sıradan',color:'#9d9d9d',mult:1},uncommon:{name:'Nadir',color:'#1eff00',mult:1.3},rare:{name:'Nadir+',color:'#0070ff',mult:1.7},epic:{name:'Epik',color:'#a335ee',mult:2.2},legendary:{name:'Efsane',color:'#ff8000',mult:3.0}};
-function randomRarity(){const r=Math.random();if(r<0.45)return'common';if(r<0.75)return'uncommon';if(r<0.92)return'rare';if(r<0.98)return'epic';return'legendary';}
+function randInt(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
+function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y);}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
+function lerp(a,b,t){return a+(b-a)*t;}
+
+const RARITY={
+    common:{name:'Sıradan',color:'#9d9d9d',mult:1},
+    uncommon:{name:'Nadir',color:'#1eff00',mult:1.3},
+    rare:{name:'Nadir+',color:'#0070ff',mult:1.7},
+    epic:{name:'Epik',color:'#a335ee',mult:2.2},
+    legendary:{name:'Efsane',color:'#ff8000',mult:3.0}
+};
+
+function randomRarity(){
+    const r=Math.random();
+    if(r<0.45)return'common';
+    if(r<0.75)return'uncommon';
+    if(r<0.92)return'rare';
+    if(r<0.98)return'epic';
+    return'legendary';
+}
 
 // ============ EŞYA DB ============
 const WEAPONS={
@@ -228,6 +277,7 @@ const WEAPONS={
     staff_arcane:{name:'Arkane Asa',icon:'🪄',type:'weapon',baseAtk:16,baseDef:1,spellBonus:20},
     staff_cosmic:{name:'Kozmik Asa',icon:'🪄',type:'weapon',baseAtk:26,baseDef:2,spellBonus:35},
 };
+
 const ARMORS={
     leather_armor:{name:'Deri Zırh',icon:'🛡️',type:'armor',baseDef:3,baseAtk:0},
     chain_mail:{name:'Zincir Zırh',icon:'🛡️',type:'armor',baseDef:6,baseAtk:0},
@@ -240,6 +290,7 @@ const ARMORS={
     mage_robe:{name:'Büyücü Cüppesi',icon:'👘',type:'armor',baseDef:4,baseAtk:0,mpBonus:25,spellBonus:10},
     arcane_robe:{name:'Arkane Cüppe',icon:'👘',type:'armor',baseDef:6,baseAtk:0,mpBonus:40,spellBonus:20},
 };
+
 const CONSUMABLES={
     herb:{name:'Şifalı Ot',icon:'🌿',type:'consumable',desc:'25 HP',effect:{hp:25}},
     bandage:{name:'Bandaj',icon:'🩹',type:'consumable',desc:'50 HP',effect:{hp:50}},
@@ -250,59 +301,75 @@ const CONSUMABLES={
     legendary_potion:{name:'Efsane İksir',icon:'⭐',type:'consumable',desc:'Tam can',effect:{hp:999,mp:999}},
     elixir_power:{name:'Güç İksiri',icon:'💪',type:'consumable',desc:'+10 ATK',effect:{atkBuff:30}},
 };
+
 const MATERIALS={
-    bone:{name:'Kemik',icon:'🦴',type:'material',value:3},slime_jelly:{name:'Slime Jölesi',icon:'🟢',type:'material',value:5},
-    bat_wing:{name:'Yarasa Kanadı',icon:'🦇',type:'material',value:4},wolf_pelt:{name:'Kurt Postu',icon:'🐺',type:'material',value:8},
-    spider_silk:{name:'Örümcek İpeği',icon:'🕸️',type:'material',value:6},demon_horn:{name:'İfrit Boynuzu',icon:'🔴',type:'material',value:15},
-    ectoplasm:{name:'Ektoplazma',icon:'👻',type:'material',value:8},dragon_scale:{name:'Ejder Pulu',icon:'🐉',type:'material',value:25},
-    crystal_shard:{name:'Kristal',icon:'💎',type:'material',value:20},dark_essence:{name:'Karanlık Özü',icon:'🌑',type:'material',value:18},
-    iron_ore:{name:'Demir Cevheri',icon:'⛏️',type:'material',value:5},gold_ore:{name:'Altın Cevheri',icon:'🥇',type:'material',value:12},
-    magic_dust:{name:'Sihir Tozu',icon:'✨',type:'material',value:10},phoenix_feather:{name:'Anka Tüyü',icon:'🔥',type:'material',value:30},
+    bone:{name:'Kemik',icon:'🦴',type:'material',value:3},
+    slime_jelly:{name:'Slime Jölesi',icon:'🟢',type:'material',value:5},
+    bat_wing:{name:'Yarasa Kanadı',icon:'🦇',type:'material',value:4},
+    wolf_pelt:{name:'Kurt Postu',icon:'🐺',type:'material',value:8},
+    spider_silk:{name:'Örümcek İpeği',icon:'🕸️',type:'material',value:6},
+    demon_horn:{name:'İfrit Boynuzu',icon:'🔴',type:'material',value:15},
+    ectoplasm:{name:'Ektoplazma',icon:'👻',type:'material',value:8},
+    dragon_scale:{name:'Ejder Pulu',icon:'🐉',type:'material',value:25},
+    crystal_shard:{name:'Kristal',icon:'💎',type:'material',value:20},
+    dark_essence:{name:'Karanlık Özü',icon:'🌑',type:'material',value:18},
+    iron_ore:{name:'Demir Cevheri',icon:'⛏️',type:'material',value:5},
+    gold_ore:{name:'Altın Cevheri',icon:'🥇',type:'material',value:12},
+    magic_dust:{name:'Sihir Tozu',icon:'✨',type:'material',value:10},
+    phoenix_feather:{name:'Anka Tüyü',icon:'🔥',type:'material',value:30},
     void_fragment:{name:'Hiçlik Parçası',icon:'🌀',type:'material',value:22},
 };
-function getItemData(id){return WEAPONS[id]||ARMORS[id]||CONSUMABLES[id]||MATERIALS[id]||null;}
+
+function getItemData(id){
+    return WEAPONS[id]||ARMORS[id]||CONSUMABLES[id]||MATERIALS[id]||null;
+}
 
 function generateItem(baseId,rarity){
-    const r=RARITY[rarity],base=getItemData(baseId);
+    const r=RARITY[rarity];
+    const base=getItemData(baseId);
     if(!base)return null;
     let item={...base,id:baseId,rarity,name:base.name,icon:base.icon};
     if(rarity!=='common')item.name='['+r.name+'] '+base.name;
     if(base.type==='weapon'){
-        item.atk=Math.floor((base.baseAtk||0)*r.mult);item.def=base.baseDef||0;
+        item.atk=Math.floor((base.baseAtk||0)*r.mult);
+        item.def=base.baseDef||0;
         if(base.critBonus)item.critBonus=base.critBonus;
         if(base.fireDmg)item.fireDmg=base.fireDmg;
         if(base.spellBonus)item.spellBonus=Math.floor(base.spellBonus*r.mult);
         if(base.slowBonus)item.slowBonus=true;
         item.value=Math.floor((item.atk*3+item.def*2)*r.mult*1.5);
     }else if(base.type==='armor'){
-        item.def=Math.floor((base.baseDef||0)*r.mult);item.atk=base.baseAtk||0;
+        item.def=Math.floor((base.baseDef||0)*r.mult);
+        item.atk=base.baseAtk||0;
         if(base.hpBonus)item.hpBonus=Math.floor(base.hpBonus*r.mult);
         if(base.mpBonus)item.mpBonus=Math.floor(base.mpBonus*r.mult);
         if(base.dodgeBonus)item.dodgeBonus=base.dodgeBonus;
         if(base.fireResist)item.fireResist=base.fireResist;
         if(base.spellBonus)item.spellBonus=Math.floor(base.spellBonus*r.mult);
         item.value=Math.floor(item.def*4*r.mult*1.5);
-    }else{item.value=Math.floor((base.value||1)*r.mult);}
+    }else{
+        item.value=Math.floor((base.value||1)*r.mult);
+    }
     return item;
 }
 
 // ============ DÜŞMAN DB ============
 const ENEMY_TYPES={
-    slime:{name:'Slime',hp:30,atk:5,def:2,speed:0.8,xp:10,color:'#44cc44',size:12,drops:['slime_jelly','herb'],minDrop:1,maxDrop:2,goldMin:1,goldMax:5,region:'grass'},
-    wolf:{name:'Kurt',hp:45,atk:10,def:4,speed:1.5,xp:15,color:'#888',size:13,drops:['wolf_pelt','bone','herb'],minDrop:1,maxDrop:2,goldMin:2,goldMax:8,region:'grass'},
-    spider:{name:'Örümcek',hp:35,atk:8,def:3,speed:1.2,xp:12,color:'#664422',size:11,drops:['spider_silk','herb'],minDrop:1,maxDrop:2,goldMin:1,goldMax:6,region:'forest'},
-    skeleton:{name:'İskelet',hp:55,atk:12,def:5,speed:1.2,xp:20,color:'#ddd',size:14,drops:['bone','iron_sword','bandage'],minDrop:1,maxDrop:2,goldMin:3,goldMax:10,region:'grass'},
-    bat:{name:'Yarasa',hp:25,atk:8,def:1,speed:2.0,xp:10,color:'#6633aa',size:10,drops:['bat_wing','herb','mana_potion'],minDrop:1,maxDrop:2,goldMin:1,goldMax:5,region:'cave'},
-    zombie:{name:'Zombi',hp:70,atk:10,def:6,speed:0.6,xp:18,color:'#556644',size:14,drops:['bandage','bone','herb'],minDrop:1,maxDrop:2,goldMin:2,goldMax:8,region:'swamp'},
-    ghost:{name:'Hayalet',hp:45,atk:14,def:3,speed:1.8,xp:25,color:'#aaaaff',size:13,drops:['ectoplasm','mana_potion','magic_dust'],minDrop:1,maxDrop:2,goldMin:3,goldMax:12,region:'grave'},
-    orc:{name:'Ork',hp:80,atk:16,def:7,speed:1.0,xp:30,color:'#446633',size:15,drops:['iron_ore','bandage','bone'],minDrop:1,maxDrop:3,goldMin:5,goldMax:15,region:'mountain'},
-    golem:{name:'Taş Golem',hp:120,atk:14,def:15,speed:0.5,xp:35,color:'#888',size:18,drops:['iron_ore','gold_ore'],minDrop:1,maxDrop:2,goldMin:5,goldMax:18,region:'mountain'},
-    demon:{name:'İfrit',hp:110,atk:20,def:9,speed:1.5,xp:55,color:'#cc2200',size:16,drops:['demon_horn','fire_potion','dark_essence'],minDrop:1,maxDrop:3,goldMin:8,goldMax:25,region:'lava'},
-    vampire:{name:'Vampir',hp:90,atk:18,def:7,speed:1.8,xp:45,color:'#880044',size:14,drops:['dark_essence','bandage','ectoplasm'],minDrop:1,maxDrop:2,goldMin:6,goldMax:20,region:'grave'},
-    wyvern:{name:'Vivern',hp:130,atk:22,def:10,speed:2.0,xp:60,color:'#4488cc',size:17,drops:['dragon_scale','gold_ore','bandage'],minDrop:1,maxDrop:3,goldMin:10,goldMax:30,region:'mountain'},
-    dark_knight:{name:'Kara Şövalye',hp:150,atk:25,def:12,speed:1.2,xp:70,color:'#333',size:16,drops:['dark_essence','steel_sword','plate_armor'],minDrop:1,maxDrop:3,goldMin:10,goldMax:35,region:'castle'},
-    hydra:{name:'Hidra',hp:180,atk:20,def:11,speed:1.0,xp:75,color:'#44aa66',size:20,drops:['dragon_scale','greater_mana','herb'],minDrop:2,maxDrop:4,goldMin:12,goldMax:40,region:'swamp'},
-    ice_golem:{name:'Buz Golem',hp:140,atk:16,def:14,speed:0.7,xp:50,color:'#88ccff',size:18,drops:['crystal_shard','frost_sword'],minDrop:1,maxDrop:2,goldMin:8,goldMax:28,region:'ice'},
+    slime:{name:'Slime',hp:30,atk:5,def:2,speed:0.8,xp:10,color:'#44cc44',size:12,drops:['slime_jelly','herb'],minDrop:1,maxDrop:2,goldMin:1,goldMax:5},
+    wolf:{name:'Kurt',hp:45,atk:10,def:4,speed:1.5,xp:15,color:'#888',size:13,drops:['wolf_pelt','bone','herb'],minDrop:1,maxDrop:2,goldMin:2,goldMax:8},
+    spider:{name:'Örümcek',hp:35,atk:8,def:3,speed:1.2,xp:12,color:'#664422',size:11,drops:['spider_silk','herb'],minDrop:1,maxDrop:2,goldMin:1,goldMax:6},
+    skeleton:{name:'İskelet',hp:55,atk:12,def:5,speed:1.2,xp:20,color:'#ddd',size:14,drops:['bone','iron_sword','bandage'],minDrop:1,maxDrop:2,goldMin:3,goldMax:10},
+    bat:{name:'Yarasa',hp:25,atk:8,def:1,speed:2.0,xp:10,color:'#6633aa',size:10,drops:['bat_wing','herb','mana_potion'],minDrop:1,maxDrop:2,goldMin:1,goldMax:5},
+    zombie:{name:'Zombi',hp:70,atk:10,def:6,speed:0.6,xp:18,color:'#556644',size:14,drops:['bandage','bone','herb'],minDrop:1,maxDrop:2,goldMin:2,goldMax:8},
+    ghost:{name:'Hayalet',hp:45,atk:14,def:3,speed:1.8,xp:25,color:'#aaaaff',size:13,drops:['ectoplasm','mana_potion','magic_dust'],minDrop:1,maxDrop:2,goldMin:3,goldMax:12},
+    orc:{name:'Ork',hp:80,atk:16,def:7,speed:1.0,xp:30,color:'#446633',size:15,drops:['iron_ore','bandage','bone'],minDrop:1,maxDrop:3,goldMin:5,goldMax:15},
+    golem:{name:'Taş Golem',hp:120,atk:14,def:15,speed:0.5,xp:35,color:'#888',size:18,drops:['iron_ore','gold_ore'],minDrop:1,maxDrop:2,goldMin:5,goldMax:18},
+    demon:{name:'İfrit',hp:110,atk:20,def:9,speed:1.5,xp:55,color:'#cc2200',size:16,drops:['demon_horn','fire_potion','dark_essence'],minDrop:1,maxDrop:3,goldMin:8,goldMax:25},
+    vampire:{name:'Vampir',hp:90,atk:18,def:7,speed:1.8,xp:45,color:'#880044',size:14,drops:['dark_essence','bandage','ectoplasm'],minDrop:1,maxDrop:2,goldMin:6,goldMax:20},
+    wyvern:{name:'Vivern',hp:130,atk:22,def:10,speed:2.0,xp:60,color:'#4488cc',size:17,drops:['dragon_scale','gold_ore','bandage'],minDrop:1,maxDrop:3,goldMin:10,goldMax:30},
+    dark_knight:{name:'Kara Şövalye',hp:150,atk:25,def:12,speed:1.2,xp:70,color:'#333',size:16,drops:['dark_essence','steel_sword','plate_armor'],minDrop:1,maxDrop:3,goldMin:10,goldMax:35},
+    hydra:{name:'Hidra',hp:180,atk:20,def:11,speed:1.0,xp:75,color:'#44aa66',size:20,drops:['dragon_scale','greater_mana','herb'],minDrop:2,maxDrop:4,goldMin:12,goldMax:40},
+    ice_golem:{name:'Buz Golem',hp:140,atk:16,def:14,speed:0.7,xp:50,color:'#88ccff',size:18,drops:['crystal_shard','frost_sword'],minDrop:1,maxDrop:2,goldMin:8,goldMax:28},
     boss_spider:{name:'🕷️ Örümcek Kraliçe',hp:300,atk:20,def:8,speed:1.0,xp:200,color:'#884422',size:22,drops:['spider_silk','bow_elven','speed_potion'],minDrop:3,maxDrop:5,goldMin:30,goldMax:80,boss:true},
     boss_lich:{name:'💀 Lich Kral',hp:400,atk:28,def:10,speed:1.2,xp:300,color:'#aa44ff',size:20,drops:['dark_essence','void_staff','legendary_potion'],minDrop:3,maxDrop:5,goldMin:50,goldMax:120,boss:true},
     boss_dragon:{name:'🐉 Ejderha Lord',hp:600,atk:35,def:16,speed:1.0,xp:600,color:'#ff4400',size:26,drops:['dragon_sword','dragon_armor','phoenix_feather'],minDrop:4,maxDrop:6,goldMin:80,goldMax:200,boss:true},
@@ -312,38 +379,17 @@ const ENEMY_TYPES={
 
 // ============ SINIF VERİLERİ ============
 const CLASS_DATA={
-    warrior:{name:'Savaşçı',hp:150,mp:30,atk:15,def:10,speed:2.8,crit:5,spellPower:0,startWeapon:'iron_sword',startArmor:'leather_armor',
-        spells:[{name:'Güç Vuruşu',mpCost:5,damage:30,range:40,color:'#ff8800',cooldown:0,type:'melee'},{name:'Savaş Çığlığı',mpCost:10,damage:0,range:150,color:'#ff0000',cooldown:0,type:'buff',buffAtk:10,buffDur:180},{name:'Döner Balta',mpCost:12,damage:45,range:60,color:'#ffaa00',cooldown:0,type:'aoe'}]},
-    archer:{name:'Okçu',hp:100,mp:40,atk:12,def:5,speed:3.5,crit:20,spellPower:0,startWeapon:'bow_wooden',startArmor:'cloth_robe',
-        spells:[{name:'Keskin Ok',mpCost:4,damage:20,range:250,color:'#44aaff',cooldown:0,type:'ranged'},{name:'Çoklu Ok',mpCost:10,damage:15,range:200,color:'#4488ff',cooldown:0,type:'multi'},{name:'Zehirli Ok',mpCost:8,damage:12,range:200,color:'#44ff44',cooldown:0,type:'dot',dotDmg:5,dotDur:90}]},
     mage:{name:'Büyücü',hp:80,mp:80,atk:8,def:3,speed:2.5,crit:5,spellPower:30,startWeapon:'staff_oak',startArmor:'cloth_robe',
-        spells:[{name:'Ateş Topu',mpCost:6,damage:35,range:220,color:'#ff4400',cooldown:0,type:'ranged'},{name:'Buz Fırtınası',mpCost:12,damage:40,range:180,color:'#88ccff',cooldown:0,type:'aoe'},{name:'Yıldırım',mpCost:8,damage:50,range:200,color:'#ffff00',cooldown:0,type:'ranged'}]}
+        spells:[
+            {name:'Ateş Topu',mpCost:6,damage:35,range:220,color:'#ff4400',cooldown:0,type:'ranged'},
+            {name:'Buz Fırtınası',mpCost:12,damage:40,range:180,color:'#88ccff',cooldown:0,type:'aoe'},
+            {name:'Yıldırım',mpCost:8,damage:50,range:200,color:'#ffff00',cooldown:0,type:'ranged'}
+        ]
+    }
 };
 
 // ============ YETENEK AĞAÇLARI ============
 const SKILL_TREES={
-    warrior:[
-        {id:'w1',name:'Demir Yumruk',icon:'👊',desc:'+10% Saldırı',req:null,fx:{atkMult:0.1},cost:1},
-        {id:'w2',name:'Sağlam Vücut',icon:'💪',desc:'+15% HP',req:null,fx:{hpMult:0.15},cost:1},
-        {id:'w3',name:'Kalkan',icon:'🛡️',desc:'+10% Savunma',req:null,fx:{defMult:0.1},cost:1},
-        {id:'w4',name:'Öfke',icon:'😡',desc:'Düşük HP +20% ATK',req:'w2',fx:{lowHpAtk:0.2},cost:2},
-        {id:'w5',name:'Savaş Ustası',icon:'⚔️',desc:'+15% ATK',req:'w1',fx:{atkMult:0.15},cost:2},
-        {id:'w6',name:'Titan Zırhı',icon:'🏰',desc:'+20% DEF',req:'w3',fx:{defMult:0.2},cost:2},
-        {id:'w7',name:'Berserker',icon:'🔥',desc:'+30% ATK, -10% HP',req:'w4,w5',fx:{atkMult:0.3,hpMult:-0.1},cost:3},
-        {id:'w8',name:'Yenilmez',icon:'✨',desc:'+25% HP, +15% DEF',req:'w5,w6',fx:{hpMult:0.25,defMult:0.15},cost:3},
-        {id:'w9',name:'Savaş Tanrısı',icon:'⚡',desc:'+40% ATK, +20% HP',req:'w7,w8',fx:{atkMult:0.4,hpMult:0.2,defMult:0.2},cost:5},
-    ],
-    archer:[
-        {id:'a1',name:'Keskin Nişancı',icon:'🎯',desc:'+15% Kritik',req:null,fx:{critBonus:15},cost:1},
-        {id:'a2',name:'Hızlı Ayaklar',icon:'👟',desc:'+15% Hız',req:null,fx:{speedMult:0.15},cost:1},
-        {id:'a3',name:'Zehir',icon:'☠️',desc:'+20% Zehir',req:null,fx:{poisonMult:0.2},cost:1},
-        {id:'a4',name:'Çift Atış',icon:'🏹',desc:'%25 çift ok',req:'a1',fx:{doubleShot:0.25},cost:2},
-        {id:'a5',name:'Rüzgar',icon:'💨',desc:'+20% Hız',req:'a2',fx:{speedMult:0.2},cost:2},
-        {id:'a6',name:'Ölümcül Zehir',icon:'🧪',desc:'+30% Zehir',req:'a3',fx:{poisonMult:0.3},cost:2},
-        {id:'a7',name:'Fırtına',icon:'🌪️',desc:'+25% Kritik, +10% Hız',req:'a4,a5',fx:{critBonus:25,speedMult:0.1},cost:3},
-        {id:'a8',name:'Keskin Kesme',icon:'✂️',desc:'Kritik +50% hasar',req:'a4,a6',fx:{critDmg:0.5},cost:3},
-        {id:'a9',name:'Okçuluk Tanrısı',icon:'⭐',desc:'+40% Kritik, +25% Hız',req:'a7,a8',fx:{critBonus:40,speedMult:0.25},cost:5},
-    ],
     mage:[
         {id:'m1',name:'Sihir Bilgisi',icon:'📖',desc:'+15% Büyü',req:null,fx:{spellMult:0.15},cost:1},
         {id:'m2',name:'Mana Akışı',icon:'💧',desc:'+20% Mana',req:null,fx:{mpMult:0.2},cost:1},
@@ -357,14 +403,16 @@ const SKILL_TREES={
     ]
 };
 
-// ============ OYUNCU ============
-let player={x:100*TILE,y:100*TILE,w:20,h:20,
+// ============ OYUN DEĞİŞKENLERİ ============
+let player={
+    x:100*TILE,y:100*TILE,w:20,h:20,
     hp:100,maxHp:100,mp:50,maxMp:50,atk:10,def:5,speed:3,crit:5,spellPower:0,
-    level:1,xp:0,xpToNext:50,gold:0,className:'',dir:'down',
+    level:1,xp:0,xpToNext:50,gold:0,className:'mage',dir:'down',
     attacking:false,attackTimer:0,rolling:false,rollTimer:0,rollCooldown:0,invincible:0,
     inventory:[],equipped:{weapon:null,armor:null},spells:[],
     skillPoints:0,unlockedSkills:{},killCounts:{},chestsOpened:0,
-    visitedRegions:new Set(),buffAtk:0,buffAtkTimer:0,speedBuff:0,speedBuffTimer:0};
+    visitedRegions:new Set(),buffAtk:0,buffAtkTimer:0,speedBuff:0,speedBuffTimer:0
+};
 
 let gameMap=[],enemies=[],npcs=[],chests=[],groundItems=[],
     particles=[],projectiles=[],damageNumbers=[],
@@ -375,50 +423,102 @@ let gameMap=[],enemies=[],npcs=[],chests=[],groundItems=[],
     joystick={active:false,dx:0,dy:0,touchId:null},mobileAttack=false,
     dayNightCycle=0;
 
-// ============ HARİTA ============
+// ============ HARİTA OLUŞTUR ============
 function generateMap(){
     const map=[];
-    for(let y=0;y<ROWS;y++){map[y]=[];for(let x=0;x<COLS;x++){
-        if(x===0||y===0||x===COLS-1||y===ROWS-1)map[y][x]=TILES.WALL;
-        else map[y][x]=TILES.GRASS;
-    }}
-    // Yollar
-    for(let x=2;x<COLS-2;x++){map[100][x]=TILES.PATH;map[99][x]=TILES.PATH;map[101][x]=TILES.PATH;}
-    for(let y=2;y<ROWS-2;y++){map[y][100]=TILES.PATH;map[y][99]=TILES.PATH;map[y][101]=TILES.PATH;}
-    // Bölgeler
+    for(let y=0;y<ROWS;y++){
+        map[y]=[];
+        for(let x=0;x<COLS;x++){
+            if(x===0||y===0||x===COLS-1||y===ROWS-1){
+                map[y][x]=TILES.WALL;
+            }else{
+                map[y][x]=TILES.GRASS;
+            }
+        }
+    }
+    
+    for(let x=2;x<COLS-2;x++){
+        map[100][x]=TILES.PATH;
+        map[99][x]=TILES.PATH;
+        map[101][x]=TILES.PATH;
+    }
+    for(let y=2;y<ROWS-2;y++){
+        map[y][100]=TILES.PATH;
+        map[y][99]=TILES.PATH;
+        map[y][101]=TILES.PATH;
+    }
+    
     const regions=[
-        {tile:TILES.TREE,name:'forest',cx:60,cy:60,r:35},{tile:TILES.TREE,name:'forest',cx:140,cy:50,r:30},
-        {tile:TILES.WATER,name:'lake',cx:130,cy:90,r:18},{tile:TILES.WATER,name:'lake',cx:70,cy:130,r:15},
-        {tile:TILES.ICE,name:'ice',cx:40,cy:40,r:25},{tile:TILES.LAVA,name:'lava',cx:160,cy:160,r:20},
-        {tile:TILES.SAND,name:'desert',cx:150,cy:50,r:20},{tile:TILES.SWAMP,name:'swamp',cx:50,cy:150,r:20},
+        {tile:TILES.TREE,name:'forest',cx:60,cy:60,r:35},
+        {tile:TILES.TREE,name:'forest',cx:140,cy:50,r:30},
+        {tile:TILES.WATER,name:'lake',cx:130,cy:90,r:18},
+        {tile:TILES.WATER,name:'lake',cx:70,cy:130,r:15},
+        {tile:TILES.ICE,name:'ice',cx:40,cy:40,r:25},
+        {tile:TILES.LAVA,name:'lava',cx:160,cy:160,r:20},
+        {tile:TILES.SAND,name:'desert',cx:150,cy:50,r:20},
+        {tile:TILES.SWAMP,name:'swamp',cx:50,cy:150,r:20},
         {tile:TILES.SNOW,name:'snow',cx:30,cy:90,r:15}
     ];
-    regions.forEach(r=>{
-        for(let dy=-r.r;dy<=r.r;dy++)for(let dx=-r.r;dx<=r.r;dx++){
-            if(dx*dx+dy*dy<=r.r*r.r){let nx=r.cx+dx,ny=r.cy+dy;
-                if(nx>1&&nx<COLS-2&&ny>1&&ny<ROWS-2&&map[ny][nx]!==TILES.WALL&&map[ny][nx]!==TILES.PATH)map[ny][nx]=r.tile;
+    
+    regions.forEach(function(r){
+        for(let dy=-r.r;dy<=r.r;dy++){
+            for(let dx=-r.r;dx<=r.r;dx++){
+                if(dx*dx+dy*dy<=r.r*r.r){
+                    let nx=r.cx+dx,ny=r.cy+dy;
+                    if(nx>1&&nx<COLS-2&&ny>1&&ny<ROWS-2&&map[ny][nx]!==TILES.WALL&&map[ny][nx]!==TILES.PATH){
+                        map[ny][nx]=r.tile;
+                    }
+                }
             }
         }
     });
-    for(let i=0;i<100;i++)map[randInt(2,ROWS-3)][randInt(2,COLS-3)]=TILES.FLOWER;
-    for(let i=0;i<40;i++){let x=randInt(5,COLS-6),y=randInt(5,ROWS-6);if(map[y][x]===TILES.GRASS)map[y][x]=TILES.MUSHROOM;}
-    for(let i=0;i;25;i++){let x=randInt(5,COLS-6),y=randInt(5,ROWS-6);if(map[y][x]===TILES.GRASS)map[y][x]=TILES.CRYSTAL;}
-    for(let i=0;i<20;i++){let cx=randInt(10,COLS-11),cy=randInt(10,ROWS-11);
-        for(let dy=0;dy<randInt(2,4);dy++)for(let dx=0;dx<randInt(2,4);dx++){
-            if(dy===0||dy===3||dx===0||dx===3){let ny=cy+dy,nx=cx+dx;
-                if(ny>0&&ny<ROWS-1&&nx>0&&nx<COLS-1)map[ny][nx]=TILES.STONE;
+    
+    for(let i=0;i<100;i++){
+        map[randInt(2,ROWS-3)][randInt(2,COLS-3)]=TILES.FLOWER;
+    }
+    for(let i=0;i<40;i++){
+        let x=randInt(5,COLS-6),y=randInt(5,ROWS-6);
+        if(map[y][x]===TILES.GRASS)map[y][x]=TILES.MUSHROOM;
+    }
+    for(let i=0;i<25;i++){
+        let x=randInt(5,COLS-6),y=randInt(5,ROWS-6);
+        if(map[y][x]===TILES.GRASS)map[y][x]=TILES.CRYSTAL;
+    }
+    for(let i=0;i<20;i++){
+        let cx=randInt(10,COLS-11),cy=randInt(10,ROWS-11);
+        for(let dy=0;dy<randInt(2,4);dy++){
+            for(let dx=0;dx<randInt(2,4);dx++){
+                if(dy===0||dy===3||dx===0||dx===3){
+                    let ny=cy+dy,nx=cx+dx;
+                    if(ny>0&&ny<ROWS-1&&nx>0&&nx<COLS-1)map[ny][nx]=TILES.STONE;
+                }
             }
         }
     }
-    // Sandıklar
-    for(let i=0;i<80;i++){let px,py,att=0;
-        do{px=randInt(5,COLS-6);py=randInt(5,ROWS-6);att++;}while(SOLID.has(map[py][px])&&att<10);
-        if(att<10)chests.push({x:px*TILE+16,y:py*TILE+16,opened:false,rarity:Math.random()<0.1?'rare':Math.random()<0.3?'uncommon':'common',special:Math.random()<0.05});
+    
+    for(let i=0;i<80;i++){
+        let px,py,att=0;
+        do{
+            px=randInt(5,COLS-6);
+            py=randInt(5,ROWS-6);
+            att++;
+        }while(SOLID.has(map[py][px])&&att<10);
+        
+        if(att<10){
+            chests.push({
+                x:px*TILE+16,
+                y:py*TILE+16,
+                opened:false,
+                rarity:Math.random()<0.1?'rare':Math.random()<0.3?'uncommon':'common',
+                special:Math.random()<0.05
+            });
+        }
     }
+    
     return map;
 }
 
-// ============ NPC ============
+// ============ NPC AYARLARI ============
 function setupNPCs(){
     npcs=[
         {name:'Bilge Eldrin',x:98,y:98,color:'#ffd700',dialog:['Hoş geldin!','Görevler alarak güçlen!','Buz bölgesini keşfet!'],type:'quest'},
@@ -428,604 +528,1666 @@ function setupNPCs(){
     ];
 }
 
-// ============ DÜŞMANLAR ============
+// ============ DÜŞMAN OLUŞTUR ============
 function spawnEnemies(){
     enemies=[];
     const zones=[
-        {type:'slime',count:30,cx:100,cy:100,r:80},{type:'wolf',count:15,cx:100,cy:100,r:60},
-        {type:'spider',count:20,cx:60,cy:60,r:30},{type:'skeleton',count:20,cx:100,cy:120,r:50},
-        {type:'bat',count:15,cx:120,cy:130,r:25},{type:'zombie',count:15,cx:50,cy:150,r:15},
-        {type:'ghost',count:15,cx:140,cy:50,r:25},{type:'orc',count:15,cx:150,cy:120,r:25},
-        {type:'golem',count:10,cx:160,cy:140,r:20},{type:'demon',count:10,cx:160,cy:160,r:15},
-        {type:'vampire',count:10,cx:140,cy:50,r:20},{type:'wyvern',count:10,cx:160,cy:140,r:20},
-        {type:'dark_knight',count:8,cx:170,cy:170,r:15},{type:'hydra',count:8,cx:50,cy:150,r:15},
+        {type:'slime',count:30,cx:100,cy:100,r:80},
+        {type:'wolf',count:15,cx:100,cy:100,r:60},
+        {type:'spider',count:20,cx:60,cy:60,r:30},
+        {type:'skeleton',count:20,cx:100,cy:120,r:50},
+        {type:'bat',count:15,cx:120,cy:130,r:25},
+        {type:'zombie',count:15,cx:50,cy:150,r:15},
+        {type:'ghost',count:15,cx:140,cy:50,r:25},
+        {type:'orc',count:15,cx:150,cy:120,r:25},
+        {type:'golem',count:10,cx:160,cy:140,r:20},
+        {type:'demon',count:10,cx:160,cy:160,r:15},
+        {type:'vampire',count:10,cx:140,cy:50,r:20},
+        {type:'wyvern',count:10,cx:160,cy:140,r:20},
+        {type:'dark_knight',count:8,cx:170,cy:170,r:15},
+        {type:'hydra',count:8,cx:50,cy:150,r:15},
         {type:'ice_golem',count:10,cx:40,cy:40,r:20},
     ];
-    zones.forEach(z=>{
+    
+    zones.forEach(function(z){
         for(let i=0;i<z.count;i++){
             let ex,ey,att=0;
-            do{ex=randInt(5,COLS-6)*TILE+16;ey=randInt(5,ROWS-6)*TILE+16;att++;}
-            while((isSolid(ex,ey)||dist({x:ex,y:ey},player)<200)&&att<20);
-            if(att<20){const t=ENEMY_TYPES[z.type];
-                enemies.push({...t,type:z.type,x:ex,y:ey,maxHp:t.hp,dir:randInt(0,3),moveTimer:randInt(0,60),
-                    hitTimer:0,attackCooldown:0,aggroRange:150,alive:true,deathTimer:0,hidden:false,
-                    poisoned:false,poisonTimer:0,slow:false,frozen:false,dotDmg:0,dotTimer:0});
+            do{
+                ex=randInt(5,COLS-6)*TILE+16;
+                ey=randInt(5,ROWS-6)*TILE+16;
+                att++;
+            }while((isSolid(ex,ey)||dist({x:ex,y:ey},player)<200)&&att<20);
+            
+            if(att<20){
+                const t=ENEMY_TYPES[z.type];
+                enemies.push({
+                    ...t,type:z.type,x:ex,y:ey,maxHp:t.hp,
+                    dir:randInt(0,3),moveTimer:randInt(0,60),
+                    hitTimer:0,attackCooldown:0,aggroRange:150,
+                    alive:true,deathTimer:0,hidden:false,
+                    poisoned:false,poisonTimer:0,slow:false,
+                    frozen:false,dotDmg:0,dotTimer:0
+                });
             }
         }
     });
-    // Boss'lar
-    [{type:'boss_spider',x:60*TILE,y:60*TILE},{type:'boss_lich',x:140*TILE,y:50*TILE},
-     {type:'boss_dragon',x:160*TILE,y:160*TILE},{type:'boss_king',x:170*TILE,y:170*TILE},
-     {type:'boss_hydra',x:50*TILE,y:150*TILE}].forEach(b=>{
+    
+    const bossPositions=[
+        {type:'boss_spider',x:60*TILE,y:60*TILE},
+        {type:'boss_lich',x:140*TILE,y:50*TILE},
+        {type:'boss_dragon',x:160*TILE,y:160*TILE},
+        {type:'boss_king',x:170*TILE,y:170*TILE},
+        {type:'boss_hydra',x:50*TILE,y:150*TILE}
+    ];
+    
+    bossPositions.forEach(function(b){
         const t=ENEMY_TYPES[b.type];
-        enemies.push({...t,type:b.type,x:b.x,y:b.y,maxHp:t.hp,dir:0,moveTimer:0,hitTimer:0,
-            attackCooldown:0,aggroRange:350,alive:true,deathTimer:0,hidden:false,
-            poisoned:false,poisonTimer:0,slow:false,frozen:false,dotDmg:0,dotTimer:0,phase:1});
+        enemies.push({
+            ...t,type:b.type,x:b.x,y:b.y,maxHp:t.hp,
+            dir:0,moveTimer:0,hitTimer:0,attackCooldown:0,
+            aggroRange:350,alive:true,deathTimer:0,hidden:false,
+            poisoned:false,poisonTimer:0,slow:false,
+            frozen:false,dotDmg:0,dotTimer:0,phase:1
+        });
     });
 }
 
-// ============ SINIF SEÇİMİ ============
-function selectClass(cls){
-    if(gameStarted)return; // Tekrar tıklamayı engelle
-    gameStarted=true;
-    player.className=cls;
-    const c=CLASS_DATA[cls];
-    player.maxHp=c.hp;player.hp=c.hp;player.maxMp=c.mp;player.mp=c.mp;
-    player.atk=c.atk;player.def=c.def;player.speed=c.speed;player.crit=c.crit;player.spellPower=c.spellPower;
-    player.spells=c.spells.map(s=>({...s,cooldown:0}));
-    // Başlangıç eşyaları
+// ============ OYUN BAŞLATMA ============
+function initGame(){
+    checkMobile();
+    checkOrientation();
+    resizeCanvas();
+    
+    const c=CLASS_DATA['mage'];
+    player.maxHp=c.hp;
+    player.hp=c.hp;
+    player.maxMp=c.mp;
+    player.mp=c.mp;
+    player.atk=c.atk;
+    player.def=c.def;
+    player.speed=c.speed;
+    player.crit=c.crit;
+    player.spellPower=c.spellPower;
+    player.spells=c.spells.map(function(s){return {...s,cooldown:0};});
+    
     addItem(c.startWeapon,1,'common');
     addItem(c.startArmor,1,'common');
-    addItem('herb',3);addItem('bandage',2);
+    addItem('herb',3);
+    addItem('bandage',2);
+    
     recalcStats();
-    document.getElementById('class-select').style.display='none';
     setupMobileControls();
     gameMap=generateMap();
     setupNPCs();
     spawnEnemies();
-    player.x=100*TILE;player.y=100*TILE;
+    
+    player.x=100*TILE;
+    player.y=100*TILE;
     camera.x=player.x-canvas.width/2;
     camera.y=player.y-canvas.height/2;
-    setTimeout(()=>{dialogActive=true;currentNPC=npcs[0];currentNPC.dialogShown=0;updateDialog();},600);
-    showNotify('🎮 Oyuna hoş geldin! WASD veya joystick ile hareket et.');
+    
+    setTimeout(function(){
+        dialogActive=true;
+        currentNPC=npcs[0];
+        currentNPC.dialogShown=0;
+        updateDialog();
+    },600);
+    
+    showNotify('🎮 Oyuna hoş geldin! Joystick ile hareket et.');
 }
 
-// ============ ENVANTER ============
+// ============ ENVANTER SİSTEMİ ============
 const INV_PER_PAGE=18;
-function addItem(baseId,count=1,rarity){
+
+function addItem(baseId,count,rarity){
+    if(count===undefined)count=1;
     if(!rarity)rarity=randomRarity();
-    const item=generateItem(baseId,rarity);if(!item)return;
+    const item=generateItem(baseId,rarity);
+    if(!item)return;
+    
     if(item.type==='consumable'||item.type==='material'||item.type==='currency'){
-        const existing=player.inventory.find(i=>i.id===baseId);
-        if(existing)existing.count+=count;else player.inventory.push({...item,count});
-    }else{player.inventory.push({...item,count:1});}
+        const existing=player.inventory.find(function(i){return i.id===baseId;});
+        if(existing){
+            existing.count+=count;
+        }else{
+            player.inventory.push({...item,count:count});
+        }
+    }else{
+        player.inventory.push({...item,count:1});
+    }
 }
-function hasItem(id){return player.inventory.some(i=>i.id===id);}
-function removeItem(id,count=1){
-    const idx=player.inventory.findIndex(i=>i.id===id);
-    if(idx!==-1){player.inventory[idx].count-=count;if(player.inventory[idx].count<=0)player.inventory.splice(idx,1);}
+
+function hasItem(id){
+    return player.inventory.some(function(i){return i.id===id;});
 }
+
+function removeItem(id,count){
+    if(count===undefined)count=1;
+    const idx=player.inventory.findIndex(function(i){return i.id===id;});
+    if(idx!==-1){
+        player.inventory[idx].count-=count;
+        if(player.inventory[idx].count<=0){
+            player.inventory.splice(idx,1);
+        }
+    }
+}
+
 function useItem(pageIndex){
     const actualIdx=invPage*INV_PER_PAGE+pageIndex;
     if(actualIdx>=player.inventory.length)return;
-    const item=player.inventory[actualIdx];const data=getItemData(item.id);if(!data)return;
+    
+    const item=player.inventory[actualIdx];
+    const data=getItemData(item.id);
+    if(!data)return;
+    
     if(data.type==='consumable'){
         const eff=data.effect;
-        if(eff.hp){player.hp=Math.min(player.maxHp,player.hp+eff.hp);addParticle(player.x,player.y,'+','#44ff44');}
-        if(eff.mp){player.mp=Math.min(player.maxMp,player.mp+eff.mp);addParticle(player.x,player.y,'+','#4488ff');}
-        if(eff.damage){let cl=enemies.filter(e=>e.alive).sort((a,b)=>dist(a,player)-dist(b,player))[0];
-            if(cl){dealDamage(cl,eff.damage);for(let i=0;i<10;i++)addParticle(cl.x,cl.y,'🔥','#ff4400');}}
-        if(eff.speed){player.speedBuff=500;player.speedBuffTimer=600;addParticle(player.x,player.y,'⚡','#ffff00');}
-        if(eff.atkBuff){player.buffAtk=30;player.buffAtkTimer=600;addParticle(player.x,player.y,'💪','#ff8800');}
-        removeItem(item.id);addDamageNumber(player.x,player.y-20,data.name,'#ffff00');renderInventory();
+        if(eff.hp){
+            player.hp=Math.min(player.maxHp,player.hp+eff.hp);
+            addParticle(player.x,player.y,'+','#44ff44');
+        }
+        if(eff.mp){
+            player.mp=Math.min(player.maxMp,player.mp+eff.mp);
+            addParticle(player.x,player.y,'+','#4488ff');
+        }
+        if(eff.damage){
+            const cl=enemies.filter(function(e){return e.alive;}).sort(function(a,b){return dist(a,player)-dist(b,player);})[0];
+            if(cl){
+                dealDamage(cl,eff.damage);
+                for(let i=0;i<10;i++)addParticle(cl.x,cl.y,'🔥','#ff4400');
+            }
+        }
+        if(eff.speed){
+            player.speedBuff=500;
+            player.speedBuffTimer=600;
+            addParticle(player.x,player.y,'⚡','#ffff00');
+        }
+        if(eff.atkBuff){
+            player.buffAtk=30;
+            player.buffAtkTimer=600;
+            addParticle(player.x,player.y,'💪','#ff8800');
+        }
+        removeItem(item.id);
+        addDamageNumber(player.x,player.y-20,data.name,'#ffff00');
+        renderInventory();
     }else if(data.type==='weapon'){
-        if(player.equipped.weapon)addItem(player.equipped.weapon.id,1,player.equipped.weapon.rarity);
-        player.equipped.weapon={...item};recalcStats();player.inventory.splice(actualIdx,1);
-        addDamageNumber(player.x,player.y-20,data.name+' kuşanıldı!','#ff8800');renderInventory();
+        if(player.equipped.weapon){
+            addItem(player.equipped.weapon.id,1,player.equipped.weapon.rarity);
+        }
+        player.equipped.weapon={...item};
+        recalcStats();
+        player.inventory.splice(actualIdx,1);
+        addDamageNumber(player.x,player.y-20,data.name+' kuşanıldı!','#ff8800');
+        renderInventory();
     }else if(data.type==='armor'){
-        if(player.equipped.armor)addItem(player.equipped.armor.id,1,player.equipped.armor.rarity);
-        player.equipped.armor={...item};recalcStats();player.inventory.splice(actualIdx,1);
-        addDamageNumber(player.x,player.y-20,data.name+' giyildi!','#ff8800');renderInventory();
+        if(player.equipped.armor){
+            addItem(player.equipped.armor.id,1,player.equipped.armor.rarity);
+        }
+        player.equipped.armor={...item};
+        recalcStats();
+        player.inventory.splice(actualIdx,1);
+        addDamageNumber(player.x,player.y-20,data.name+' giyildi!','#ff8800');
+        renderInventory();
     }
 }
+
 function recalcStats(){
-    if(!player.className)return;
     const c=CLASS_DATA[player.className];
-    let baseAtk=c.atk+(player.level-1)*3,baseDef=c.def+(player.level-1)*2;
-    let baseHp=c.hp+(player.level-1)*15,baseMp=c.mp+(player.level-1)*8;
-    let bonusAtk=0,bonusDef=0,bonusHp=0,bonusMp=0,bonusCrit=c.crit,bonusSpell=c.spellPower,bonusSpeed=0;
-    if(player.equipped.weapon){bonusAtk+=player.equipped.weapon.atk||0;if(player.equipped.weapon.critBonus)bonusCrit+=player.equipped.weapon.critBonus;if(player.equipped.weapon.spellBonus)bonusSpell+=player.equipped.weapon.spellBonus;}
-    if(player.equipped.armor){bonusDef+=player.equipped.armor.def||0;if(player.equipped.armor.hpBonus)bonusHp+=player.equipped.armor.hpBonus;if(player.equipped.armor.mpBonus)bonusMp+=player.equipped.armor.mpBonus;if(player.equipped.armor.spellBonus)bonusSpell+=player.equipped.armor.spellBonus;}
+    if(!c)return;
+    
+    let baseAtk=c.atk+(player.level-1)*3;
+    let baseDef=c.def+(player.level-1)*2;
+    let baseHp=c.hp+(player.level-1)*15;
+    let baseMp=c.mp+(player.level-1)*8;
+    
+    let bonusAtk=0,bonusDef=0,bonusHp=0,bonusMp=0;
+    let bonusCrit=c.crit;
+    let bonusSpell=c.spellPower;
+    let bonusSpeed=0;
+    
+    if(player.equipped.weapon){
+        bonusAtk+=player.equipped.weapon.atk||0;
+        if(player.equipped.weapon.critBonus)bonusCrit+=player.equipped.weapon.critBonus;
+        if(player.equipped.weapon.spellBonus)bonusSpell+=player.equipped.weapon.spellBonus;
+    }
+    if(player.equipped.armor){
+        bonusDef+=player.equipped.armor.def||0;
+        if(player.equipped.armor.hpBonus)bonusHp+=player.equipped.armor.hpBonus;
+        if(player.equipped.armor.mpBonus)bonusMp+=player.equipped.armor.mpBonus;
+        if(player.equipped.armor.spellBonus)bonusSpell+=player.equipped.armor.spellBonus;
+    }
+    
     const skills=SKILL_TREES[player.className];
-    if(skills)skills.forEach(s=>{if(player.unlockedSkills[s.id]){
-        if(s.fx.atkMult)baseAtk*=(1+s.fx.atkMult);if(s.fx.defMult)baseDef*=(1+s.fx.defMult);
-        if(s.fx.hpMult)baseHp*=(1+s.fx.hpMult);if(s.fx.mpMult)baseMp*=(1+s.fx.mpMult);
-        if(s.fx.critBonus)bonusCrit+=s.fx.critBonus;if(s.fx.spellMult)bonusSpell*=(1+s.fx.spellMult);
-        if(s.fx.speedMult)bonusSpeed+=s.fx.speedMult;
-    }});
+    if(skills){
+        skills.forEach(function(s){
+            if(player.unlockedSkills[s.id]){
+                if(s.fx.atkMult)baseAtk*=(1+s.fx.atkMult);
+                if(s.fx.defMult)baseDef*=(1+s.fx.defMult);
+                if(s.fx.hpMult)baseHp*=(1+s.fx.hpMult);
+                if(s.fx.mpMult)baseMp*=(1+s.fx.mpMult);
+                if(s.fx.critBonus)bonusCrit+=s.fx.critBonus;
+                if(s.fx.spellMult)bonusSpell*=(1+s.fx.spellMult);
+                if(s.fx.speedMult)bonusSpeed+=s.fx.speedMult;
+            }
+        });
+    }
+    
     player.atk=Math.floor(baseAtk+bonusAtk+(player.buffAtk>0?30:0));
     player.def=Math.floor(baseDef+bonusDef);
     player.maxHp=Math.floor(baseHp+bonusHp);
     player.maxMp=Math.floor(baseMp+bonusMp);
-    player.crit=bonusCrit;player.spellPower=Math.floor(bonusSpell);
+    player.crit=bonusCrit;
+    player.spellPower=Math.floor(bonusSpell);
     player.speed=(c.speed+(c.speed*bonusSpeed))*(player.speedBuff>0?1.5:1);
 }
+
 function invNav(dir){
     const maxPage=Math.max(0,Math.ceil(player.inventory.length/INV_PER_PAGE)-1);
-    invPage=clamp(invPage+dir,0,maxPage);renderInventory();
+    invPage=clamp(invPage+dir,0,maxPage);
+    renderInventory();
 }
+
 function toggleInventory(){
-    inventoryOpen=!inventoryOpen;skillOpen=false;shopOpen=false;
+    inventoryOpen=!inventoryOpen;
+    skillOpen=false;
+    shopOpen=false;
     document.getElementById('inventory-panel').style.display=inventoryOpen?'block':'none';
     document.getElementById('skill-panel').style.display='none';
     document.getElementById('shop-panel').style.display='none';
-    if(inventoryOpen){invPage=0;renderInventory();}
+    if(inventoryOpen){
+        invPage=0;
+        renderInventory();
+    }
 }
+
 function renderInventory(){
-    const grid=document.getElementById('inv-grid');grid.innerHTML='';
-    const start=invPage*INV_PER_PAGE,end=Math.min(start+INV_PER_PAGE,player.inventory.length);
+    const grid=document.getElementById('inv-grid');
+    grid.innerHTML='';
+    
+    const start=invPage*INV_PER_PAGE;
+    const end=Math.min(start+INV_PER_PAGE,player.inventory.length);
     const maxPage=Math.max(1,Math.ceil(player.inventory.length/INV_PER_PAGE));
-    document.getElementById('inv-page-num').textContent=`${invPage+1}/${maxPage}`;
+    
+    document.getElementById('inv-page-num').textContent=(invPage+1)+'/'+maxPage;
     document.getElementById('inv-page-info').textContent=player.inventory.length+' eşya';
+    
     for(let i=0;i<INV_PER_PAGE;i++){
-        const slot=document.createElement('div');slot.className='inv-slot';
+        const slot=document.createElement('div');
+        slot.className='inv-slot';
         const item=player.inventory[start+i];
+        
         if(item){
             slot.classList.add('rarity-'+item.rarity);
-            let tip=`<b style="color:${RARITY[item.rarity]?.color||'#fff'}">${item.name}</b><br>`;
-            if(item.type==='weapon')tip+=`⚔️${item.atk} 🛡️${item.def}`;
-            else if(item.type==='armor')tip+=`🛡️${item.def}${item.hpBonus?' ❤️+'+item.hpBonus:''}${item.mpBonus?' 💎+'+item.mpBonus:''}`;
-            else tip+=item.desc||'';
-            if(item.fireDmg)tip+=` 🔥+${item.fireDmg}`;if(item.spellBonus)tip+=` ✨+${item.spellBonus}`;
-            if(item.critBonus)tip+=` 🎯+${item.critBonus}%`;tip+=`<br>💰${item.value}`;
-            slot.innerHTML=`${item.icon||'❓'}<span class="count">${item.count>1?item.count:''}</span><div class="tooltip" style="border-color:${RARITY[item.rarity]?.color}">${tip}</div>`;
-            slot.onclick=(e)=>{e.stopPropagation();useItem(i);};
+            let tip='<b style="color:'+RARITY[item.rarity].color+'">'+item.name+'</b><br>';
+            
+            if(item.type==='weapon'){
+                tip+='⚔️'+item.atk+' 🛡️'+item.def;
+            }else if(item.type==='armor'){
+                tip+='🛡️'+item.def;
+                if(item.hpBonus)tip+=' ❤️+'+item.hpBonus;
+                if(item.mpBonus)tip+=' 💎+'+item.mpBonus;
+            }else{
+                tip+=item.desc||'';
+            }
+            
+            if(item.fireDmg)tip+=' 🔥+'+item.fireDmg;
+            if(item.spellBonus)tip+=' ✨+'+item.spellBonus;
+            if(item.critBonus)tip+=' 🎯+'+item.critBonus+'%';
+            tip+='<br>💰'+item.value;
+            
+            slot.innerHTML=item.icon+'<span class="count">'+(item.count>1?item.count:'')+'</span><div class="tooltip" style="border-color:'+RARITY[item.rarity].color+'">'+tip+'</div>';
+            slot.onclick=function(e){e.stopPropagation();useItem(i);};
         }
+        
         grid.appendChild(slot);
     }
 }
 
-// ============ YETENEK ============
+// ============ YETENEK SİSTEMİ ============
 function toggleSkills(){
-    skillOpen=!skillOpen;inventoryOpen=false;shopOpen=false;
+    skillOpen=!skillOpen;
+    inventoryOpen=false;
+    shopOpen=false;
     document.getElementById('skill-panel').style.display=skillOpen?'block':'none';
     document.getElementById('inventory-panel').style.display='none';
     document.getElementById('shop-panel').style.display='none';
     if(skillOpen)renderSkillTree();
 }
+
 function renderSkillTree(){
-    const tree=document.getElementById('skill-tree');tree.innerHTML='';
-    const skills=SKILL_TREES[player.className];if(!skills)return;
+    const tree=document.getElementById('skill-tree');
+    tree.innerHTML='';
+    
+    const skills=SKILL_TREES[player.className];
+    if(!skills)return;
+    
     document.getElementById('skill-points-display').textContent='Yetenek Puanı: '+player.skillPoints;
-    skills.forEach(s=>{
+    
+    skills.forEach(function(s){
         const unlocked=!!player.unlockedSkills[s.id];
-        const reqMet=!s.req||s.req.split(',').every(r=>player.unlockedSkills[r]);
+        const reqMet=!s.req||s.req.split(',').every(function(r){return player.unlockedSkills[r];});
         const locked=!reqMet&&!unlocked;
+        
         const node=document.createElement('div');
         node.className='skill-node'+(unlocked?' unlocked':locked?' locked':'');
-        node.innerHTML=`<div class="sk-icon">${s.icon}</div><div class="sk-name">${s.name}</div><div class="sk-desc">${s.desc}</div>${!unlocked?'<div style="color:#ffd700;font-size:9px">'+s.cost+' puan</div>':'<div style="color:#44ff44;font-size:9px">✅</div>'}`;
-        if(!locked&&!unlocked)node.onclick=()=>unlockSkill(s);
+        node.innerHTML='<div class="sk-icon">'+s.icon+'</div><div class="sk-name">'+s.name+'</div><div class="sk-desc">'+s.desc+'</div>'+(unlocked?'<div style="color:#44ff44;font-size:9px">✅</div>':'<div style="color:#ffd700;font-size:9px">'+s.cost+' puan</div>');
+        
+        if(!locked&&!unlocked){
+            node.onclick=function(){unlockSkill(s);};
+        }
+        
         tree.appendChild(node);
     });
 }
+
 function unlockSkill(s){
     if(player.skillPoints<s.cost||player.unlockedSkills[s.id])return;
-    player.skillPoints-=s.cost;player.unlockedSkills[s.id]=true;recalcStats();renderSkillTree();
+    player.skillPoints-=s.cost;
+    player.unlockedSkills[s.id]=true;
+    recalcStats();
+    renderSkillTree();
     showNotify(s.name+' açıldı!');
 }
 
-// ============ MARKET ============
+// ============ MARKET SİSTEMİ ============
 function toggleShop(){
-    shopOpen=!shopOpen;inventoryOpen=false;skillOpen=false;
+    shopOpen=!shopOpen;
+    inventoryOpen=false;
+    skillOpen=false;
     document.getElementById('shop-panel').style.display=shopOpen?'block':'none';
     document.getElementById('inventory-panel').style.display='none';
     document.getElementById('skill-panel').style.display='none';
     if(shopOpen)renderShop();
 }
+
 function renderShop(){
-    const sellDiv=document.getElementById('shop-sell-items');sellDiv.innerHTML='';
-    const buyDiv=document.getElementById('shop-buy-items');buyDiv.innerHTML='';
-    player.inventory.forEach((item,idx)=>{
-        const div=document.createElement('div');div.className='shop-item';
-        div.innerHTML=`<div class="si-left"><span class="si-icon">${item.icon||'❓'}</span><div class="si-info"><span class="si-name" style="color:${RARITY[item.rarity]?.color||'#fff'}">${item.name}</span> <span class="si-price">x${item.count}</span></div></div><button class="shop-sell" onclick="sellItem(${idx})">Sat(${Math.floor((item.value||1)*0.6)}🪙)</button>`;
+    const sellDiv=document.getElementById('shop-sell-items');
+    sellDiv.innerHTML='';
+    
+    const buyDiv=document.getElementById('shop-buy-items');
+    buyDiv.innerHTML='';
+    
+    player.inventory.forEach(function(item,idx){
+        const div=document.createElement('div');
+        div.className='shop-item';
+        div.innerHTML='<div class="si-left"><span class="si-icon">'+(item.icon||'❓')+'</span><div class="si-info"><span class="si-name" style="color:'+RARITY[item.rarity].color+'">'+item.name+'</span> <span class="si-price">x'+item.count+'</span></div></div><button class="shop-sell" onclick="sellItem('+idx+')">Sat('+Math.floor((item.value||1)*0.6)+'🪙)</button>';
         sellDiv.appendChild(div);
     });
-    [{id:'herb',p:10},{id:'bandage',p:20},{id:'mana_potion',p:15},{id:'greater_mana',p:35},
-     {id:'fire_potion',p:30},{id:'speed_potion',p:40},{id:'elixir_power',p:50},{id:'legendary_potion',p:200},
-     {id:'iron_sword',p:50},{id:'steel_sword',p:120},{id:'mithril_sword',p:300},{id:'adamant_sword',p:600},
-     {id:'leather_armor',p:40},{id:'chain_mail',p:100},{id:'plate_armor',p:250},{id:'mithril_armor',p:500},
-     {id:'bow_wooden',p:60},{id:'bow_elven',p:200},{id:'staff_oak',p:70},{id:'staff_arcane',p:250}].forEach(si=>{
-        const data=getItemData(si.id);if(!data)return;
-        const div=document.createElement('div');div.className='shop-item';
-        div.innerHTML=`<div class="si-left"><span class="si-icon">${data.icon}</span><div class="si-info"><span class="si-name">${data.name}</span><br><span class="si-price">💰${si.p}</span></div></div><button class="shop-buy" onclick="buyItem('${si.id}',${si.p})">Al</button>`;
+    
+    const shopItems=[
+        {id:'herb',p:10},{id:'bandage',p:20},{id:'mana_potion',p:15},{id:'greater_mana',p:35},
+        {id:'fire_potion',p:30},{id:'speed_potion',p:40},{id:'elixir_power',p:50},{id:'legendary_potion',p:200},
+        {id:'iron_sword',p:50},{id:'steel_sword',p:120},{id:'mithril_sword',p:300},{id:'adamant_sword',p:600},
+        {id:'leather_armor',p:40},{id:'chain_mail',p:100},{id:'plate_armor',p:250},{id:'mithril_armor',p:500},
+        {id:'bow_wooden',p:60},{id:'bow_elven',p:200},{id:'staff_oak',p:70},{id:'staff_arcane',p:250}
+    ];
+    
+    shopItems.forEach(function(si){
+        const data=getItemData(si.id);
+        if(!data)return;
+        const div=document.createElement('div');
+        div.className='shop-item';
+        div.innerHTML='<div class="si-left"><span class="si-icon">'+data.icon+'</span><div class="si-info"><span class="si-name">'+data.name+'</span><br><span class="si-price">💰'+si.p+'</span></div></div><button class="shop-buy" onclick="buyItem(\''+si.id+'\','+si.p+')">Al</button>';
         buyDiv.appendChild(div);
     });
 }
-function sellItem(idx){const item=player.inventory[idx];if(!item)return;
-    player.gold+=Math.floor((item.value||1)*0.6);removeItem(item.id);
-    addDamageNumber(player.x,player.y-20,'+🪙','#ffd700');renderShop();renderInventory();}
-function buyItem(id,price){if(player.gold<price)return;player.gold-=price;addItem(id,1,'common');
-    addDamageNumber(player.x,player.y-20,getItemData(id).icon+' alındı!','#ffd700');renderShop();}
+
+function sellItem(idx){
+    const item=player.inventory[idx];
+    if(!item)return;
+    player.gold+=Math.floor((item.value||1)*0.6);
+    removeItem(item.id);
+    addDamageNumber(player.x,player.y-20,'+🪙','#ffd700');
+    renderShop();
+    renderInventory();
+}
+
+function buyItem(id,price){
+    if(player.gold<price)return;
+    player.gold-=price;
+    addItem(id,1,'common');
+    addDamageNumber(player.x,player.y-20,getItemData(id).icon+' alındı!','#ffd700');
+    renderShop();
+}
 
 // ============ YER EŞYALARI ============
 function dropItem(x,y,baseId,rarity){
-    const item=generateItem(baseId,rarity);if(!item)return;
-    item.x=x;item.y=y;item.bobPhase=Math.random()*Math.PI*2;item.dead=false;
+    const item=generateItem(baseId,rarity);
+    if(!item)return;
+    item.x=x;
+    item.y=y;
+    item.bobPhase=Math.random()*Math.PI*2;
+    item.dead=false;
     groundItems.push(item);
 }
 
-// ============ PARÇACIK ============
-function addParticle(x,y,text,color){particles.push({x,y,text,color,life:40,vy:-1.5,vx:(Math.random()-0.5)*2,size:14});}
-function addDamageNumber(x,y,text,color){damageNumbers.push({x,y,text,color,life:60,vy:-1});}
-function spawnDeathParticles(x,y,color,count){for(let i=0;i<count;i++)addParticle(x,y,'✦',color);}
-function showNotify(text){const el=document.getElementById('quest-notify');el.textContent=text;el.style.display='block';
-    setTimeout(()=>{el.style.display='none';},3000);}
+// ============ PARÇACIK SİSTEMİ ============
+function addParticle(x,y,text,color){
+    particles.push({x:x,y:y,text:text,color:color,life:40,vy:-1.5,vx:(Math.random()-0.5)*2,size:14});
+}
 
-// ============ HASAR ============
+function addDamageNumber(x,y,text,color){
+    damageNumbers.push({x:x,y:y,text:text,color:color,life:60,vy:-1});
+}
+
+function spawnDeathParticles(x,y,color,count){
+    for(let i=0;i<count;i++)addParticle(x,y,'✦',color);
+}
+
+function showNotify(text){
+    const el=document.getElementById('quest-notify');
+    el.textContent=text;
+    el.style.display='block';
+    setTimeout(function(){el.style.display='none';},3000);
+}
+
+// ============ HASAR SİSTEMİ ============
 function dealDamage(enemy,amount){
     let dmg=Math.max(1,amount-enemy.def);
-    if(Math.random()*100<player.crit){dmg=Math.floor(dmg*2);addDamageNumber(enemy.x,enemy.y-30,'KRİTİK!','#ff0');}
-    if(player.equipped.weapon?.fireDmg)dmg+=player.equipped.weapon.fireDmg;
-    if(player.spellPower>0)dmg+=Math.floor(player.spellPower*0.3);
-    enemy.hp-=dmg;enemy.hitTimer=10;screenShake=5;addDamageNumber(enemy.x,enemy.y-20,'-'+dmg,'#f44');
+    
+    if(Math.random()*100<player.crit){
+        dmg=Math.floor(dmg*2);
+        addDamageNumber(enemy.x,enemy.y-30,'KRİTİK!','#ff0');
+    }
+    
+    if(player.equipped.weapon&&player.equipped.weapon.fireDmg){
+        dmg+=player.equipped.weapon.fireDmg;
+    }
+    if(player.spellPower>0){
+        dmg+=Math.floor(player.spellPower*0.3);
+    }
+    
+    enemy.hp-=dmg;
+    enemy.hitTimer=10;
+    screenShake=5;
+    addDamageNumber(enemy.x,enemy.y-20,'-'+dmg,'#f44');
+    
     if(enemy.hp<=0)killEnemy(enemy);
 }
+
 function killEnemy(enemy){
-    enemy.alive=false;enemy.deathTimer=30;player.xp+=enemy.xp;
+    enemy.alive=false;
+    enemy.deathTimer=30;
+    player.xp+=enemy.xp;
     spawnDeathParticles(enemy.x,enemy.y,enemy.color,12);
-    const goldDrop=randInt(enemy.goldMin,enemy.goldMax);player.gold+=goldDrop;
+    
+    const goldDrop=randInt(enemy.goldMin,enemy.goldMax);
+    player.gold+=goldDrop;
     addDamageNumber(enemy.x,enemy.y-40,'+'+goldDrop+'🪙','#ffd700');
+    
     for(let i=0;i<randInt(enemy.minDrop,enemy.maxDrop);i++){
         const dropId=enemy.drops[randInt(0,enemy.drops.length-1)];
         dropItem(enemy.x+(Math.random()-0.5)*40,enemy.y+(Math.random()-0.5)*40,dropId,randomRarity());
     }
-    if(enemy.boss){bossDefeated[enemy.type]=true;addDamageNumber(enemy.x,enemy.y-50,'🏆 '+enemy.name+' YENİLDİ!','#ffd700');
-        player.skillPoints+=5;for(let i=0;i<30;i++)addParticle(enemy.x,enemy.y,'⭐','#ffd700');}
-    if(enemy.type){if(!player.killCounts[enemy.type])player.killCounts[enemy.type]=0;player.killCounts[enemy.type]++;}
-    while(player.xp>=player.xpToNext){player.xp-=player.xpToNext;player.level++;
-        player.xpToNext=Math.floor(player.xpToNext*1.5);player.skillPoints++;
-        player.hp=player.maxHp;player.mp=player.maxMp;recalcStats();
+    
+    if(enemy.boss){
+        bossDefeated[enemy.type]=true;
+        addDamageNumber(enemy.x,enemy.y-50,'🏆 '+enemy.name+' YENİLDİ!','#ffd700');
+        player.skillPoints+=5;
+        for(let i=0;i<30;i++)addParticle(enemy.x,enemy.y,'⭐','#ffd700');
+    }
+    
+    if(enemy.type){
+        if(!player.killCounts[enemy.type])player.killCounts[enemy.type]=0;
+        player.killCounts[enemy.type]++;
+    }
+    
+    while(player.xp>=player.xpToNext){
+        player.xp-=player.xpToNext;
+        player.level++;
+        player.xpToNext=Math.floor(player.xpToNext*1.5);
+        player.skillPoints++;
+        player.hp=player.maxHp;
+        player.mp=player.maxMp;
+        recalcStats();
         addDamageNumber(player.x,player.y-40,'🎉 SEVİYE '+player.level+'!','#ffd700');
-        screenShake=10;for(let i=0;i<20;i++)addParticle(player.x,player.y,'⭐','#ffd700');}
+        screenShake=10;
+        for(let i=0;i<20;i++)addParticle(player.x,player.y,'⭐','#ffd700');
+    }
 }
+
 function hurtPlayer(amount){
     if(player.invincible>0||player.rolling)return;
+    
     let dmg=Math.max(1,amount-player.def);
-    if(player.equipped.armor?.fireResist)dmg-=player.equipped.armor.fireResist;
-    dmg=Math.max(1,dmg);player.hp-=dmg;player.invincible=30;screenShake=8;
+    if(player.equipped.armor&&player.equipped.armor.fireResist){
+        dmg-=player.equipped.armor.fireResist;
+    }
+    dmg=Math.max(1,dmg);
+    
+    player.hp-=dmg;
+    player.invincible=30;
+    screenShake=8;
     addDamageNumber(player.x,player.y-20,'-'+dmg,'#f00');
-    if(player.hp<=0){player.hp=0;document.getElementById('death-screen').style.display='flex';}
+    
+    if(player.hp<=0){
+        player.hp=0;
+        document.getElementById('death-screen').style.display='flex';
+    }
 }
+
 function respawnPlayer(){
     document.getElementById('death-screen').style.display='none';
-    player.hp=player.maxHp;player.mp=player.maxMp;player.x=100*TILE;player.y=100*TILE;
-    player.gold=Math.floor(player.gold/2);player.invincible=60;
+    player.hp=player.maxHp;
+    player.mp=player.maxMp;
+    player.x=100*TILE;
+    player.y=100*TILE;
+    player.gold=Math.floor(player.gold/2);
+    player.invincible=60;
 }
 
-// ============ BÜYÜ ============
+// ============ BÜYÜ SİSTEMİ ============
 function castSpell(index){
     if(inventoryOpen||skillOpen||shopOpen||dialogActive)return;
-    const spell=player.spells[index];if(!spell||spell.cooldown>0||player.mp<spell.mpCost)return;
+    
+    const spell=player.spells[index];
+    if(!spell||spell.cooldown>0||player.mp<spell.mpCost)return;
+    
     player.mp-=spell.mpCost;
-    const cdR=player.unlockedSkills?.m3?0.85:player.unlockedSkills?.m9?0.75:1;
+    const cdR=player.unlockedSkills.m3?0.85:player.unlockedSkills.m9?0.75:1;
     spell.cooldown=Math.floor(30*cdR);
-    if(spell.type==='melee'){enemies.forEach(e=>{if(!e.alive)return;if(dist(player,e)<spell.range+e.size)dealDamage(e,spell.damage*(1+player.spellPower*0.01));});for(let i=0;i<8;i++)addParticle(player.x,player.y,'💥',spell.color);}
-    else if(spell.type==='ranged'||spell.type==='dot'){
+    
+    if(spell.type==='melee'){
+        enemies.forEach(function(e){
+            if(!e.alive)return;
+            if(dist(player,e)<spell.range+e.size){
+                dealDamage(e,spell.damage*(1+player.spellPower*0.01));
+            }
+        });
+        for(let i=0;i<8;i++)addParticle(player.x,player.y,'💥',spell.color);
+    }else if(spell.type==='ranged'||spell.type==='dot'){
         let angle;
-        if(isMobile){const cl=enemies.filter(e=>e.alive).sort((a,b)=>dist(a,player)-dist(b,player))[0];angle=cl?Math.atan2(cl.y-player.y,cl.x-player.x):0;}
-        else angle=Math.atan2(mouse.y-canvas.height/2,mouse.x-canvas.width/2);
+        if(isMobile){
+            const cl=enemies.filter(function(e){return e.alive;}).sort(function(a,b){return dist(a,player)-dist(b,player);})[0];
+            angle=cl?Math.atan2(cl.y-player.y,cl.x-player.x):0;
+        }else{
+            angle=Math.atan2(mouse.y-canvas.height/2,mouse.x-canvas.width/2);
+        }
+        
         let dmg=spell.damage*(1+player.spellPower*0.01);
-        if(player.unlockedSkills?.m4&&spell.color==='#ff4400')dmg*=1.25;
-        if(player.unlockedSkills?.m7&&spell.color==='#ff4400')dmg*=1.4;
-        if(player.unlockedSkills?.m5&&spell.color==='#88ccff')dmg*=1.25;
-        if(player.unlockedSkills?.m8&&spell.color==='#88ccff')dmg*=1.4;
-        projectiles.push({x:player.x,y:player.y,vx:Math.cos(angle)*7,vy:Math.sin(angle)*7,damage:dmg,color:spell.color,range:spell.range,traveled:0,size:5,type:spell.type||'player',dotDmg:spell.dotDmg||0,dotDur:spell.dotDur||0});}
-    else if(spell.type==='aoe'){
-        let angle;if(isMobile){const cl=enemies.filter(e=>e.alive).sort((a,b)=>dist(a,player)-dist(b,player))[0];angle=cl?Math.atan2(cl.y-player.y,cl.x-player.x):0;}
-        else angle=Math.atan2(mouse.y-canvas.height/2,mouse.x-canvas.width/2);
-        let dmg=spell.damage*(1+player.spellPower*0.01);if(player.unlockedSkills?.m7)dmg*=1.3;
-        projectiles.push({x:player.x,y:player.y,vx:Math.cos(angle)*6,vy:Math.sin(angle)*6,damage:dmg,color:spell.color,range:spell.range,traveled:0,size:10,type:'aoe'});}
-    else if(spell.type==='multi'){for(let i=-1;i<=1;i++){const a=Math.atan2(mouse.y-canvas.height/2,mouse.x-canvas.width/2)+i*0.2;
-        let dmg=spell.damage*(1+player.spellPower*0.01);if(player.unlockedSkills?.a7)dmg*=1.1;
-        projectiles.push({x:player.x,y:player.y,vx:Math.cos(a)*7,vy:Math.sin(a)*7,damage:dmg,color:spell.color,range:spell.range,traveled:0,size:5,type:'player'});}}
-    else if(spell.type==='buff'){player.buffAtk=spell.buffAtk||0;player.buffAtkTimer=spell.buffDur||180;
-        addDamageNumber(player.x,player.y-20,'+'+player.buffAtk+' ATK!','#f00');for(let i=0;i<10;i++)addParticle(player.x,player.y,'🔥','#f00');}
+        if(player.unlockedSkills.m4&&spell.color==='#ff4400')dmg*=1.25;
+        if(player.unlockedSkills.m7&&spell.color==='#ff4400')dmg*=1.4;
+        if(player.unlockedSkills.m5&&spell.color==='#88ccff')dmg*=1.25;
+        if(player.unlockedSkills.m8&&spell.color==='#88ccff')dmg*=1.4;
+        
+        projectiles.push({
+            x:player.x,y:player.y,
+            vx:Math.cos(angle)*7,vy:Math.sin(angle)*7,
+            damage:dmg,color:spell.color,range:spell.range,
+            traveled:0,size:5,type:spell.type||'player',
+            dotDmg:spell.dotDmg||0,dotDur:spell.dotDur||0
+        });
+    }else if(spell.type==='aoe'){
+        let angle;
+        if(isMobile){
+            const cl=enemies.filter(function(e){return e.alive;}).sort(function(a,b){return dist(a,player)-dist(b,player);})[0];
+            angle=cl?Math.atan2(cl.y-player.y,cl.x-player.x):0;
+        }else{
+            angle=Math.atan2(mouse.y-canvas.height/2,mouse.x-canvas.width/2);
+        }
+        
+        let dmg=spell.damage*(1+player.spellPower*0.01);
+        if(player.unlockedSkills.m7)dmg*=1.3;
+        
+        projectiles.push({
+            x:player.x,y:player.y,
+            vx:Math.cos(angle)*6,vy:Math.sin(angle)*6,
+            damage:dmg,color:spell.color,range:spell.range,
+            traveled:0,size:10,type:'aoe'
+        });
+    }else if(spell.type==='multi'){
+        for(let i=-1;i<=1;i++){
+            const a=Math.atan2(mouse.y-canvas.height/2,mouse.x-canvas.width/2)+i*0.2;
+            let dmg=spell.damage*(1+player.spellPower*0.01);
+            if(player.unlockedSkills.a7)dmg*=1.1;
+            projectiles.push({
+                x:player.x,y:player.y,
+                vx:Math.cos(a)*7,vy:Math.sin(a)*7,
+                damage:dmg,color:spell.color,range:spell.range,
+                traveled:0,size:5,type:'player'
+            });
+        }
+    }else if(spell.type==='buff'){
+        player.buffAtk=spell.buffAtk||0;
+        player.buffAtkTimer=spell.buffDur||180;
+        addDamageNumber(player.x,player.y-20,'+'+player.buffAtk+' ATK!','#f00');
+        for(let i=0;i<10;i++)addParticle(player.x,player.y,'🔥','#f00');
+    }
 }
 
-// ============ GİRDİ ============
-document.addEventListener('keydown',e=>{
-    if(!gameStarted)return;
+// ============ GİRDİ KONTROLLERİ ============
+document.addEventListener('keydown',function(e){
     keys[e.key.toLowerCase()]=true;
     if(e.key==='i'||e.key==='I')toggleInventory();
     if(e.key==='k'||e.key==='K')toggleSkills();
     if(e.key==='b'||e.key==='B')toggleShop();
     if(e.key==='e'||e.key==='E')interact();
-    if(e.key==='1')castSpell(0);if(e.key==='2')castSpell(1);if(e.key==='3')castSpell(2);
-    if(e.key===' '&&!player.rolling&&player.rollCooldown<=0){player.rolling=true;player.rollTimer=12;player.rollCooldown=40;player.invincible=12;}
+    if(e.key==='1')castSpell(0);
+    if(e.key==='2')castSpell(1);
+    if(e.key==='3')castSpell(2);
+    if(e.key===' '&&!player.rolling&&player.rollCooldown<=0){
+        player.rolling=true;
+        player.rollTimer=12;
+        player.rollCooldown=40;
+        player.invincible=12;
+    }
 });
-document.addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false;});
-canvas.addEventListener('mousemove',e=>{if(!gameStarted)return;const r=canvas.getBoundingClientRect();mouse.x=e.clientX-r.left;mouse.y=e.clientY-r.top;});
-canvas.addEventListener('mousedown',e=>{if(!gameStarted)return;if(e.button===0)mouse.down=true;});
-canvas.addEventListener('mouseup',e=>{if(e.button===0)mouse.down=false;});
-canvas.addEventListener('contextmenu',e=>e.preventDefault());
+
+document.addEventListener('keyup',function(e){
+    keys[e.key.toLowerCase()]=false;
+});
+
+canvas.addEventListener('mousemove',function(e){
+    const r=canvas.getBoundingClientRect();
+    mouse.x=e.clientX-r.left;
+    mouse.y=e.clientY-r.top;
+});
+
+canvas.addEventListener('mousedown',function(e){
+    if(e.button===0)mouse.down=true;
+});
+
+canvas.addEventListener('mouseup',function(e){
+    if(e.button===0)mouse.down=false;
+});
+
+canvas.addEventListener('contextmenu',function(e){
+    e.preventDefault();
+});
 
 function interact(){
-    if(dialogActive){currentNPC.dialogShown++;
-        if(currentNPC.dialogShown>=currentNPC.dialog.length){dialogActive=false;document.getElementById('dialog-box').style.display='none';
-            if(currentNPC.type==='heal'){player.hp=player.maxHp;player.mp=player.maxMp;addDamageNumber(player.x,player.y-20,'İyileşti!','#4f4');}}
-        else updateDialog();return;}
-    npcs.forEach(npc=>{const nx=npc.x*TILE+16,ny=npc.y*TILE+16;
-        if(dist(player,{x:nx,y:ny})<60){dialogActive=true;currentNPC=npc;currentNPC.dialogShown=0;
-            if(npc.type==='shop'){toggleShop();return;}updateDialog();}});
-    chests.forEach(chest=>{if(!chest.opened&&dist(player,chest)<50){
-        chest.opened=true;player.chestsOpened++;
-        const tx=Math.floor(chest.x/TILE),ty=Math.floor(chest.y/TILE);
-        if(ty>=0&&ty<ROWS&&tx>=0&&tx<COLS)gameMap[ty][tx]=TILES.FLOOR;
-        const rewards=['herb','bandage','mana_potion','iron_sword','leather_armor','chain_mail','bow_wooden','staff_oak','crystal_shard','gold_ore','magic_dust'];
-        const reward=rewards[randInt(0,rewards.length-1)];
-        const rarity=chest.special?'epic':chest.rarity||'common';
-        addItem(reward,randInt(1,3),rarity);addItem('gold_coin',randInt(5,15));
-        addDamageNumber(chest.x,chest.y-20,getItemData(reward).icon+' '+getItemData(reward).name,RARITY[rarity].color);
-        for(let i=0;i<8;i++)addParticle(chest.x,chest.y,'✨','#ffd700');}});
+    if(dialogActive){
+        currentNPC.dialogShown++;
+        if(currentNPC.dialogShown>=currentNPC.dialog.length){
+            dialogActive=false;
+            document.getElementById('dialog-box').style.display='none';
+            if(currentNPC.type==='heal'){
+                player.hp=player.maxHp;
+                player.mp=player.maxMp;
+                addDamageNumber(player.x,player.y-20,'İyileşti!','#4f4');
+            }
+        }else{
+            updateDialog();
+        }
+        return;
+    }
+    
+    npcs.forEach(function(npc){
+        const nx=npc.x*TILE+16,ny=npc.y*TILE+16;
+        if(dist(player,{x:nx,y:ny})<60){
+            dialogActive=true;
+            currentNPC=npc;
+            currentNPC.dialogShown=0;
+            if(npc.type==='shop'){
+                toggleShop();
+                return;
+            }
+            updateDialog();
+        }
+    });
+    
+    chests.forEach(function(chest){
+        if(!chest.opened&&dist(player,chest)<50){
+            chest.opened=true;
+            player.chestsOpened++;
+            const tx=Math.floor(chest.x/TILE),ty=Math.floor(chest.y/TILE);
+            if(ty>=0&&ty<ROWS&&tx>=0&&tx<COLS)gameMap[ty][tx]=TILES.FLOOR;
+            
+            const rewards=['herb','bandage','mana_potion','iron_sword','leather_armor','chain_mail','bow_wooden','staff_oak','crystal_shard','gold_ore','magic_dust'];
+            const reward=rewards[randInt(0,rewards.length-1)];
+            const rarity=chest.special?'epic':chest.rarity||'common';
+            
+            addItem(reward,randInt(1,3),rarity);
+            addItem('gold_coin',randInt(5,15));
+            addDamageNumber(chest.x,chest.y-20,getItemData(reward).icon+' '+getItemData(reward).name,RARITY[rarity].color);
+            for(let i=0;i<8;i++)addParticle(chest.x,chest.y,'✨','#ffd700');
+        }
+    });
 }
-function updateDialog(){const box=document.getElementById('dialog-box');box.style.display='block';
-    box.querySelector('.name').textContent=currentNPC.name;box.querySelector('.text').textContent=currentNPC.dialog[currentNPC.dialogShown]||'';}
 
-// ============ MOBİL KONTROL ============
+function updateDialog(){
+    const box=document.getElementById('dialog-box');
+    box.style.display='block';
+    box.querySelector('.name').textContent=currentNPC.name;
+    box.querySelector('.text').textContent=currentNPC.dialog[currentNPC.dialogShown]||'';
+}
+
+// ============ MOBİL KONTROLLER ============
 function setupMobileControls(){
     if(!isMobile||mobileControlsSetup)return;
     mobileControlsSetup=true;
+    
     document.getElementById('mobile-controls').style.display='block';
-    const ja=document.getElementById('joystick-area'),jt=document.getElementById('joystick-thumb'),jb=document.getElementById('joystick-base');
-    ja.addEventListener('touchstart',e=>{e.preventDefault();const t=e.changedTouches[0];joystick.active=true;joystick.touchId=t.identifier;updateJoy(t,jb,jt);},{passive:false});
-    ja.addEventListener('touchmove',e=>{e.preventDefault();for(let t of e.changedTouches)if(t.identifier===joystick.touchId)updateJoy(t,jb,jt);},{passive:false});
-    ja.addEventListener('touchend',e=>{for(let t of e.changedTouches)if(t.identifier===joystick.touchId){joystick.active=false;joystick.dx=0;joystick.dy=0;jt.style.transform='translate(-50%,-50%)';}},{passive:false});
+    
+    const ja=document.getElementById('joystick-area');
+    const jt=document.getElementById('joystick-thumb');
+    const jb=document.getElementById('joystick-base');
+    
+    ja.addEventListener('touchstart',function(e){
+        e.preventDefault();
+        const t=e.changedTouches[0];
+        joystick.active=true;
+        joystick.touchId=t.identifier;
+        updateJoy(t,jb,jt);
+    },{passive:false});
+    
+    ja.addEventListener('touchmove',function(e){
+        e.preventDefault();
+        for(let i=0;i<e.changedTouches.length;i++){
+            const t=e.changedTouches[i];
+            if(t.identifier===joystick.touchId)updateJoy(t,jb,jt);
+        }
+    },{passive:false});
+    
+    ja.addEventListener('touchend',function(e){
+        for(let i=0;i<e.changedTouches.length;i++){
+            const t=e.changedTouches[i];
+            if(t.identifier===joystick.touchId){
+                joystick.active=false;
+                joystick.dx=0;
+                joystick.dy=0;
+                jt.style.transform='translate(-50%,-50%)';
+            }
+        }
+    },{passive:false});
+    
     const ba=document.getElementById('btn-attack');
-    ba.addEventListener('touchstart',e=>{e.preventDefault();mobileAttack=true;},{passive:false});
-    ba.addEventListener('touchend',e=>{e.preventDefault();mobileAttack=false;},{passive:false});
-    document.getElementById('btn-roll').addEventListener('touchstart',e=>{e.preventDefault();if(!player.rolling&&player.rollCooldown<=0){player.rolling=true;player.rollTimer=12;player.rollCooldown=40;player.invincible=12;}},{passive:false});
-    document.getElementById('btn-interact').addEventListener('touchstart',e=>{e.preventDefault();interact();},{passive:false});
-    document.getElementById('btn-inv').addEventListener('touchstart',e=>{e.preventDefault();toggleInventory();},{passive:false});
-    document.getElementById('btn-skill').addEventListener('touchstart',e=>{e.preventDefault();toggleSkills();},{passive:false});
-    document.getElementById('btn-shop').addEventListener('touchstart',e=>{e.preventDefault();toggleShop();},{passive:false});
-    document.getElementById('spell-0').addEventListener('touchstart',e=>{e.preventDefault();castSpell(0);},{passive:false});
-    document.getElementById('spell-1').addEventListener('touchstart',e=>{e.preventDefault();castSpell(1);},{passive:false});
-    document.getElementById('spell-2').addEventListener('touchstart',e=>{e.preventDefault();castSpell(2);},{passive:false});
-    document.getElementById('dialog-box').addEventListener('touchstart',e=>{e.preventDefault();interact();},{passive:false});
+    ba.addEventListener('touchstart',function(e){
+        e.preventDefault();
+        mobileAttack=true;
+    },{passive:false});
+    
+    ba.addEventListener('touchend',function(e){
+        e.preventDefault();
+        mobileAttack=false;
+    },{passive:false});
+    
+    document.getElementById('btn-roll').addEventListener('touchstart',function(e){
+        e.preventDefault();
+        if(!player.rolling&&player.rollCooldown<=0){
+            player.rolling=true;
+            player.rollTimer=12;
+            player.rollCooldown=40;
+            player.invincible=12;
+        }
+    },{passive:false});
+    
+    document.getElementById('btn-interact').addEventListener('touchstart',function(e){
+        e.preventDefault();
+        interact();
+    },{passive:false});
+    
+    document.getElementById('btn-inv').addEventListener('touchstart',function(e){
+        e.preventDefault();
+        toggleInventory();
+    },{passive:false});
+    
+    document.getElementById('btn-skill').addEventListener('touchstart',function(e){
+        e.preventDefault();
+        toggleSkills();
+    },{passive:false});
+    
+    document.getElementById('btn-shop').addEventListener('touchstart',function(e){
+        e.preventDefault();
+        toggleShop();
+    },{passive:false});
+    
+    document.getElementById('spell-0').addEventListener('touchstart',function(e){
+        e.preventDefault();
+        castSpell(0);
+    },{passive:false});
+    
+    document.getElementById('spell-1').addEventListener('touchstart',function(e){
+        e.preventDefault();
+        castSpell(1);
+    },{passive:false});
+    
+    document.getElementById('spell-2').addEventListener('touchstart',function(e){
+        e.preventDefault();
+        castSpell(2);
+    },{passive:false});
+    
+    document.getElementById('dialog-box').addEventListener('touchstart',function(e){
+        e.preventDefault();
+        interact();
+    },{passive:false});
 }
+
 function updateJoy(touch,base,thumb){
-    const br=base.getBoundingClientRect(),cx=br.left+br.width/2,cy=br.top+br.height/2,maxD=40;
-    let dx=touch.clientX-cx,dy=touch.clientY-cy;const d=Math.hypot(dx,dy);
-    if(d>maxD){dx=dx/d*maxD;dy=dy/d*maxD;}
-    joystick.dx=dx/maxD;joystick.dy=dy/maxD;
+    const br=base.getBoundingClientRect();
+    const cx=br.left+br.width/2;
+    const cy=br.top+br.height/2;
+    const maxD=35;
+    
+    let dx=touch.clientX-cx;
+    let dy=touch.clientY-cy;
+    const d=Math.hypot(dx,dy);
+    
+    if(d>maxD){
+        dx=dx/d*maxD;
+        dy=dy/d*maxD;
+    }
+    
+    joystick.dx=dx/maxD;
+    joystick.dy=dy/maxD;
     thumb.style.transform='translate(calc(-50% + '+dx+'px), calc(-50% + '+dy+'px))';
 }
 
-// ============ YARDIMCI ============
-function isSolid(px,py){const tx=Math.floor(px/TILE),ty=Math.floor(py/TILE);
-    if(tx<0||ty<0||tx>=COLS||ty>=ROWS)return true;return SOLID.has(gameMap[ty][tx]);}
-function tileAt(px,py){const tx=Math.floor(px/TILE),ty=Math.floor(py/TILE);
-    if(tx<0||ty<0||tx>=COLS||ty>=ROWS)return TILES.WALL;return gameMap[ty][tx];}
-function getRegion(px,py){const tx=Math.floor(px/TILE),ty=Math.floor(py/TILE);
-    if(tx<0||ty<0||tx>=COLS||ty>=ROWS)return'wall';const t=gameMap[ty][tx];
-    if(t===TILES.ICE)return'ice';if(t===TILES.LAVA)return'lava';if(t===TILES.SAND)return'desert';
-    if(t===TILES.SWAMP)return'swamp';if(t===TILES.SNOW)return'snow';if(t===TILES.TREE)return'forest';if(t===TILES.WATER)return'lake';return'grass';}
+// ============ YARDIMCI FONKSİYONLAR ============
+function isSolid(px,py){
+    const tx=Math.floor(px/TILE);
+    const ty=Math.floor(py/TILE);
+    if(tx<0||ty<0||tx>=COLS||ty>=ROWS)return true;
+    return SOLID.has(gameMap[ty][tx]);
+}
 
-// ============ GÜNCELLEME ============
+function tileAt(px,py){
+    const tx=Math.floor(px/TILE);
+    const ty=Math.floor(py/TILE);
+    if(tx<0||ty<0||tx>=COLS||ty>=ROWS)return TILES.WALL;
+    return gameMap[ty][tx];
+}
+
+function getRegion(px,py){
+    const tx=Math.floor(px/TILE);
+    const ty=Math.floor(py/TILE);
+    if(tx<0||ty<0||tx>=COLS||ty>=ROWS)return'wall';
+    const t=gameMap[ty][tx];
+    if(t===TILES.ICE)return'ice';
+    if(t===TILES.LAVA)return'lava';
+    if(t===TILES.SAND)return'desert';
+    if(t===TILES.SWAMP)return'swamp';
+    if(t===TILES.SNOW)return'snow';
+    if(t===TILES.TREE)return'forest';
+    if(t===TILES.WATER)return'lake';
+    return'grass';
+}
+
+// ============ OYUN GÜNCELLEME ============
 function update(){
-    if(!gameStarted)return;
-    gameTime++;dayNightCycle=(gameTime%3600)/3600;
-    if(player.invincible>0)player.invincible--;if(player.rollCooldown>0)player.rollCooldown--;
-    player.spells.forEach(s=>{if(s.cooldown>0)s.cooldown--;});
+    if(!isPortrait)return;
+    
+    gameTime++;
+    dayNightCycle=(gameTime%3600)/3600;
+    
+    if(player.invincible>0)player.invincible--;
+    if(player.rollCooldown>0)player.rollCooldown--;
+    
+    player.spells.forEach(function(s){
+        if(s.cooldown>0)s.cooldown--;
+    });
+    
     if(screenShake>0)screenShake--;
-    if(player.buffAtkTimer>0){player.buffAtkTimer--;if(player.buffAtkTimer<=0){player.buffAtk=0;recalcStats();}}
-    if(player.speedBuffTimer>0){player.speedBuffTimer--;if(player.speedBuffTimer<=0){player.speedBuff=0;recalcStats();}}
-
+    
+    if(player.buffAtkTimer>0){
+        player.buffAtkTimer--;
+        if(player.buffAtkTimer<=0){
+            player.buffAtk=0;
+            recalcStats();
+        }
+    }
+    
+    if(player.speedBuffTimer>0){
+        player.speedBuffTimer--;
+        if(player.speedBuffTimer<=0){
+            player.speedBuff=0;
+            recalcStats();
+        }
+    }
+    
     let dx=0,dy=0;
     if(keys['a']||keys['arrowleft']){dx=-1;player.dir='left';}
     if(keys['d']||keys['arrowright']){dx=1;player.dir='right';}
     if(keys['w']||keys['arrowup']){dy=-1;player.dir='up';}
     if(keys['s']||keys['arrowdown']){dy=1;player.dir='down';}
+    
     if(joystick.active&&(Math.abs(joystick.dx)>0.15||Math.abs(joystick.dy)>0.15)){
-        dx=joystick.dx;dy=joystick.dy;
-        if(Math.abs(joystick.dx)>Math.abs(joystick.dy))player.dir=joystick.dx>0?'right':'left';
-        else player.dir=joystick.dy>0?'down':'up';
+        dx=joystick.dx;
+        dy=joystick.dy;
+        if(Math.abs(joystick.dx)>Math.abs(joystick.dy)){
+            player.dir=joystick.dx>0?'right':'left';
+        }else{
+            player.dir=joystick.dy>0?'down':'up';
+        }
     }
-
-    if(player.rolling){player.rollTimer--;
-        let rx=0,ry=0;if(player.dir==='left')rx=-1;if(player.dir==='right')rx=1;if(player.dir==='up')ry=-1;if(player.dir==='down')ry=1;
-        let nx=player.x+rx*8,ny=player.y+ry*8;if(!isSolid(nx,player.y))player.x=nx;if(!isSolid(player.x,ny))player.y=ny;
-        if(player.rollTimer<=0)player.rolling=false;if(gameTime%2===0)addParticle(player.x,player.y,'💨','#aaa');
+    
+    if(player.rolling){
+        player.rollTimer--;
+        let rx=0,ry=0;
+        if(player.dir==='left')rx=-1;
+        if(player.dir==='right')rx=1;
+        if(player.dir==='up')ry=-1;
+        if(player.dir==='down')ry=1;
+        
+        let nx=player.x+rx*8;
+        let ny=player.y+ry*8;
+        if(!isSolid(nx,player.y))player.x=nx;
+        if(!isSolid(player.x,ny))player.y=ny;
+        
+        if(player.rollTimer<=0)player.rolling=false;
+        if(gameTime%2===0)addParticle(player.x,player.y,'💨','#aaa');
     }else if(dx!==0||dy!==0){
-        const len=Math.hypot(dx,dy);dx/=len;dy/=len;
-        let nx=player.x+dx*player.speed,ny=player.y+dy*player.speed;const m=8;
+        const len=Math.hypot(dx,dy);
+        dx/=len;
+        dy/=len;
+        
+        let nx=player.x+dx*player.speed;
+        let ny=player.y+dy*player.speed;
+        const m=8;
+        
         if(!isSolid(nx-m,player.y-m)&&!isSolid(nx+m,player.y-m)&&!isSolid(nx-m,player.y+m)&&!isSolid(nx+m,player.y+m))player.x=nx;
         if(!isSolid(player.x-m,ny-m)&&!isSolid(player.x+m,ny-m)&&!isSolid(player.x-m,ny+m)&&!isSolid(player.x+m,ny+m))player.y=ny;
+        
         if(tileAt(player.x,player.y)===TILES.LAVA&&gameTime%20===0)hurtPlayer(3);
     }
-    player.x=clamp(player.x,TILE,(COLS-1)*TILE);player.y=clamp(player.y,TILE,(ROWS-1)*TILE);
+    
+    player.x=clamp(player.x,TILE,(COLS-1)*TILE);
+    player.y=clamp(player.y,TILE,(ROWS-1)*TILE);
     player.visitedRegions.add(getRegion(player.x,player.y));
-
-    if((mouse.down||mobileAttack)&&player.attackTimer<=0){player.attacking=true;player.attackTimer=20;
-        enemies.forEach(e=>{if(!e.alive)return;if(dist(player,e)<45+e.size){dealDamage(e,player.atk);
-            const a=Math.atan2(e.y-player.y,e.x-player.x);e.x+=Math.cos(a)*15;e.y+=Math.sin(a)*15;}});}
-    if(player.attackTimer>0)player.attackTimer--;if(player.attackTimer<=15)player.attacking=false;
-
-    // Yer eşyası toplama
-    groundItems.forEach(item=>{if(item.dead)return;
-        if(dist(player,item)<30){addItem(item.id,item.count||1,item.rarity);
-            addDamageNumber(item.x,item.y-15,item.icon+' '+item.name,RARITY[item.rarity]?.color||'#fff');item.dead=true;}});
-    groundItems=groundItems.filter(i=>!i.dead);
-
-    enemies.forEach(e=>{if(!e.alive){if(e.deathTimer>0)e.deathTimer--;return;}
-        if(e.hitTimer>0)e.hitTimer--;if(e.attackCooldown>0)e.attackCooldown--;
-        if(e.frozen){e.frozen--;if(e.frozen<=0)e.slow=false;return;}
-        if(e.poisoned){e.poisonTimer--;e.hp-=e.dotDmg||2;if(e.poisonTimer<=0)e.poisoned=false;if(e.hp<=0)killEnemy(e);}
+    
+    if((mouse.down||mobileAttack)&&player.attackTimer<=0){
+        player.attacking=true;
+        player.attackTimer=20;
+        enemies.forEach(function(e){
+            if(!e.alive)return;
+            if(dist(player,e)<45+e.size){
+                dealDamage(e,player.atk);
+                const a=Math.atan2(e.y-player.y,e.x-player.x);
+                e.x+=Math.cos(a)*15;
+                e.y+=Math.sin(a)*15;
+            }
+        });
+    }
+    
+    if(player.attackTimer>0)player.attackTimer--;
+    if(player.attackTimer<=15)player.attacking=false;
+    
+    groundItems.forEach(function(item){
+        if(item.dead)return;
+        if(dist(player,item)<30){
+            addItem(item.id,item.count||1,item.rarity);
+            addDamageNumber(item.x,item.y-15,item.icon+' '+item.name,RARITY[item.rarity].color||'#fff');
+            item.dead=true;
+        }
+    });
+    groundItems=groundItems.filter(function(i){return !i.dead;});
+    
+    enemies.forEach(function(e){
+        if(!e.alive){
+            if(e.deathTimer>0)e.deathTimer--;
+            return;
+        }
+        
+        if(e.hitTimer>0)e.hitTimer--;
+        if(e.attackCooldown>0)e.attackCooldown--;
+        
+        if(e.frozen){
+            e.frozen--;
+            if(e.frozen<=0)e.slow=false;
+            return;
+        }
+        
+        if(e.poisoned){
+            e.poisonTimer--;
+            e.hp-=e.dotDmg||2;
+            if(e.poisonTimer<=0)e.poisoned=false;
+            if(e.hp<=0)killEnemy(e);
+        }
+        
         const d=dist(e,player);
-        if(d<e.aggroRange){const a=Math.atan2(player.y-e.y,player.x-e.x);let spd=e.speed;if(e.slow)spd*=0.4;
-            let mx=Math.cos(a)*spd,my=Math.sin(a)*spd;let nx=e.x+mx,ny=e.y+my;
-            if(!isSolid(nx,e.y))e.x=nx;if(!isSolid(e.x,ny))e.y=ny;
-            if(d<e.size+18&&e.attackCooldown<=0){hurtPlayer(e.atk);e.attackCooldown=40;}}
-        else{e.moveTimer--;if(e.moveTimer<=0){e.dir=randInt(0,3);e.moveTimer=randInt(30,90);}
-            const dirs=[[1,0],[-1,0],[0,1],[0,-1]];const[mx,my]=dirs[e.dir];
-            let nx=e.x+mx*e.speed*0.3,ny=e.y+my*e.speed*0.3;if(!isSolid(nx,ny)){e.x=nx;e.y=ny;}}
-        if(e.boss&&e.type==='boss_dragon'&&d<e.aggroRange&&e.attackCooldown<=0){e.attackCooldown=60;
-            if(e.hp<e.maxHp*0.5&&e.phase===1){e.phase=2;e.speed*=1.5;e.atk*=1.3;}
+        
+        if(d<e.aggroRange){
             const a=Math.atan2(player.y-e.y,player.x-e.x);
-            for(let i=-2;i<=2;i++){const aa=a+i*0.3;projectiles.push({x:e.x,y:e.y,vx:Math.cos(aa)*4,vy:Math.sin(aa)*4,damage:e.atk*0.5,color:'#f40',range:300,traveled:0,size:8,type:'enemy'});}}
+            let spd=e.speed;
+            if(e.slow)spd*=0.4;
+            
+            let mx=Math.cos(a)*spd;
+            let my=Math.sin(a)*spd;
+            let nx=e.x+mx;
+            let ny=e.y+my;
+            
+            if(!isSolid(nx,e.y))e.x=nx;
+            if(!isSolid(e.x,ny))e.y=ny;
+            
+            if(d<e.size+18&&e.attackCooldown<=0){
+                hurtPlayer(e.atk);
+                e.attackCooldown=40;
+            }
+        }else{
+            e.moveTimer--;
+            if(e.moveTimer<=0){
+                e.dir=randInt(0,3);
+                e.moveTimer=randInt(30,90);
+            }
+            const dirs=[[1,0],[-1,0],[0,1],[0,-1]];
+            const mx=dirs[e.dir][0];
+            const my=dirs[e.dir][1];
+            let nx=e.x+mx*e.speed*0.3;
+            let ny=e.y+my*e.speed*0.3;
+            if(!isSolid(nx,ny)){e.x=nx;e.y=ny;}
+        }
+        
+        if(e.boss&&e.type==='boss_dragon'&&d<e.aggroRange&&e.attackCooldown<=0){
+            e.attackCooldown=60;
+            if(e.hp<e.maxHp*0.5&&e.phase===1){
+                e.phase=2;
+                e.speed*=1.5;
+                e.atk*=1.3;
+            }
+            const a=Math.atan2(player.y-e.y,player.x-e.x);
+            for(let i=-2;i<=2;i++){
+                const aa=a+i*0.3;
+                projectiles.push({
+                    x:e.x,y:e.y,
+                    vx:Math.cos(aa)*4,vy:Math.sin(aa)*4,
+                    damage:e.atk*0.5,color:'#f40',
+                    range:300,traveled:0,size:8,type:'enemy'
+                });
+            }
+        }
     });
-
-    projectiles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.traveled+=Math.hypot(p.vx,p.vy);
-        if(p.traveled>p.range||isSolid(p.x,p.y)){p.dead=true;return;}
-        if(p.type==='player'||p.type==='aoe'){enemies.forEach(e=>{if(!e.alive||p.dead)return;
-            if(dist(p,e)<e.size+p.size){dealDamage(e,p.damage);
-                if(p.type==='dot'){e.poisoned=true;e.poisonTimer=p.dotDur||90;e.dotDmg=p.dotDmg||5;}
-                if(p.type==='aoe'){enemies.forEach(e2=>{if(!e2.alive||e2===e)return;if(dist(p,e2)<80)dealDamage(e2,p.damage*0.6);});
-                    for(let i=0;i<10;i++)addParticle(p.x,p.y,'💥',p.color);}
-                p.dead=true;for(let i=0;i<5;i++)addParticle(p.x,p.y,'✦',p.color);}});}
-        else if(p.type==='enemy'){if(dist(p,player)<14&&player.invincible<=0){hurtPlayer(p.damage);p.dead=true;}}
+    
+    projectiles.forEach(function(p){
+        p.x+=p.vx;
+        p.y+=p.vy;
+        p.traveled+=Math.hypot(p.vx,p.vy);
+        
+        if(p.traveled>p.range||isSolid(p.x,p.y)){
+            p.dead=true;
+            return;
+        }
+        
+        if(p.type==='player'||p.type==='aoe'){
+            enemies.forEach(function(e){
+                if(!e.alive||p.dead)return;
+                if(dist(p,e)<e.size+p.size){
+                    dealDamage(e,p.damage);
+                    if(p.type==='dot'){
+                        e.poisoned=true;
+                        e.poisonTimer=p.dotDur||90;
+                        e.dotDmg=p.dotDmg||5;
+                    }
+                    if(p.type==='aoe'){
+                        enemies.forEach(function(e2){
+                            if(!e2.alive||e2===e)return;
+                            if(dist(p,e2)<80)dealDamage(e2,p.damage*0.6);
+                        });
+                        for(let i=0;i<10;i++)addParticle(p.x,p.y,'💥',p.color);
+                    }
+                    p.dead=true;
+                    for(let i=0;i<5;i++)addParticle(p.x,p.y,'✦',p.color);
+                }
+            });
+        }else if(p.type==='enemy'){
+            if(dist(p,player)<14&&player.invincible<=0){
+                hurtPlayer(p.damage);
+                p.dead=true;
+            }
+        }
     });
-    projectiles=projectiles.filter(p=>!p.dead);
-    particles.forEach(p=>{p.life--;p.x+=p.vx;p.y+=p.vy;p.vy+=0.02;});
-    particles=particles.filter(p=>p.life>0);
-    damageNumbers.forEach(d=>{d.life--;d.y+=d.vy;});
-    damageNumbers=damageNumbers.filter(d=>d.life>0);
+    projectiles=projectiles.filter(function(p){return !p.dead;});
+    
+    particles.forEach(function(p){
+        p.life--;
+        p.x+=p.vx;
+        p.y+=p.vy;
+        p.vy+=0.02;
+    });
+    particles=particles.filter(function(p){return p.life>0;});
+    
+    damageNumbers.forEach(function(d){
+        d.life--;
+        d.y+=d.vy;
+    });
+    damageNumbers=damageNumbers.filter(function(d){return d.life>0;});
+    
     if(gameTime%120===0&&player.mp<player.maxMp)player.mp++;
-    if(player.unlockedSkills?.m6&&gameTime%90===0&&player.mp<player.maxMp)player.mp+=2;
-
+    if(player.unlockedSkills.m6&&gameTime%90===0&&player.mp<player.maxMp)player.mp+=2;
+    
     camera.x=lerp(camera.x,player.x-canvas.width/2,0.1);
     camera.y=lerp(camera.y,player.y-canvas.height/2,0.1);
 }
 
 // ============ ÇİZİM ============
 function draw(){
-    if(!gameStarted)return;
+    if(!isPortrait)return;
+    
     ctx.save();
-    if(screenShake>0)ctx.translate(Math.random()*screenShake-screenShake/2,Math.random()*screenShake-screenShake/2);
-    ctx.translate(-camera.x,-camera.y);
-    const sx=Math.max(0,Math.floor(camera.x/TILE)),sy=Math.max(0,Math.floor(camera.y/TILE));
-    const ex=Math.min(COLS,Math.ceil((camera.x+canvas.width)/TILE)+1),ey=Math.min(ROWS,Math.ceil((camera.y+canvas.height)/TILE)+1);
-
-    for(let y=sy;y<ey;y++)for(let x=sx;x<ex;x++){
-        const t=gameMap[y][x],px=x*TILE,py=y*TILE;
-        ctx.fillStyle=TC[t]||'#333';ctx.fillRect(px,py,TILE,TILE);
-        if(t===TILES.GRASS&&((x+y*7)%5===0)){ctx.fillStyle='#3a7a2a';ctx.fillRect(px+8,py+12,2,8);ctx.fillRect(px+20,py+8,2,6);}
-        else if(t===TILES.TREE){ctx.fillStyle='#4a3520';ctx.fillRect(px+12,py+16,8,16);ctx.fillStyle='#1a6a0a';ctx.beginPath();ctx.arc(px+16,py+12,14,0,Math.PI*2);ctx.fill();ctx.fillStyle='#2a8a1a';ctx.beginPath();ctx.arc(px+14,py+10,10,0,Math.PI*2);ctx.fill();}
-        else if(t===TILES.WALL){ctx.fillStyle='#555';ctx.fillRect(px+1,py+1,TILE-2,TILE-2);ctx.fillStyle='#666';ctx.fillRect(px+2,py+2,TILE-4,4);}
-        else if(t===TILES.WATER){const w=Math.sin(gameTime*0.05+x+y)*3;ctx.fillStyle=`rgba(100,180,255,${0.3+Math.abs(w)/10})`;ctx.fillRect(px,py,TILE,TILE);}
-        else if(t===TILES.FLOWER){ctx.fillStyle=['#f48','#fa0','#f6a'][(x*3+y*7)%3];ctx.beginPath();ctx.arc(px+16,py+16,4,0,Math.PI*2);ctx.fill();}
-        else if(t===TILES.LAVA){const lg=Math.sin(gameTime*0.08+x*2+y)*0.3;ctx.fillStyle=`rgba(255,${80+lg*80|0},0,${0.6+lg})`;ctx.fillRect(px,py,TILE,TILE);}
-        else if(t===TILES.ICE)ctx.fillStyle='rgba(200,230,255,0.3)';ctx.fillRect(px,py,TILE,TILE);
-        else if(t===TILES.MUSHROOM){ctx.fillStyle='#8B6914';ctx.fillRect(px+12,py+18,8,14);ctx.fillStyle='#c24';ctx.beginPath();ctx.arc(px+16,py+16,10,Math.PI,0);ctx.fill();}
-        else if(t===TILES.CRYSTAL){const gl=Math.sin(gameTime*0.06+x+y)*0.3+0.7;ctx.fillStyle=`rgba(100,200,255,${gl})`;ctx.beginPath();ctx.moveTo(px+16,py+4);ctx.lineTo(px+26,py+16);ctx.lineTo(px+20,py+28);ctx.lineTo(px+12,py+28);ctx.lineTo(px+6,py+16);ctx.closePath();ctx.fill();}
-        else if(t===TILES.STONE){ctx.fillStyle='#777';ctx.fillRect(px+2,py+2,TILE-4,TILE-4);ctx.fillStyle='#888';ctx.fillRect(px+3,py+3,TILE-6,3);}
-        ctx.strokeStyle='rgba(0,0,0,0.08)';ctx.strokeRect(px,py,TILE,TILE);
+    
+    if(screenShake>0){
+        ctx.translate(Math.random()*screenShake-screenShake/2,Math.random()*screenShake-screenShake/2);
     }
-
-    chests.forEach(ch=>{if(!ch.opened){ctx.fillStyle=ch.special?'#a335ee':'#8B6914';ctx.fillRect(ch.x-10,ch.y-8,20,16);
-        ctx.fillStyle=ch.special?'#c050ff':'#a07820';ctx.fillRect(ch.x-10,ch.y-8,20,6);ctx.fillStyle='#ffd700';ctx.fillRect(ch.x-3,ch.y-3,6,6);
-        const sp=Math.sin(gameTime*0.1)*0.5+0.5;ctx.fillStyle=`rgba(255,255,200,${sp*0.5})`;ctx.beginPath();ctx.arc(ch.x,ch.y-15,5+sp*3,0,Math.PI*2);ctx.fill();
-    }else{ctx.fillStyle='#6a5010';ctx.fillRect(ch.x-10,ch.y-4,20,12);}});
-
-    npcs.forEach(npc=>{const nx=npc.x*TILE+16,ny=npc.y*TILE+16;
-        ctx.fillStyle=npc.color;ctx.beginPath();ctx.arc(nx,ny,12,0,Math.PI*2);ctx.fill();
-        ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(nx-4,ny-3,3,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(nx+4,ny-3,3,0,Math.PI*2);ctx.fill();
-        ctx.fillStyle='#000';ctx.beginPath();ctx.arc(nx-4,ny-3,1.5,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(nx+4,ny-3,1.5,0,Math.PI*2);ctx.fill();
-        ctx.fillStyle='#ffd700';ctx.font='10px sans-serif';ctx.textAlign='center';ctx.fillText(npc.name,nx,ny-18);
-        if(dist(player,{x:nx,y:ny})<60){ctx.fillStyle='#fff';ctx.font='bold 11px sans-serif';ctx.fillText(isMobile?'✋':'[E]',nx,ny-28);}});
-
-    groundItems.forEach(item=>{if(item.dead)return;const bob=Math.sin(gameTime*0.08+item.bobPhase)*3;
-        ctx.fillStyle='rgba(0,0,0,0.3)';ctx.beginPath();ctx.ellipse(item.x,item.y+8,8,3,0,0,Math.PI*2);ctx.fill();
-        ctx.fillStyle=RARITY[item.rarity]?.color||'#fff';ctx.beginPath();ctx.arc(item.x,item.y+bob,6,0,Math.PI*2);ctx.fill();
-        ctx.font='14px sans-serif';ctx.textAlign='center';ctx.fillText(item.icon||'❓',item.x,item.y+bob+5);
-        if(gameTime%30<15){ctx.fillStyle=RARITY[item.rarity]?.color||'#fff';ctx.font='8px sans-serif';ctx.fillText('✨',item.x+8,item.y+bob-5);}});
-
-    enemies.forEach(e=>{if(!e.alive&&e.deathTimer<=0)return;if(e.hidden)return;
-        const alpha=e.alive?1:e.deathTimer/30;ctx.globalAlpha=alpha;const flash=e.hitTimer>0&&e.hitTimer%2===0;
-        if(e.type==='slime'){const sq=Math.sin(gameTime*0.1+e.x)*2;ctx.fillStyle=flash?'#fff':e.color;ctx.beginPath();ctx.ellipse(e.x,e.y,e.size,e.size-sq,0,0,Math.PI*2);ctx.fill();}
-        else if(e.type==='skeleton'){ctx.fillStyle=flash?'#fff':'#ddd';ctx.beginPath();ctx.arc(e.x,e.y-8,8,0,Math.PI*2);ctx.fill();ctx.fillStyle='#c00';ctx.fillRect(e.x-5,e.y-10,3,3);ctx.fillRect(e.x+2,e.y-10,3,3);ctx.fillRect(e.x-3,e.y-2,6,14);ctx.fillRect(e.x-12,e.y-2,9,3);ctx.fillRect(e.x+3,e.y-2,9,3);ctx.fillStyle='#aaa';ctx.fillRect(e.x+10,e.y-8,3,16);}
-        else if(e.type==='demon'){ctx.fillStyle=flash?'#fff':e.color;ctx.beginPath();ctx.arc(e.x,e.y,e.size,0,Math.PI*2);ctx.fill();ctx.fillStyle='#800';ctx.beginPath();ctx.moveTo(e.x-8,e.y-e.size+4);ctx.lineTo(e.x-12,e.y-e.size-8);ctx.lineTo(e.x-4,e.y-e.size+2);ctx.fill();ctx.beginPath();ctx.moveTo(e.x+8,e.y-e.size+4);ctx.lineTo(e.x+12,e.y-e.size-8);ctx.lineTo(e.x+4,e.y-e.size+2);ctx.fill();ctx.fillStyle='#ff0';ctx.beginPath();ctx.arc(e.x-5,e.y-4,3,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(e.x+5,e.y-4,3,0,Math.PI*2);ctx.fill();}
-        else if(e.type==='ghost'){const bob=Math.sin(gameTime*0.05+e.x*0.1)*5;ctx.fillStyle=flash?'#fff':'rgba(170,170,255,0.7)';ctx.beginPath();ctx.arc(e.x,e.y+bob,e.size,Math.PI,0);ctx.lineTo(e.x+e.size,e.y+bob+e.size);ctx.closePath();ctx.fill();}
-        else if(e.boss){const s=e.size;ctx.fillStyle=flash?'#fff':e.color;ctx.beginPath();ctx.ellipse(e.x,e.y,s,s*0.7,0,0,Math.PI*2);ctx.fill();
-            ctx.fillStyle='#ff0';ctx.beginPath();ctx.arc(e.x-4,e.y-s+3,3,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(e.x+4,e.y-s+3,3,0,Math.PI*2);ctx.fill();
-            const hpPct=e.hp/e.maxHp;ctx.fillStyle='#333';ctx.fillRect(e.x-30,e.y-s-20,60,6);ctx.fillStyle=hpPct>0.5?'#4c4':hpPct>0.25?'#ca0':'#c20';ctx.fillRect(e.x-30,e.y-s-20,60*hpPct,6);
-            ctx.strokeStyle='#000';ctx.strokeRect(e.x-30,e.y-s-20,60,6);ctx.fillStyle='#fff';ctx.font='bold 8px sans-serif';ctx.textAlign='center';ctx.fillText(e.name,e.x,e.y-s-24);
+    
+    ctx.translate(-camera.x,-camera.y);
+    
+    const sx=Math.max(0,Math.floor(camera.x/TILE));
+    const sy=Math.max(0,Math.floor(camera.y/TILE));
+    const ex=Math.min(COLS,Math.ceil((camera.x+canvas.width)/TILE)+1);
+    const ey=Math.min(ROWS,Math.ceil((camera.y+canvas.height)/TILE)+1);
+    
+    for(let y=sy;y<ey;y++){
+        for(let x=sx;x<ex;x++){
+            const t=gameMap[y][x];
+            const px=x*TILE;
+            const py=y*TILE;
+            
+            ctx.fillStyle=TC[t]||'#333';
+            ctx.fillRect(px,py,TILE,TILE);
+            
+            if(t===TILES.GRASS&&((x+y*7)%5===0)){
+                ctx.fillStyle='#3a7a2a';
+                ctx.fillRect(px+8,py+12,2,8);
+                ctx.fillRect(px+20,py+8,2,6);
+            }else if(t===TILES.TREE){
+                ctx.fillStyle='#4a3520';
+                ctx.fillRect(px+12,py+16,8,16);
+                ctx.fillStyle='#1a6a0a';
+                ctx.beginPath();
+                ctx.arc(px+16,py+12,14,0,Math.PI*2);
+                ctx.fill();
+                ctx.fillStyle='#2a8a1a';
+                ctx.beginPath();
+                ctx.arc(px+14,py+10,10,0,Math.PI*2);
+                ctx.fill();
+            }else if(t===TILES.WALL){
+                ctx.fillStyle='#555';
+                ctx.fillRect(px+1,py+1,TILE-2,TILE-2);
+                ctx.fillStyle='#666';
+                ctx.fillRect(px+2,py+2,TILE-4,4);
+            }else if(t===TILES.WATER){
+                const w=Math.sin(gameTime*0.05+x+y)*3;
+                ctx.fillStyle='rgba(100,180,255,'+(0.3+Math.abs(w)/10)+')';
+                ctx.fillRect(px,py,TILE,TILE);
+            }else if(t===TILES.FLOWER){
+                ctx.fillStyle=['#f48','#fa0','#f6a'][(x*3+y*7)%3];
+                ctx.beginPath();
+                ctx.arc(px+16,py+16,4,0,Math.PI*2);
+                ctx.fill();
+            }else if(t===TILES.LAVA){
+                const lg=Math.sin(gameTime*0.08+x*2+y)*0.3;
+                ctx.fillStyle='rgba(255,'+(80+lg*80|0)+',0,'+(0.6+lg)+')';
+                ctx.fillRect(px,py,TILE,TILE);
+            }else if(t===TILES.ICE){
+                ctx.fillStyle='rgba(200,230,255,0.3)';
+                ctx.fillRect(px,py,TILE,TILE);
+            }else if(t===TILES.MUSHROOM){
+                ctx.fillStyle='#8B6914';
+                ctx.fillRect(px+12,py+18,8,14);
+                ctx.fillStyle='#c24';
+                ctx.beginPath();
+                ctx.arc(px+16,py+16,10,Math.PI,0);
+                ctx.fill();
+            }else if(t===TILES.CRYSTAL){
+                const gl=Math.sin(gameTime*0.06+x+y)*0.3+0.7;
+                ctx.fillStyle='rgba(100,200,255,'+gl+')';
+                ctx.beginPath();
+                ctx.moveTo(px+16,py+4);
+                ctx.lineTo(px+26,py+16);
+                ctx.lineTo(px+20,py+28);
+                ctx.lineTo(px+12,py+28);
+                ctx.lineTo(px+6,py+16);
+                ctx.closePath();
+                ctx.fill();
+            }else if(t===TILES.STONE){
+                ctx.fillStyle='#777';
+                ctx.fillRect(px+2,py+2,TILE-4,TILE-4);
+                ctx.fillStyle='#888';
+                ctx.fillRect(px+3,py+3,TILE-6,3);
+            }
+            
+            ctx.strokeStyle='rgba(0,0,0,0.08)';
+            ctx.strokeRect(px,py,TILE,TILE);
         }
-        if(e.alive&&!e.boss){const hpPct=e.hp/e.maxHp;ctx.fillStyle='#333';ctx.fillRect(e.x-12,e.y-e.size-10,24,4);ctx.fillStyle=hpPct>0.5?'#4c4':hpPct>0.25?'#ca0':'#c20';ctx.fillRect(e.x-12,e.y-e.size-10,24*hpPct,4);}
-        ctx.globalAlpha=1;});
-
-    // Oyuncu
-    const px=player.x,py=player.y;const pAlpha=player.invincible>0?(Math.sin(gameTime*0.5)>0?0.5:1):1;ctx.globalAlpha=pAlpha;
-    ctx.fillStyle='rgba(0,0,0,0.3)';ctx.beginPath();ctx.ellipse(px,py+14,12,5,0,0,Math.PI*2);ctx.fill();
-    let bodyColor='#3366cc';if(player.className==='archer')bodyColor='#4a4';if(player.className==='mage')bodyColor='#64a';
-    ctx.fillStyle=bodyColor;ctx.fillRect(px-8,py-6,16,16);
-    ctx.fillStyle='#fc8';ctx.beginPath();ctx.arc(px,py-10,8,0,Math.PI*2);ctx.fill();
-    ctx.fillStyle='#530';ctx.beginPath();ctx.arc(px,py-14,7,Math.PI,0);ctx.fill();
-    ctx.fillStyle='#fff';let eox=0,eoy=0;if(player.dir==='left')eox=-2;if(player.dir==='right')eox=2;if(player.dir==='up')eoy=-1;if(player.dir==='down')eoy=1;
-    ctx.beginPath();ctx.arc(px-3+eox,py-10+eoy,2.5,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(px+3+eox,py-10+eoy,2.5,0,Math.PI*2);ctx.fill();
-    ctx.fillStyle='#222';ctx.beginPath();ctx.arc(px-3+eox,py-10+eoy,1.2,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(px+3+eox,py-10+eoy,1.2,0,Math.PI*2);ctx.fill();
-    if(player.equipped.weapon){ctx.fillStyle='#aaa';const wa=player.dir==='left'?Math.PI:player.dir==='right'?0:player.dir==='up'?-Math.PI/2:Math.PI/2;const sa=player.attacking?Math.sin(player.attackTimer*0.5)*1.5:0;
-        ctx.save();ctx.translate(px,py);ctx.rotate(wa+sa);ctx.fillRect(8,-2,20,4);ctx.fillStyle='#ddd';ctx.fillRect(24,-3,6,6);ctx.restore();}
-    else{if(player.attacking){const fx=player.dir==='left'?px-18:player.dir==='right'?px+18:px;const fy=player.dir==='up'?py-18:player.dir==='down'?py+18:py;ctx.fillStyle='#fc8';ctx.beginPath();ctx.arc(fx,fy,5,0,Math.PI*2);ctx.fill();}}
-    if(player.attacking){ctx.strokeStyle='rgba(255,255,255,0.5)';ctx.lineWidth=2;const aa=player.dir==='left'?Math.PI:player.dir==='right'?0:player.dir==='up'?-Math.PI/2:Math.PI/2;ctx.beginPath();ctx.arc(px,py,35,aa-0.8,aa+0.8);ctx.stroke();}
-    if(player.rolling){ctx.strokeStyle=`rgba(200,200,255,${player.rollTimer/12})`;ctx.lineWidth=2;ctx.beginPath();ctx.arc(px,py,18-(12-player.rollTimer),0,Math.PI*2);ctx.stroke();}
+    }
+    
+    chests.forEach(function(ch){
+        if(!ch.opened){
+            ctx.fillStyle=ch.special?'#a335ee':'#8B6914';
+            ctx.fillRect(ch.x-10,ch.y-8,20,16);
+            ctx.fillStyle=ch.special?'#c050ff':'#a07820';
+            ctx.fillRect(ch.x-10,ch.y-8,20,6);
+            ctx.fillStyle='#ffd700';
+            ctx.fillRect(ch.x-3,ch.y-3,6,6);
+            const sp=Math.sin(gameTime*0.1)*0.5+0.5;
+            ctx.fillStyle='rgba(255,255,200,'+(sp*0.5)+')';
+            ctx.beginPath();
+            ctx.arc(ch.x,ch.y-15,5+sp*3,0,Math.PI*2);
+            ctx.fill();
+        }else{
+            ctx.fillStyle='#6a5010';
+            ctx.fillRect(ch.x-10,ch.y-4,20,12);
+        }
+    });
+    
+    npcs.forEach(function(npc){
+        const nx=npc.x*TILE+16;
+        const ny=npc.y*TILE+16;
+        
+        ctx.fillStyle=npc.color;
+        ctx.beginPath();
+        ctx.arc(nx,ny,12,0,Math.PI*2);
+        ctx.fill();
+        
+        ctx.fillStyle='#fff';
+        ctx.beginPath();
+        ctx.arc(nx-4,ny-3,3,0,Math.PI*2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(nx+4,ny-3,3,0,Math.PI*2);
+        ctx.fill();
+        
+        ctx.fillStyle='#000';
+        ctx.beginPath();
+        ctx.arc(nx-4,ny-3,1.5,0,Math.PI*2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(nx+4,ny-3,1.5,0,Math.PI*2);
+        ctx.fill();
+        
+        ctx.fillStyle='#ffd700';
+        ctx.font='10px sans-serif';
+        ctx.textAlign='center';
+        ctx.fillText(npc.name,nx,ny-18);
+        
+        if(dist(player,{x:nx,y:ny})<60){
+            ctx.fillStyle='#fff';
+            ctx.font='bold 11px sans-serif';
+            ctx.fillText('✋',nx,ny-28);
+        }
+    });
+    
+    groundItems.forEach(function(item){
+        if(item.dead)return;
+        const bob=Math.sin(gameTime*0.08+item.bobPhase)*3;
+        
+        ctx.fillStyle='rgba(0,0,0,0.3)';
+        ctx.beginPath();
+        ctx.ellipse(item.x,item.y+8,8,3,0,0,Math.PI*2);
+        ctx.fill();
+        
+        ctx.fillStyle=RARITY[item.rarity].color||'#fff';
+        ctx.beginPath();
+        ctx.arc(item.x,item.y+bob,6,0,Math.PI*2);
+        ctx.fill();
+        
+        ctx.font='14px sans-serif';
+        ctx.textAlign='center';
+        ctx.fillText(item.icon||'❓',item.x,item.y+bob+5);
+        
+        if(gameTime%30<15){
+            ctx.fillStyle=RARITY[item.rarity].color||'#fff';
+            ctx.font='8px sans-serif';
+            ctx.fillText('✨',item.x+8,item.y+bob-5);
+        }
+    });
+    
+    enemies.forEach(function(e){
+        if(!e.alive&&e.deathTimer<=0)return;
+        if(e.hidden)return;
+        
+        const alpha=e.alive?1:e.deathTimer/30;
+        ctx.globalAlpha=alpha;
+        const flash=e.hitTimer>0&&e.hitTimer%2===0;
+        
+        if(e.type==='slime'){
+            const sq=Math.sin(gameTime*0.1+e.x)*2;
+            ctx.fillStyle=flash?'#fff':e.color;
+            ctx.beginPath();
+            ctx.ellipse(e.x,e.y,e.size,e.size-sq,0,0,Math.PI*2);
+            ctx.fill();
+        }else if(e.type==='skeleton'){
+            ctx.fillStyle=flash?'#fff':'#ddd';
+            ctx.beginPath();
+            ctx.arc(e.x,e.y-8,8,0,Math.PI*2);
+            ctx.fill();
+            ctx.fillStyle='#c00';
+            ctx.fillRect(e.x-5,e.y-10,3,3);
+            ctx.fillRect(e.x+2,e.y-10,3,3);
+            ctx.fillRect(e.x-3,e.y-2,6,14);
+            ctx.fillRect(e.x-12,e.y-2,9,3);
+            ctx.fillRect(e.x+3,e.y-2,9,3);
+            ctx.fillStyle='#aaa';
+            ctx.fillRect(e.x+10,e.y-8,3,16);
+        }else if(e.type==='demon'){
+            ctx.fillStyle=flash?'#fff':e.color;
+            ctx.beginPath();
+            ctx.arc(e.x,e.y,e.size,0,Math.PI*2);
+            ctx.fill();
+            ctx.fillStyle='#800';
+            ctx.beginPath();
+            ctx.moveTo(e.x-8,e.y-e.size+4);
+            ctx.lineTo(e.x-12,e.y-e.size-8);
+            ctx.lineTo(e.x-4,e.y-e.size+2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(e.x+8,e.y-e.size+4);
+            ctx.lineTo(e.x+12,e.y-e.size-8);
+            ctx.lineTo(e.x+4,e.y-e.size+2);
+            ctx.fill();
+            ctx.fillStyle='#ff0';
+            ctx.beginPath();
+            ctx.arc(e.x-5,e.y-4,3,0,Math.PI*2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(e.x+5,e.y-4,3,0,Math.PI*2);
+            ctx.fill();
+        }else if(e.type==='ghost'){
+            const bob=Math.sin(gameTime*0.05+e.x*0.1)*5;
+            ctx.fillStyle=flash?'#fff':'rgba(170,170,255,0.7)';
+            ctx.beginPath();
+            ctx.arc(e.x,e.y+bob,e.size,Math.PI,0);
+            ctx.lineTo(e.x+e.size,e.y+bob+e.size);
+            ctx.closePath();
+            ctx.fill();
+        }else if(e.boss){
+            const s=e.size;
+            ctx.fillStyle=flash?'#fff':e.color;
+            ctx.beginPath();
+            ctx.ellipse(e.x,e.y,s,s*0.7,0,0,Math.PI*2);
+            ctx.fill();
+            ctx.fillStyle='#ff0';
+            ctx.beginPath();
+            ctx.arc(e.x-4,e.y-s+3,3,0,Math.PI*2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(e.x+4,e.y-s+3,3,0,Math.PI*2);
+            ctx.fill();
+            
+            const hpPct=e.hp/e.maxHp;
+            ctx.fillStyle='#333';
+            ctx.fillRect(e.x-30,e.y-s-20,60,6);
+            ctx.fillStyle=hpPct>0.5?'#4c4':hpPct>0.25?'#ca0':'#c20';
+            ctx.fillRect(e.x-30,e.y-s-20,60*hpPct,6);
+            ctx.strokeStyle='#000';
+            ctx.strokeRect(e.x-30,e.y-s-20,60,6);
+            ctx.fillStyle='#fff';
+            ctx.font='bold 8px sans-serif';
+            ctx.textAlign='center';
+            ctx.fillText(e.name,e.x,e.y-s-24);
+        }
+        
+        if(e.alive&&!e.boss){
+            const hpPct=e.hp/e.maxHp;
+            ctx.fillStyle='#333';
+            ctx.fillRect(e.x-12,e.y-e.size-10,24,4);
+            ctx.fillStyle=hpPct>0.5?'#4c4':hpPct>0.25?'#ca0':'#c20';
+            ctx.fillRect(e.x-12,e.y-e.size-10,24*hpPct,4);
+        }
+        
+        ctx.globalAlpha=1;
+    });
+    
+    const px=player.x;
+    const py=player.y;
+    const pAlpha=player.invincible>0?(Math.sin(gameTime*0.5)>0?0.5:1):1;
+    ctx.globalAlpha=pAlpha;
+    
+    ctx.fillStyle='rgba(0,0,0,0.3)';
+    ctx.beginPath();
+    ctx.ellipse(px,py+14,12,5,0,0,Math.PI*2);
+    ctx.fill();
+    
+    ctx.fillStyle='#64a';
+    ctx.fillRect(px-8,py-6,16,16);
+    
+    ctx.fillStyle='#fc8';
+    ctx.beginPath();
+    ctx.arc(px,py-10,8,0,Math.PI*2);
+    ctx.fill();
+    
+    ctx.fillStyle='#530';
+    ctx.beginPath();
+    ctx.arc(px,py-14,7,Math.PI,0);
+    ctx.fill();
+    
+    ctx.fillStyle='#fff';
+    let eox=0,eoy=0;
+    if(player.dir==='left')eox=-2;
+    if(player.dir==='right')eox=2;
+    if(player.dir==='up')eoy=-1;
+    if(player.dir==='down')eoy=1;
+    
+    ctx.beginPath();
+    ctx.arc(px-3+eox,py-10+eoy,2.5,0,Math.PI*2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(px+3+eox,py-10+eoy,2.5,0,Math.PI*2);
+    ctx.fill();
+    
+    ctx.fillStyle='#222';
+    ctx.beginPath();
+    ctx.arc(px-3+eox,py-10+eoy,1.2,0,Math.PI*2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(px+3+eox,py-10+eoy,1.2,0,Math.PI*2);
+    ctx.fill();
+    
+    if(player.equipped.weapon){
+        ctx.fillStyle='#aaa';
+        const wa=player.dir==='left'?Math.PI:player.dir==='right'?0:player.dir==='up'?-Math.PI/2:Math.PI/2;
+        const sa=player.attacking?Math.sin(player.attackTimer*0.5)*1.5:0;
+        ctx.save();
+        ctx.translate(px,py);
+        ctx.rotate(wa+sa);
+        ctx.fillRect(8,-2,20,4);
+        ctx.fillStyle='#ddd';
+        ctx.fillRect(24,-3,6,6);
+        ctx.restore();
+    }else{
+        if(player.attacking){
+            const fx=player.dir==='left'?px-18:player.dir==='right'?px+18:px;
+            const fy=player.dir==='up'?py-18:player.dir==='down'?py+18:py;
+            ctx.fillStyle='#fc8';
+            ctx.beginPath();
+            ctx.arc(fx,fy,5,0,Math.PI*2);
+            ctx.fill();
+        }
+    }
+    
+    if(player.attacking){
+        ctx.strokeStyle='rgba(255,255,255,0.5)';
+        ctx.lineWidth=2;
+        const aa=player.dir==='left'?Math.PI:player.dir==='right'?0:player.dir==='up'?-Math.PI/2:Math.PI/2;
+        ctx.beginPath();
+        ctx.arc(px,py,35,aa-0.8,aa+0.8);
+        ctx.stroke();
+    }
+    
+    if(player.rolling){
+        ctx.strokeStyle='rgba(200,200,255,'+(player.rollTimer/12)+')';
+        ctx.lineWidth=2;
+        ctx.beginPath();
+        ctx.arc(px,py,18-(12-player.rollTimer),0,Math.PI*2);
+        ctx.stroke();
+    }
+    
     ctx.globalAlpha=1;
-
-    projectiles.forEach(p=>{ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,Math.PI*2);ctx.fill();});
-    particles.forEach(p=>{const a=p.life/40;ctx.globalAlpha=a;ctx.fillStyle=p.color;ctx.font=p.size+'px sans-serif';ctx.textAlign='center';ctx.fillText(p.text,p.x,p.y);ctx.globalAlpha=1;});
-    damageNumbers.forEach(d=>{const a=d.life/60;ctx.globalAlpha=a;ctx.fillStyle=d.color;ctx.font='bold 13px sans-serif';ctx.textAlign='center';ctx.strokeStyle='#000';ctx.lineWidth=2;ctx.strokeText(d.text,d.x,d.y);ctx.fillText(d.text,d.x,d.y);ctx.globalAlpha=1;});
+    
+    projectiles.forEach(function(p){
+        ctx.fillStyle=p.color;
+        ctx.beginPath();
+        ctx.arc(p.x,p.y,p.size,0,Math.PI*2);
+        ctx.fill();
+    });
+    
+    particles.forEach(function(p){
+        const a=p.life/40;
+        ctx.globalAlpha=a;
+        ctx.fillStyle=p.color;
+        ctx.font=p.size+'px sans-serif';
+        ctx.textAlign='center';
+        ctx.fillText(p.text,p.x,p.y);
+        ctx.globalAlpha=1;
+    });
+    
+    damageNumbers.forEach(function(d){
+        const a=d.life/60;
+        ctx.globalAlpha=a;
+        ctx.fillStyle=d.color;
+        ctx.font='bold 13px sans-serif';
+        ctx.textAlign='center';
+        ctx.strokeStyle='#000';
+        ctx.lineWidth=2;
+        ctx.strokeText(d.text,d.x,d.y);
+        ctx.fillText(d.text,d.x,d.y);
+        ctx.globalAlpha=1;
+    });
+    
     ctx.restore();
-
-    // UI
-    const barX=12,barY=10,barW=180,barH=14;
-    ctx.fillStyle='rgba(0,0,0,0.7)';ctx.fillRect(barX-2,barY-2,barW+4,barH+4);
-    ctx.fillStyle='#333';ctx.fillRect(barX,barY,barW,barH);
-    ctx.fillStyle=player.hp/player.maxHp>0.3?'#4c4':'#c20';ctx.fillRect(barX,barY,barW*(player.hp/player.maxHp),barH);
-    ctx.strokeStyle='#222';ctx.strokeRect(barX,barY,barW,barH);
-    ctx.fillStyle='#fff';ctx.font='bold 10px sans-serif';ctx.textAlign='center';ctx.fillText('❤️'+player.hp+'/'+player.maxHp,barX+barW/2,barY+11);
-
-    const mpY=barY+barH+2;ctx.fillStyle='rgba(0,0,0,0.7)';ctx.fillRect(barX-2,mpY-2,barW+4,barH+4);
-    ctx.fillStyle='#333';ctx.fillRect(barX,mpY,barW,barH);ctx.fillStyle='#48f';ctx.fillRect(barX,mpY,barW*(player.mp/player.maxMp),barH);
-    ctx.strokeStyle='#222';ctx.strokeRect(barX,mpY,barW,barH);ctx.fillStyle='#fff';ctx.fillText('💎'+player.mp+'/'+player.maxMp,barX+barW/2,mpY+11);
-
-    const xpY=mpY+barH+2;ctx.fillStyle='rgba(0,0,0,0.7)';ctx.fillRect(barX-2,xpY-2,barW+4,8);
-    ctx.fillStyle='#333';ctx.fillRect(barX,xpY,barW,4);ctx.fillStyle='#ca0';ctx.fillRect(barX,xpY,barW*(player.xp/player.xpToNext),4);
-    ctx.fillStyle='#fff';ctx.font='8px sans-serif';ctx.fillText('⭐Lv.'+player.level+'|XP:'+player.xp+'/'+player.xpToNext+'|SP:'+player.skillPoints,barX+barW/2,xpY+4);
-
-    ctx.fillStyle='#fd0';ctx.font='bold 11px sans-serif';ctx.textAlign='left';ctx.fillText('🪙'+player.gold,barX,xpY+18);
-    if(player.className){ctx.fillStyle='#aaa';ctx.font='9px sans-serif';ctx.fillText(CLASS_DATA[player.className].name,barX+55,xpY+18);}
-    ctx.fillStyle='#aaa';ctx.font='9px sans-serif';ctx.fillText('⚔️'+player.atk+' 🛡️'+player.def+' 🎯'+player.crit+'% ✨'+player.spellPower,barX,xpY+30);
-    if(player.equipped.weapon)ctx.fillText(player.equipped.weapon.icon+' '+player.equipped.weapon.name,barX,xpY+42);
-    if(player.equipped.armor)ctx.fillText(player.equipped.armor.icon+' '+player.equipped.armor.name,barX,xpY+54);
-
-    if(bossDefeated.boss_dragon){ctx.fillStyle='#fd0';ctx.font='bold 12px sans-serif';ctx.textAlign='right';ctx.fillText('🏆 Ejderha Yenildi!',canvas.width-10,20);}
-
-    let darkness=0;if(dayNightCycle>0.7)darkness=(dayNightCycle-0.7)/0.3*0.3;else if(dayNightCycle<0.1)darkness=(0.1-dayNightCycle)/0.1*0.3;
-    if(darkness>0){ctx.fillStyle=`rgba(0,0,50,${darkness})`;ctx.fillRect(0,0,canvas.width,canvas.height);}
-
+    
+    const barX=10,barY=8,barW=160,barH=12;
+    
+    ctx.fillStyle='rgba(0,0,0,0.7)';
+    ctx.fillRect(barX-2,barY-2,barW+4,barH+4);
+    ctx.fillStyle='#333';
+    ctx.fillRect(barX,barY,barW,barH);
+    ctx.fillStyle=player.hp/player.maxHp>0.3?'#4c4':'#c20';
+    ctx.fillRect(barX,barY,barW*(player.hp/player.maxHp),barH);
+    ctx.strokeStyle='#222';
+    ctx.strokeRect(barX,barY,barW,barH);
+    ctx.fillStyle='#fff';
+    ctx.font='bold 9px sans-serif';
+    ctx.textAlign='center';
+    ctx.fillText(player.hp+'/'+player.maxHp,barX+barW/2,barY+10);
+    
+    const mpY=barY+barH+2;
+    ctx.fillStyle='rgba(0,0,0,0.7)';
+    ctx.fillRect(barX-2,mpY-2,barW+4,barH+4);
+    ctx.fillStyle='#333';
+    ctx.fillRect(barX,mpY,barW,barH);
+    ctx.fillStyle='#48f';
+    ctx.fillRect(barX,mpY,barW*(player.mp/player.maxMp),barH);
+    ctx.strokeStyle='#222';
+    ctx.strokeRect(barX,mpY,barW,barH);
+    ctx.fillStyle='#fff';
+    ctx.fillText(player.mp+'/'+player.maxMp,barX+barW/2,mpY+10);
+    
+    const xpY=mpY+barH+2;
+    ctx.fillStyle='rgba(0,0,0,0.7)';
+    ctx.fillRect(barX-2,xpY-2,barW+4,6);
+    ctx.fillStyle='#333';
+    ctx.fillRect(barX,xpY,barW,3);
+    ctx.fillStyle='#ca0';
+    ctx.fillRect(barX,xpY,barW*(player.xp/player.xpToNext),3);
+    ctx.fillStyle='#fff';
+    ctx.font='7px sans-serif';
+    ctx.fillText('Lv.'+player.level,barX+barW/2,xpY+4);
+    
+    ctx.fillStyle='#fd0';
+    ctx.font='bold 10px sans-serif';
+    ctx.textAlign='left';
+    ctx.fillText(player.gold,barX,xpY+14);
+    
+    if(bossDefeated.boss_dragon){
+        ctx.fillStyle='#fd0';
+        ctx.font='bold 10px sans-serif';
+        ctx.textAlign='right';
+        ctx.fillText('🏆 Ejderha Yenildi!',canvas.width-8,15);
+    }
+    
+    let darkness=0;
+    if(dayNightCycle>0.7)darkness=(dayNightCycle-0.7)/0.3*0.3;
+    else if(dayNightCycle<0.1)darkness=(0.1-dayNightCycle)/0.1*0.3;
+    if(darkness>0){
+        ctx.fillStyle='rgba(0,0,50,'+darkness+')';
+        ctx.fillRect(0,0,canvas.width,canvas.height);
+    }
+    
     renderMinimap();
-    const nearItem=groundItems.some(i=>!i.dead&&dist(player,i)<50);
+    
+    const nearItem=groundItems.some(function(i){return !i.dead&&dist(player,i)<50;});
     document.getElementById('ground-items-notify').style.display=nearItem?'block':'none';
 }
 
 function renderMinimap(){
-    const w=mCanvas.width,h=mCanvas.height;mCtx.fillStyle='#000';mCtx.fillRect(0,0,w,h);
-    const sx=w/COLS,sy=h/ROWS;
-    for(let y=0;y<ROWS;y+=4)for(let x=0;x<COLS;x+=4){mCtx.fillStyle=TC[gameMap[y][x]]||'#333';mCtx.fillRect(x*sx,y*sy,sx*4+1,sy*4+1);}
-    enemies.forEach(e=>{if(!e.alive||e.hidden)return;mCtx.fillStyle=e.boss?'#f00':'#f44';mCtx.fillRect(e.x/TILE*sx-1,e.y/TILE*sy-1,e.boss?3:1,e.boss?3:1);});
-    npcs.forEach(n=>{mCtx.fillStyle='#fd0';mCtx.fillRect(n.x*sx-1,n.y*sy-1,2,2);});
-    mCtx.fillStyle='#4f4';mCtx.fillRect(player.x/TILE*sx-1,player.y/TILE*sy-1,3,3);
-    mCtx.strokeStyle='rgba(255,255,255,0.5)';mCtx.lineWidth=1;mCtx.strokeRect(camera.x/TILE*sx,camera.y/TILE*sy,canvas.width/TILE*sx,canvas.height/TILE*sy);
+    const w=mCanvas.width;
+    const h=mCanvas.height;
+    mCtx.fillStyle='#000';
+    mCtx.fillRect(0,0,w,h);
+    
+    const sx=w/COLS;
+    const sy=h/ROWS;
+    
+    for(let y=0;y<ROWS;y+=4){
+        for(let x=0;x<COLS;x+=4){
+            mCtx.fillStyle=TC[gameMap[y][x]]||'#333';
+            mCtx.fillRect(x*sx,y*sy,sx*4+1,sy*4+1);
+        }
+    }
+    
+    enemies.forEach(function(e){
+        if(!e.alive||e.hidden)return;
+        mCtx.fillStyle=e.boss?'#f00':'#f44';
+        mCtx.fillRect(e.x/TILE*sx-1,e.y/TILE*sy-1,e.boss?3:1,e.boss?3:1);
+    });
+    
+    npcs.forEach(function(n){
+        mCtx.fillStyle='#fd0';
+        mCtx.fillRect(n.x*sx-1,n.y*sy-1,2,2);
+    });
+    
+    mCtx.fillStyle='#4f4';
+    mCtx.fillRect(player.x/TILE*sx-1,player.y/TILE*sy-1,3,3);
+    
+    mCtx.strokeStyle='rgba(255,255,255,0.5)';
+    mCtx.lineWidth=1;
+    mCtx.strokeRect(camera.x/TILE*sx,camera.y/TILE*sy,canvas.width/TILE*sx,canvas.height/TILE*sy);
 }
 
-// ============ BAŞLATMA ============
-resizeCanvas();
-document.getElementById('dialog-box').addEventListener('touchstart',e=>{e.preventDefault();if(dialogActive)interact();},{passive:false});
-document.getElementById('dialog-box').addEventListener('click',e=>{if(dialogActive)interact();});
-document.getElementById('death-screen').addEventListener('touchstart',e=>{e.stopPropagation();},{passive:false});
+// ============ EVENT LISTENERS ============
+window.addEventListener('orientationchange',function(){
+    setTimeout(function(){
+        checkOrientation();
+        resizeCanvas();
+    },100);
+});
 
-function gameLoop(){update();draw();requestAnimationFrame(gameLoop);}
+document.getElementById('dialog-box').addEventListener('touchstart',function(e){
+    e.preventDefault();
+    if(dialogActive)interact();
+},{passive:false});
+
+document.getElementById('dialog-box').addEventListener('click',function(){
+    if(dialogActive)interact();
+});
+
+document.getElementById('death-screen').addEventListener('touchstart',function(e){
+    e.stopPropagation();
+},{passive:false});
+
+// ============ OYUN BAŞLAT ============
+initGame();
+
+function gameLoop(){
+    update();
+    draw();
+    requestAnimationFrame(gameLoop);
+}
+
 gameLoop();
 </script>
 </body>
 </html>
+```
+
+## 📱 Dikey Ekran Optimizasyonları:
+
+### Eklenen Özellikler:
+1. **Meta etiketleri** - Portrait orientation zorlaması
+2. **Yatay ekran uyarısı** - Telefonu dikey tutması için uyarı mesajı
+3. **Canvas boyutlandırma** - Dikey ekrana uygun otomatik boyut
+4. **Kontrol yerleşimi** - Joystick ve butonlar dikey için optimize edildi
+5. **Minimap konumu** - Sol üste taşındı (daha az yer kaplar)
+6. **UI küçültme** - Tüm menüler dikey ekran için kompakt
+7. **Touch action** - Kaydırma engellendi, tam ekran deneyimi
+
+### Kontroller (Dikey):
+| Konum | Kontrol |
+|-------|---------|
+| Sol alt | Joystick (hareket) |
+| Sağ alt | ⚔️ Saldırı |
+| Sağ orta | ✋ Etkileşim, 💨 Yuvarlanma |
+| Sağ üst | 🎒 Envanter, 🌟 Yetenek, 🏪 Market |
+| Sağ kenar | 🔥❄️⚡ Büyüler |
+
+Artık telefonunuzu dikey tutarak tam ekran oynayabilirsiniz! 🎮
