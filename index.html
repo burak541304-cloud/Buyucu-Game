@@ -4,128 +4,103 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0a0a0a">
-<title>Karanlık Diyar - Yatay RPG</title>
+<title>Karanlık Diyar - Yatay Tam Sürüm</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;touch-action:none}
-html,body{width:100%;height:100%;overflow:hidden;background:#0a0a0a;font-family:'Segoe UI',sans-serif;touch-action:none;user-select:none;-webkit-user-select:none;position:fixed}
-body{display:flex;justify-content:center;align-items:center}
+html,body{width:100%;height:100%;overflow:hidden;background:#0a0a0a;font-family:'Segoe UI',sans-serif;touch-action:none;user-select:none;-webkit-user-select:none}
 canvas{image-rendering:pixelated;touch-action:none;position:absolute;width:100%;height:100%}
 
-/* UI GENEL */
+/* UI KATMANI */
 #ui-layer{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:20}
 .ui-element{pointer-events:auto;position:absolute}
 
-/* HP/MP BARLARI (SOL ÜST) */
-#stats-container{top:10px;left:10px;width:220px}
-.stat-bar{height:14px;background:rgba(0,0,0,0.6);border-radius:7px;margin-bottom:4px;overflow:hidden;border:1px solid #444;position:relative}
+/* SOL ÜST: STATS */
+#stats-container{top:10px;left:10px;width:240px;background:rgba(0,0,0,0.5);padding:8px;border-radius:8px;border:1px solid #444}
+.stat-row{display:flex;align-items:center;margin-bottom:4px;height:16px;background:rgba(0,0,0,0.6);border-radius:8px;overflow:hidden;border:1px solid #333}
 .stat-fill{height:100%;transition:width 0.2s}
-.hp-fill{background:linear-gradient(90deg,#c22,#4c4)}
-.mp-fill{background:linear-gradient(90deg,#248,#48f)}
-.stat-text{position:absolute;top:0;left:0;width:100%;text-align:center;font-size:10px;color:#fff;text-shadow:1px 1px 2px #000;line-height:14px;font-weight:bold}
-#gold-display{color:#ffd700;font-size:12px;font-weight:bold;text-shadow:1px 1px 2px #000;margin-top:2px}
+.hp-fill{background:linear-gradient(90deg,#800,#f44)}
+.mp-fill{background:linear-gradient(90deg,#004,#44f)}
+.stat-text{position:absolute;width:100%;text-align:center;font-size:11px;color:#fff;text-shadow:1px 1px 2px #000;line-height:16px;font-weight:bold}
+#info-row{display:flex;justify-content:space-between;font-size:11px;color:#aaa;margin-top:4px}
+#gold-display{color:#ffd700;font-weight:bold}
 
-/* MİNİHARİTA (SAĞ ÜST) */
+/* SAĞ ÜST: MENÜ & MİNİHARİTA */
 #minimap{top:10px;right:10px;border:2px solid #555;border-radius:6px;background:#000;box-shadow:0 0 10px rgba(0,0,0,0.5)}
+#menu-buttons{top:120px;right:10px;display:flex;flex-direction:column;gap:8px}
+.menu-btn{width:45px;height:45px;border-radius:8px;background:rgba(30,30,30,0.85);border:1px solid #666;color:#fff;font-size:20px;display:flex;justify-content:center;align-items:center;box-shadow:0 2px 5px rgba(0,0,0,0.5);backdrop-filter:blur(4px)}
+.menu-btn:active{transform:scale(0.9);background:rgba(60,60,60,0.9)}
 
-/* MENÜ BUTONLARI (SAĞ ÜST, MİNİHARİTA ALTI) */
-#menu-buttons{top:75px;right:10px;display:flex;flex-direction:column;gap:8px}
-.menu-btn{width:40px;height:40px;border-radius:8px;background:rgba(30,30,30,0.8);border:1px solid #666;color:#fff;font-size:18px;display:flex;justify-content:center;align-items:center;box-shadow:0 2px 5px rgba(0,0,0,0.5)}
-.menu-btn:active{transform:scale(0.9);background:rgba(50,50,50,0.9)}
+/* SOL ALT: JOYSTICK */
+#joystick-zone{bottom:20px;left:20px;width:150px;height:150px}
+#joystick-base{width:150px;height:150px;border-radius:50%;background:rgba(255,255,255,0.05);border:2px solid rgba(255,255,255,0.15);position:relative}
+#joystick-thumb{width:60px;height:60px;border-radius:50%;background:rgba(255,255,255,0.2);border:2px solid rgba(255,255,255,0.4);position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);box-shadow:0 0 15px rgba(0,0,0,0.3)}
 
-/* JOYSTICK (SOL ALT) */
-#joystick-zone{bottom:30px;left:30px;width:140px;height:140px}
-#joystick-base{width:140px;height:140px;border-radius:50%;background:rgba(255,255,255,0.08);border:2px solid rgba(255,255,255,0.2);position:relative;backdrop-filter:blur(2px)}
-#joystick-thumb{width:55px;height:55px;border-radius:50%;background:rgba(255,255,255,0.3);border:2px solid rgba(255,255,255,0.5);position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);box-shadow:0 0 10px rgba(0,0,0,0.3)}
-
-/* AKSİYON BUTONLARI (SAĞ ALT) */
-#action-zone{bottom:30px;right:30px;display:flex;flex-direction:column;align-items:flex-end;gap:15px}
-#attack-btn{width:75px;height:75px;border-radius:50%;background:rgba(200,50,50,0.7);border:3px solid rgba(255,100,100,0.5);color:#fff;font-size:32px;display:flex;justify-content:center;align-items:center;box-shadow:0 0 15px rgba(200,0,0,0.4)}
-#attack-btn:active{transform:scale(0.9);background:rgba(255,50,50,0.8)}
+/* SAĞ ALT: AKSİYONLAR */
+#action-zone{bottom:20px;right:20px;display:flex;flex-direction:column;align-items:flex-end;gap:15px}
+#attack-btn{width:85px;height:85px;border-radius:50%;background:rgba(180,40,40,0.8);border:3px solid rgba(255,80,80,0.6);color:#fff;font-size:36px;display:flex;justify-content:center;align-items:center;box-shadow:0 0 20px rgba(180,0,0,0.4)}
+#attack-btn:active{transform:scale(0.9);background:rgba(220,50,50,0.9)}
 #sub-actions{display:flex;gap:12px}
-.sub-btn{width:55px;height:55px;border-radius:50%;background:rgba(50,50,50,0.7);border:2px solid rgba(255,255,255,0.3);color:#fff;font-size:22px;display:flex;justify-content:center;align-items:center}
-.sub-btn:active{transform:scale(0.9);background:rgba(80,80,80,0.8)}
+.sub-btn{width:60px;height:60px;border-radius:50%;background:rgba(40,40,40,0.8);border:2px solid rgba(255,255,255,0.3);color:#fff;font-size:24px;display:flex;justify-content:center;align-items:center;backdrop-filter:blur(4px)}
+.sub-btn:active{transform:scale(0.9)}
 
-/* BÜYÜLER (AKSİYON ÜSTÜ) */
-#spell-bar{bottom:120px;right:30px;display:flex;gap:10px}
-.spell-btn{width:50px;height:50px;border-radius:10px;background:rgba(20,20,40,0.8);border:2px solid rgba(100,100,255,0.4);color:#fff;font-size:22px;display:flex;flex-direction:column;justify-content:center;align-items:center;position:relative}
+/* BÜYÜLER */
+#spell-bar{bottom:120px;right:20px;display:flex;gap:10px}
+.spell-btn{width:55px;height:55px;border-radius:12px;background:rgba(20,20,40,0.85);border:2px solid rgba(100,100,255,0.4);color:#fff;font-size:24px;display:flex;flex-direction:column;justify-content:center;align-items:center;position:relative;backdrop-filter:blur(4px)}
 .spell-btn:active{transform:scale(0.9);border-color:#fff}
-.spell-cd{position:absolute;bottom:0;left:0;width:100%;background:rgba(0,0,0,0.7);color:#fff;font-size:9px;text-align:center;border-radius:0 0 8px 8px}
-.spell-key{position:absolute;top:2px;right:4px;font-size:8px;color:#aaa}
+.spell-cd{position:absolute;bottom:0;left:0;width:100%;background:rgba(0,0,0,0.8);color:#fff;font-size:10px;text-align:center;border-radius:0 0 10px 10px;opacity:0}
+.spell-key{position:absolute;top:2px;right:4px;font-size:9px;color:#aaa}
 
-/* PANEELLER (ORTA) */
-.panel{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(15,10,10,0.95);border:2px solid #8B7355;border-radius:12px;padding:15px;color:#f0e6d2;display:none;z-index:50;max-width:90%;max-height:85%;overflow-y:auto;box-shadow:0 0 30px rgba(0,0,0,0.8)}
-.panel h2{color:#ffd700;text-align:center;margin-bottom:10px;font-size:18px;border-bottom:1px solid #5a4a3a;padding-bottom:5px}
-.close-panel{display:block;margin:15px auto 0;padding:8px 30px;background:#8B7355;border:none;border-radius:6px;color:#fff;font-size:14px;cursor:pointer}
+/* PANEELLER */
+.panel{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(15,10,10,0.98);border:2px solid #8B7355;border-radius:12px;padding:15px;color:#f0e6d2;display:none;z-index:50;min-width:400px;max-width:90%;max-height:85%;overflow-y:auto;box-shadow:0 0 40px rgba(0,0,0,0.9)}
+.panel h2{color:#ffd700;text-align:center;margin-bottom:10px;font-size:20px;border-bottom:1px solid #5a4a3a;padding-bottom:8px}
+.close-panel{display:block;margin:15px auto 0;padding:10px 40px;background:#8B7355;border:none;border-radius:6px;color:#fff;font-size:15px;cursor:pointer}
 
 /* ENVANTER */
-#inventory-panel{min-width:350px}
-.inv-grid{display:grid;grid-template-columns:repeat(8,45px);gap:6px;justify-content:center;margin:10px 0}
-.inv-slot{width:45px;height:45px;background:rgba(40,30,20,0.6);border:1px solid #5a4a3a;border-radius:6px;display:flex;justify-content:center;align-items:center;font-size:20px;position:relative;cursor:pointer}
+.inv-grid{display:grid;grid-template-columns:repeat(10,48px);gap:6px;justify-content:center;margin:10px 0}
+.inv-slot{width:48px;height:48px;background:rgba(40,30,20,0.6);border:1px solid #5a4a3a;border-radius:6px;display:flex;justify-content:center;align-items:center;font-size:22px;position:relative;cursor:pointer}
 .inv-slot.rarity-common{border-color:#9d9d9d}
-.inv-slot.rarity-uncommon{border-color:#1eff00;box-shadow:0 0 5px rgba(30,255,0,0.3)}
-.inv-slot.rarity-rare{border-color:#0070ff;box-shadow:0 0 5px rgba(0,112,255,0.3)}
-.inv-slot.rarity-epic{border-color:#a335ee;box-shadow:0 0 8px rgba(163,53,238,0.4)}
-.inv-slot.rarity-legendary{border-color:#ff8000;box-shadow:0 0 10px rgba(255,128,0,0.5)}
-.inv-slot .count{position:absolute;bottom:2px;right:3px;font-size:9px;color:#fff;text-shadow:1px 1px 2px #000}
-.inv-nav{display:flex;justify-content:center;gap:10px;margin-bottom:5px}
-.nav-btn{padding:5px 15px;background:#5a4a3a;border:none;border-radius:4px;color:#fff;cursor:pointer}
+.inv-slot.rarity-uncommon{border-color:#1eff00;box-shadow:0 0 6px rgba(30,255,0,0.3)}
+.inv-slot.rarity-rare{border-color:#0070ff;box-shadow:0 0 8px rgba(0,112,255,0.4)}
+.inv-slot.rarity-epic{border-color:#a335ee;box-shadow:0 0 10px rgba(163,53,238,0.5)}
+.inv-slot.rarity-legendary{border-color:#ff8000;box-shadow:0 0 12px rgba(255,128,0,0.6)}
+.inv-slot .count{position:absolute;bottom:2px;right:3px;font-size:10px;color:#fff;text-shadow:1px 1px 2px #000}
+.inv-slot .tooltip{display:none;position:absolute;bottom:52px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.95);border:1px solid #8B7355;border-radius:6px;padding:8px 12px;white-space:nowrap;font-size:11px;z-index:100;pointer-events:none;min-width:150px;text-align:left}
+.inv-slot:hover .tooltip{display:block}
+.inv-nav{display:flex;justify-content:center;gap:10px;margin-bottom:8px}
+.nav-btn{padding:6px 18px;background:#5a4a3a;border:none;border-radius:4px;color:#fff;cursor:pointer;font-size:13px}
 
 /* YETENEK */
-#skill-panel{min-width:380px}
-.skill-tree{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:10px 0}
-.skill-node{padding:10px;background:rgba(30,20,10,0.8);border:2px solid #5a4a3a;border-radius:8px;text-align:center;cursor:pointer}
+.skill-tree{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:10px 0}
+.skill-node{padding:12px;background:rgba(30,20,10,0.8);border:2px solid #5a4a3a;border-radius:8px;text-align:center;cursor:pointer;transition:all 0.2s}
 .skill-node.unlocked{border-color:#ffd700;background:rgba(60,40,10,0.9)}
 .skill-node.locked{opacity:0.4;cursor:not-allowed}
-.skill-node .icon{font-size:24px}
-.skill-node .name{font-size:11px;color:#ffd700;margin:4px 0}
-.skill-node .desc{font-size:9px;color:#aaa}
+.skill-node .icon{font-size:28px}
+.skill-node .name{font-size:12px;color:#ffd700;margin:5px 0}
+.skill-node .desc{font-size:10px;color:#aaa}
 
 /* MARKET */
-#shop-panel{min-width:350px}
 .shop-section{margin-bottom:15px}
-.shop-section h3{color:#aaa;font-size:13px;margin-bottom:8px;border-bottom:1px solid #444;padding-bottom:3px}
-.shop-item{display:flex;justify-content:space-between;align-items:center;padding:6px;background:rgba(40,30,20,0.4);border-radius:6px;margin-bottom:4px}
-.shop-btn{padding:4px 10px;border:none;border-radius:4px;color:#fff;font-size:11px;cursor:pointer}
+.shop-section h3{color:#aaa;font-size:14px;margin-bottom:8px;border-bottom:1px solid #444;padding-bottom:4px}
+.shop-item{display:flex;justify-content:space-between;align-items:center;padding:8px;background:rgba(40,30,20,0.4);border-radius:6px;margin-bottom:5px}
+.shop-btn{padding:5px 12px;border:none;border-radius:4px;color:#fff;font-size:12px;cursor:pointer}
 .btn-buy{background:#4a8}
 .btn-sell{background:#a54}
 
 /* DİĞER UI */
-#dialog-box{position:fixed;bottom:180px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.9);border:2px solid #8B7355;border-radius:8px;padding:12px 20px;color:#f0e6d2;font-size:13px;max-width:400px;width:80%;display:none;text-align:center;z-index:40;pointer-events:auto}
-#dialog-box .name{color:#ffd700;font-weight:bold;margin-bottom:4px}
-#quest-notify{position:fixed;top:80px;left:50%;transform:translateX(-50%);color:#ffd700;font-size:13px;background:rgba(0,0,0,0.7);padding:8px 15px;border-radius:6px;display:none;z-index:30;animation:fadeNotify 3s forwards}
+#dialog-box{position:fixed;bottom:150px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.9);border:2px solid #8B7355;border-radius:8px;padding:15px 25px;color:#f0e6d2;font-size:14px;max-width:500px;width:80%;display:none;text-align:center;z-index:40;pointer-events:auto}
+#dialog-box .name{color:#ffd700;font-weight:bold;margin-bottom:5px;font-size:15px}
+#quest-notify{position:fixed;top:80px;left:50%;transform:translateX(-50%);color:#ffd700;font-size:14px;background:rgba(0,0,0,0.8);padding:10px 20px;border-radius:8px;display:none;z-index:30;animation:fadeNotify 3s forwards;border:1px solid #8B7355}
 #death-screen{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(60,0,0,0.9);display:none;justify-content:center;align-items:center;flex-direction:column;z-index:60}
-#death-screen h1{color:#ff3333;font-size:48px;margin-bottom:10px;text-shadow:0 0 20px #f00}
-#death-screen button{padding:12px 40px;background:#800;border:2px solid #f33;border-radius:8px;color:#fff;font-size:18px;cursor:pointer}
+#death-screen h1{color:#ff3333;font-size:56px;margin-bottom:15px;text-shadow:0 0 30px #f00}
+#death-screen button{padding:15px 50px;background:#800;border:2px solid #f33;border-radius:8px;color:#fff;font-size:20px;cursor:pointer}
 #rotate-msg{position:fixed;top:0;left:0;width:100%;height:100%;background:#000;z-index:100;display:none;justify-content:center;align-items:center;flex-direction:column;color:#fff;text-align:center}
 @keyframes fadeNotify{0%,100%{opacity:0}15%,85%{opacity:1}}
 
-/* YATAY OPTİMİZASYON */
-@media (orientation: landscape) {
-    #rotate-msg{display:none!important}
-    canvas{width:100vw;height:100vh}
-    #stats-container{width:240px}
-    #joystick-zone{width:150px;height:150px;bottom:20px;left:20px}
-    #joystick-base{width:150px;height:150px}
-    #joystick-thumb{width:60px;height:60px}
-    #action-zone{bottom:20px;right:20px}
-    #attack-btn{width:80px;height:80px;font-size:36px}
-    #spell-bar{bottom:115px;right:20px}
-    #menu-buttons{top:10px;right:10px;flex-direction:row;gap:10px}
-    .menu-btn{width:45px;height:45px}
-    #minimap{top:10px;right:160px;width:140px!important;height:100px!important}
-    #dialog-box{bottom:140px}
-    .panel{min-width:400px}
-    .inv-grid{grid-template-columns:repeat(10,48px)}
-}
-
-/* DİKEY UYARI */
+/* YATAY ZORUNLU */
 @media (orientation: portrait) {
     #rotate-msg{display:flex}
-    canvas{display:none}
-    #ui-layer{display:none}
+    canvas,#ui-layer{display:none}
 }
 </style>
 </head>
@@ -136,17 +111,20 @@ canvas{image-rendering:pixelated;touch-action:none;position:absolute;width:100%;
 
 <div id="rotate-msg">
     <div style="font-size:60px;margin-bottom:20px">📱</div>
-    <div style="font-size:20px;font-weight:bold">Lütfen Telefonunuzu Yatay Tutun</div>
-    <div style="color:#aaa;margin-top:10px">Oyun yatay ekran için optimize edilmiştir</div>
+    <div style="font-size:22px;font-weight:bold">Lütfen Telefonunuzu Yatay Tutun</div>
+    <div style="color:#aaa;margin-top:15px;font-size:14px">Oyun yatay ekran için optimize edilmiştir</div>
 </div>
 
 <div id="ui-layer">
     <!-- SOL ÜST: STATS -->
     <div id="stats-container" class="ui-element">
-        <div class="stat-bar"><div class="stat-fill hp-fill" id="hp-bar" style="width:100%"></div><div class="stat-text" id="hp-text">100/100</div></div>
-        <div class="stat-bar"><div class="stat-fill mp-fill" id="mp-bar" style="width:100%"></div><div class="stat-text" id="mp-text">50/50</div></div>
-        <div id="gold-display">🪙 0</div>
-        <div style="font-size:10px;color:#aaa;margin-top:2px" id="level-display">Lv.1 | XP: 0/50</div>
+        <div class="stat-row"><div class="stat-fill hp-fill" id="hp-bar" style="width:100%"></div><div class="stat-text" id="hp-text">100/100</div></div>
+        <div class="stat-row"><div class="stat-fill mp-fill" id="mp-bar" style="width:100%"></div><div class="stat-text" id="mp-text">80/80</div></div>
+        <div id="info-row">
+            <span id="gold-display">🪙 0</span>
+            <span id="level-display">Lv.1 | XP: 0/50</span>
+        </div>
+        <div style="font-size:10px;color:#888;margin-top:3px" id="stats-detail">⚔️ 10 | 🛡️ 5 | ✨ 30</div>
     </div>
 
     <!-- SAĞ ÜST: MENÜ -->
@@ -169,26 +147,26 @@ canvas{image-rendering:pixelated;touch-action:none;position:absolute;width:100%;
             <div class="spell-btn" onclick="castSpell(2)">⚡<div class="spell-key">3</div><div class="spell-cd" id="cd-2"></div></div>
         </div>
         <div id="sub-actions">
-            <div class="sub-btn" onclick="doRoll()" title="Yuvarlan (Space)">💨</div>
-            <div class="sub-btn" onclick="doInteract()" title="Etkileşim (E)">✋</div>
+            <div class="sub-btn" onclick="doRoll()" title="Yuvarlan">💨</div>
+            <div class="sub-btn" onclick="doInteract()" title="Etkileşim">✋</div>
         </div>
         <div id="attack-btn" title="Saldırı">⚔️</div>
     </div>
 </div>
 
 <!-- DİYALOG -->
-<div id="dialog-box"><div class="name"></div><div class="text"></div></div>
+<div id="dialog-box"><div class="name"></div><div class="text"></div><div style="color:#666;font-size:11px;margin-top:5px">Devam etmek için dokun</div></div>
 
 <!-- BİLDİRİM -->
 <div id="quest-notify"></div>
 
 <!-- ÖLÜM EKRANI -->
-<div id="death-screen"><h1>💀 ÖLDÜN</h1><button onclick="respawnPlayer()">Yeniden Başla</button></div>
+<div id="death-screen"><h1>💀 ÖLDÜN</h1><p style="color:#ccc;margin-bottom:20px">Karanlık seni yuttu...</p><button onclick="respawnPlayer()">Yeniden Başla</button></div>
 
 <!-- ENVANTER PANELİ -->
 <div id="inventory-panel" class="panel">
     <h2>🎒 Envanter</h2>
-    <div class="inv-nav"><button class="nav-btn" onclick="invPage(-1)">◀</button><span id="inv-page" style="color:#ffd700;margin:0 10px">1/1</span><button class="nav-btn" onclick="invPage(1)">▶</button></div>
+    <div class="inv-nav"><button class="nav-btn" onclick="invPage(-1)">◀ Önceki</button><span id="inv-page" style="color:#ffd700;margin:0 15px;line-height:28px">1/1</span><button class="nav-btn" onclick="invPage(1)">Sonraki ▶</button></div>
     <div class="inv-grid" id="inv-grid"></div>
     <button class="close-panel" onclick="toggleInventory()">Kapat</button>
 </div>
@@ -196,7 +174,7 @@ canvas{image-rendering:pixelated;touch-action:none;position:absolute;width:100%;
 <!-- YETENEK PANELİ -->
 <div id="skill-panel" class="panel">
     <h2>🌟 Yetenek Ağacı</h2>
-    <div style="text-align:center;color:#a335ee;margin-bottom:10px" id="sp-display">Puan: 0</div>
+    <div style="text-align:center;color:#a335ee;margin-bottom:10px;font-size:16px" id="sp-display">Yetenek Puanı: 0</div>
     <div class="skill-tree" id="skill-tree"></div>
     <button class="close-panel" onclick="toggleSkills()">Kapat</button>
 </div>
@@ -204,119 +182,237 @@ canvas{image-rendering:pixelated;touch-action:none;position:absolute;width:100%;
 <!-- MARKET PANELİ -->
 <div id="shop-panel" class="panel">
     <h2>🏪 Tüccar</h2>
-    <div class="shop-section"><h3>Satış</h3><div id="shop-sell"></div></div>
-    <div class="shop-section"><h3>Alış</h3><div id="shop-buy"></div></div>
+    <div class="shop-section"><h3>Eşyalarını Sat</h3><div id="shop-sell"></div></div>
+    <div class="shop-section"><h3>Alışveriş</h3><div id="shop-buy"></div></div>
     <button class="close-panel" onclick="toggleShop()">Kapat</button>
 </div>
 
 <script>
-// ============ AYARLAR ============
-const TILE=32,COLS=200,ROWS=200;
+// ============ AYARLAR & SABİTLER ============
+const TILE=32, COLS=200, ROWS=200;
 const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');
 const mCanvas=document.getElementById('minimap'),mCtx=mCanvas.getContext('2d');
 
 let isMobile=('ontouchstart' in window)||navigator.maxTouchPoints>0;
 let joystick={active:false,dx:0,dy:0,id:null};
 let attackHeld=false;
+let gameTime=0,uiOpen=false,dialog=null;
 
-// ============ OYUNCU ============
-let player={
-    x:100*TILE,y:100*TILE,hp:80,maxHp:80,mp:80,maxMp:80,
-    atk:8,def:3,speed:3,crit:5,spellPower:30,
-    level:1,xp:0,xpNext:50,gold:0,
-    inv:[],equip:{w:null,a:null},skills:{},skillPts:0,
-    spells:[
-        {name:'Ateş',cost:6,dmg:35,cd:0,maxCd:30,col:'#f40'},
-        {name:'Buz',cost:12,dmg:40,cd:0,maxCd:40,col:'#8cf'},
-        {name:'Şimşek',cost:8,dmg:50,cd:0,maxCd:35,col:'#ff0'}
+// ============ NADİRLİK SİSTEMİ ============
+const RARITY={
+    common:{name:'Sıradan',color:'#9d9d9d',mult:1},
+    uncommon:{name:'Nadir',color:'#1eff00',mult:1.3},
+    rare:{name:'Nadir+',color:'#0070ff',mult:1.7},
+    epic:{name:'Epik',color:'#a335ee',mult:2.2},
+    legendary:{name:'Efsane',color:'#ff8000',mult:3.0}
+};
+function randomRarity(){
+    const r=Math.random();
+    if(r<0.45)return'common';if(r<0.75)return'uncommon';if(r<0.92)return'rare';if(r<0.98)return'epic';return'legendary';
+}
+
+// ============ EŞYA VERİTABANI ============
+const WEAPONS={
+    rusty_sword:{name:'Paslı Kılıç',icon:'🗡️',type:'weapon',baseAtk:3,baseDef:0},
+    iron_sword:{name:'Demir Kılıç',icon:'🗡️',type:'weapon',baseAtk:6,baseDef:0},
+    steel_sword:{name:'Çelik Kılıç',icon:'🗡️',type:'weapon',baseAtk:10,baseDef:1},
+    mithril_sword:{name:'Mithril Kılıç',icon:'🗡️',type:'weapon',baseAtk:16,baseDef:2},
+    adamant_sword:{name:'Adamant Kılıç',icon:'🗡️',type:'weapon',baseAtk:24,baseDef:3},
+    shadow_blade:{name:'Gölge Bıçağı',icon:'🔪',type:'weapon',baseAtk:20,baseDef:0,critBonus:15},
+    flame_sword:{name:'Alev Kılıcı',icon:'🔥',type:'weapon',baseAtk:22,baseDef:2,fireDmg:5},
+    frost_sword:{name:'Buz Kılıcı',icon:'❄️',type:'weapon',baseAtk:20,baseDef:4,slowBonus:true},
+    dragon_sword:{name:'Ejder Kılıcı',icon:'⚔️',type:'weapon',baseAtk:35,baseDef:5},
+    staff_oak:{name:'Meşe Asa',icon:'🪄',type:'weapon',baseAtk:10,baseDef:0,spellBonus:10},
+    staff_arcane:{name:'Arkane Asa',icon:'🪄',type:'weapon',baseAtk:16,baseDef:1,spellBonus:20},
+    staff_cosmic:{name:'Kozmik Asa',icon:'🪄',type:'weapon',baseAtk:26,baseDef:2,spellBonus:35},
+    bow_wooden:{name:'Tahta Yay',icon:'🏹',type:'weapon',baseAtk:8,baseDef:0},
+    bow_elven:{name:'Elf Yayı',icon:'🏹',type:'weapon',baseAtk:14,baseDef:0},
+    bow_dragon:{name:'Ejder Yayı',icon:'🏹',type:'weapon',baseAtk:30,baseDef:2}
+};
+const ARMORS={
+    leather_armor:{name:'Deri Zırh',icon:'🛡️',type:'armor',baseDef:3,baseAtk:0},
+    chain_mail:{name:'Zincir Zırh',icon:'🛡️',type:'armor',baseDef:6,baseAtk:0},
+    plate_armor:{name:'Plaka Zırh',icon:'🛡️',type:'armor',baseDef:10,baseAtk:0},
+    mithril_armor:{name:'Mithril Zırh',icon:'🛡️',type:'armor',baseDef:15,baseAtk:0,hpBonus:20},
+    shadow_armor:{name:'Gölge Zırhı',icon:'🛡️',type:'armor',baseDef:12,baseAtk:0,dodgeBonus:10},
+    dragon_armor:{name:'Ejder Zırhı',icon:'🛡️',type:'armor',baseDef:22,baseAtk:0,hpBonus:50},
+    cloth_robe:{name:'Kumaş Cüppe',icon:'👘',type:'armor',baseDef:2,baseAtk:0,mpBonus:15},
+    mage_robe:{name:'Büyücü Cüppesi',icon:'👘',type:'armor',baseDef:4,baseAtk:0,mpBonus:25,spellBonus:10},
+    arcane_robe:{name:'Arkane Cüppe',icon:'👘',type:'armor',baseDef:6,baseAtk:0,mpBonus:40,spellBonus:20}
+};
+const CONSUMABLES={
+    herb:{name:'Şifalı Ot',icon:'🌿',type:'consumable',desc:'25 HP',effect:{hp:25}},
+    bandage:{name:'Bandaj',icon:'🩹',type:'consumable',desc:'50 HP',effect:{hp:50}},
+    mana_potion:{name:'Mana İksiri',icon:'💙',type:'consumable',desc:'20 MP',effect:{mp:20}},
+    greater_mana:{name:'Büyük Mana',icon:'💎',type:'consumable',desc:'50 MP',effect:{mp:50}},
+    fire_potion:{name:'Ateş İksiri',icon:'🔥',type:'consumable',desc:'50 Hasar',effect:{damage:50}},
+    legendary_potion:{name:'Efsane İksir',icon:'⭐',type:'consumable',desc:'Tam Can',effect:{hp:999,mp:999}}
+};
+const MATERIALS={
+    bone:{name:'Kemik',icon:'🦴',type:'material',value:3},
+    slime_jelly:{name:'Slime Jölesi',icon:'🟢',type:'material',value:5},
+    wolf_pelt:{name:'Kurt Postu',icon:'🐺',type:'material',value:8},
+    spider_silk:{name:'Örümcek İpeği',icon:'🕸️',type:'material',value:6},
+    demon_horn:{name:'İfrit Boynuzu',icon:'🔴',type:'material',value:15},
+    dragon_scale:{name:'Ejder Pulu',icon:'🐉',type:'material',value:25},
+    crystal_shard:{name:'Kristal',icon:'💎',type:'material',value:20},
+    iron_ore:{name:'Demir Cevheri',icon:'⛏️',type:'material',value:5},
+    gold_ore:{name:'Altın Cevheri',icon:'🥇',type:'material',value:12}
+};
+
+function getItemData(id){return WEAPONS[id]||ARMORS[id]||CONSUMABLES[id]||MATERIALS[id]||null;}
+function generateItem(baseId,rarity){
+    const r=RARITY[rarity],base=getItemData(baseId);
+    if(!base)return null;
+    let item={...base,id:baseId,rarity,name:base.name,icon:base.icon};
+    if(rarity!=='common')item.name='['+r.name+'] '+base.name;
+    if(base.type==='weapon'){
+        item.atk=Math.floor((base.baseAtk||0)*r.mult);item.def=base.baseDef||0;
+        if(base.critBonus)item.critBonus=base.critBonus;
+        if(base.fireDmg)item.fireDmg=base.fireDmg;
+        if(base.spellBonus)item.spellBonus=Math.floor(base.spellBonus*r.mult);
+        item.value=Math.floor((item.atk*3+item.def*2)*r.mult*1.5);
+    }else if(base.type==='armor'){
+        item.def=Math.floor((base.baseDef||0)*r.mult);item.atk=base.baseAtk||0;
+        if(base.hpBonus)item.hpBonus=Math.floor(base.hpBonus*r.mult);
+        if(base.mpBonus)item.mpBonus=Math.floor(base.mpBonus*r.mult);
+        if(base.spellBonus)item.spellBonus=Math.floor(base.spellBonus*r.mult);
+        item.value=Math.floor(item.def*4*r.mult*1.5);
+    }else{item.value=Math.floor((base.value||1)*r.mult);}
+    return item;
+}
+
+// ============ DÜŞMAN VERİTABANI ============
+const ENEMY_TYPES={
+    slime:{name:'Slime',hp:30,atk:5,def:2,speed:0.8,xp:10,color:'#44cc44',size:12,drops:['slime_jelly','herb'],minDrop:1,maxDrop:2,goldMin:1,goldMax:5},
+    wolf:{name:'Kurt',hp:45,atk:10,def:4,speed:1.5,xp:15,color:'#888',size:13,drops:['wolf_pelt','bone','herb'],minDrop:1,maxDrop:2,goldMin:2,goldMax:8},
+    spider:{name:'Örümcek',hp:35,atk:8,def:3,speed:1.2,xp:12,color:'#664422',size:11,drops:['spider_silk','herb'],minDrop:1,maxDrop:2,goldMin:1,goldMax:6},
+    skeleton:{name:'İskelet',hp:55,atk:12,def:5,speed:1.2,xp:20,color:'#ddd',size:14,drops:['bone','iron_sword','bandage'],minDrop:1,maxDrop:2,goldMin:3,goldMax:10},
+    bat:{name:'Yarasa',hp:25,atk:8,def:1,speed:2.0,xp:10,color:'#6633aa',size:10,drops:['bat_wing','herb','mana_potion'],minDrop:1,maxDrop:2,goldMin:1,goldMax:5},
+    zombie:{name:'Zombi',hp:70,atk:10,def:6,speed:0.6,xp:18,color:'#556644',size:14,drops:['bandage','bone','herb'],minDrop:1,maxDrop:2,goldMin:2,goldMax:8},
+    ghost:{name:'Hayalet',hp:45,atk:14,def:3,speed:1.8,xp:25,color:'#aaaaff',size:13,drops:['ectoplasm','mana_potion','magic_dust'],minDrop:1,maxDrop:2,goldMin:3,goldMax:12},
+    orc:{name:'Ork',hp:80,atk:16,def:7,speed:1.0,xp:30,color:'#446633',size:15,drops:['iron_ore','bandage','bone'],minDrop:1,maxDrop:3,goldMin:5,goldMax:15},
+    golem:{name:'Taş Golem',hp:120,atk:14,def:15,speed:0.5,xp:35,color:'#888',size:18,drops:['iron_ore','gold_ore'],minDrop:1,maxDrop:2,goldMin:5,goldMax:18},
+    demon:{name:'İfrit',hp:110,atk:20,def:9,speed:1.5,xp:55,color:'#cc2200',size:16,drops:['demon_horn','fire_potion','dark_essence'],minDrop:1,maxDrop:3,goldMin:8,goldMax:25},
+    boss_dragon:{name:'🐉 Ejderha',hp:600,atk:35,def:16,speed:1.0,xp:600,color:'#ff4400',size:26,drops:['dragon_sword','dragon_armor','phoenix_feather'],minDrop:4,maxDrop:6,goldMin:80,goldMax:200,boss:true},
+    boss_king:{name:'👑 Karanlık Kral',hp:800,atk:40,def:18,speed:1.5,xp:1000,color:'#ff0000',size:28,drops:['shadow_blade','shadow_armor'],minDrop:5,maxDrop:7,goldMin:100,goldMax:300,boss:true}
+};
+
+// ============ YETENEK AĞACI ============
+const SKILL_TREES={
+    mage:[
+        {id:'m1',name:'Sihir Bilgisi',icon:'📖',desc:'+15% Büyü',req:null,fx:{spellMult:0.15},cost:1},
+        {id:'m2',name:'Mana Akışı',icon:'💧',desc:'+20% Mana',req:null,fx:{mpMult:0.2},cost:1},
+        {id:'m3',name:'Büyü Hızı',icon:'⏩',desc:'-15% Süre',req:null,fx:{cdReduction:0.15},cost:1},
+        {id:'m4',name:'Alev Ustası',icon:'🔥',desc:'+25% Ateş',req:'m1',fx:{fireMult:0.25},cost:2},
+        {id:'m5',name:'Buz Ustası',icon:'❄️',desc:'+25% Buz',req:'m1',fx:{iceMult:0.25},cost:2},
+        {id:'m6',name:'Mana Şelalesi',icon:'🌊',desc:'+30% Mana Yenileme',req:'m2',fx:{mpRegen:0.3},cost:2},
+        {id:'m7',name:'Büyük Ateş',icon:'💥',desc:'+40% Ateş',req:'m4',fx:{fireMult:0.4},cost:3},
+        {id:'m8',name:'Büyük Buz',icon:'🧊',desc:'+40% Buz',req:'m5',fx:{iceMult:0.4},cost:3},
+        {id:'m9',name:'Büyü Tanrısı',icon:'🌟',desc:'+50% Büyü',req:'m7,m8',fx:{spellMult:0.5},cost:5}
     ]
 };
 
+// ============ OYUNCU & DURUM ============
+let player={
+    x:100*TILE,y:100*TILE,hp:80,maxHp:80,mp:80,maxMp:80,
+    atk:8,def:3,speed:3,crit:5,spellPower:30,
+    level:1,xp:0,xpToNext:50,gold:0,className:'mage',
+    inv:[],equip:{w:null,a:null},skills:{},skillPts:0,
+    spells:[
+        {name:'Ateş Topu',mpCost:6,damage:35,range:220,color:'#ff4400',cooldown:0,type:'ranged'},
+        {name:'Buz Fırtınası',mpCost:12,damage:40,range:180,color:'#88ccff',cooldown:0,type:'aoe'},
+        {name:'Yıldırım',mpCost:8,damage:50,range:200,color:'#ffff00',cooldown:0,type:'ranged'}
+    ],
+    roll:0,rollCd:0,invuln:0
+};
+
 let map=[],enemies=[],npcs=[],chests=[],drops=[],
-    particles=[],damageNums=[],camera={x:0,y:0},
-    gameTime=0,dialog=null,uiOpen=false;
+    particles=[],damageNums=[],projectiles=[],
+    camera={x:0,y:0},bossDefeated={};
 
-// ============ VERİTABANI ============
-const ITEMS={
-    w:{
-        staff_oak:{n:'Meşe Asa',i:'🪄',atk:10,sp:10},
-        staff_arcane:{n:'Arkane Asa',i:'🪄',atk:16,sp:20},
-        sword_iron:{n:'Demir Kılıç',i:'🗡️',atk:6},
-        sword_steel:{n:'Çelik Kılıç',i:'🗡️',atk:10},
-        sword_dragon:{n:'Ejder Kılıcı',i:'⚔️',atk:35}
-    },
-    a:{
-        robe cloth:{n:'Kumaş Cüppe',i:'👘',def:2,mp:15},
-        robe_mage:{n:'Büyücü Cüppesi',i:'👘',def:4,mp:25,sp:10},
-        armor_leather:{n:'Deri Zırh',i:'🛡️',def:3},
-        armor_dragon:{n:'Ejder Zırhı',i:'🛡️',def:22,hp:50}
-    },
-    c:{
-        herb:{n:'Şifalı Ot',i:'🌿',hp:25},
-        mana:{n:'Mana İksiri',i:'💙',mp:20},
-        bomb:{n:'Ateş Bombası',i:'🔥',dmg:50}
-    },
-    m:{
-        bone:{n:'Kemik',i:'🦴',v:3},
-        scale:{n:'Ejder Pulu',i:'🐉',v:25},
-        ore:{n:'Demir Cevheri',i:'⛏️',v:5}
+// ============ HARİTA OLUŞTUR ============
+function generateMap(){
+    const m=[];
+    for(let y=0;y<ROWS;y++){m[y]=[];for(let x=0;x<COLS;x++)m[y][x]=(x===0||y===0||x===COLS-1||y===ROWS-1)?5:0;}
+    for(let x=2;x<COLS-2;x++){m[100][x]=10;m[99][x]=10;m[101][x]=10;}
+    for(let y=2;y<ROWS-2;y++){m[y][100]=10;m[y][99]=10;m[y][101]=10;}
+    
+    const regions=[
+        {tile:4,cx:60,cy:60,r:35},{tile:4,cx:140,cy:50,r:30},
+        {tile:2,cx:130,cy:90,r:18},{tile:2,cx:70,cy:130,r:15},
+        {tile:13,cx:40,cy:40,r:25},{tile:12,cx:160,cy:160,r:20},
+        {tile:9,cx:150,cy:50,r:20},{tile:18,cx:50,cy:150,r:20}
+    ];
+    regions.forEach(r=>{
+        for(let dy=-r.r;dy<=r.r;dy++)for(let dx=-r.r;dx<=r.r;dx++){
+            if(dx*dx+dy*dy<=r.r*r.r){
+                let nx=r.cx+dx,ny=r.cy+dy;
+                if(nx>1&&nx<COLS-2&&ny>1&&ny<ROWS-2&&m[ny][nx]!==5&&m[ny][nx]!==10)m[ny][nx]=r.tile;
+            }
+        }
+    });
+    for(let i=0;i<80;i++){
+        let px,py,att=0;
+        do{px=randInt(5,COLS-6);py=randInt(5,ROWS-6);att++;}while([2,4,5,12,15,16].includes(m[py][px])&&att<10);
+        if(att<10)chests.push({x:px*TILE+16,y:py*TILE+16,open:false,rarity:Math.random()<0.1?'rare':'common'});
     }
-};
-// Düzeltme: ITEM anahtarları boşluk içermemeli
-ITEMS.a['robe_cloth'] = ITEMS.a['robe cloth']; delete ITEMS.a['robe cloth'];
+    return m;
+}
 
-const ENEMIES={
-    slime:{hp:30,atk:5,xp:10,col:'#4c4',drop:['c.herb','m.bone']},
-    skeleton:{hp:55,atk:12,xp:20,col:'#ddd',drop:['w.sword_iron','m.bone']},
-    demon:{hp:110,atk:20,xp:55,col:'#c20',drop:['c.bomb','m.scale']},
-    boss:{hp:600,atk:35,xp:600,col:'#f40',drop:['w.sword_dragon','a.armor_dragon'],boss:true}
-};
+// ============ DÜŞMAN SPAWN ============
+function spawnEnemies(){
+    enemies=[];
+    const zones=[
+        {type:'slime',count:30,cx:100,cy:100,r:80},{type:'skeleton',count:20,cx:100,cy:120,r:50},
+        {type:'spider',count:20,cx:60,cy:60,r:30},{type:'demon',count:10,cx:160,cy:160,r:15},
+        {type:'ghost',count:15,cx:140,cy:50,r:25},{type:'orc',count:15,cx:150,cy:120,r:25}
+    ];
+    zones.forEach(z=>{
+        for(let i=0;i<z.count;i++){
+            let ex,ey,att=0;
+            do{ex=randInt(5,COLS-6)*TILE+16;ey=randInt(5,ROWS-6)*TILE+16;att++;}
+            while((isSolid(ex,ey)||dist({x:ex,y:ey},player)<200)&&att<20);
+            if(att<20){
+                const t=ENEMY_TYPES[z.type];
+                enemies.push({...t,type:z.type,x:ex,y:ey,maxHp:t.hp,dir:randInt(0,3),moveTimer:randInt(0,60),hitTimer:0,attackCooldown:0,aggroRange:150,alive:true,deathTimer:0});
+            }
+        }
+    });
+    // Boss
+    enemies.push({...ENEMY_TYPES.boss_dragon,type:'boss_dragon',x:160*TILE,y:160*TILE,maxHp:ENEMY_TYPES.boss_dragon.hp,alive:true,deathTimer:0,phase:1});
+}
 
 // ============ BAŞLANGIÇ ============
 function init(){
     resize();
     window.addEventListener('resize',resize);
     setupControls();
-    generateWorld();
-    player.x=100*TILE;player.y=100*TILE;
-    addItem('w.staff_oak');addItem('a.robe_cloth');addItem('c.herb',3);
-    updateStats();
+    map=generateMap();
+    spawnEnemies();
+    npcs=[
+        {name:'Bilge Eldrin',x:98*TILE,y:98*TILE,color:'#ffd700',dialog:['Hoş geldin Büyücü!','Görevler alarak güçlen!','Buz bölgesini keşfet!'],type:'quest'},
+        {name:'Tüccar Zara',x:102*TILE,y:98*TILE,color:'#ff66aa',dialog:['Alışveriş yapalım!','Eşya alıp satabilirsin.'],type:'shop'},
+        {name:'Şifacı Lira',x:102*TILE,y:102*TILE,color:'#44ff44',dialog:['Yaralarını iyileştireyim!'],type:'heal'}
+    ];
+    
+    addItem('staff_oak',1,'common');
+    addItem('cloth_robe',1,'common');
+    addItem('herb',3);
+    addItem('mana_potion',2);
+    
+    recalcStats();
+    updateStatsUI();
     loop();
-    setTimeout(()=>showDialog('Bilge Eldrin','Hoş geldin Büyücü! Yatay modda kontroller parmaklarının altında. Maceraya başla!'),500);
+    setTimeout(()=>showDialog('Bilge Eldrin','Hoş geldin Büyücü! Yatay modda tüm kontroller parmaklarının altında. Maceraya başla!'),500);
 }
 
 function resize(){
     canvas.width=window.innerWidth;
     canvas.height=window.innerHeight;
     if(window.innerWidth>window.innerHeight){
-        // Yatay
         mCanvas.style.width='140px';mCanvas.style.height='100px';
     }
-}
-
-function generateWorld(){
-    // Basit harita
-    for(let y=0;y<ROWS;y++){map[y]=[];for(let x=0;x<COLS;x++)map[y][x]=0;}
-    // Yollar
-    for(let x=0;x<COLS;x++)map[100][x]=1;
-    for(let y=0;y<ROWS;y++)map[y][100]=1;
-    
-    // Düşmanlar
-    for(let i=0;i<50;i++){
-        let x=rand(10,COLS-10)*TILE,y=rand(10,ROWS-10)*TILE;
-        let type=Math.random()<0.7?'slime':'skeleton';
-        if(Math.random()<0.1)type='demon';
-        enemies.push({x:x,y:y,type:type,...ENEMIES[type],maxHp:ENEMIES[type].hp,alive:true});
-    }
-    // Boss
-    enemies.push({x:150*TILE,y:150*TILE,type:'boss',...ENEMIES.boss,maxHp:ENEMIES.boss.hp,alive:true});
-    
-    // NPC
-    npcs.push({x:98*TILE,y:100*TILE,name:'Bilge Eldrin',col:'#fd0',dialog:['Güçlenmek için eşya topla.','Boss\'lar nadir eşya düşürür.']});
-    npcs.push({x:102*TILE,y:100*TILE,name:'Tüccar',col:'#f6f',dialog:['Eşya alıp satabilirsin.'],shop:true});
-    
-    // Sandıklar
-    for(let i=0;i<30;i++)chests.push({x:rand(5,COLS-5)*TILE,y:rand(5,ROWS-5)*TILE,open:false});
 }
 
 // ============ KONTROLLER ============
@@ -326,12 +422,10 @@ function setupControls(){
     const base=document.getElementById('joystick-base');
     const attackBtn=document.getElementById('attack-btn');
     
-    // Joystick
     zone.addEventListener('touchstart',e=>{
         e.preventDefault();
         const t=e.changedTouches[0];
-        joystick.id=t.identifier;
-        joystick.active=true;
+        joystick.id=t.identifier;joystick.active=true;
         updateJoy(t,base,thumb);
     },{passive:false});
     
@@ -348,74 +442,34 @@ function setupControls(){
         thumb.style.transform='translate(-50%,-50%)';
     });
     
-    // Attack
     attackBtn.addEventListener('touchstart',e=>{e.preventDefault();attackHeld=true;},{passive:false});
     attackBtn.addEventListener('touchend',e=>{e.preventDefault();attackHeld=false;});
     attackBtn.addEventListener('mousedown',()=>attackHeld=true);
     attackBtn.addEventListener('mouseup',()=>attackHeld=false);
     
-    // Klavye
     document.addEventListener('keydown',e=>{
         if(e.key===' ')doRoll();
-        if(e.key==='e')doInteract();
+        if(e.key==='e'||e.key==='E')doInteract();
         if(e.key==='1')castSpell(0);
         if(e.key==='2')castSpell(1);
         if(e.key==='3')castSpell(2);
-        if(e.key==='i')toggleInventory();
+        if(e.key==='i'||e.key==='I')toggleInventory();
+        if(e.key==='k'||e.key==='K')toggleSkills();
+        if(e.key==='b'||e.key==='B')toggleShop();
     });
+    
+    document.getElementById('dialog-box').addEventListener('touchstart',e=>{e.preventDefault();if(dialog)interact();},{passive:false});
+    document.getElementById('dialog-box').addEventListener('click',()=>{if(dialog)interact();});
 }
 
 function updateJoy(t,base,thumb){
     const r=base.getBoundingClientRect();
     const cx=r.left+r.width/2,cy=r.top+r.height/2;
     let dx=t.clientX-cx,dy=t.clientY-cy;
-    const dist=Math.hypot(dx,dy),max=45;
+    const dist=Math.hypot(dx,dy),max=50;
     if(dist>max){dx=dx/dist*max;dy=dy/dist*max;}
     joystick.dx=dx/max;joystick.dy=dy/max;
     thumb.style.transform=`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px))`;
-}
-
-function doRoll(){
-    if(player.rollCd)return;
-    player.roll=15;player.rollCd=40;player.invuln=15;
-}
-
-function doInteract(){
-    if(dialog){
-        dialog.idx++;
-        if(dialog.idx>=dialog.txt.length){dialog=null;document.getElementById('dialog-box').style.display='none';}
-        else updateDialog();
-        return;
-    }
-    // NPC
-    npcs.forEach(n=>{
-        if(dist(player,n)<60){
-            if(n.shop)toggleShop();
-            else{dialog={n:n.name,txt:n.dialog,idx:0};updateDialog();}
-        }
-    });
-    // Sandık
-    chests.forEach(c=>{
-        if(!c.open&&dist(player,c)<50){
-            c.open=true;
-            addItem('c.herb');addItem('c.mana');
-            player.gold+=rand(5,20);
-            showNotify('📦 Sandık Açıldı!');
-            updateStats();
-        }
-    });
-}
-
-function updateDialog(){
-    const b=document.getElementById('dialog-box');
-    b.style.display='block';
-    b.querySelector('.name').textContent=dialog.n;
-    b.querySelector('.text').textContent=dialog.txt[dialog.idx];
-}
-
-function showDialog(name,text){
-    dialog={n:name,txt:[text],idx:0};
-    updateDialog();
 }
 
 // ============ OYUN DÖNGÜSÜ ============
@@ -428,68 +482,93 @@ function loop(){
 function update(){
     gameTime++;
     
+    // Cooldowns
+    if(player.invuln>0)player.invuln--;
+    if(player.rollCd>0)player.rollCd--;
+    player.spells.forEach(s=>{if(s.cooldown>0)s.cooldown--;});
+    if(player.roll>0)player.roll--;
+    
     // Hareket
     let dx=0,dy=0;
     if(joystick.active){dx=joystick.dx;dy=joystick.dy;}
     if(Math.abs(dx)>0.1||Math.abs(dy)>0.1){
         let nx=player.x+dx*player.speed,ny=player.y+dy*player.speed;
-        if(!solid(nx,player.y))player.x=nx;
-        if(!solid(player.x,ny))player.y=ny;
+        if(!isSolid(nx,player.y))player.x=nx;
+        if(!isSolid(player.x,ny))player.y=ny;
+    }
+    
+    // Yuvarlanma
+    if(player.roll>0){
+        let rx=0,ry=0;
+        if(dx>0.5)rx=1;if(dx<-0.5)rx=-1;if(dy>0.5)ry=1;if(dy<-0.5)ry=-1;
+        if(rx!==0||ry!==0){
+            let nx=player.x+rx*8,ny=player.y+ry*8;
+            if(!isSolid(nx,player.y))player.x=nx;
+            if(!isSolid(player.x,ny))player.y=ny;
+        }
     }
     
     // Saldırı
     if(attackHeld&&gameTime%15===0){
         enemies.forEach(e=>{
             if(e.alive&&dist(player,e)<50){
-                e.hp-=player.atk;
-                addDmg(e.x,e.y,player.atk,'#fff');
-                if(e.hp<=0)killEnemy(e);
+                dealDamage(e,player.atk);
             }
         });
     }
     
     // Düşmanlar
     enemies.forEach(e=>{
-        if(!e.alive)return;
-        if(dist(player,e)<150){
-            let a=Math.atan2(player.y-e.y,player.x-e.x);
-            e.x+=Math.cos(a)*e.speed;e.y+=Math.sin(a)*e.speed;
-            if(dist(player,e)<30&&gameTime%60===0){
-                if(!player.invuln){player.hp-=e.atk;updateStats();addDmg(player.x,player.y,e.atk,'#f00');}
+        if(!e.alive){if(e.deathTimer>0)e.deathTimer--;return;}
+        if(e.hitTimer>0)e.hitTimer--;
+        if(e.attackCooldown>0)e.attackCooldown--;
+        
+        const d=dist(e,player);
+        if(d<e.aggroRange){
+            const a=Math.atan2(player.y-e.y,player.x-e.x);
+            let spd=e.speed;if(e.slow)spd*=0.4;
+            let nx=e.x+Math.cos(a)*spd,ny=e.y+Math.sin(a)*spd;
+            if(!isSolid(nx,e.y))e.x=nx;if(!isSolid(e.x,ny))e.y=ny;
+            if(d<e.size+18&&e.attackCooldown<=0){hurtPlayer(e.atk);e.attackCooldown=40;}
+        }
+        
+        if(e.boss&&e.type==='boss_dragon'&&d<e.aggroRange&&e.attackCooldown<=0){
+            e.attackCooldown=60;
+            if(e.hp<e.maxHp*0.5&&e.phase===1){e.phase=2;e.speed*=1.5;e.atk*=1.3;}
+            const a=Math.atan2(player.y-e.y,player.x-e.x);
+            for(let i=-2;i<=2;i++){
+                projectiles.push({x:e.x,y:e.y,vx:Math.cos(a+i*0.3)*4,vy:Math.sin(a+i*0.3)*4,damage:e.atk*0.5,color:'#f40',range:300,traveled:0,size:8,type:'enemy'});
             }
         }
-        if(e.hp<=0)killEnemy(e);
     });
+    
+    // Mermiler
+    projectiles.forEach(p=>{
+        p.x+=p.vx;p.y+=p.vy;p.traveled+=Math.hypot(p.vx,p.vy);
+        if(p.traveled>p.range||isSolid(p.x,p.y)){p.dead=true;return;}
+        if(p.type==='enemy'){if(dist(p,player)<14&&player.invuln<=0){hurtPlayer(p.damage);p.dead=true;}}
+        else{
+            enemies.forEach(e=>{if(!e.alive||p.dead)return;if(dist(p,e)<e.size+p.size){dealDamage(e,p.damage);p.dead=true;}});
+        }
+    });
+    projectiles=projectiles.filter(p=>!p.dead);
     
     // Toplama
     drops.forEach((d,i)=>{
         if(dist(player,d)<30){
-            addItem(d.id);
+            addItem(d.id,1,d.rarity);
             drops.splice(i,1);
-            showNotify('+ '+ITEMS[d.id.split('.')[0]][d.id.split('.')[1]].n);
-            updateStats();
+            showNotify('+ '+getItemData(d.id).name);
+            updateStatsUI();
         }
     });
     
     // Kamera
-    camera.x+= (player.x-canvas.width/2-camera.x)*0.1;
-    camera.y+= (player.y-canvas.height/2-camera.y)*0.1;
+    camera.x+=(player.x-canvas.width/2-camera.x)*0.1;
+    camera.y+=(player.y-canvas.height/2-camera.y)*0.1;
     
     // UI Güncelle
-    if(gameTime%10===0){
-        document.getElementById('hp-bar').style.width=(player.hp/player.maxHp*100)+'%';
-        document.getElementById('hp-text').textContent=Math.floor(player.hp)+'/'+player.maxHp;
-        document.getElementById('mp-bar').style.width=(player.mp/player.maxMp*100)+'%';
-        document.getElementById('mp-text').textContent=Math.floor(player.mp)+'/'+player.maxMp;
-        document.getElementById('gold-display').textContent='🪙 '+player.gold;
-        document.getElementById('level-display').textContent='Lv.'+player.level+' | XP:'+player.xp+'/'+player.xpNext;
-        
-        player.spells.forEach((s,i)=>{
-            if(s.cd>0)s.cd--;
-            document.getElementById('cd-'+i).style.height=(s.cd/s.maxCd*100)+'%';
-        });
-    }
-    
+    if(gameTime%10===0){updateStatsUI();updateSpellUI();}
     if(player.hp<=0)document.getElementById('death-screen').style.display='flex';
 }
 
@@ -498,50 +577,51 @@ function draw(){
     ctx.save();
     ctx.translate(-camera.x,-camera.y);
     
-    // Harita
     const sx=Math.floor(camera.x/TILE),sy=Math.floor(camera.y/TILE);
     const ex=sx+Math.ceil(canvas.width/TILE)+1,ey=sy+Math.ceil(canvas.height/TILE)+1;
     
+    // Harita
+    const TC={0:'#2d5a1e',2:'#1a5276',4:'#1a3a0a',5:'#444',9:'#d4a843',10:'#a08060',12:'#cc3300',13:'#a0d8ef',18:'#3a5a2a'};
     for(let y=sy;y<ey;y++){
         for(let x=sx;x<ex;x++){
             if(y<0||y>=ROWS||x<0||x>=COLS)continue;
             let t=map[y][x],px=x*TILE,py=y*TILE;
-            ctx.fillStyle=t===0?'#2d5a1e':'#a08060';
+            ctx.fillStyle=TC[t]||'#2d5a1e';
             ctx.fillRect(px,py,TILE,TILE);
-            if(t===0&&((x+y)%5===0)){ctx.fillStyle='#3a7a2a';ctx.fillRect(px+10,py+10,4,4);}
+            ctx.strokeStyle='rgba(0,0,0,0.1)';ctx.strokeRect(px,py,TILE,TILE);
         }
     }
     
     // Sandıklar
     chests.forEach(c=>{
         if(c.open)return;
-        ctx.fillStyle='#8B6914';ctx.fillRect(c.x-10,c.y-10,20,20);
+        ctx.fillStyle=c.rarity==='rare'?'#a335ee':'#8B6914';ctx.fillRect(c.x-10,c.y-10,20,20);
         ctx.fillStyle='#ffd700';ctx.fillRect(c.x-3,c.y-3,6,6);
     });
     
     // NPC
     npcs.forEach(n=>{
-        ctx.fillStyle=n.col;ctx.beginPath();ctx.arc(n.x,n.y,15,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle=n.color;ctx.beginPath();ctx.arc(n.x,n.y,15,0,Math.PI*2);ctx.fill();
         ctx.fillStyle='#fff';ctx.font='12px sans-serif';ctx.textAlign='center';ctx.fillText(n.name,n.x,n.y-20);
     });
     
     // Düşmanlar
     enemies.forEach(e=>{
-        if(!e.alive)return;
-        ctx.fillStyle=e.col;
-        if(e.type==='slime'){ctx.beginPath();ctx.ellipse(e.x,e.y,12,10,0,0,Math.PI*2);ctx.fill();}
+        if(!e.alive&&e.deathTimer<=0)return;
+        const alpha=e.alive?1:e.deathTimer/30;ctx.globalAlpha=alpha;
+        ctx.fillStyle=e.color;
+        if(e.type==='slime'){ctx.beginPath();ctx.ellipse(e.x,e.y,e.size,e.size*0.8,0,0,Math.PI*2);ctx.fill();}
         else if(e.type==='skeleton'){ctx.fillRect(e.x-10,e.y-15,20,30);ctx.fillStyle='#c00';ctx.fillRect(e.x-5,e.y-10,4,4);ctx.fillRect(e.x+1,e.y-10,4,4);}
-        else if(e.type==='boss'){ctx.beginPath();ctx.arc(e.x,e.y,25,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#f00';ctx.lineWidth=3;ctx.stroke();}
-        
-        // HP Bar
-        ctx.fillStyle='#333';ctx.fillRect(e.x-15,e.y-25,30,4);
-        ctx.fillStyle='#f00';ctx.fillRect(e.x-15,e.y-25,30*(e.hp/e.maxHp),4);
+        else if(e.boss){ctx.beginPath();ctx.arc(e.x,e.y,e.size,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#f00';ctx.lineWidth=3;ctx.stroke();
+            const hpPct=e.hp/e.maxHp;ctx.fillStyle='#333';ctx.fillRect(e.x-30,e.y-e.size-20,60,6);ctx.fillStyle=hpPct>0.5?'#4c4':hpPct>0.25?'#ca0':'#c20';ctx.fillRect(e.x-30,e.y-e.size-20,60*hpPct,6);
+        }
+        ctx.globalAlpha=1;
     });
     
     // Eşyalar
     drops.forEach(d=>{
-        let it=ITEMS[d.id.split('.')[0]][d.id.split('.')[1]];
-        ctx.font='20px sans-serif';ctx.textAlign='center';ctx.fillText(it.i,d.x,d.y);
+        let it=getItemData(d.id);
+        ctx.font='20px sans-serif';ctx.textAlign='center';ctx.fillText(it.icon,d.x,d.y);
     });
     
     // Oyuncu
@@ -549,147 +629,209 @@ function draw(){
     ctx.fillStyle='#fc8';ctx.beginPath();ctx.arc(player.x,player.y-20,10,0,Math.PI*2);ctx.fill();
     
     // Efektler
-    particles.forEach((p,i)=>{
-        p.life--;p.y+=p.vy;
-        ctx.fillStyle=p.col;ctx.font='14px sans-serif';ctx.fillText(p.t,p.x,p.y);
-        if(p.life<=0)particles.splice(i,1);
-    });
-    
-    damageNums.forEach((d,i)=>{
-        d.life--;d.y-=1;
-        ctx.fillStyle=d.col;ctx.font='bold 16px sans-serif';ctx.strokeStyle='#000';ctx.lineWidth=3;
-        ctx.strokeText(d.t,d.x,d.y);ctx.fillText(d.t,d.x,d.y);
-        if(d.life<=0)damageNums.splice(i,1);
-    });
+    particles.forEach((p,i)=>{p.life--;p.y+=p.vy;ctx.fillStyle=p.col;ctx.font='14px sans-serif';ctx.fillText(p.t,p.x,p.y);if(p.life<=0)particles.splice(i,1);});
+    damageNums.forEach((d,i)=>{d.life--;d.y-=1;ctx.fillStyle=d.col;ctx.font='bold 16px sans-serif';ctx.strokeStyle='#000';ctx.lineWidth=3;ctx.strokeText(d.t,d.x,d.y);ctx.fillText(d.t,d.x,d.y);if(d.life<=0)damageNums.splice(i,1);});
+    projectiles.forEach(p=>{ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,Math.PI*2);ctx.fill();});
     
     ctx.restore();
+    drawMinimap();
 }
 
-// ============ YARDIMCI ============
-function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
-function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y);}
-function solid(x,y){
-    let tx=Math.floor(x/TILE),ty=Math.floor(y/TILE);
-    if(tx<0||ty<0||tx>=COLS||ty>=ROWS)return true;
-    return false; // Basitlik için sadece harita dışı kontrol
+function drawMinimap(){
+    const w=mCanvas.width,h=mCanvas.height;mCtx.fillStyle='#000';mCtx.fillRect(0,0,w,h);
+    const sx=w/COLS,sy=h/ROWS;
+    for(let y=0;y<ROWS;y+=4)for(let x=0;x<COLS;x+=4){
+        const t=map[y][x];
+        mCtx.fillStyle=t===0?'#2d5a1e':t===2?'#1a5276':t===4?'#1a3a0a':t===12?'#cc3300':'#444';
+        mCtx.fillRect(x*sx,y*sy,sx*4+1,sy*4+1);
+    }
+    enemies.forEach(e=>{if(!e.alive)return;mCtx.fillStyle=e.boss?'#f00':'#f44';mCtx.fillRect(e.x/TILE*sx-1,e.y/TILE*sy-1,e.boss?3:1,e.boss?3:1);});
+    mCtx.fillStyle='#4f4';mCtx.fillRect(player.x/TILE*sx-1,player.y/TILE*sy-1,3,3);
 }
-function addItem(id){player.inv.push({id:id});}
-function updateStats(){
-    let atk=8,def=3,hp=80,mp=80,sp=30;
-    player.inv.forEach(it=>{
-        let d=ITEMS[it.id.split('.')[0]][it.id.split('.')[1]];
-        if(d.atk)atk+=d.atk;if(d.def)def+=d.def;if(d.hp)hp+=d.hp;if(d.mp)mp+=d.mp;if(d.sp)sp+=d.sp;
-    });
-    player.atk=atk;player.def=def;player.maxHp=hp;player.maxMp=mp;player.spellPower=sp;
+
+// ============ SİSTEMLER ============
+function randInt(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
+function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y);}
+function isSolid(px,py){const tx=Math.floor(px/TILE),ty=Math.floor(py/TILE);if(tx<0||ty<0||tx>=COLS||ty>=ROWS)return true;return [2,4,5,12,15,16].includes(map[ty][tx]);}
+
+function addItem(baseId,count,rarity){
+    if(!rarity)rarity=randomRarity();
+    const item=generateItem(baseId,rarity);if(!item)return;
+    if(item.type==='consumable'||item.type==='material'){
+        const existing=player.inv.find(i=>i.id===baseId);
+        if(existing)existing.count+=count;else player.inv.push({...item,count:count});
+    }else{player.inv.push({...item,count:1});}
+}
+
+function recalcStats(){
+    let baseAtk=8,baseDef=3,baseHp=80,baseMp=80,baseSp=30,baseCrit=5;
+    if(player.equip.w){baseAtk+=player.equip.w.atk||0;baseSp+=player.equip.w.spellBonus||0;baseCrit+=player.equip.w.critBonus||0;}
+    if(player.equip.a){baseDef+=player.equip.a.def||0;baseHp+=player.equip.a.hpBonus||0;baseMp+=player.equip.a.mpBonus||0;baseSp+=player.equip.a.spellBonus||0;}
+    // Skills
+    const skills=SKILL_TREES.mage;
+    if(skills)skills.forEach(s=>{if(player.skills[s.id]){if(s.fx.spellMult)baseSp*=(1+s.fx.spellMult);if(s.fx.mpMult)baseMp*=(1+s.fx.mpMult);}});
+    
+    player.atk=baseAtk;player.def=baseDef;player.maxHp=baseHp;player.maxMp=baseMp;player.spellPower=baseSp;player.crit=baseCrit;
     if(player.hp>player.maxHp)player.hp=player.maxHp;
     if(player.mp>player.maxMp)player.mp=player.maxMp;
 }
-function addDmg(x,y,t,c){damageNums.push({x:x,y:y,t:'-'+t,col:c,life:30});}
-function showNotify(t){
-    let n=document.getElementById('quest-notify');
-    n.textContent=t;n.style.display='block';
-    setTimeout(()=>n.style.display='none',3000);
+
+function updateStatsUI(){
+    document.getElementById('hp-bar').style.width=(player.hp/player.maxHp*100)+'%';
+    document.getElementById('hp-text').textContent=Math.floor(player.hp)+'/'+player.maxHp;
+    document.getElementById('mp-bar').style.width=(player.mp/player.maxMp*100)+'%';
+    document.getElementById('mp-text').textContent=Math.floor(player.mp)+'/'+player.maxMp;
+    document.getElementById('gold-display').textContent='🪙 '+player.gold;
+    document.getElementById('level-display').textContent='Lv.'+player.level+' | XP:'+player.xp+'/'+player.xpToNext;
+    document.getElementById('stats-detail').textContent='⚔️'+player.atk+' | 🛡️'+player.def+' | ✨'+player.spellPower;
 }
+
+function updateSpellUI(){
+    player.spells.forEach((s,i)=>{
+        if(s.cooldown>0)s.cooldown--;
+        const cdEl=document.getElementById('cd-'+i);
+        cdEl.style.height=(s.cooldown>0?(s.cooldown/30*100)+'%':'0%');
+        cdEl.style.opacity=s.cooldown>0?1:0;
+    });
+}
+
+function addParticle(x,y,text,color){particles.push({x:x,y:y,text:text,color:color,life:40,vy:-1.5});}
+function addDamage(x,y,text,color){damageNums.push({x:x,y:y,text:text,color:color,life:40});}
+function showNotify(t){const n=document.getElementById('quest-notify');n.textContent=t;n.style.display='block';setTimeout(()=>n.style.display='none',3000);}
+
+function dealDamage(enemy,amount){
+    let dmg=Math.max(1,amount-enemy.def);
+    if(Math.random()*100<player.crit){dmg=Math.floor(dmg*2);addDamage(enemy.x,enemy.y-20,'KRİTİK!','#ff0');}
+    if(player.spellPower>0)dmg+=Math.floor(player.spellPower*0.2);
+    enemy.hp-=dmg;enemy.hitTimer=10;
+    addDamage(enemy.x,enemy.y-20,'-'+dmg,'#f44');
+    if(enemy.hp<=0)killEnemy(enemy);
+}
+
+function hurtPlayer(amount){
+    if(player.invuln>0||player.roll>0)return;
+    let dmg=Math.max(1,amount-player.def);
+    player.hp-=dmg;player.invuln=30;
+    addDamage(player.x,player.y-20,'-'+dmg,'#f00');
+}
+
 function killEnemy(e){
-    e.alive=false;
+    e.alive=false;e.deathTimer=30;
     player.xp+=e.xp;
-    if(player.xp>=player.xpNext){player.level++;player.xp=0;player.xpNext*=1.5;player.maxHp+=10;player.hp=player.maxHp;showNotify('🎉 SEVİYE ATLANDI!');}
-    e.drop.forEach(d=>drops.push({x:e.x+rand(-20,20),y:e.y+rand(-20,20),id:d}));
-    if(e.boss){showNotify('🏆 BOSS YENİLDİ!');player.gold+=500;}
-    updateStats();
+    const goldDrop=randInt(e.goldMin,e.goldMax);player.gold+=goldDrop;
+    addDamage(e.x,e.y-30,'+'+goldDrop+'🪙','#ffd700');
+    for(let i=0;i<randInt(e.minDrop,e.maxDrop);i++){
+        const dropId=e.drops[randInt(0,e.drops.length-1)];
+        drops.push({x:e.x+randInt(-20,20),y:e.y+randInt(-20,20),id:dropId,rarity:randomRarity()});
+    }
+    if(e.boss){bossDefeated[e.type]=true;showNotify('🏆 '+e.name+' YENİLDİ!');player.skillPts+=5;}
+    while(player.xp>=player.xpToNext){player.xp-=player.xpToNext;player.level++;player.xpToNext=Math.floor(player.xpToNext*1.5);player.skillPts++;player.hp=player.maxHp;player.mp=player.maxMp;recalcStats();showNotify('🎉 SEVİYE '+player.level+'!');}
+    updateStatsUI();
 }
+
 function respawnPlayer(){
-    player.hp=player.maxHp;player.x=100*TILE;player.y=100*TILE;
+    player.hp=player.maxHp;player.mp=player.maxMp;player.x=100*TILE;player.y=100*TILE;player.gold=Math.floor(player.gold/2);
     document.getElementById('death-screen').style.display='none';
 }
 
-// ============ MENÜLER ============
-let invPage=0;
-function toggleInventory(){
-    uiOpen=!uiOpen;
-    document.getElementById('inventory-panel').style.display=uiOpen?'block':'none';
-    if(uiOpen)renderInv();
+function doRoll(){if(player.rollCd<=0){player.roll=15;player.rollCd=40;player.invuln=15;}}
+function doInteract(){
+    if(dialog){dialog.idx++;if(dialog.idx>=dialog.txt.length){dialog=null;document.getElementById('dialog-box').style.display='none';}else updateDialog();return;}
+    npcs.forEach(n=>{if(dist(player,n)<60){if(n.type==='shop')toggleShop();else{dialog={n:n.name,txt:n.dialog,idx:0};updateDialog();}}});
+    chests.forEach(c=>{if(!c.open&&dist(player,c)<50){c.open=true;addItem('herb');addItem('mana_potion');player.gold+=randInt(5,20);showNotify('📦 Sandık Açıldı!');updateStatsUI();}});
 }
+function updateDialog(){const b=document.getElementById('dialog-box');b.style.display='block';b.querySelector('.name').textContent=dialog.n;b.querySelector('.text').textContent=dialog.txt[dialog.idx];}
+function showDialog(name,text){dialog={n:name,txt:[text],idx:0};updateDialog();}
+
+function castSpell(i){
+    if(uiOpen||dialog)return;
+    const s=player.spells[i];
+    if(player.mp<s.mpCost||s.cooldown>0)return;
+    player.mp-=s.mpCost;
+    const cdR=player.skills.m3?0.85:player.skills.m9?0.75:1;
+    s.cooldown=Math.floor(30*cdR);
+    
+    let angle=0;
+    const target=enemies.filter(e=>e.alive).sort((a,b)=>dist(a,player)-dist(b,player))[0];
+    if(target)angle=Math.atan2(target.y-player.y,target.x-player.x);
+    
+    let dmg=s.damage*(1+player.spellPower*0.01);
+    if(player.skills.m4&&s.color==='#ff4400')dmg*=1.25;
+    if(player.skills.m7&&s.color==='#ff4400')dmg*=1.4;
+    
+    projectiles.push({x:player.x,y:player.y,vx:Math.cos(angle)*7,vy:Math.sin(angle)*7,damage:dmg,color:s.color,range:s.range,traveled:0,size:6,type:'player'});
+    updateStatsUI();
+}
+
+// ============ MENÜLER ============
+let invPage=0;const INV_PER_PAGE=20;
+function toggleInventory(){uiOpen=!uiOpen;document.getElementById('inventory-panel').style.display=uiOpen?'block':'none';if(uiOpen){invPage=0;renderInv();}}
 function renderInv(){
     const g=document.getElementById('inv-grid');g.innerHTML='';
-    const start=invPage*16,end=Math.min(start+16,player.inv.length);
-    document.getElementById('inv-page').textContent=(invPage+1)+'/'+Math.ceil(player.inv.length/16||1);
+    const start=invPage*INV_PER_PAGE,end=Math.min(start+INV_PER_PAGE,player.inv.length);
+    const maxPage=Math.max(1,Math.ceil(player.inv.length/INV_PER_PAGE));
+    document.getElementById('inv-page').textContent=(invPage+1)+'/'+maxPage;
     for(let i=start;i<end;i++){
-        let it=player.inv[i],d=ITEMS[it.id.split('.')[0]][it.id.split('.')[1]];
-        let s=document.createElement('div');s.className='inv-slot';
-        s.innerHTML=d.i;
+        const it=player.inv[i],d=getItemData(it.id);
+        const s=document.createElement('div');s.className='inv-slot rarity-'+it.rarity;
+        let tip='<b style="color:'+RARITY[it.rarity].color+'">'+it.name+'</b><br>';
+        if(it.type==='weapon')tip+='⚔️'+it.atk+' ✨'+(it.spellBonus||0);
+        else if(it.type==='armor')tip+='🛡️'+it.def+' ❤️'+(it.hpBonus||0);
+        else tip+=it.desc||'';
+        tip+='<br>💰'+it.value;
+        s.innerHTML=d.icon+'<span class="count">'+(it.count>1?it.count:'')+'</span><div class="tooltip">'+tip+'</div>';
         s.onclick=()=>{useItem(i);};
         g.appendChild(s);
     }
 }
 function invPage(d){invPage+=d;if(invPage<0)invPage=0;renderInv();}
 function useItem(i){
-    let it=player.inv[i],d=ITEMS[it.id.split('.')[0]][it.id.split('.')[1]];
-    if(d.hp){player.hp=Math.min(player.maxHp,player.hp+d.hp);showNotify('+HP');}
-    if(d.mp){player.mp=Math.min(player.maxMp,player.mp+d.mp);showNotify('+MP');}
-    player.inv.splice(i,1);renderInv();updateStats();
+    const it=player.inv[i],d=getItemData(it.id);
+    if(d.type==='consumable'){
+        if(d.effect.hp){player.hp=Math.min(player.maxHp,player.hp+d.effect.hp);addParticle(player.x,player.y,'+','#4f4');}
+        if(d.effect.mp){player.mp=Math.min(player.maxMp,player.mp+d.effect.mp);addParticle(player.x,player.y,'+','#44f');}
+        if(d.effect.damage){const t=enemies.filter(e=>e.alive).sort((a,b)=>dist(a,player)-dist(b,player))[0];if(t){dealDamage(t,d.effect.damage);}}
+        player.inv.splice(i,1);renderInv();updateStatsUI();
+    }else if(d.type==='weapon'){if(player.equip.w)addItem(player.equip.w.id);player.equip.w=it;player.inv.splice(i,1);recalcStats();renderInv();showNotify(d.name+' Kuşanıldı!');}
+    else if(d.type==='armor'){if(player.equip.a)addItem(player.equip.a.id);player.equip.a=it;player.inv.splice(i,1);recalcStats();renderInv();showNotify(d.name+' Giyildi!');}
 }
 
-function toggleSkills(){
-    uiOpen=!uiOpen;
-    document.getElementById('skill-panel').style.display=uiOpen?'block':'none';
-    if(uiOpen){
-        document.getElementById('sp-display').textContent='Puan: '+player.skillPts;
-        const t=document.getElementById('skill-tree');t.innerHTML='';
-        ['🔥 Ateş Gücü','❄️ Buz Direnci','⚡ Hız'].forEach((s,idx)=>{
-            let n=document.createElement('div');n.className='skill-node';
-            n.innerHTML='<div class="icon">'+s.split(' ')[0]+'</div><div class="name">'+s.split(' ')[1]+'</div><div class="desc">1 Puan</div>';
-            n.onclick=()=>{if(player.skillPts>0){player.skillPts--;player.atk+=2;updateStats();toggleSkills();}};
-            t.appendChild(n);
-        });
-    }
+function toggleSkills(){uiOpen=!uiOpen;document.getElementById('skill-panel').style.display=uiOpen?'block':'none';if(uiOpen){document.getElementById('sp-display').textContent='Yetenek Puanı: '+player.skillPts;renderSkillTree();}}
+function renderSkillTree(){
+    const t=document.getElementById('skill-tree');t.innerHTML='';
+    const skills=SKILL_TREES.mage;
+    skills.forEach(s=>{
+        const unlocked=!!player.skills[s.id];
+        const reqMet=!s.req||s.req.split(',').every(r=>player.skills[r]);
+        const locked=!reqMet&&!unlocked;
+        const n=document.createElement('div');n.className='skill-node'+(unlocked?' unlocked':locked?' locked':'');
+        n.innerHTML='<div class="icon">'+s.icon+'</div><div class="name">'+s.name+'</div><div class="desc">'+s.desc+'</div>'+(unlocked?'<div style="color:#4f4;font-size:10px">✅</div>':'<div style="color:#fd0;font-size:10px">'+s.cost+' Puan</div>');
+        if(!locked&&!unlocked)n.onclick=()=>{if(player.skillPts>=s.cost){player.skillPts-=s.cost;player.skills[s.id]=true;recalcStats();toggleSkills();showNotify(s.name+' Açıldı!');}};
+        t.appendChild(n);
+    });
 }
 
-function toggleShop(){
-    uiOpen=!uiOpen;
-    document.getElementById('shop-panel').style.display=uiOpen?'block':'none';
-    if(uiOpen){
-        const s=document.getElementById('shop-sell');s.innerHTML='';
-        player.inv.forEach((it,idx)=>{
-            let d=ITEMS[it.id.split('.')[0]][it.id.split('.')[1]];
-            if(d.v){
-                let div=document.createElement('div');div.className='shop-item';
-                div.innerHTML='<span>'+d.i+' '+d.n+'</span><button class="shop-btn btn-sell" onclick="sellItem('+idx+')">Sat ('+d.v+'g)</button>';
-                s.appendChild(div);
-            }
-        });
-        const b=document.getElementById('shop-buy');b.innerHTML='';
-        [{id:'c.herb',p:10},{id:'c.mana',p:15},{id:'w.sword_steel',p:100}].forEach(it=>{
-            let div=document.createElement('div');div.className='shop-item';
-            let d=ITEMS[it.id.split('.')[0]][it.id.split('.')[1]];
-            div.innerHTML='<span>'+d.i+' '+d.n+'</span><button class="shop-btn btn-buy" onclick="buyItem(\''+it.id+'\','+it.p+')">Al ('+it.p+'g)</button>';
-            b.appendChild(div);
-        });
-    }
+function toggleShop(){uiOpen=!uiOpen;document.getElementById('shop-panel').style.display=uiOpen?'block':'none';if(uiOpen)renderShop();}
+function renderShop(){
+    const s=document.getElementById('shop-sell');s.innerHTML='';
+    player.inv.forEach((it,idx)=>{
+        const d=getItemData(it.id);
+        if(d.value){
+            const div=document.createElement('div');div.className='shop-item';
+            div.innerHTML='<span>'+d.icon+' '+it.name+' x'+(it.count||1)+'</span><button class="shop-btn btn-sell" onclick="sellItem('+idx+')">Sat ('+Math.floor(d.value*0.6)+'g)</button>';
+            s.appendChild(div);
+        }
+    });
+    const b=document.getElementById('shop-buy');b.innerHTML='';
+    [{id:'herb',p:10},{id:'mana_potion',p:15},{id:'bandage',p:20},{id:'steel_sword',p:150},{id:'mithril_armor',p:400}].forEach(it=>{
+        const d=getItemData(it.id);
+        const div=document.createElement('div');div.className='shop-item';
+        div.innerHTML='<span>'+d.icon+' '+d.name+'</span><button class="shop-btn btn-buy" onclick="buyItem(\''+it.id+'\','+it.p+')">Al ('+it.p+'g)</button>';
+        b.appendChild(div);
+    });
 }
-function sellItem(i){
-    let it=player.inv[i],d=ITEMS[it.id.split('.')[0]][it.id.split('.')[1]];
-    player.gold+=d.v;player.inv.splice(i,1);updateStats();toggleShop();
-}
-function buyItem(id,p){
-    if(player.gold>=p){player.gold-=p;addItem(id);updateStats();toggleShop();}
-    else showNotify('Yetersiz Altın!');
-}
-
-function castSpell(i){
-    let s=player.spells[i];
-    if(player.mp<s.cost||s.cd>0)return;
-    player.mp-=s.cost;s.cd=s.maxCd;
-    // En yakın düşmana
-    let target=null,minDst=9999;
-    enemies.forEach(e=>{if(e.alive){let d=dist(player,e);if(d<minDst){minDst=d;target=e;}}});
-    if(target){
-        target.hp-=s.dmg;
-        addDmg(target.x,target.y,s.dmg,s.col);
-        if(target.hp<=0)killEnemy(target);
-    }
-    updateStats();
-}
+function sellItem(i){const it=player.inv[i],d=getItemData(it.id);player.gold+=Math.floor(d.value*0.6);player.inv.splice(i,1);updateStatsUI();toggleShop();}
+function buyItem(id,p){if(player.gold>=p){player.gold-=p;addItem(id);updateStatsUI();toggleShop();}else showNotify('Yetersiz Altın!');}
 
 // Başlat
 init();
