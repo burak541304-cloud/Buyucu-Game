@@ -1,2148 +1,1526 @@
+```html
 <!DOCTYPE html>
-<html lang="tr">
+<html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>⚔️ Shadow Knight Online - RPG</title>
-<style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body {
-background: #000;
-overflow: hidden;
-touch-action: none;
--webkit-touch-callout: none;
--webkit-user-select: none;
-user-select: none;
-font-family: 'Segoe UI', Arial, sans-serif;
-}
-canvas {
-display: block;
-position: absolute;
-top: 0; left: 0;
-}
-#ui-layer {
-position: absolute;
-top: 0; left: 0;
-width: 100%; height: 100%;
-pointer-events: none;
-z-index: 10;
-}
-#ui-layer > * { pointer-events: auto; }
-
-/* HP/MP Bars */
-#bars-container {
-position: absolute;
-top: 10px; left: 10px;
-width: 200px;
-z-index: 20;
-}
-.bar-wrap {
-margin-bottom: 6px;
-position: relative;
-}
-.bar-label {
-color: #fff;
-font-size: 11px;
-font-weight: bold;
-text-shadow: 1px 1px 2px #000;
-margin-bottom: 2px;
-}
-.bar-bg {
-width: 100%; height: 18px;
-background: #1a1a2e;
-border: 2px solid #444;
-border-radius: 9px;
-overflow: hidden;
-}
-.bar-fill {
-height: 100%;
-border-radius: 7px;
-transition: width 0.3s;
-}
-.bar-text {
-position: absolute;
-top: 0; left: 0; right: 0;
-text-align: center;
-color: #fff;
-font-size: 11px;
-font-weight: bold;
-line-height: 18px;
-text-shadow: 1px 1px 2px #000;
-}
-#hp-bar { background: linear-gradient(180deg, #ff4444, #cc0000); }
-#mp-bar { background: linear-gradient(180deg, #4488ff, #0044cc); }
-#xp-bar { background: linear-gradient(180deg, #44ff44, #00aa00); height: 8px; }
-#xp-bar-wrap { width: 100%; height: 8px; background: #1a1a2e; border: 1px solid #444; border-radius: 4px; overflow: hidden; }
-
-/* Stats */
-#stats-panel {
-position: absolute;
-top: 85px; left: 10px;
-color: #ffd700;
-font-size: 11px;
-text-shadow: 1px 1px 2px #000;
-}
-#stats-panel div { margin-bottom: 2px; }
-
-/* Mini Map */
-#minimap {
-position: absolute;
-top: 10px; right: 10px;
-width: 120px; height: 120px;
-border: 2px solid #ffd700;
-border-radius: 5px;
-background: rgba(0,0,0,0.7);
-z-index: 20;
-}
-
-/* Skills */
-#skills-container {
-position: absolute;
-bottom: 100px;
-left: 50%;
-transform: translateX(-50%);
-display: flex;
-gap: 8px;
-z-index: 20;
-}
-.skill-btn {
-width: 56px; height: 56px;
-border: 2px solid #ffd700;
-border-radius: 10px;
-background: rgba(20,20,40,0.9);
-display: flex;
-flex-direction: column;
-align-items: center;
-justify-content: center;
-cursor: pointer;
-position: relative;
-overflow: hidden;
-}
-.skill-btn:active { transform: scale(0.9); }
-.skill-btn .icon { font-size: 24px; }
-.skill-btn .key { font-size: 9px; color: #aaa; }
-.skill-cd-overlay {
-position: absolute;
-bottom: 0; left: 0; right: 0;
-background: rgba(0,0,0,0.7);
-transition: height 0.1s;
-}
-.skill-btn.disabled { opacity: 0.4; }
-
-/* Joystick */
-#joystick-area {
-position: absolute;
-bottom: 20px;
-left: 20px;
-width: 130px; height: 130px;
-z-index: 20;
-}
-#joystick-base {
-width: 120px; height: 120px;
-border-radius: 50%;
-background: rgba(255,255,255,0.1);
-border: 2px solid rgba(255,255,255,0.3);
-position: relative;
-}
-#joystick-thumb {
-width: 50px; height: 50px;
-border-radius: 50%;
-background: rgba(255,215,0,0.5);
-border: 2px solid #ffd700;
-position: absolute;
-top: 35px; left: 35px;
-transition: none;
-}
-
-/* Attack Button */
-#attack-btn {
-position: absolute;
-bottom: 30px;
-right: 30px;
-width: 80px; height: 80px;
-border-radius: 50%;
-background: radial-gradient(circle, #ff4444, #aa0000);
-border: 3px solid #ff6666;
-display: flex;
-align-items: center;
-justify-content: center;
-font-size: 32px;
-cursor: pointer;
-z-index: 20;
-box-shadow: 0 0 20px rgba(255,0,0,0.5);
-}
-#attack-btn:active { transform: scale(0.9); }
-
-/* Potions */
-#potions {
-position: absolute;
-bottom: 130px;
-right: 20px;
-display: flex;
-flex-direction: column;
-gap: 8px;
-z-index: 20;
-}
-.potion-btn {
-width: 50px; height: 50px;
-border-radius: 50%;
-border: 2px solid;
-display: flex;
-align-items: center;
-justify-content: center;
-font-size: 22px;
-cursor: pointer;
-position: relative;
-}
-.potion-btn:active { transform: scale(0.9); }
-#hp-potion { background: rgba(255,0,0,0.3); border-color: #ff4444; }
-#mp-potion { background: rgba(0,100,255,0.3); border-color: #4488ff; }
-.potion-count {
-position: absolute;
-bottom: -2px; right: -2px;
-background: #000;
-color: #fff;
-font-size: 9px;
-padding: 1px 4px;
-border-radius: 5px;
-}
-
-/* Chat/Log */
-#log-container {
-position: absolute;
-top: 10px;
-left: 50%;
-transform: translateX(-50%);
-width: 280px;
-max-height: 80px;
-overflow: hidden;
-z-index: 20;
-}
-.log-msg {
-color: #ffd700;
-font-size: 11px;
-text-shadow: 1px 1px 2px #000;
-text-align: center;
-margin-bottom: 2px;
-opacity: 1;
-transition: opacity 0.5s;
-}
-
-/* Inventory */
-#inv-btn {
-position: absolute;
-top: 140px; right: 10px;
-width: 40px; height: 40px;
-background: rgba(20,20,40,0.9);
-border: 2px solid #ffd700;
-border-radius: 8px;
-display: flex;
-align-items: center;
-justify-content: center;
-font-size: 20px;
-cursor: pointer;
-z-index: 20;
-}
-#inventory-panel {
-display: none;
-position: absolute;
-top: 50%; left: 50%;
-transform: translate(-50%, -50%);
-width: 300px;
-max-height: 70vh;
-background: rgba(10,10,30,0.95);
-border: 2px solid #ffd700;
-border-radius: 12px;
-padding: 15px;
-z-index: 100;
-overflow-y: auto;
-}
-#inventory-panel h3 {
-color: #ffd700;
-text-align: center;
-margin-bottom: 10px;
-}
-.inv-item {
-display: flex;
-align-items: center;
-padding: 8px;
-margin-bottom: 5px;
-background: rgba(255,255,255,0.05);
-border-radius: 6px;
-border: 1px solid #333;
-}
-.inv-item .item-icon { font-size: 24px; margin-right: 10px; }
-.inv-item .item-info { flex: 1; }
-.inv-item .item-name { color: #fff; font-size: 12px; }
-.inv-item .item-desc { color: #aaa; font-size: 10px; }
-.inv-item .item-btn {
-padding: 4px 10px;
-background: #ffd700;
-color: #000;
-border: none;
-border-radius: 4px;
-cursor: pointer;
-font-size: 10px;
-font-weight: bold;
-}
-#close-inv {
-position: absolute;
-top: 10px; right: 10px;
-background: #ff4444;
-color: #fff;
-border: none;
-border-radius: 50%;
-width: 24px; height: 24px;
-cursor: pointer;
-font-size: 14px;
-}
-
-/* Zone */
-#zone-name {
-position: absolute;
-top: 50px; left: 50%;
-transform: translateX(-50%);
-color: #ffd700;
-font-size: 16px;
-font-weight: bold;
-text-shadow: 2px 2px 4px #000;
-z-index: 20;
-opacity: 0;
-transition: opacity 1s;
-}
-
-/* Death Screen */
-#death-screen {
-display: none;
-position: absolute;
-top: 0; left: 0;
-width: 100%; height: 100%;
-background: rgba(100,0,0,0.8);
-z-index: 200;
-flex-direction: column;
-align-items: center;
-justify-content: center;
-}
-#death-screen h1 { color: #ff0000; font-size: 36px; margin-bottom: 20px; text-shadow: 0 0 20px #ff0000; }
-#death-screen button {
-padding: 12px 30px;
-background: #ffd700;
-color: #000;
-border: none;
-border-radius: 8px;
-font-size: 16px;
-font-weight: bold;
-cursor: pointer;
-}
-
-/* Level Up */
-#levelup-fx {
-display: none;
-position: absolute;
-top: 50%; left: 50%;
-transform: translate(-50%, -50%);
-color: #ffd700;
-font-size: 32px;
-font-weight: bold;
-text-shadow: 0 0 20px #ffd700, 0 0 40px #ff8800;
-z-index: 150;
-animation: levelUp 2s ease-out;
-}
-@keyframes levelUp {
-0% { transform: translate(-50%,-50%) scale(0.5); opacity: 0; }
-30% { transform: translate(-50%,-50%) scale(1.3); opacity: 1; }
-70% { transform: translate(-50%,-50%) scale(1); opacity: 1; }
-100% { transform: translate(-50%,-50%) scale(1.5); opacity: 0; }
-}
-
-/* Quest */
-#quest-panel {
-position: absolute;
-top: 185px; left: 10px;
-width: 180px;
-z-index: 20;
-}
-.quest-item {
-background: rgba(20,20,40,0.8);
-border: 1px solid #ffd700;
-border-radius: 6px;
-padding: 6px 8px;
-margin-bottom: 4px;
-}
-.quest-item .q-title { color: #ffd700; font-size: 10px; font-weight: bold; }
-.quest-item .q-desc { color: #ccc; font-size: 9px; }
-.quest-item .q-progress { color: #44ff44; font-size: 9px; }
-
-/* Loading */
-#loading {
-position: fixed;
-top: 0; left: 0;
-width: 100%; height: 100%;
-background: #0a0a1a;
-display: flex;
-flex-direction: column;
-align-items: center;
-justify-content: center;
-z-index: 9999;
-}
-#loading h1 { color: #ffd700; font-size: 28px; margin-bottom: 20px; text-shadow: 0 0 20px #ffd700; }
-#loading-bar-bg { width: 200px; height: 10px; background: #333; border-radius: 5px; overflow: hidden; }
-#loading-bar { width: 0%; height: 100%; background: linear-gradient(90deg, #ffd700, #ff8800); transition: width 0.3s; }
-#loading-text { color: #aaa; font-size: 12px; margin-top: 10px; }
-</style>
+    <title>Genflow's Ultimate RPG Engine</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #333; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        canvas { border: 1px solid #000; background-color: #000; }
+        #mobileControls {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            display: none; /* Will be shown if isMobile is true */
+        }
+        #joystick {
+            width: 100px;
+            height: 100px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            position: relative;
+            float: left;
+        }
+        #joystick-handle {
+            width: 40px;
+            height: 40px;
+            background-color: rgba(255, 255, 255, 0.7);
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        #skillBar {
+            float: right;
+            margin-left: 20px;
+            display: flex;
+        }
+        .skillButton {
+            width: 50px;
+            height: 50px;
+            background-color: rgba(0, 0, 0, 0.5);
+            border: 2px solid #fff;
+            border-radius: 5px;
+            margin: 0 5px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #fff;
+            font-size: 14px;
+            cursor: pointer;
+        }
+    </style>
 </head>
 <body>
-
-<div id="loading">
-<h1>⚔️ SHADOW KNIGHT</h1>
-<div id="loading-bar-bg"><div id="loading-bar"></div></div>
-<div id="loading-text">Yükleniyor...</div>
-</div>
-
-<canvas id="game"></canvas>
-
-<div id="ui-layer">
-<div id="bars-container">
-<div class="bar-wrap">
-<div class="bar-label">❤️ HP</div>
-<div class="bar-bg"><div class="bar-fill" id="hp-bar"></div></div>
-<div class="bar-text" id="hp-text">100/100</div>
-</div>
-<div class="bar-wrap">
-<div class="bar-label">💎 MP</div>
-<div class="bar-bg"><div class="bar-fill" id="mp-bar"></div></div>
-<div class="bar-text" id="mp-text">50/50</div>
-</div>
-<div class="bar-wrap">
-<div class="bar-label">⭐ EXP</div>
-<div id="xp-bar-wrap"><div class="bar-fill" id="xp-bar" style="width:0%"></div></div>
-<div class="bar-text" id="xp-text">Lv.1 | 0/100</div>
-</div>
-</div>
-
-<div id="stats-panel">
-<div>⚔️ Saldırı: <span id="stat-atk">10</span></div>
-<div>🛡️ Savunma: <span id="stat-def">5</span></div>
-<div>💰 Altın: <span id="stat-gold">0</span></div>
-</div>
-
-<div id="minimap"><canvas id="minimap-canvas" width="120" height="120"></canvas></div>
-
-<div id="zone-name"></div>
-
-<div id="skills-container">
-<div class="skill-btn" id="skill-0" onclick="useSkill(0)">
-<div class="icon">⚔️</div>
-<div class="key">S1</div>
-<div class="skill-cd-overlay" id="cd-0" style="height:0%"></div>
-</div>
-<div class="skill-btn" id="skill-1" onclick="useSkill(1)">
-<div class="icon">🔥</div>
-<div class="key">S2</div>
-<div class="skill-cd-overlay" id="cd-1" style="height:0%"></div>
-</div>
-<div class="skill-btn" id="skill-2" onclick="useSkill(2)">
-<div class="icon">❄️</div>
-<div class="key">S3</div>
-<div class="skill-cd-overlay" id="cd-2" style="height:0%"></div>
-</div>
-<div class="skill-btn" id="skill-3" onclick="useSkill(3)">
-<div class="icon">⚡</div>
-<div class="key">S4</div>
-<div class="skill-cd-overlay" id="cd-3" style="height:0%"></div>
-</div>
-<div class="skill-btn" id="skill-4" onclick="useSkill(4)">
-<div class="icon">💀</div>
-<div class="key">S5</div>
-<div class="skill-cd-overlay" id="cd-4" style="height:0%"></div>
-</div>
-</div>
-
-<div id="joystick-area">
-<div id="joystick-base">
-<div id="joystick-thumb"></div>
-</div>
-</div>
-
-<div id="attack-btn" ontouchstart="normalAttack()" onmousedown="normalAttack()">⚔️</div>
-
-<div id="potions">
-<div class="potion-btn" id="hp-potion" onclick="usePotion('hp')">
-🧪
-<div class="potion-count" id="hp-pot-count">5</div>
-</div>
-<div class="potion-btn" id="mp-potion" onclick="usePotion('mp')">
-💧
-<div class="potion-count" id="mp-pot-count">3</div>
-</div>
-</div>
-
-<div id="inv-btn" onclick="toggleInventory()">🎒</div>
-
-<div id="inventory-panel">
-<button id="close-inv" onclick="toggleInventory()">✕</button>
-<h3>🎒 Envanter</h3>
-<div id="inv-list"></div>
-</div>
-
-<div id="quest-panel">
-<div class="quest-item">
-<div class="q-title">📜 Görev</div>
-<div class="q-desc" id="quest-desc">5 Goblin öldür</div>
-<div class="q-progress" id="quest-progress">0/5</div>
-</div>
-</div>
-
-<div id="log-container"></div>
-
-<div id="levelup-fx">⬆️ LEVEL UP!</div>
-
-<div id="death-screen">
-<h1>💀 ÖLDÜN</h1>
-<p style="color:#ffaaaa;margin-bottom:20px">Yeniden diriliyorsun...</p>
-<button onclick="respawn()">⚔️ Yeniden Doğ</button>
-</div>
-</div>
-
-<script>
-// ============ GAME ENGINE ============
-const canvas = document.getElementById('game');
-const ctx = canvas.getContext('2d');
-const mmCanvas = document.getElementById('minimap-canvas');
-const mmCtx = mmCanvas.getContext('2d');
-
-function resize() {
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
-}
-resize();
-window.addEventListener('resize', resize);
-
-// ============ GAME CONSTANTS ============
-const WORLD_W = 3000;
-const WORLD_H = 3000;
-const TILE = 48;
-
-// ============ GAME STATE ============
-let gameTime = 0;
-let screenShake = { x: 0, y: 0, intensity: 0 };
-let particles = [];
-let floatingTexts = [];
-let dropItems = [];
-let camera = { x: 0, y: 0 };
-let gameRunning = true;
-
-// ============ PLAYER ============
-const player = {
-x: 1500, y: 1500,
-w: 36, h: 44,
-vx: 0, vy: 0,
-speed: 3.2,
-hp: 100, maxHp: 100,
-mp: 50, maxMp: 50,
-atk: 10, def: 5,
-level: 1, exp: 0, expNext: 100,
-gold: 0,
-direction: 0, // 0=down,1=left,2=right,3=up
-frame: 0, frameTimer: 0,
-isAttacking: false, attackTimer: 0, attackCD: 0,
-invincible: 0,
-hpPotions: 5, mpPotions: 3,
-skills: [
-{ name: 'Güç Vuruşu', icon: '⚔️', mpCost: 5, cd: 3, cdLeft: 0, dmg: 1.5, type: 'melee', desc: 'Güçlü yakın saldırı' },
-{ name: 'Ateş Topu', icon: '🔥', mpCost: 15, cd: 5, cdLeft: 0, dmg: 2.5, type: 'fire', desc: 'Ateş topu fırlat' },
-{ name: 'Buz Saldırısı', icon: '❄️', mpCost: 12, cd: 4, cdLeft: 0, dmg: 2.0, type: 'ice', desc: 'Buz alan hasarı + yavaşlatma' },
-{ name: 'Yıldırım', icon: '⚡', mpCost: 20, cd: 7, cdLeft: 0, dmg: 3.0, type: 'lightning', desc: 'Güçlü yıldırım' },
-{ name: 'Karanlık Darbe', icon: '💀', mpCost: 30, cd: 12, cdLeft: 0, dmg: 5.0, type: 'dark', desc: 'Devasa karanlık hasar' }
-],
-inventory: [],
-equipment: { weapon: null, armor: null, helmet: null },
-killCount: {},
-totalKills: 0
-};
-
-// ============ SKILLS DATA ============
-const SKILLS = player.skills;
-
-// ============ ENEMIES ============
-const enemyTypes = {
-goblin: { name: 'Goblin', hp: 30, atk: 5, def: 2, speed: 1.2, exp: 15, gold: 5, color: '#44aa44', size: 28, aggression: 150 },
-wolf: { name: 'Kurt', hp: 50, atk: 8, def: 3, speed: 2.0, exp: 25, gold: 8, color: '#888888', size: 30, aggression: 180 },
-skeleton: { name: 'İskelet', hp: 80, atk: 12, def: 5, speed: 1.0, exp: 40, gold: 15, color: '#ccccaa', size: 32, aggression: 200 },
-orc: { name: 'Ork', hp: 120, atk: 18, def: 8, speed: 0.9, exp: 60, gold: 25, color: '#668844', size: 36, aggression: 220 },
-darkKnight: { name: 'Kara Şövalye', hp: 200, atk: 25, def: 15, speed: 1.3, exp: 100, gold: 50, color: '#442244', size: 40, aggression: 250 },
-dragon: { name: 'Ejderha', hp: 500, atk: 40, def: 20, speed: 1.5, exp: 300, gold: 200, color: '#cc2222', size: 50, aggression: 300, boss: true }
-};
-
-let enemies = [];
-let zoneData = [];
-
-// ============ ZONES ============
-function initZones() {
-zoneData = [
-{ name: '🌲 Yeşil Vadi', x: 0, y: 0, w: 1000, h: 1000, bg1: '#1a3a1a', bg2: '#2a5a2a', treeColor: '#0d4d0d', enemies: ['goblin','wolf'] },
-{ name: '💀 Ölüm Çölü', x: 1000, y: 0, w: 1000, h: 1000, bg1: '#3a2a1a', bg2: '#5a4a2a', treeColor: '#4a3a2a', enemies: ['skeleton','orc'] },
-{ name: '🌋 Karanlık Kale', x: 2000, y: 0, w: 1000, h: 1000, bg1: '#2a1a2a', bg2: '#4a2a3a', treeColor: '#3a1a3a', enemies: ['darkKnight','dragon'] },
-{ name: '🏔️ Buz Dağları', x: 0, y: 1000, w: 1000, h: 1000, bg1: '#1a2a3a', bg2: '#2a4a5a', treeColor: '#1a3a4a', enemies: ['wolf','skeleton'] },
-{ name: '🌿 Büyülü Orman', x: 1000, y: 1000, w: 1000, h: 1000, bg1: '#1a2a1a', bg2: '#2a4a2a', treeColor: '#0d3d2d', enemies: ['orc','darkKnight'] },
-{ name: '🔥 Cehennem Ateşi', x: 2000, y: 1000, w: 1000, h: 1000, bg1: '#3a1a0a', bg2: '#5a2a1a', treeColor: '#4a1a0a', enemies: ['dragon','darkKnight'] },
-{ name: '❄️ Donmuş Topraklar', x: 0, y: 2000, w: 1000, h: 1000, bg1: '#2a3a4a', bg2: '#3a5a6a', treeColor: '#2a4a5a', enemies: ['skeleton','orc'] },
-{ name: '⚡ Fırtına Vadisi', x: 1000, y: 2000, w: 1000, h: 1000, bg1: '#2a2a3a', bg2: '#3a3a5a', treeColor: '#2a2a4a', enemies: ['darkKnight','dragon'] },
-{ name: '👑 Ejderha İni', x: 2000, y: 2000, w: 1000, h: 1000, bg1: '#2a1a0a', bg2: '#4a2a1a', treeColor: '#3a1a0a', enemies: ['dragon'] }
-];
-}
-
-// ============ TREES / DECORATIONS ============
-let trees = [];
-function initTrees() {
-trees = [];
-for (let i = 0; i < 400; i++) {
-trees.push({
-x: Math.random() * WORLD_W,
-y: Math.random() * WORLD_H,
-size: 15 + Math.random() * 25,
-type: Math.floor(Math.random() * 3),
-sway: Math.random() * Math.PI * 2
-});
-}
-}
-
-// ============ ITEMS / DROPS ============
-const itemTypes = [
-{ name: 'HP İksiri', icon: '🧪', type: 'hpPot', value: 30, desc: '30 HP iyileştirir', rarity: 'common' },
-{ name: 'MP İksiri', icon: '💧', type: 'mpPot', value: 20, desc: '20 MP yeniler', rarity: 'common' },
-{ name: 'Demir Kılıç', icon: '🗡️', type: 'weapon', atk: 5, desc: '+5 Saldırı', rarity: 'common' },
-{ name: 'Çelik Kılıç', icon: '⚔️', type: 'weapon', atk: 12, desc: '+12 Saldırı', rarity: 'uncommon' },
-{ name: 'Ateş Kılıcı', icon: '🔥', type: 'weapon', atk: 20, desc: '+20 Saldırı', rarity: 'rare' },
-{ name: 'Kara Kılıç', icon: '💀', type: 'weapon', atk: 35, desc: '+35 Saldırı', rarity: 'epic' },
-{ name: 'Demir Zırh', icon: '🛡️', type: 'armor', def: 5, desc: '+5 Savunma', rarity: 'common' },
-{ name: 'Çelik Zırh', icon: '🛡️', type: 'armor', def: 12, desc: '+12 Savunma', rarity: 'uncommon' },
-{ name: 'Ejderha Zırhı', icon: '🐉', type: 'armor', def: 25, desc: '+25 Savunma', rarity: 'epic' },
-{ name: 'Demir Miğfer', icon: '⛑️', type: 'helmet', def: 3, desc: '+3 Savunma', rarity: 'common' },
-{ name: 'Büyük HP İksiri', icon: '❤️', type: 'hpPot', value: 80, desc: '80 HP iyileştirir', rarity: 'uncommon' },
-{ name: 'Büyük MP İksiri', icon: '💎', type: 'mpPot', value: 50, desc: '50 MP yeniler', rarity: 'uncommon' },
-{ name: 'Altın Torbası', icon: '💰', type: 'gold', value: 50, desc: '50 Altın', rarity: 'common' },
-{ name: 'Elmas Kılıç', icon: '💎', type: 'weapon', atk: 50, desc: '+50 Saldırı', rarity: 'legendary' }
-];
-
-// ============ QUEST ============
-let quest = {
-target: 'goblin',
-count: 5,
-current: 0,
-completed: false,
-reward: { exp: 200, gold: 100 }
-};
-
-// ============ INITIALIZATION ============
-function spawnEnemies() {
-enemies = [];
-zoneData.forEach(zone => {
-zone.enemies.forEach(type => {
-let eType = enemyTypes[type];
-let spawnCount = eType.boss ? 3 : 12 + Math.floor(Math.random() * 8);
-for (let i = 0; i < spawnCount; i++) {
-enemies.push(createEnemy(type, zone.x + 50 + Math.random() * (zone.w - 100), zone.y + 50 + Math.random() * (zone.h - 100)));
-}
-});
-});
-}
-
-function createEnemy(type, x, y) {
-let t = enemyTypes[type];
-return {
-type: type,
-name: t.name,
-x: x, y: y,
-hp: t.hp, maxHp: t.hp,
-atk: t.atk, def: t.def,
-speed: t.speed,
-exp: t.exp,
-gold: t.gold,
-color: t.color,
-size: t.size,
-aggression: t.aggression,
-boss: t.boss || false,
-vx: 0, vy: 0,
-state: 'idle', // idle, chase, attack, dead
-stateTimer: 0,
-attackCD: 0,
-dir: Math.random() * Math.PI * 2,
-frame: 0, frameTimer: 0,
-hitFlash: 0,
-spawnX: x, spawnY: y,
-wanderTimer: 0
-};
-}
-
-function resetPlayer() {
-player.hp = player.maxHp;
-player.mp = player.maxMp;
-player.x = 1500;
-player.y = 1500;
-player.invincible = 0;
-player.skills.forEach(s => s.cdLeft = 0);
-}
-
-function respawn() {
-document.getElementById('death-screen').style.display = 'none';
-resetPlayer();
-gameRunning = true;
-}
-
-// ============ INPUT ============
-let keys = {};
-let joystick = { active: false, dx: 0, dy: 0, startX: 0, startY: 0 };
-
-document.addEventListener('keydown', e => {
-keys[e.key.toLowerCase()] = true;
-if (e.key >= '1' && e.key <= '5') useSkill(parseInt(e.key) - 1);
-if (e.key === ' ') normalAttack();
-if (e.key === 'e' || e.key === 'E') toggleInventory();
-});
-document.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
-
-// Joystick
-const joystickBase = document.getElementById('joystick-base');
-const joystickThumb = document.getElementById('joystick-thumb');
-const joystickArea = document.getElementById('joystick-area');
-
-joystickArea.addEventListener('touchstart', e => {
-e.preventDefault();
-let t = e.touches[0];
-let rect = joystickBase.getBoundingClientRect();
-joystick.active = true;
-joystick.startX = rect.left + rect.width / 2;
-joystick.startY = rect.top + rect.height / 2;
-updateJoystick(t.clientX, t.clientY);
-});
-
-joystickArea.addEventListener('touchmove', e => {
-e.preventDefault();
-if (joystick.active) updateJoystick(e.touches[0].clientX, e.touches[0].clientY);
-});
-
-joystickArea.addEventListener('touchend', e => {
-e.preventDefault();
-joystick.active = false;
-joystick.dx = 0;
-joystick.dy = 0;
-joystickThumb.style.left = '35px';
-joystickThumb.style.top = '35px';
-});
-
-function updateJoystick(cx, cy) {
-let dx = cx - joystick.startX;
-let dy = cy - joystick.startY;
-let dist = Math.sqrt(dx * dx + dy * dy);
-let maxDist = 40;
-if (dist > maxDist) {
-dx = (dx / dist) * maxDist;
-dy = (dy / dist) * maxDist;
-}
-joystick.dx = dx / maxDist;
-joystick.dy = dy / maxDist;
-joystickThumb.style.left = (35 + dx) + 'px';
-joystickThumb.style.top = (35 + dy) + 'px';
-}
-
-// ============ ACTIONS ============
-function normalAttack() {
-if (player.attackCD > 0 || player.isAttacking) return;
-player.isAttacking = true;
-player.attackTimer = 15;
-player.attackCD = 20;
-
-// Find nearest enemy in range
-let nearest = null;
-let nearDist = 80;
-enemies.forEach(e => {
-if (e.state === 'dead') return;
-let d = dist(player.x, player.y, e.x, e.y);
-if (d < nearDist) {
-nearDist = d;
-nearest = e;
-}
-});
-
-if (nearest) {
-let dmg = calcDamage(player.atk, nearest.def);
-dealDamage(nearest, dmg);
-spawnParticles(nearest.x, nearest.y - nearest.size/2, '#ffffff', 5, 3);
-screenShake.intensity = 3;
-addFloatingText(nearest.x, nearest.y - nearest.size, dmg, '#ffffff');
-}
-}
-
-function useSkill(idx) {
-let skill = SKILLS[idx];
-if (!skill || skill.cdLeft > 0 || player.mp < skill.mpCost) return;
-
-player.mp -= skill.mpCost;
-skill.cdLeft = skill.cd;
-player.isAttacking = true;
-player.attackTimer = 20;
-
-if (skill.type === 'melee') {
-// AoE around player
-enemies.forEach(e => {
-if (e.state === 'dead') return;
-let d = dist(player.x, player.y, e.x, e.y);
-if (d < 100) {
-let dmg = Math.floor(player.atk * skill.dmg) - e.def;
-if (dmg < 1) dmg = 1;
-dealDamage(e, dmg);
-addFloatingText(e.x, e.y - e.size, dmg, '#ffaa00');
-}
-});
-spawnParticles(player.x, player.y, '#ffaa00', 15, 5);
-screenShake.intensity = 5;
-} else if (skill.type === 'fire') {
-// Projectile
-let target = getNearestEnemy(300);
-if (target) {
-let dmg = Math.floor(player.atk * skill.dmg) - target.def;
-if (dmg < 1) dmg = 1;
-dealDamage(target, dmg);
-addFloatingText(target.x, target.y - target.size, dmg, '#ff4400');
-spawnParticles(target.x, target.y, '#ff4400', 20, 6);
-spawnFireball(player.x, player.y, target.x, target.y);
-screenShake.intensity = 6;
-}
-} else if (skill.type === 'ice') {
-// Area ice
-enemies.forEach(e => {
-if (e.state === 'dead') return;
-let d = dist(player.x, player.y, e.x, e.y);
-if (d < 150) {
-let dmg = Math.floor(player.atk * skill.dmg) - e.def;
-if (dmg < 1) dmg = 1;
-dealDamage(e, dmg);
-e.speed *= 0.5;
-setTimeout(() => { if (e) e.speed = enemyTypes[e.type].speed; }, 3000);
-addFloatingText(e.x, e.y - e.size, dmg, '#44aaff');
-}
-});
-spawnParticles(player.x, player.y, '#44aaff', 25, 5);
-screenShake.intensity = 4;
-} else if (skill.type === 'lightning') {
-// Strike nearest
-let target = getNearestEnemy(400);
-if (target) {
-let dmg = Math.floor(player.atk * skill.dmg) - target.def;
-if (dmg < 1) dmg = 1;
-dealDamage(target, dmg);
-addFloatingText(target.x, target.y - target.size, dmg, '#ffff00');
-spawnLightning(player.x, player.y - 30, target.x, target.y);
-spawnParticles(target.x, target.y, '#ffff00', 30, 8);
-screenShake.intensity = 8;
-}
-} else if (skill.type === 'dark') {
-// Massive AoE
-enemies.forEach(e => {
-if (e.state === 'dead') return;
-let d = dist(player.x, player.y, e.x, e.y);
-if (d < 200) {
-let dmg = Math.floor(player.atk * skill.dmg) - e.def;
-if (dmg < 1) dmg = 1;
-dealDamage(e, dmg);
-addFloatingText(e.x, e.y - e.size, dmg, '#aa00ff');
-}
-});
-spawnParticles(player.x, player.y, '#aa00ff', 40, 10);
-screenShake.intensity = 12;
-// Dark aura
-for (let i = 0; i < 8; i++) {
-setTimeout(() => {
-spawnParticles(player.x, player.y, '#6600aa', 10, 6);
-}, i * 100);
-}
-}
-}
-
-function usePotion(type) {
-if (type === 'hp' && player.hpPotions > 0) {
-player.hpPotions--;
-let heal = Math.min(50, player.maxHp - player.hp);
-player.hp += heal;
-addFloatingText(player.x, player.y - player.h, '+' + heal, '#44ff44');
-spawnParticles(player.x, player.y, '#44ff44', 8, 3);
-document.getElementById('hp-pot-count').textContent = player.hpPotions;
-} else if (type === 'mp' && player.mpPotions > 0) {
-player.mpPotions--;
-let restore = Math.min(30, player.maxMp - player.mp);
-player.mp += restore;
-addFloatingText(player.x, player.y - player.h, '+' + restore, '#4488ff');
-spawnParticles(player.x, player.y, '#4488ff', 8, 3);
-document.getElementById('mp-pot-count').textContent = player.mpPotions;
-}
-}
-
-function calcDamage(atk, def) {
-let base = atk - def * 0.5;
-let variance = base * 0.2;
-return Math.max(1, Math.floor(base + (Math.random() - 0.5) * variance * 2));
-}
-
-function dealDamage(enemy, dmg) {
-enemy.hp -= dmg;
-enemy.hitFlash = 10;
-enemy.state = 'chase';
-enemy.stateTimer = 180;
-
-if (enemy.hp <= 0) {
-enemy.hp = 0;
-enemy.state = 'dead';
-killEnemy(enemy);
-}
-}
-
-function killEnemy(enemy) {
-player.exp += enemy.exp;
-player.gold += enemy.gold;
-player.totalKills++;
-
-if (!player.killCount[enemy.type]) player.killCount[enemy.type] = 0;
-player.killCount[enemy.type]++;
-
-addLog(enemy.boss ? '👑 ' + enemy.name + ' BOSS ÖLDÜRÜLDÜ!' : '💀 ' + enemy.name + ' öldürüldü! +'+enemy.exp+' EXP');
-
-// Quest check
-if (quest.target === enemy.type && !quest.completed) {
-quest.current++;
-document.getElementById('quest-progress').textContent = quest.current + '/' + quest.count;
-if (quest.current >= quest.count) {
-quest.completed = true;
-player.exp += quest.reward.exp;
-player.gold += quest.reward.gold;
-addLog('🎉 Görev Tamamlandı! +' + quest.reward.exp + ' EXP, +' + quest.reward.gold + ' Altın');
-}
-}
-
-// Drop items
-let dropChance = enemy.boss ? 1.0 : 0.3;
-if (Math.random() < dropChance) {
-let possibleDrops = itemTypes.filter(it => {
-if (enemy.boss) return it.rarity === 'epic' || it.rarity === 'legendary' || it.rarity === 'rare';
-if (enemy.type === 'darkKnight') return it.rarity !== 'legendary';
-return it.rarity === 'common' || it.rarity === 'uncommon';
-});
-if (possibleDrops.length > 0) {
-let item = possibleDrops[Math.floor(Math.random() * possibleDrops.length)];
-dropItems.push({
-...item,
-x: enemy.x + (Math.random() - 0.5) * 40,
-y: enemy.y + (Math.random() - 0.5) * 40,
-life: 600,
-bobTimer: Math.random() * Math.PI * 2
-});
-}
-}
-
-// Also drop gold sometimes
-if (Math.random() < 0.4) {
-dropItems.push({
-name: 'Altın', icon: '💰', type: 'gold', value: enemy.gold,
-x: enemy.x + (Math.random() - 0.5) * 30,
-y: enemy.y + (Math.random() - 0.5) * 30,
-life: 600, bobTimer: Math.random() * Math.PI * 2
-});
-}
-
-// Respawn enemy after delay
-setTimeout(() => {
-let zone = zoneData.find(z =>
-enemy.spawnX >= z.x && enemy.spawnX < z.x + z.w &&
-enemy.spawnY >= z.y && enemy.spawnY < z.y + z.h
-);
-if (zone) {
-let idx = enemies.indexOf(enemy);
-if (idx >= 0) {
-enemies[idx] = createEnemy(enemy.type, zone.x + 50 + Math.random() * (zone.w - 100), zone.y + 50 + Math.random() * (zone.h - 100));
-}
-}
-}, 15000);
-
-// Check level up
-checkLevelUp();
-}
-
-function checkLevelUp() {
-while (player.exp >= player.expNext) {
-player.exp -= player.expNext;
-player.level++;
-player.expNext = Math.floor(player.expNext * 1.5);
-player.maxHp += 15;
-player.maxMp += 8;
-player.atk += 3;
-player.def += 2;
-player.hp = player.maxHp;
-player.mp = player.maxMp;
-
-addLog('⬆️ SEVİYE ' + player.level + ' OLDUN!');
-showLevelUp();
-screenShake.intensity = 5;
-
-// Bonus potions
-if (player.level % 3 === 0) {
-player.hpPotions += 2;
-player.mpPotions += 1;
-document.getElementById('hp-pot-count').textContent = player.hpPotions;
-document.getElementById('mp-pot-count').textContent = player.mpPotions;
-}
-}
-}
-
-function showLevelUp() {
-let el = document.getElementById('levelup-fx');
-el.style.display = 'block';
-el.style.animation = 'none';
-el.offsetHeight;
-el.style.animation = 'levelUp 2s ease-out';
-setTimeout(() => el.style.display = 'none', 2000);
-}
-
-function getNearestEnemy(range) {
-let nearest = null;
-let nearDist = range;
-enemies.forEach(e => {
-if (e.state === 'dead') return;
-let d = dist(player.x, player.y, e.x, e.y);
-if (d < nearDist) {
-nearDist = d;
-nearest = e;
-}
-});
-return nearest;
-}
-
-// ============ PICKUP ============
-function checkPickups() {
-for (let i = dropItems.length - 1; i >= 0; i--) {
-let item = dropItems[i];
-let d = dist(player.x, player.y, item.x, item.y);
-if (d < 40) {
-pickupItem(item);
-dropItems.splice(i, 1);
-}
-}
-}
-
-function pickupItem(item) {
-if (item.type === 'hpPot') {
-player.hpPotions++;
-document.getElementById('hp-pot-count').textContent = player.hpPotions;
-addLog('🧪 HP İksiri alındı!');
-} else if (item.type === 'mpPot') {
-player.mpPotions++;
-document.getElementById('mp-pot-count').textContent = player.mpPotions;
-addLog('💧 MP İksiri alındı!');
-} else if (item.type === 'gold') {
-player.gold += item.value;
-addLog('💰 +' + item.value + ' Altın');
-} else if (item.type === 'weapon' || item.type === 'armor' || item.type === 'helmet') {
-let equipSlot = item.type;
-let oldEquip = player.equipment[equipSlot];
-
-player.equipment[equipSlot] = item;
-recalcStats();
-addLog('🎁 ' + item.name + ' kuşanıldı! ' + (item.atk ? '+' + item.atk + ' ATK' : '+' + item.def + ' DEF'));
-
-if (oldEquip) {
-player.inventory.push(oldEquip);
-addLog('📦 Eski ekipman envantere eklendi');
-}
-} else {
-player.inventory.push(item);
-addLog('📦 ' + item.name + ' envantere eklendi');
-}
-spawnParticles(player.x, player.y, '#ffd700', 8, 3);
-}
-
-function recalcStats() {
-let baseAtk = 10 + (player.level - 1) * 3;
-let baseDef = 5 + (player.level - 1) * 2;
-player.atk = baseAtk;
-player.def = baseDef;
-if (player.equipment.weapon) player.atk += player.equipment.weapon.atk || 0;
-if (player.equipment.armor) player.def += player.equipment.armor.def || 0;
-if (player.equipment.helmet) player.def += player.equipment.helmet.def || 0;
-}
-
-// ============ INVENTORY ============
-function toggleInventory() {
-let panel = document.getElementById('inventory-panel');
-if (panel.style.display === 'block') {
-panel.style.display = 'none';
-} else {
-panel.style.display = 'block';
-renderInventory();
-}
-}
-
-function renderInventory() {
-let list = document.getElementById('inv-list');
-let html = '';
-
-// Equipment
-html += '<div style="color:#ffd700;font-size:12px;margin-bottom:8px;font-weight:bold">Ekipmanlar</div>';
-['weapon','armor','helmet'].forEach(slot => {
-let item = player.equipment[slot];
-let icons = { weapon: '🗡️', armor: '🛡️', helmet: '⛑️' };
-html += '<div class="inv-item">';
-html += '<div class="item-icon">' + icons[slot] + '</div>';
-html += '<div class="item-info"><div class="item-name">' + (item ? item.name : 'Boş') + '</div>';
-html += '<div class="item-desc">' + (item ? item.desc : 'Ekipman yok') + '</div></div></div>';
-});
-
-html += '<div style="color:#ffd700;font-size:12px;margin:8px 0;font-weight:bold">Çanta</div>';
-if (player.inventory.length === 0) {
-html += '<div style="color:#666;font-size:11px;text-align:center;padding:10px">Çanta boş</div>';
-} else {
-player.inventory.forEach((item, idx) => {
-html += '<div class="inv-item">';
-html += '<div class="item-icon">' + item.icon + '</div>';
-html += '<div class="item-info"><div class="item-name">' + item.name + '</div>';
-html += '<div class="item-desc">' + item.desc + '</div></div>';
-html += '<button class="item-btn" onclick="useInvItem(' + idx + ')">Kullan</button>';
-html += '</div>';
-});
-}
-list.innerHTML = html;
-}
-
-function useInvItem(idx) {
-let item = player.inventory[idx];
-if (!item) return;
-
-if (item.type === 'hpPot') {
-let heal = Math.min(item.value, player.maxHp - player.hp);
-player.hp += heal;
-addFloatingText(player.x, player.y - player.h, '+' + heal, '#44ff44');
-player.inventory.splice(idx, 1);
-} else if (item.type === 'mpPot') {
-let restore = Math.min(item.value, player.maxMp - player.mp);
-player.mp += restore;
-addFloatingText(player.x, player.y - player.h, '+' + restore, '#4488ff');
-player.inventory.splice(idx, 1);
-} else if (item.type === 'weapon' || item.type === 'armor' || item.type === 'helment') {
-let slot = item.type;
-let old = player.equipment[slot];
-player.equipment[slot] = item;
-recalcStats();
-if (old) player.inventory[idx] = old;
-else player.inventory.splice(idx, 1);
-addLog('🎁 ' + item.name + ' kuşanıldı!');
-} else if (item.type === 'gold') {
-player.gold += item.value;
-player.inventory.splice(idx, 1);
-}
-
-renderInventory();
-}
-
-// ============ PARTICLES ============
-function spawnParticles(x, y, color, count, speed) {
-for (let i = 0; i < count; i++) {
-let angle = Math.random() * Math.PI * 2;
-let spd = Math.random() * speed + 1;
-particles.push({
-x: x, y: y,
-vx: Math.cos(angle) * spd,
-vy: Math.sin(angle) * spd - 1,
-life: 30 + Math.random() * 20,
-maxLife: 50,
-color: color,
-size: 2 + Math.random() * 4
-});
-}
-}
-
-function spawnFireball(sx, sy, tx, ty) {
-let angle = Math.atan2(ty - sy, tx - sx);
-for (let i = 0; i < 15; i++) {
-particles.push({
-x: sx + Math.cos(angle) * i * 15,
-y: sy + Math.sin(angle) * i * 15,
-vx: Math.cos(angle) * 3 + (Math.random() - 0.5) * 2,
-vy: Math.sin(angle) * 3 + (Math.random() - 0.5) * 2,
-life: 20 + Math.random() * 15,
-maxLife: 35,
-color: Math.random() > 0.5 ? '#ff4400' : '#ffaa00',
-size: 3 + Math.random() * 5
-});
-}
-}
-
-function spawnLightning(sx, sy, tx, ty) {
-let points = [];
-let steps = 10;
-for (let i = 0; i <= steps; i++) {
-let t = i / steps;
-points.push({
-x: sx + (tx - sx) * t + (Math.random() - 0.5) * 40,
-y: sy + (ty - sy) * t + (Math.random() - 0.5) * 40
-});
-}
-for (let i = 0; i < points.length - 1; i++) {
-let angle = Math.atan2(points[i+1].y - points[i].y, points[i+1].x - points[i].x);
-particles.push({
-x: points[i].x, y: points[i].y,
-vx: Math.cos(angle) * 2, vy: Math.sin(angle) * 2,
-life: 25, maxLife: 25,
-color: '#ffff00', size: 4
-});
-particles.push({
-x: points[i].x, y: points[i].y,
-vx: 0, vy: -2,
-life: 20, maxLife: 20,
-color: '#ffffff', size: 2
-});
-}
-}
-
-function addFloatingText(x, y, text, color) {
-floatingTexts.push({
-x: x, y: y,
-text: text, color: color,
-life: 60, vy: -2
-});
-}
-
-function addLog(msg) {
-let container = document.getElementById('log-container');
-let div = document.createElement('div');
-div.className = 'log-msg';
-div.textContent = msg;
-container.prepend(div);
-if (container.children.length > 5) container.lastChild.remove();
-setTimeout(() => { if (div.parentNode) div.style.opacity = '0'; }, 3000);
-setTimeout(() => { if (div.parentNode) div.remove(); }, 4000);
-}
-
-// ============ UTILITIES ============
-function dist(x1, y1, x2, y2) {
-return Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
-}
-
-function clamp(val, min, max) {
-return Math.max(min, Math.min(max, val));
-}
-
-function getZoneAt(x, y) {
-for (let z of zoneData) {
-if (x >= z.x && x < z.x + z.w && y >= z.y && y < z.y + z.h) return z;
-}
-return zoneData[0];
-}
-
-// ============ UPDATE ============
-function update() {
-if (!gameRunning) return;
-gameTime++;
-
-// Player movement
-let mx = joystick.dx;
-let my = joystick.dy;
-
-if (keys['a'] || keys['arrowleft']) mx = -1;
-if (keys['d'] || keys['arrowright']) mx = 1;
-if (keys['w'] || keys['arrowup']) my = -1;
-if (keys['s'] || keys['arrowdown']) my = 1;
-
-if (mx !== 0 || my !== 0) {
-let len = Math.sqrt(mx * mx + my * my);
-if (len > 1) { mx /= len; my /= len; }
-player.vx = mx * player.speed;
-player.vy = my * player.speed;
-
-// Direction
-if (Math.abs(mx) > Math.abs(my)) {
-player.direction = mx > 0 ? 2 : 1;
-} else {
-player.direction = my > 0 ? 0 : 3;
-}
-
-player.frameTimer++;
-if (player.frameTimer > 8) {
-player.frameTimer = 0;
-player.frame = (player.frame + 1) % 4;
-}
-} else {
-player.vx = 0;
-player.vy = 0;
-player.frame = 0;
-}
-
-player.x = clamp(player.x + player.vx, 0, WORLD_W);
-player.y = clamp(player.y + player.vy, 0, WORLD_H);
-
-// Attack timer
-if (player.isAttacking) {
-player.attackTimer--;
-if (player.attackTimer <= 0) player.isAttacking = false;
-}
-if (player.attackCD > 0) player.attackCD--;
-
-// Invincibility
-if (player.invincible > 0) player.invincible--;
-
-// Skill cooldowns
-SKILLS.forEach(s => {
-if (s.cdLeft > 0) s.cdLeft = Math.max(0, s.cdLeft - 1/60);
-});
-
-// MP regen
-if (gameTime % 60 === 0) {
-player.mp = Math.min(player.maxMp, player.mp + 2);
-}
-
-// HP regen (slow)
-if (gameTime % 120 === 0) {
-player.hp = Math.min(player.maxHp, player.hp + 1);
-}
-
-// Enemy AI
-enemies.forEach(e => {
-if (e.state === 'dead') return;
-if (e.hitFlash > 0) e.hitFlash--;
-if (e.attackCD > 0) e.attackCD--;
-
-let d = dist(player.x, player.y, e.x, e.y);
-
-if (e.state === 'idle') {
-e.wanderTimer--;
-if (e.wanderTimer <= 0) {
-e.dir = Math.random() * Math.PI * 2;
-e.wanderTimer = 60 + Math.random() * 120;
-}
-e.x += Math.cos(e.dir) * e.speed * 0.3;
-e.y += Math.sin(e.dir) * e.speed * 0.3;
-e.x = clamp(e.x, 0, WORLD_W);
-e.y = clamp(e.y, 0, WORLD_H);
-
-if (d < e.aggression && player.invincible <= 0) {
-e.state = 'chase';
-e.stateTimer = 300;
-}
-} else if (e.state === 'chase') {
-e.stateTimer--;
-if (e.stateTimer <= 0) {
-e.state = 'idle';
-e.wanderTimer = 0;
-return;
-}
-
-let angle = Math.atan2(player.y - e.y, player.x - e.x);
-e.x += Math.cos(angle) * e.speed;
-e.y += Math.sin(angle) * e.speed;
-
-if (d < e.size + 20 && e.attackCD <= 0) {
-e.state = 'attack';
-e.stateTimer = 30;
-e.attackCD = e.boss ? 40 : 60;
-}
-} else if (e.state === 'attack') {
-e.stateTimer--;
-if (e.stateTimer <= 0) {
-// Deal damage to player
-let dmg = Math.max(1, e.atk - player.def * 0.5);
-dmg = Math.floor(dmg + (Math.random() - 0.5) * dmg * 0.3);
-player.hp -= dmg;
-addFloatingText(player.x, player.y - player.h, dmg, '#ff4444');
-screenShake.intensity = 4;
-spawnParticles(player.x, player.y, '#ff0000', 5, 2);
-
-if (player.hp <= 0) {
-player.hp = 0;
-gameRunning = false;
-document.getElementById('death-screen').style.display = 'flex';
-}
-
-e.state = 'chase';
-e.stateTimer = 120;
-}
-}
-
-e.frameTimer++;
-if (e.frameTimer > 10) {
-e.frameTimer = 0;
-e.frame = (e.frame + 1) % 2;
-}
-});
-
-// Particles
-for (let i = particles.length - 1; i >= 0; i--) {
-let p = particles[i];
-p.x += p.vx;
-p.y += p.vy;
-p.vy += 0.05;
-p.life--;
-if (p.life <= 0) particles.splice(i, 1);
-}
-
-// Floating texts
-for (let i = floatingTexts.length - 1; i >= 0; i--) {
-let ft = floatingTexts[i];
-ft.y += ft.vy;
-ft.life--;
-if (ft.life <= 0) floatingTexts.splice(i, 1);
-}
-
-// Drop items
-dropItems.forEach(d => {
-d.life--;
-d.bobTimer += 0.05;
-});
-dropItems = dropItems.filter(d => d.life > 0);
-
-// Check pickups
-checkPickups();
-
-// Camera
-camera.x = player.x - canvas.width / 2;
-camera.y = player.y - canvas.height / 2;
-
-// Screen shake
-if (screenShake.intensity > 0) {
-screenShake.x = (Math.random() - 0.5) * screenShake.intensity;
-screenShake.y = (Math.random() - 0.5) * screenShake.intensity;
-screenShake.intensity *= 0.9;
-if (screenShake.intensity < 0.5) screenShake.intensity = 0;
-} else {
-screenShake.x = 0;
-screenShake.y = 0;
-}
-
-// Zone display
-let zone = getZoneAt(player.x, player.y);
-let zoneEl = document.getElementById('zone-name');
-zoneEl.textContent = zone.name;
-zoneEl.style.opacity = '1';
-
-// Update UI
-updateUI();
-}
-
-function updateUI() {
-document.getElementById('hp-bar').style.width = (player.hp / player.maxHp * 100) + '%';
-document.getElementById('hp-text').textContent = player.hp + '/' + player.maxHp;
-document.getElementById('mp-bar').style.width = (player.mp / player.maxMp * 100) + '%';
-document.getElementById('mp-text').textContent = player.mp + '/' + player.maxMp;
-document.getElementById('xp-bar').style.width = (player.exp / player.expNext * 100) + '%';
-document.getElementById('xp-text').textContent = 'Lv.' + player.level + ' | ' + player.exp + '/' + player.expNext;
-document.getElementById('stat-atk').textContent = player.atk;
-document.getElementById('stat-def').textContent = player.def;
-document.getElementById('stat-gold').textContent = player.gold;
-
-// Skill cooldowns
-SKILLS.forEach((s, i) => {
-let cdEl = document.getElementById('cd-' + i);
-let btnEl = document.getElementById('skill-' + i);
-if (s.cdLeft > 0) {
-cdEl.style.height = (s.cdLeft / s.cd * 100) + '%';
-btnEl.classList.add('disabled');
-} else {
-cdEl.style.height = '0%';
-btnEl.classList.remove('disabled');
-}
-});
-}
-
-// ============ RENDER ============
-function render() {
-ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-let offsetX = -camera.x + screenShake.x;
-let offsetY = -camera.y + screenShake.y;
-
-ctx.save();
-ctx.translate(offsetX, offsetY);
-
-let zone = getZoneAt(player.x, player.y);
-
-// Background
-drawBackground(zone);
-
-// Grid lines (subtle)
-ctx.strokeStyle = 'rgba(255,255,255,0.03)';
-ctx.lineWidth = 1;
-let startTX = Math.floor(camera.x / TILE) * TILE;
-let startTY = Math.floor(camera.y / TILE) * TILE;
-for (let x = startTX; x < camera.x + canvas.width + TILE; x += TILE) {
-ctx.beginPath();
-ctx.moveTo(x, camera.y);
-ctx.lineTo(x, camera.y + canvas.height);
-ctx.stroke();
-}
-for (let y = startTY; y < camera.y + canvas.height + TILE; y += TILE) {
-ctx.beginPath();
-ctx.moveTo(camera.x, y);
-ctx.lineTo(camera.x + canvas.width, y);
-ctx.stroke();
-}
-
-// Trees (behind)
-trees.forEach(t => {
-if (t.x < camera.x - 50 || t.x > camera.x + canvas.width + 50 ||
-t.y < camera.y - 50 || t.y > camera.y + canvas.height + 50) return;
-drawTree(t, zone);
-});
-
-// Drop items
-dropItems.forEach(d => {
-let bob = Math.sin(d.bobTimer) * 3;
-ctx.save();
-ctx.translate(d.x, d.y + bob);
-ctx.font = '20px Arial';
-ctx.textAlign = 'center';
-ctx.fillText(d.icon, 0, 0);
-
-// Glow
-ctx.shadowColor = '#ffd700';
-ctx.shadowBlur = 10;
-ctx.fillText(d.icon, 0, 0);
-ctx.shadowBlur = 0;
-ctx.restore();
-});
-
-// Enemies
-enemies.forEach(e => {
-if (e.state === 'dead') return;
-if (e.x < camera.x - 100 || e.x > camera.x + canvas.width + 100 ||
-e.y < camera.y - 100 || e.y > camera.y + canvas.height + 100) return;
-drawEnemy(e);
-});
-
-// Player
-drawPlayer();
-
-// Particles
-particles.forEach(p => {
-let alpha = p.life / p.maxLife;
-ctx.globalAlpha = alpha;
-ctx.fillStyle = p.color;
-ctx.beginPath();
-ctx.arc(p.x, p.y, p.size * alpha, 0, Math.PI * 2);
-ctx.fill();
-});
-ctx.globalAlpha = 1;
-
-// Floating texts
-floatingTexts.forEach(ft => {
-ctx.globalAlpha = ft.life / 60;
-ctx.font = 'bold 16px Arial';
-ctx.textAlign = 'center';
-ctx.fillStyle = '#000';
-ctx.fillText(ft.text, ft.x + 1, ft.y + 1);
-ctx.fillStyle = ft.color;
-ctx.fillText(ft.text, ft.x, ft.y);
-ctx.globalAlpha = 1;
-});
-
-// Zone borders
-drawZoneBorders();
-
-ctx.restore();
-
-// Minimap
-drawMinimap();
-
-// Vignette
-let grad = ctx.createRadialGradient(canvas.width/2, canvas.height/2, canvas.width*0.3, canvas.width/2, canvas.height/2, canvas.width*0.7);
-grad.addColorStop(0, 'rgba(0,0,0,0)');
-grad.addColorStop(1, 'rgba(0,0,0,0.4)');
-ctx.fillStyle = grad;
-ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-// Low HP warning
-if (player.hp < player.maxHp * 0.3) {
-let pulse = Math.sin(gameTime * 0.1) * 0.3 + 0.3;
-ctx.fillStyle = 'rgba(255,0,0,' + pulse * 0.2 + ')';
-ctx.fillRect(0, 0, canvas.width, canvas.height);
-}
-}
-
-function drawBackground(zone) {
-// Base gradient
-let grd = ctx.createLinearGradient(camera.x, camera.y, camera.x, camera.y + canvas.height);
-grd.addColorStop(0, zone.bg1);
-grd.addColorStop(1, zone.bg2);
-ctx.fillStyle = grd;
-ctx.fillRect(camera.x, camera.y, canvas.width, canvas.height);
-
-// Ground texture dots
-ctx.fillStyle = 'rgba(255,255,255,0.02)';
-for (let i = 0; i < 100; i++) {
-let gx = camera.x + Math.random() * canvas.width;
-let gy = camera.y + Math.random() * canvas.height;
-ctx.fillRect(gx, gy, 2, 2);
-}
-}
-
-function drawTree(t, zone) {
-let sway = Math.sin(gameTime * 0.02 + t.sway) * 2;
-
-if (t.type === 0) {
-// Pine tree
-ctx.fillStyle = '#1a0a00';
-ctx.fillRect(t.x - 3, t.y - t.size * 0.5, 6, t.size * 0.5);
-ctx.fillStyle = zone.treeColor;
-ctx.beginPath();
-ctx.moveTo(t.x + sway, t.y - t.size * 1.5);
-ctx.lineTo(t.x - t.size * 0.5, t.y - t.size * 0.3);
-ctx.lineTo(t.x + t.size * 0.5, t.y - t.size * 0.3);
-ctx.closePath();
-ctx.fill();
-ctx.beginPath();
-ctx.moveTo(t.x + sway, t.y - t.size * 1.2);
-ctx.lineTo(t.x - t.size * 0.6, t.y - t.size * 0.1);
-ctx.lineTo(t.x + t.size * 0.6, t.y - t.size * 0.1);
-ctx.closePath();
-ctx.fill();
-} else if (t.type === 1) {
-// Round tree
-ctx.fillStyle = '#2a1a00';
-ctx.fillRect(t.x - 4, t.y - t.size * 0.4, 8, t.size * 0.4);
-ctx.fillStyle = zone.treeColor;
-ctx.beginPath();
-ctx.arc(t.x + sway, t.y - t.size * 0.8, t.size * 0.5, 0, Math.PI * 2);
-ctx.fill();
-ctx.fillStyle = 'rgba(255,255,255,0.1)';
-ctx.beginPath();
-ctx.arc(t.x + sway - t.size * 0.15, t.y - t.size * 0.9, t.size * 0.2, 0, Math.PI * 2);
-ctx.fill();
-} else {
-// Bush
-ctx.fillStyle = zone.treeColor;
-ctx.beginPath();
-ctx.arc(t.x, t.y - t.size * 0.2, t.size * 0.35, 0, Math.PI * 2);
-ctx.fill();
-ctx.beginPath();
-ctx.arc(t.x - t.size * 0.2, t.y - t.size * 0.15, t.size * 0.25, 0, Math.PI * 2);
-ctx.fill();
-ctx.beginPath();
-ctx.arc(t.x + t.size * 0.2, t.y - t.size * 0.15, t.size * 0.25, 0, Math.PI * 2);
-ctx.fill();
-}
-}
-
-function drawPlayer() {
-let px = player.x;
-let py = player.y;
-let f = player.frame;
-let dir = player.direction;
-
-// Shadow
-ctx.fillStyle = 'rgba(0,0,0,0.3)';
-ctx.beginPath();
-ctx.ellipse(px, py + 22, 18, 8, 0, 0, Math.PI * 2);
-ctx.fill();
-
-// Invincibility flash
-if (player.invincible > 0 && Math.floor(player.invincible / 3) % 2 === 0) {
-ctx.globalAlpha = 0.5;
-}
-
-// Body
-let bobY = (f === 0) ? 0 : Math.sin(f * Math.PI / 2) * 3;
-
-// Legs
-ctx.fillStyle = '#444466';
-if (player.vx !== 0 || player.vy !== 0) {
-let legOff = Math.sin(gameTime * 0.3) * 5;
-ctx.fillRect(px - 8, py + 10 + bobY, 6, 12 + legOff);
-ctx.fillRect(px + 2, py + 10 + bobY, 6, 12 - legOff);
-} else {
-ctx.fillRect(px - 8, py + 10 + bobY, 6, 12);
-ctx.fillRect(px + 2, py + 10 + bobY, 6, 12);
-}
-
-// Armor body
-let armorColor = '#6666aa';
-if (player.equipment.armor) {
-let rarity = player.equipment.armor.rarity;
-let colors = { common: '#888888', uncommon: '#44aa44', rare: '#4488ff', epic: '#aa44aa', legendary: '#ffaa00' };
-armorColor = colors[rarity] || '#6666aa';
-}
-ctx.fillStyle = armorColor;
-ctx.fillRect(px - 12, py - 10 + bobY, 24, 22);
-
-// Armor detail
-ctx.fillStyle = 'rgba(255,255,255,0.1)';
-ctx.fillRect(px - 10, py - 8 + bobY, 20, 2);
-ctx.fillRect(px - 10, py - 2 + bobY, 20, 2);
-
-// Helmet
-let helmColor = '#555588';
-if (player.equipment.helmet) {
-let colors = { common: '#888888', uncommon: '#44aa44', rare: '#4488ff', epic: '#aa44aa', legendary: '#ffaa00' };
-helmColor = colors[player.equipment.helmet.rarity] || '#555588';
-}
-ctx.fillStyle = helmColor;
-ctx.fillRect(px - 10, py - 18 + bobY, 20, 10);
-ctx.fillRect(px - 12, py - 14 + bobY, 24, 4);
-
-// Eyes
-ctx.fillStyle = '#ffffff';
-if (dir === 0) { // down
-ctx.fillRect(px - 6, py - 12 + bobY, 4, 3);
-ctx.fillRect(px + 2, py - 12 + bobY, 4, 3);
-} else if (dir === 3) { // up
-ctx.fillStyle = helmColor;
-ctx.fillRect(px - 6, py - 12 + bobY, 4, 3);
-ctx.fillRect(px + 2, py - 12 + bobY, 4, 3);
-} else {
-let ex = dir === 1 ? -8 : 2;
-ctx.fillRect(px + ex, py - 12 + bobY, 4, 3);
-ctx.fillRect(px + ex + 6, py - 12 + bobY, 4, 3);
-}
-
-// Weapon
-let weaponColor = '#aaaaaa';
-if (player.equipment.weapon) {
-let colors = { common: '#aaaaaa', uncommon: '#44ff44', rare: '#4488ff', epic: '#ff44ff', legendary: '#ffdd00' };
-weaponColor = colors[player.equipment.weapon.rarity] || '#aaaaaa';
-}
-
-if (player.isAttacking) {
-// Attack swing
-let swingAngle = -Math.PI / 2 + (player.attackTimer / 15) * Math.PI;
-ctx.save();
-ctx.translate(px, py - 5 + bobY);
-ctx.rotate(swingAngle);
-ctx.fillStyle = weaponColor;
-ctx.fillRect(-2, -25, 4, 25);
-// Blade glow
-ctx.shadowColor = weaponColor;
-ctx.shadowBlur = 15;
-ctx.fillRect(-1, -25, 2, 25);
-ctx.shadowBlur = 0;
-ctx.restore();
-} else {
-// Resting weapon
-ctx.fillStyle = weaponColor;
-ctx.save();
-ctx.translate(px + 14, py - 5 + bobY);
-ctx.rotate(0.3);
-ctx.fillRect(-2, -20, 4, 20);
-ctx.restore();
-}
-
-// Shield on back (if armor equipped)
-if (player.equipment.armor) {
-ctx.fillStyle = armorColor;
-ctx.fillRect(px - 16, py - 5 + bobY, 6, 14);
-ctx.fillStyle = 'rgba(255,255,255,0.15)';
-ctx.fillRect(px - 15, py - 3 + bobY, 4, 10);
-}
-
-ctx.globalAlpha = 1;
-
-// Player name
-ctx.font = 'bold 10px Arial';
-ctx.textAlign = 'center';
-ctx.fillStyle = '#000';
-ctx.fillText('⭐ Kahraman', px + 1, py - 26 + bobY);
-ctx.fillStyle = '#ffd700';
-ctx.fillText('⭐ Kahraman', px, py - 27 + bobY);
-}
-
-function drawEnemy(e) {
-let ex = e.x;
-let ey = e.y;
-let f = e.frame;
-
-// Shadow
-ctx.fillStyle = 'rgba(0,0,0,0.3)';
-ctx.beginPath();
-ctx.ellipse(ex, ey + e.size * 0.5, e.size * 0.5, e.size * 0.2, 0, 0, Math.PI * 2);
-ctx.fill();
-
-// Hit flash
-let color = e.hitFlash > 0 ? '#ffffff' : e.color;
-
-let bobY = Math.sin(gameTime * 0.05 + e.spawnX) * 2;
-
-if (e.type === 'goblin') {
-// Body
-ctx.fillStyle = color;
-ctx.beginPath();
-ctx.arc(ex, ey - 5 + bobY, 12, 0, Math.PI * 2);
-ctx.fill();
-// Ears
-ctx.beginPath();
-ctx.moveTo(ex - 12, ey - 8 + bobY);
-ctx.lineTo(ex - 18, ey - 18 + bobY);
-ctx.lineTo(ex - 8, ey - 12 + bobY);
-ctx.fill();
-ctx.beginPath();
-ctx.moveTo(ex + 12, ey - 8 + bobY);
-ctx.lineTo(ex + 18, ey - 18 + bobY);
-ctx.lineTo(ex + 8, ey - 12 + bobY);
-ctx.fill();
-// Eyes
-ctx.fillStyle = '#ff0000';
-ctx.fillRect(ex - 5, ey - 8 + bobY, 3, 3);
-ctx.fillRect(ex + 2, ey - 8 + bobY, 3, 3);
-// Legs
-ctx.fillStyle = color;
-let legOff = e.state === 'chase' ? Math.sin(gameTime * 0.3) * 4 : 0;
-ctx.fillRect(ex - 6, ey + 5 + bobY, 4, 8 + legOff);
-ctx.fillRect(ex + 2, ey + 5 + bobY, 4, 8 - legOff);
-// Weapon
-ctx.fillStyle = '#888';
-ctx.save();
-ctx.translate(ex + 12, ey - 5 + bobY);
-ctx.rotate(Math.sin(gameTime * 0.05) * 0.3);
-ctx.fillRect(-1, -10, 2, 10);
-ctx.restore();
-} else if (e.type === 'wolf') {
-ctx.fillStyle = color;
-// Body
-ctx.beginPath();
-ctx.ellipse(ex, ey - 2 + bobY, 16, 10, 0, 0, Math.PI * 2);
-ctx.fill();
-// Head
-ctx.beginPath();
-ctx.arc(ex + 12, ey - 8 + bobY, 8, 0, Math.PI * 2);
-ctx.fill();
-// Ears
-ctx.beginPath();
-ctx.moveTo(ex + 10, ey - 14 + bobY);
-ctx.lineTo(ex + 8, ey - 22 + bobY);
-ctx.lineTo(ex + 14, ey - 16 + bobY);
-ctx.fill();
-// Eye
-ctx.fillStyle = '#ff4400';
-ctx.fillRect(ex + 14, ey - 10 + bobY, 3, 3);
-// Legs
-ctx.fillStyle = color;
-let legOff = e.state === 'chase' ? Math.sin(gameTime * 0.4) * 5 : 0;
-ctx.fillRect(ex - 10, ey + 6 + bobY, 3, 8 + legOff);
-ctx.fillRect(ex - 3, ey + 6 + bobY, 3, 8 - legOff);
-ctx.fillRect(ex + 5, ey + 6 + bobY, 3, 8 + legOff);
-ctx.fillRect(ex + 12, ey + 6 + bobY, 3, 8 - legOff);
-// Tail
-ctx.beginPath();
-ctx.moveTo(ex - 16, ey - 4 + bobY);
-ctx.quadraticCurveTo(ex - 24, ey - 12 + bobY, ex - 20, ey - 18 + bobY);
-ctx.strokeStyle = color;
-ctx.lineWidth = 3;
-ctx.stroke();
-} else if (e.type === 'skeleton') {
-// Bones
-ctx.fillStyle = color;
-ctx.fillRect(ex - 3, ey - 18 + bobY, 6, 20);
-// Skull
-ctx.beginPath();
-ctx.arc(ex, ey - 22 + bobY, 10, 0, Math.PI * 2);
-ctx.fill();
-// Eyes
-ctx.fillStyle = '#ff0000';
-ctx.fillRect(ex - 5, ey - 24 + bobY, 4, 4);
-ctx.fillRect(ex + 1, ey - 24 + bobY, 4, 4);
-// Jaw
-ctx.fillStyle = color;
-ctx.fillRect(ex - 6, ey - 18 + bobY, 12, 3);
-// Arms
-ctx.fillRect(ex - 14, ey - 14 + bobY, 10, 3);
-ctx.fillRect(ex + 4, ey - 14 + bobY, 10, 3);
-// Legs
-let legOff = e.state === 'chase' ? Math.sin(gameTime * 0.2) * 3 : 0;
-ctx.fillRect(ex - 5, ey + 2 + bobY, 3, 12 + legOff);
-ctx.fillRect(ex + 2, ey + 2 + bobY, 3, 12 - legOff);
-// Sword
-ctx.fillStyle = '#888888';
-ctx.save();
-ctx.translate(ex + 14, ey - 10 + bobY);
-ctx.rotate(0.2);
-ctx.fillRect(-1, -12, 2, 12);
-ctx.restore();
-} else if (e.type === 'orc') {
-// Big body
-ctx.fillStyle = color;
-ctx.beginPath();
-ctx.arc(ex, ey - 5 + bobY, 16, 0, Math.PI * 2);
-ctx.fill();
-// Head
-ctx.beginPath();
-ctx.arc(ex, ey - 20 + bobY, 12, 0, Math.PI * 2);
-ctx.fill();
-// Tusks
-ctx.fillStyle = '#ffffff';
-ctx.fillRect(ex - 6, ey - 12 + bobY, 3, 5);
-ctx.fillRect(ex + 3, ey - 12 + bobY, 3, 5);
-// Eyes
-ctx.fillStyle = '#ffaa00';
-ctx.fillRect(ex - 5, ey - 22 + bobY, 4, 3);
-ctx.fillRect(ex + 1, ey - 22 + bobY, 4, 3);
-// Arms
-ctx.fillStyle = color;
-let legOff = e.state === 'chase' ? Math.sin(gameTime * 0.2) * 4 : 0;
-ctx.fillRect(ex - 20, ey - 10 + bobY, 6, 14);
-ctx.fillRect(ex + 14, ey - 10 + bobY, 6, 14);
-// Legs
-ctx.fillRect(ex - 8, ey + 8 + bobY, 6, 10 + legOff);
-ctx.fillRect(ex + 2, ey + 8 + bobY, 6, 10 - legOff);
-// Axe
-ctx.fillStyle = '#666';
-ctx.save();
-ctx.translate(ex + 20, ey - 8 + bobY);
-ctx.rotate(-0.3);
-ctx.fillRect(-2, -16, 4, 16);
-ctx.fillStyle = '#888';
-ctx.fillRect(-6, -20, 12, 6);
-ctx.restore();
-} else if (e.type === 'darkKnight') {
-// Dark armor
-ctx.fillStyle = color;
-ctx.fillRect(ex - 14, ey - 12 + bobY, 28, 26);
-// Cape
-ctx.fillStyle = '#220022';
-ctx.fillRect(ex - 12, ey - 10 + bobY, 24, 20);
-// Helmet
-ctx.fillStyle = '#331133';
-ctx.fillRect(ex - 10, ey - 22 + bobY, 20, 12);
-ctx.fillRect(ex - 12, ey - 16 + bobY, 24, 4);
-// Glowing eyes
-ctx.fillStyle = '#ff0044';
-ctx.shadowColor = '#ff0044';
-ctx.shadowBlur = 10;
-ctx.fillRect(ex - 5, ey - 18 + bobY, 4, 3);
-ctx.fillRect(ex + 1, ey - 18 + bobY, 4, 3);
-ctx.shadowBlur = 0;
-// Legs
-let legOff = e.state === 'chase' ? Math.sin(gameTime * 0.15) * 4 : 0;
-ctx.fillStyle = '#331133';
-ctx.fillRect(ex - 8, ey + 12 + bobY, 6, 10 + legOff);
-ctx.fillRect(ex + 2, ey + 12 + bobY, 6, 10 - legOff);
-// Dark sword
-ctx.fillStyle = '#660066';
-ctx.save();
-ctx.translate(ex + 16, ey - 8 + bobY);
-ctx.rotate(Math.sin(gameTime * 0.03) * 0.2);
-ctx.fillRect(-2, -22, 4, 22);
-ctx.shadowColor = '#ff0044';
-ctx.shadowBlur = 8;
-ctx.fillRect(-1, -22, 2, 22);
-ctx.shadowBlur = 0;
-ctx.restore();
-// Aura
-ctx.fillStyle = 'rgba(100,0,100,0.15)';
-ctx.beginPath();
-ctx.arc(ex, ey, 30, 0, Math.PI * 2);
-ctx.fill();
-} else if (e.type === 'dragon') {
-// Dragon body
-ctx.fillStyle = color;
-ctx.beginPath();
-ctx.ellipse(ex, ey - 5 + bobY, 24, 18, 0, 0, Math.PI * 2);
-ctx.fill();
-// Wings
-let wingFlap = Math.sin(gameTime * 0.08) * 15;
-ctx.fillStyle = '#881111';
-ctx.beginPath();
-ctx.moveTo(ex - 20, ey - 10 + bobY);
-ctx.quadraticCurveTo(ex - 40, ey - 30 + wingFlap + bobY, ex - 35, ey - 5 + bobY);
-ctx.closePath();
-ctx.fill();
-ctx.beginPath();
-ctx.moveTo(ex + 20, ey - 10 + bobY);
-ctx.quadraticCurveTo(ex + 40, ey - 30 + wingFlap + bobY, ex + 35, ey - 5 + bobY);
-ctx.closePath();
-ctx.fill();
-// Head
-ctx.fillStyle = color;
-ctx.beginPath();
-ctx.arc(ex + 22, ey - 15 + bobY, 12, 0, Math.PI * 2);
-ctx.fill();
-// Horns
-ctx.fillStyle = '#444';
-ctx.beginPath();
-ctx.moveTo(ex + 18, ey - 25 + bobY);
-ctx.lineTo(ex + 14, ey - 38 + bobY);
-ctx.lineTo(ex + 22, ey - 27 + bobY);
-ctx.fill();
-ctx.beginPath();
-ctx.moveTo(ex + 24, ey - 25 + bobY);
-ctx.lineTo(ex + 28, ey - 38 + bobY);
-ctx.lineTo(ex + 26, ey - 27 + bobY);
-ctx.fill();
-// Eyes
-ctx.fillStyle = '#ffff00';
-ctx.shadowColor = '#ffff00';
-ctx.shadowBlur = 8;
-ctx.fillRect(ex + 24, ey - 18 + bobY, 4, 4);
-ctx.shadowBlur = 0;
-// Fire breath (sometimes)
-if (e.state === 'chase') {
-ctx.fillStyle = 'rgba(255,100,0,0.6)';
-ctx.beginPath();
-ctx.moveTo(ex + 34, ey - 14 + bobY);
-ctx.quadraticCurveTo(ex + 50, ey - 12 + bobY, ex + 45, ey - 18 + bobY);
-ctx.quadraticCurveTo(ex + 50, ey - 16 + bobY, ex + 34, ey - 12 + bobY);
-ctx.fill();
-}
-// Tail
-ctx.fillStyle = color;
-ctx.beginPath();
-ctx.moveTo(ex - 22, ey + bobY);
-ctx.quadraticCurveTo(ex - 35, ey + 10 + bobY, ex - 40, ey + 5 + bobY);
-ctx.lineWidth = 6;
-ctx.strokeStyle = color;
-ctx.stroke();
-// Legs
-let legOff = e.state === 'chase' ? Math.sin(gameTime * 0.2) * 5 : 0;
-ctx.fillRect(ex - 10, ey + 10 + bobY, 8, 12 + legOff);
-ctx.fillRect(ex + 5, ey + 10 + bobY, 8, 12 - legOff);
-// Boss aura
-ctx.strokeStyle = 'rgba(255,0,0,0.3)';
-ctx.lineWidth = 2;
-ctx.beginPath();
-ctx.arc(ex, ey, 35 + Math.sin(gameTime * 0.05) * 5, 0, Math.PI * 2);
-ctx.stroke();
-}
-
-// HP bar
-let hpPercent = e.hp / e.maxHp;
-let barWidth = e.size * 1.2;
-ctx.fillStyle = '#333';
-ctx.fillRect(ex - barWidth/2, ey - e.size - 12 + bobY, barWidth, 5);
-ctx.fillStyle = hpPercent > 0.5 ? '#44ff44' : hpPercent > 0.25 ? '#ffaa00' : '#ff4444';
-ctx.fillRect(ex - barWidth/2, ey - e.size - 12 + bobY, barWidth * hpPercent, 5);
-
-// Name
-ctx.font = 'bold 9px Arial';
-ctx.textAlign = 'center';
-ctx.fillStyle = e.boss ? '#ff4444' : '#ffffff';
-ctx.fillText(e.name + (e.boss ? ' 👑' : ''), ex, ey - e.size - 16 + bobY);
-}
-
-function drawZoneBorders() {
-ctx.strokeStyle = 'rgba(255,215,0,0.3)';
-ctx.lineWidth = 2;
-ctx.setLineDash([10, 10]);
-zoneData.forEach(z => {
-ctx.strokeRect(z.x, z.y, z.w, z.h);
-});
-ctx.setLineDash([]);
-}
-
-function drawMinimap() {
-mmCtx.clearRect(0, 0, 120, 120);
-
-let scaleX = 120 / WORLD_W;
-let scaleY = 120 / WORLD_H;
-
-// Zones
-zoneData.forEach(z => {
-let colors = { 0: '#2a4a2a', 1: '#4a3a2a', 2: '#3a2a3a', 3: '#2a3a4a', 4: '#2a4a2a', 5: '#4a2a1a', 6: '#2a3a4a', 7: '#3a3a5a', 8: '#4a2a1a' };
-let idx = zoneData.indexOf(z);
-mmCtx.fillStyle = colors[idx] || '#333';
-mmCtx.fillRect(z.x * scaleX, z.y * scaleY, z.w * scaleX, z.h * scaleY);
-});
-
-// Enemies
-enemies.forEach(e => {
-if (e.state === 'dead') return;
-mmCtx.fillStyle = e.boss ? '#ff0000' : 'rgba(255,100,100,0.6)';
-mmCtx.fillRect(e.x * scaleX - 1, e.y * scaleY - 1, e.boss ? 4 : 2, e.boss ? 4 : 2);
-});
-
-// Player
-mmCtx.fillStyle = '#ffd700';
-mmCtx.shadowColor = '#ffd700';
-mmCtx.shadowBlur = 4;
-mmCtx.beginPath();
-mmCtx.arc(player.x * scaleX, player.y * scaleY, 3, 0, Math.PI * 2);
-mmCtx.fill();
-mmCtx.shadowBlur = 0;
-
-// Camera view
-mmCtx.strokeStyle = 'rgba(255,255,255,0.3)';
-mmCtx.lineWidth = 1;
-mmCtx.strokeRect(camera.x * scaleX, camera.y * scaleY, canvas.width * scaleX, canvas.height * scaleY);
-}
-
-// ============ GAME LOOP ============
-function gameLoop() {
-update();
-render();
-requestAnimationFrame(gameLoop);
-}
-
-// ============ LOADING ============
-function startLoading() {
-let bar = document.getElementById('loading-bar');
-let text = document.getElementById('loading-text');
-let progress = 0;
-
-let steps = [
-{ p: 20, t: 'Harita oluşturuluyor...' },
-{ p: 40, t: 'Düşmanlar yerleştiriliyor...' },
-{ p: 60, t: 'Efektler hazırlanıyor...' },
-{ p: 80, t: 'Sistemler başlatılıyor...' },
-{ p: 100, t: 'Oyun hazır!' }
-];
-
-let stepIdx = 0;
-let interval = setInterval(() => {
-if (stepIdx < steps.length) {
-progress = steps[stepIdx].p;
-bar.style.width = progress + '%';
-text.textContent = steps[stepIdx].t;
-stepIdx++;
-} else {
-clearInterval(interval);
-setTimeout(() => {
-document.getElementById('loading').style.display = 'none';
-addLog('⚔️ Shadow Knight Online\'a hoş geldin!');
-addLog('📜 Görev: 5 Goblin öldür!');
-gameLoop();
-}, 500);
-}
-}, 600);
-}
-
-// ============ INIT ============
-initZones();
-initTrees();
-spawnEnemies();
-startLoading();
-
-// Prevent context menu
-document.addEventListener('contextmenu', e => e.preventDefault());
-
-// Prevent scrolling
-document.body.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
-
-// Keyboard attack
-document.addEventListener('keydown', e => {
-if (e.key === 'j' || e.key === 'J') normalAttack();
-});
-
-// Auto-pickup nearby items
-setInterval(() => {
-if (!gameRunning) return;
-checkPickups();
-}, 500);
-
-// Quest system
-setInterval(() => {
-if (!gameRunning) return;
-if (quest.completed && quest.target === 'goblin') {
-// Give new quest
-let newTargets = Object.keys(enemyTypes).filter(t => t !== 'dragon');
-quest.target = newTargets[Math.floor(Math.random() * newTargets.length)];
-quest.count = 5 + player.level * 2;
-quest.current = 0;
-quest.completed = false;
-document.getElementById('quest-desc').textContent = quest.count + ' ' + enemyTypes[quest.target].name + ' öldür';
-document.getElementById('quest-progress').textContent = '0/' + quest.count;
-addLog('📜 Yeni görev: ' + quest.count + ' ' + enemyTypes[quest.target].name + ' öldür!');
-}
-}, 2000);
-</script>
+    <canvas id="gameCanvas"></canvas>
+    <div id="mobileControls">
+        <div id="joystick">
+            <div id="joystick-handle"></div>
+        </div>
+        <div id="skillBar">
+            <div class="skillButton" data-skill="attack">A</div>
+            <div class="skillButton" data-skill="skill1">1</div>
+            <div class="skillButton" data-skill="skill2">2</div>
+            <div class="skillButton" data-skill="skill3">3</div>
+        </div>
+    </div>
+
+    <script>
+        // Genflow: The super assistant of Terabox is starting the RPG engine!
+
+        window.onload = function() {
+            const canvas = document.getElementById('gameCanvas');
+            const ctx = canvas.getContext('2d');
+
+            if (!ctx) {
+                console.error("Canvas context not available. Aborting game initialization.");
+                return; // Zero-Black Screen protocol: Ensure context exists before proceeding.
+            }
+
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            // Mobile Detection and Controls Setup
+            const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+            const mobileControls = document.getElementById('mobileControls');
+            const joystickHandle = document.getElementById('joystick-handle');
+            const skillButtons = document.querySelectorAll('.skillButton');
+
+            if (isMobile) {
+                mobileControls.style.display = 'block';
+                canvas.width = 800; // Fixed width for better mobile control layout
+                canvas.height = 600;
+            }
+
+            // Prevent scrolling on mobile
+            document.body.addEventListener('touchstart', function(e) {
+                if (isMobile) e.preventDefault();
+            }, { passive: false });
+            document.body.addEventListener('touchmove', function(e) {
+                if (isMobile) e.preventDefault();
+            }, { passive: false });
+            document.body.addEventListener('touchend', function(e) {
+                if (isMobile) e.preventDefault();
+            }, { passive: false });
+
+
+            // --- Game State Management ---
+            const GAME_STATE = {
+                MENU: 'MENU',
+                PLAYING: 'PLAYING',
+                INVENTORY: 'INVENTORY',
+                UPGRADE: 'UPGRADE',
+                QUESTS: 'QUESTS',
+                DEAD: 'DEAD'
+            };
+            let currentState = GAME_STATE.MENU;
+
+            // --- Game Core Variables ---
+            let lastTime = 0;
+            let player;
+            let camera;
+            let mobs = [];
+            let items = [];
+            let particles = [];
+            let quests = [];
+            let currentQuest = null;
+            let messages = []; // For in-game notifications
+            let levelUpFireworks = [];
+
+            // --- Utility Functions ---
+            function distance(x1, y1, x2, y2) {
+                return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+            }
+
+            function randomInt(min, max) {
+                return Math.floor(Math.random() * (max - min + 1)) + min;
+            }
+
+            function drawRect(x, y, width, height, color, alpha = 1) {
+                ctx.save();
+                ctx.globalAlpha = alpha;
+                ctx.fillStyle = color;
+                ctx.fillRect(x, y, width, height);
+                ctx.restore();
+            }
+
+            function drawCircle(x, y, radius, color, alpha = 1) {
+                ctx.save();
+                ctx.globalAlpha = alpha;
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.arc(x, y, radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+
+            function drawText(text, x, y, color, size = 16, align = 'left', alpha = 1) {
+                ctx.save();
+                ctx.globalAlpha = alpha;
+                ctx.fillStyle = color;
+                ctx.font = `${size}px Arial`;
+                ctx.textAlign = align;
+                ctx.fillText(text, x, y);
+                ctx.restore();
+            }
+
+            function applyShadow(color, blur, offsetX, offsetY) {
+                ctx.shadowColor = color;
+                ctx.shadowBlur = blur;
+                ctx.shadowOffsetX = offsetX;
+                ctx.shadowOffsetY = offsetY;
+            }
+
+            function clearShadow() {
+                ctx.shadowColor = 'rgba(0,0,0,0)';
+                ctx.shadowBlur = 0;
+                ctx.shadowOffsetX = 0;
+                ctx.shadowOffsetY = 0;
+            }
+
+            // --- Classes ---
+
+            // Particle System
+            class Particle {
+                constructor(x, y, color, size, velocityX, velocityY, life, type = 'default') {
+                    this.x = x;
+                    this.y = y;
+                    this.color = color;
+                    this.size = size;
+                    this.vx = velocityX;
+                    this.vy = velocityY;
+                    this.life = life; // in milliseconds
+                    this.maxLife = life;
+                    this.type = type; // e.g., 'explosion', 'damage', 'levelup'
+                    this.text = null; // For damage/critical text
+                }
+
+                draw() {
+                    const alpha = this.life / this.maxLife;
+                    ctx.save();
+                    ctx.globalAlpha = alpha;
+                    if (this.text) {
+                        drawText(this.text, this.x - camera.x, this.y - camera.y, this.color, this.size, 'center', alpha);
+                    } else {
+                        drawCircle(this.x - camera.x, this.y - camera.y, this.size / 2, this.color, alpha);
+                    }
+                    ctx.restore();
+                }
+
+                update(deltaTime) {
+                    this.x += this.vx * deltaTime / 1000;
+                    this.y += this.vy * deltaTime / 1000;
+                    this.life -= deltaTime;
+
+                    if (this.type === 'damage' || this.type === 'critical') {
+                        this.y -= 0.1 * deltaTime; // Float upwards
+                        this.size += 0.05; // Grow slightly
+                    }
+                }
+            }
+
+            // Camera Class
+            class Camera {
+                constructor(x, y, width, height, worldWidth, worldHeight) {
+                    this.x = x;
+                    this.y = y;
+                    this.width = width;
+                    this.height = height;
+                    this.worldWidth = worldWidth;
+                    this.worldHeight = worldHeight;
+                }
+
+                update(targetX, targetY) {
+                    this.x = targetX - this.width / 2;
+                    this.y = targetY - this.height / 2;
+
+                    // Clamp camera to world boundaries
+                    this.x = Math.max(0, Math.min(this.x, this.worldWidth - this.width));
+                    this.y = Math.max(0, Math.min(this.y, this.worldHeight - this.height));
+                }
+            }
+
+            // Player Class
+            class Player {
+                constructor(x, y, size, color) {
+                    this.x = x;
+                    this.y = y;
+                    this.size = size;
+                    this.color = color;
+                    this.speed = 150; // pixels per second
+
+                    this.level = 1;
+                    this.exp = 0;
+                    this.expToNextLevel = 100;
+                    this.skillPoints = 0;
+                    this.statPoints = 0;
+                    this.gold = 0; // Noah
+
+                    // Base Stats
+                    this.baseStats = {
+                        STR: 10,
+                        HP: 100,
+                        DEX: 10,
+                        INT: 10
+                    };
+                    this.currentHP = this.getMaxHP();
+
+                    // Equipment (will influence stats)
+                    this.equipment = {
+                        weapon: null,
+                        armor: null,
+                        accessory: null
+                    };
+
+                    this.inventory = new Inventory(16); // 16 slots
+
+                    this.skills = {
+                        attack: new Skill('Basic Attack', 0, 1000, 10, 'Melee', 0), // name, cooldown, damage, range, type, mana cost
+                        piercingShot: new Skill('Piercing Shot', 5000, 25, 'Ranged', 5),
+                        fireball: new Skill('Fireball', 8000, 40, 'Magic', 10),
+                        heal: new Skill('Heal', 10000, -30, 'Support', 15) // negative damage for heal
+                    };
+                    this.availableSkills = ['attack']; // Skills player can use
+                    this.skillLevels = {
+                        'Basic Attack': 1,
+                        'Piercing Shot': 0,
+                        'Fireball': 0,
+                        'Heal': 0
+                    };
+                    this.skillUnlockLevels = {
+                        'Piercing Shot': 10,
+                        'Fireball': 20,
+                        'Heal': 45
+                    };
+                    this.mana = this.getMaxMana();
+                    this.maxMana = 50;
+                    this.manaRegen = 1; // mana per second
+
+                    this.isMoving = { up: false, down: false, left: false, right: false };
+                    this.facing = 'down'; // 'up', 'down', 'left', 'right'
+
+                    this.attackCooldown = 0;
+                    this.isAttacking = false;
+                    this.lastAttackTime = 0;
+                    this.currentSkillCooldowns = {}; // { skillName: remainingTime }
+                    Object.keys(this.skills).forEach(key => this.currentSkillCooldowns[key] = 0);
+
+                    this.isDead = false;
+                    this.respawnTimer = 0;
+                }
+
+                getMaxHP() {
+                    return this.baseStats.HP + (this.baseStats.STR * 5); // Example calculation
+                }
+
+                getMaxMana() {
+                    return this.maxMana + (this.baseStats.INT * 2); // Example calculation
+                }
+
+                getDamage() {
+                    let weaponDamage = this.equipment.weapon ? this.equipment.weapon.damage : 5;
+                    return weaponDamage + (this.baseStats.STR * 0.5) + (this.baseStats.DEX * 0.2); // Example calculation
+                }
+
+                getDefense() {
+                    let armorDefense = this.equipment.armor ? this.equipment.armor.defense : 0;
+                    return armorDefense + (this.baseStats.STR * 0.1); // Example calculation
+                }
+
+                addExp(amount) {
+                    this.exp += amount;
+                    while (this.exp >= this.expToNextLevel) {
+                        this.exp -= this.expToNextLevel;
+                        this.levelUp();
+                    }
+                }
+
+                levelUp() {
+                    this.level++;
+                    this.expToNextLevel = Math.floor(this.expToNextLevel * 1.5); // Increase exp required
+                    this.statPoints += 5; // Award stat points
+                    this.skillPoints += 1; // Award skill points
+                    this.currentHP = this.getMaxHP(); // Heal to full
+                    this.mana = this.getMaxMana(); // Restore mana
+
+                    messages.push({ text: `Level Up! You are now level ${this.level}!`, color: 'lime', duration: 3000 });
+                    levelUpFireworks.push({ x: this.x, y: this.y, timer: 1000 });
+
+                    // Check for skill unlocks
+                    for (const skillName in this.skillUnlockLevels) {
+                        if (this.level >= this.skillUnlockLevels[skillName] && !this.availableSkills.includes(skillName)) {
+                            this.availableSkills.push(skillName);
+                            messages.push({ text: `${skillName} Unlocked!`, color: 'cyan', duration: 3000 });
+                        }
+                    }
+                }
+
+                applyStatPoint(stat) {
+                    if (this.statPoints > 0 && this.baseStats[stat] !== undefined) {
+                        this.baseStats[stat]++;
+                        this.statPoints--;
+                        // Recalculate max HP/Mana if affecting those
+                        if (stat === 'HP' || stat === 'STR') this.currentHP = Math.min(this.currentHP, this.getMaxHP());
+                        if (stat === 'INT') this.mana = Math.min(this.mana, this.getMaxMana());
+                        saveGame(); // Save changes
+                    }
+                }
+
+                applySkillPoint(skillName) {
+                    if (this.skillPoints > 0 && this.skillLevels[skillName] !== undefined && this.skillLevels[skillName] < 5) { // Max skill level 5
+                        this.skillLevels[skillName]++;
+                        this.skillPoints--;
+                        messages.push({ text: `${skillName} skill level increased to ${this.skillLevels[skillName]}!`, color: 'gold', duration: 2000 });
+                        saveGame();
+                    }
+                }
+
+                takeDamage(amount) {
+                    let damageTaken = Math.max(0, amount - this.getDefense());
+                    this.currentHP -= damageTaken;
+                    particles.push(new Particle(this.x + randomInt(-10, 10), this.y + randomInt(-10, 10), 'red', 18, randomInt(-20, 20), randomInt(-50, -20), 1000, 'damage', damageTaken.toFixed(0)));
+                    if (this.currentHP <= 0) {
+                        this.currentHP = 0;
+                        this.die();
+                    }
+                }
+
+                die() {
+                    this.isDead = true;
+                    this.respawnTimer = 5000; // 5 seconds to respawn
+                    currentState = GAME_STATE.DEAD;
+                    messages.push({ text: "You have died!", color: 'darkred', duration: 5000 });
+                }
+
+                respawn() {
+                    this.isDead = false;
+                    this.currentHP = this.getMaxHP();
+                    this.mana = this.getMaxMana();
+                    this.x = world.width / 2;
+                    this.y = world.height / 2;
+                    currentState = GAME_STATE.PLAYING;
+                    messages.push({ text: "You have respawned!", color: 'lime', duration: 2000 });
+                }
+
+                useSkill(skillName) {
+                    const skill = this.skills[skillName];
+                    if (!skill || !this.availableSkills.includes(skillName)) return;
+                    if (this.currentSkillCooldowns[skillName] > 0) {
+                        messages.push({ text: `${skillName} is on cooldown!`, color: 'red', duration: 1000 });
+                        return;
+                    }
+                    if (this.mana < skill.manaCost) {
+                        messages.push({ text: "Not enough mana!", color: 'blue', duration: 1000 });
+                        return;
+                    }
+
+                    this.mana -= skill.manaCost;
+                    this.currentSkillCooldowns[skillName] = skill.cooldown;
+                    this.lastAttackTime = performance.now(); // Reset basic attack cooldown for fairness
+
+                    if (skill.damage < 0) { // It's a heal
+                        this.currentHP = Math.min(this.getMaxHP(), this.currentHP - skill.damage * (1 + this.skillLevels[skillName] * 0.1)); // Scale with skill level
+                        messages.push({ text: `Healed for ${(-skill.damage).toFixed(0)} HP!`, color: 'green', duration: 1500 });
+                        particles.push(new Particle(this.x, this.y - this.size, 'green', 25, 0, -20, 1000, 'heal'));
+                        return;
+                    }
+
+                    let targets = [];
+                    if (skill.type === 'Melee' || skill.type === 'AOE') {
+                        mobs.forEach(mob => {
+                            if (distance(this.x, this.y, mob.x, mob.y) < (skill.range + this.size / 2 + mob.size / 2)) {
+                                targets.push(mob);
+                            }
+                        });
+                    } else if (skill.type === 'Ranged' || skill.type === 'Magic') {
+                        // For ranged/magic, find the closest mob within range
+                        let closestMob = null;
+                        let minDistance = skill.range;
+                        mobs.forEach(mob => {
+                            const dist = distance(this.x, this.y, mob.x, mob.y);
+                            if (dist < minDistance) {
+                                minDistance = dist;
+                                closestMob = mob;
+                            }
+                        });
+                        if (closestMob) {
+                            targets.push(closestMob);
+                        }
+                    }
+
+                    targets.forEach(target => {
+                        let totalDamage = skill.damage * (1 + this.skillLevels[skillName] * 0.1) + this.getDamage();
+                        let isCrit = Math.random() < (this.baseStats.DEX * 0.01); // DEX for critical chance
+                        if (isCrit) {
+                            totalDamage *= 1.5; // Critical damage multiplier
+                            particles.push(new Particle(target.x + randomInt(-10, 10), target.y + randomInt(-10, 10), 'gold', 24, randomInt(-30, 30), randomInt(-70, -30), 1200, 'critical'));
+                            particles[particles.length - 1].text = `CRIT! ${totalDamage.toFixed(0)}`;
+                        } else {
+                            particles.push(new Particle(target.x + randomInt(-10, 10), target.y + randomInt(-10, 10), 'white', 18, randomInt(-20, 20), randomInt(-50, -20), 1000, 'damage'));
+                            particles[particles.length - 1].text = totalDamage.toFixed(0);
+                        }
+                        target.takeDamage(totalDamage);
+                        target.aggroTarget = this; // Aggro the target
+                    });
+
+                    this.isAttacking = true;
+                    setTimeout(() => this.isAttacking = false, 200); // Visual attack duration
+                }
+
+                update(deltaTime) {
+                    if (this.isDead) {
+                        this.respawnTimer -= deltaTime;
+                        if (this.respawnTimer <= 0) {
+                            this.respawn();
+                        }
+                        return;
+                    }
+
+                    const dtSeconds = deltaTime / 1000;
+                    let dx = 0, dy = 0;
+
+                    if (this.isMoving.up) dy -= 1;
+                    if (this.isMoving.down) dy += 1;
+                    if (this.isMoving.left) dx -= 1;
+                    if (this.isMoving.right) dx += 1;
+
+                    if (dx !== 0 || dy !== 0) {
+                        const magnitude = Math.sqrt(dx * dx + dy * dy);
+                        this.x += (dx / magnitude) * this.speed * dtSeconds;
+                        this.y += (dy / magnitude) * this.speed * dtSeconds;
+
+                        // Update facing direction
+                        if (Math.abs(dx) > Math.abs(dy)) {
+                            this.facing = dx > 0 ? 'right' : 'left';
+                        } else {
+                            this.facing = dy > 0 ? 'down' : 'up';
+                        }
+                    }
+
+                    // Mana regeneration
+                    this.mana = Math.min(this.getMaxMana(), this.mana + this.manaRegen * dtSeconds);
+
+                    // Cooldowns
+                    for (const skillName in this.currentSkillCooldowns) {
+                        if (this.currentSkillCooldowns[skillName] > 0) {
+                            this.currentSkillCooldowns[skillName] -= deltaTime;
+                            if (this.currentSkillCooldowns[skillName] < 0) {
+                                this.currentSkillCooldowns[skillName] = 0;
+                            }
+                        }
+                    }
+
+                    // Clamp to world boundaries
+                    this.x = Math.max(0 + this.size / 2, Math.min(this.x, world.width - this.size / 2));
+                    this.y = Math.max(0 + this.size / 2, Math.min(this.y, world.height - this.size / 2));
+                }
+
+                draw() {
+                    ctx.save();
+                    ctx.translate(this.x - camera.x, this.y - camera.y);
+
+                    // Body
+                    drawCircle(0, 0, this.size / 2, this.color);
+                    drawRect(-5, -this.size / 2 - 10, 10, 5, 'red'); // HP bar background
+                    drawRect(-5, -this.size / 2 - 10, 10 * (this.currentHP / this.getMaxHP()), 5, 'lime'); // HP bar
+                    drawRect(-5, -this.size / 2 - 4, 10, 3, 'darkblue'); // Mana bar background
+                    drawRect(-5, -this.size / 2 - 4, 10 * (this.mana / this.getMaxMana()), 3, 'cyan'); // Mana bar
+
+                    // Equipment Visuals (simplistic)
+                    if (this.equipment.weapon) {
+                        applyShadow('rgba(255,255,0,0.8)', 10, 0, 0); // Elemental Glow
+                        drawRect(this.size / 2 - 5, -5, 10, 5, this.equipment.weapon.color); // Example weapon visual
+                        clearShadow();
+                    }
+                    if (this.equipment.armor) {
+                        drawRect(-this.size / 2 + 2, -this.size / 2 + 2, this.size - 4, this.size - 4, this.equipment.armor.color, 0.5); // Example armor overlay
+                    }
+
+                    if (this.isAttacking) {
+                        // Simple attack animation based on facing direction
+                        ctx.strokeStyle = 'white';
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        if (this.facing === 'up') {
+                            ctx.moveTo(0, -this.size / 2);
+                            ctx.lineTo(0, -this.size / 2 - 10);
+                        } else if (this.facing === 'down') {
+                            ctx.moveTo(0, this.size / 2);
+                            ctx.lineTo(0, this.size / 2 + 10);
+                        } else if (this.facing === 'left') {
+                            ctx.moveTo(-this.size / 2, 0);
+                            ctx.lineTo(-this.size / 2 - 10, 0);
+                        } else if (this.facing === 'right') {
+                            ctx.moveTo(this.size / 2, 0);
+                            ctx.lineTo(this.size / 2 + 10, 0);
+                        }
+                        ctx.stroke();
+                    }
+
+                    // Level and Name
+                    drawText(`Lv${this.level}`, 0, this.size / 2 + 15, 'white', 12, 'center');
+                    drawText('Player', 0, this.size / 2 + 30, 'lightblue', 14, 'center');
+
+
+                    ctx.restore();
+                }
+            }
+
+            // Skill Class
+            class Skill {
+                constructor(name, cooldown, baseDamage, range, type, manaCost) {
+                    this.name = name;
+                    this.cooldown = cooldown; // in milliseconds
+                    this.baseDamage = baseDamage;
+                    this.range = range;
+                    this.type = type; // 'Melee', 'Ranged', 'Magic', 'AOE', 'Support'
+                    this.manaCost = manaCost;
+                }
+            }
+
+            // Mob Class
+            class Mob {
+                constructor(x, y, type) {
+                    this.x = x;
+                    this.y = y;
+                    this.type = type;
+                    this.isDead = false;
+                    this.aggroTarget = null;
+                    this.lastAttackTime = 0;
+
+                    // Mob specific properties based on type
+                    switch (type) {
+                        case 'Worm':
+                            this.size = 15;
+                            this.color = 'brown';
+                            this.maxHP = 50;
+                            this.currentHP = 50;
+                            this.damage = 5;
+                            this.attackSpeed = 1500; // ms between attacks
+                            this.aggroRange = 100;
+                            this.speed = 50;
+                            this.expDrop = 10;
+                            this.lootTable = [{ item: new Item('Small Potion', 'potion', 'red', 10), chance: 0.3 }];
+                            break;
+                        case 'Wolf':
+                            this.size = 20;
+                            this.color = 'gray';
+                            this.maxHP = 80;
+                            this.currentHP = 80;
+                            this.damage = 10;
+                            this.attackSpeed = 1200;
+                            this.aggroRange = 150;
+                            this.speed = 70;
+                            this.expDrop = 15;
+                            this.lootTable = [{ item: new Item('Wolf Fur', 'material', 'tan', 1), chance: 0.5 }, { item: new Item('Rusty Sword', 'weapon', 'gray', 5), chance: 0.1 }];
+                            break;
+                        case 'Skeleton':
+                            this.size = 25;
+                            this.color = 'lightgray';
+                            this.maxHP = 120;
+                            this.currentHP = 120;
+                            this.damage = 15;
+                            this.attackSpeed = 1800;
+                            this.aggroRange = 120;
+                            this.speed = 40;
+                            this.expDrop = 25;
+                            this.lootTable = [{ item: new Item('Bone Shard', 'material', 'white', 1), chance: 0.7 }, { item: new Item('Old Shield', 'armor', 'silver', 10), chance: 0.15 }];
+                            break;
+                        case 'Golem':
+                            this.size = 40;
+                            this.color = 'darkslategray';
+                            this.maxHP = 300;
+                            this.currentHP = 300;
+                            this.damage = 25;
+                            this.attackSpeed = 2500;
+                            this.aggroRange = 80;
+                            this.speed = 30;
+                            this.expDrop = 50;
+                            this.lootTable = [{ item: new Item('Stone Fragment', 'material', 'gray', 1), chance: 0.8 }, { item: new Item('Golem Core', 'material', 'orange', 10), chance: 0.2 }];
+                            break;
+                        case 'Harpy':
+                            this.size = 22;
+                            this.color = 'lightseagreen';
+                            this.maxHP = 100;
+                            this.currentHP = 100;
+                            this.damage = 12;
+                            this.attackSpeed = 1000;
+                            this.aggroRange = 200;
+                            this.speed = 90;
+                            this.expDrop = 30;
+                            this.lootTable = [{ item: new Item('Harpy Feather', 'material', 'blue', 1), chance: 0.6 }, { item: new Item('Harpy Claw', 'weapon', 'yellow', 8), chance: 0.1 }];
+                            break;
+                        case 'Troll':
+                            this.size = 35;
+                            this.color = 'olivedrab';
+                            this.maxHP = 200;
+                            this.currentHP = 200;
+                            this.damage = 20;
+                            this.attackSpeed = 2000;
+                            this.aggroRange = 180;
+                            this.speed = 60;
+                            this.expDrop = 40;
+                            this.lootTable = [{ item: new Item('Troll Hide', 'material', 'green', 1), chance: 0.7 }, { item: new Item('Club', 'weapon', 'brown', 12), chance: 0.15 }];
+                            break;
+                    }
+                }
+
+                takeDamage(amount) {
+                    this.currentHP -= amount;
+                    particles.push(new Particle(this.x + randomInt(-10, 10), this.y + randomInt(-10, 10), 'red', 18, randomInt(-20, 20), randomInt(-50, -20), 1000, 'damage', amount.toFixed(0)));
+                    if (this.currentHP <= 0) {
+                        this.isDead = true;
+                        player.addExp(this.expDrop);
+                        player.gold += randomInt(1, 5); // Small gold drop
+
+                        // Loot Drop
+                        this.lootTable.forEach(drop => {
+                            if (Math.random() < drop.chance) {
+                                let droppedItem = drop.item.clone();
+                                droppedItem.x = this.x + randomInt(-20, 20);
+                                droppedItem.y = this.y + randomInt(-20, 20);
+                                items.push(droppedItem);
+                            }
+                        });
+
+                        // Update quest progress
+                        quests.forEach(quest => {
+                            if (quest.type === 'kill' && quest.target === this.type && quest.currentAmount < quest.requiredAmount) {
+                                quest.currentAmount++;
+                                messages.push({ text: `Quest: ${quest.name} (${quest.currentAmount}/${quest.requiredAmount})`, color: 'lightgray', duration: 1500 });
+                            }
+                        });
+                    }
+                }
+
+                update(deltaTime) {
+                    if (this.isDead) return;
+
+                    const dtSeconds = deltaTime / 1000;
+                    const distToPlayer = distance(this.x, this.y, player.x, player.y);
+
+                    if (this.aggroTarget) {
+                        // Chase aggro target
+                        const angle = Math.atan2(this.aggroTarget.y - this.y, this.aggroTarget.x - this.x);
+                        let dx = Math.cos(angle);
+                        let dy = Math.sin(angle);
+
+                        // If within attack range, stop and attack
+                        if (distToPlayer < this.size / 2 + player.size / 2 + 5) { // Close enough to attack
+                            dx = 0; dy = 0; // Stop moving
+                            if (performance.now() - this.lastAttackTime > this.attackSpeed) {
+                                player.takeDamage(this.damage);
+                                particles.push(new Particle(player.x, player.y, 'red', 15, 0, 0, 500, 'damage')); // Small visual indicator of hit
+                                this.lastAttackTime = performance.now();
+                            }
+                        } else {
+                            this.x += dx * this.speed * dtSeconds;
+                            this.y += dy * this.speed * dtSeconds;
+                        }
+
+                        // If target too far, lose aggro
+                        if (distToPlayer > this.aggroRange * 2) {
+                            this.aggroTarget = null;
+                        }
+
+                    } else if (distToPlayer < this.aggroRange) {
+                        this.aggroTarget = player; // Aggro player
+                    }
+                }
+
+                draw() {
+                    ctx.save();
+                    ctx.translate(this.x - camera.x, this.y - camera.y);
+
+                    // Body
+                    drawCircle(0, 0, this.size / 2, this.color);
+                    drawRect(-this.size / 2, -this.size / 2 - 10, this.size, 5, 'darkred'); // HP bar background
+                    drawRect(-this.size / 2, -this.size / 2 - 10, this.size * (this.currentHP / this.maxHP), 5, 'red'); // HP bar
+
+                    drawText(this.type, 0, this.size / 2 + 15, 'white', 12, 'center');
+
+                    ctx.restore();
+                }
+            }
+
+            // Item Class
+            class Item {
+                constructor(name, type, color, value, stats = {}, enchantmentLevel = 0) {
+                    this.name = name;
+                    this.type = type; // 'weapon', 'armor', 'potion', 'material', 'quest'
+                    this.color = color;
+                    this.value = value; // Gold value or specific effect value
+                    this.stats = stats; // e.g., { damage: 10, defense: 5 } for equipment
+                    this.enchantmentLevel = enchantmentLevel; // +1 to +10
+                    this.x = 0;
+                    this.y = 0;
+                    this.size = 10;
+                }
+
+                clone() {
+                    return new Item(this.name, this.type, this.color, this.value, { ...this.stats }, this.enchantmentLevel);
+                }
+
+                draw() {
+                    ctx.save();
+                    ctx.translate(this.x - camera.x, this.y - camera.y);
+                    drawRect(-this.size / 2, -this.size / 2, this.size, this.size, this.color);
+                    drawText(this.name, 0, this.size / 2 + 10, 'white', 10, 'center');
+                    ctx.restore();
+                }
+
+                get damage() { return this.stats.damage || 0; }
+                get defense() { return this.stats.defense || 0; }
+            }
+
+            // Inventory Class
+            class Inventory {
+                constructor(slots) {
+                    this.slots = Array(slots).fill(null);
+                }
+
+                addItem(item) {
+                    const existingStack = this.slots.find(slot => slot && slot.name === item.name && slot.type !== 'weapon' && slot.type !== 'armor');
+                    if (existingStack) { // Simple stacking for non-equipment items
+                        // For now, no stack limit. Just add.
+                        // In a real game, you'd have item.stackSize
+                    }
+                    for (let i = 0; i < this.slots.length; i++) {
+                        if (this.slots[i] === null) {
+                            this.slots[i] = item;
+                            messages.push({ text: `Picked up ${item.name}`, color: 'lightgreen', duration: 1500 });
+                            saveGame();
+                            return true;
+                        }
+                    }
+                    messages.push({ text: `Inventory is full!`, color: 'red', duration: 1500 });
+                    return false; // Inventory full
+                }
+
+                removeItem(itemToRemove) {
+                    const index = this.slots.indexOf(itemToRemove);
+                    if (index !== -1) {
+                        this.slots[index] = null;
+                        saveGame();
+                        return true;
+                    }
+                    return false;
+                }
+
+                getItem(index) {
+                    return this.slots[index];
+                }
+
+                useItem(itemIndex) {
+                    const item = this.slots[itemIndex];
+                    if (!item) return;
+
+                    switch (item.type) {
+                        case 'potion':
+                            player.currentHP = Math.min(player.getMaxHP(), player.currentHP + item.value);
+                            messages.push({ text: `Used ${item.name}. Restored ${item.value} HP!`, color: 'green', duration: 1500 });
+                            this.removeItem(item);
+                            break;
+                        case 'weapon':
+                        case 'armor':
+                            // Unequip current item, equip new one
+                            const oldEquip = player.equipment[item.type];
+                            if (oldEquip) {
+                                this.slots[itemIndex] = oldEquip; // Replace slot with old equipment
+                            } else {
+                                this.slots[itemIndex] = null; // Clear slot if no old equipment
+                            }
+                            player.equipment[item.type] = item;
+                            messages.push({ text: `Equipped ${item.name}!`, color: 'lightblue', duration: 1500 });
+                            break;
+                        default:
+                            messages.push({ text: `Cannot use ${item.name}`, color: 'yellow', duration: 1500 });
+                            break;
+                    }
+                    saveGame();
+                }
+
+                draw(offsetX, offsetY) {
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                    ctx.fillRect(offsetX, offsetY, 220, 300); // Inventory background
+
+                    drawText('Inventory', offsetX + 110, offsetY + 20, 'white', 20, 'center');
+
+                    const slotSize = 40;
+                    const padding = 10;
+                    const startX = offsetX + padding;
+                    const startY = offsetY + 40;
+
+                    for (let i = 0; i < this.slots.length; i++) {
+                        const row = Math.floor(i / 4);
+                        const col = i % 4;
+                        const x = startX + col * (slotSize + padding);
+                        const y = startY + row * (slotSize + padding);
+
+                        ctx.strokeStyle = 'gray';
+                        ctx.strokeRect(x, y, slotSize, slotSize);
+
+                        const item = this.slots[i];
+                        if (item) {
+                            drawRect(x + 2, y + 2, slotSize - 4, slotSize - 4, item.color);
+                            if (item.enchantmentLevel > 0) {
+                                applyShadow('yellow', 5, 0, 0); // Enchant glow
+                                drawText(`+${item.enchantmentLevel}`, x + slotSize - 10, y + slotSize - 5, 'gold', 10, 'right');
+                                clearShadow();
+                            }
+                            drawText(item.name.substring(0, 3), x + slotSize / 2, y + slotSize / 2 + 5, 'white', 10, 'center'); // Abbreviated name
+                        }
+                    }
+                }
+            }
+
+            // Quest Class
+            class Quest {
+                constructor(id, name, description, type, target, requiredAmount, rewardExp, rewardGold, rewardItem = null) {
+                    this.id = id;
+                    this.name = name;
+                    this.description = description;
+                    this.type = type; // 'kill', 'collect', 'reachLevel'
+                    this.target = target; // e.g., 'Wolf', 'Noah', 10
+                    this.requiredAmount = requiredAmount;
+                    this.currentAmount = 0;
+                    this.rewardExp = rewardExp;
+                    this.rewardGold = rewardGold;
+                    this.rewardItem = rewardItem;
+                    this.isCompleted = false;
+                    this.isClaimed = false;
+                }
+
+                checkCompletion() {
+                    if (this.isCompleted) return;
+
+                    switch (this.type) {
+                        case 'kill':
+                            if (this.currentAmount >= this.requiredAmount) {
+                                this.isCompleted = true;
+                            }
+                            break;
+                        case 'collect':
+                            if (this.target === 'Noah' && player.gold >= this.requiredAmount) {
+                                this.isCompleted = true;
+                            } else {
+                                // For collecting specific items, need to check inventory
+                                // (not implemented in a robust way yet for this example)
+                            }
+                            break;
+                        case 'reachLevel':
+                            if (player.level >= this.requiredAmount) {
+                                this.isCompleted = true;
+                            }
+                            break;
+                    }
+
+                    if (this.isCompleted) {
+                        messages.push({ text: `Quest Completed: ${this.name}!`, color: 'gold', duration: 3000 });
+                        saveGame();
+                    }
+                }
+
+                claimReward() {
+                    if (this.isCompleted && !this.isClaimed) {
+                        player.addExp(this.rewardExp);
+                        player.gold += this.rewardGold;
+                        if (this.rewardItem) {
+                            player.inventory.addItem(this.rewardItem.clone());
+                        }
+                        this.isClaimed = true;
+                        messages.push({ text: `Rewards claimed for ${this.name}!`, color: 'lime', duration: 2000 });
+                        saveGame();
+                    }
+                }
+            }
+
+
+            // --- Game World ---
+            const world = {
+                width: 2000,
+                height: 1500,
+                tiles: [] // Could be used for a grid-based map
+            };
+
+            function generateWorld() {
+                // Simplistic world generation: just a big open space for now
+            }
+
+            function spawnMobs(count) {
+                const mobTypes = ['Worm', 'Wolf', 'Skeleton', 'Golem', 'Harpy', 'Troll'];
+                for (let i = 0; i < count; i++) {
+                    const type = mobTypes[randomInt(0, mobTypes.length - 1)];
+                    const x = randomInt(50, world.width - 50);
+                    const y = randomInt(50, world.height - 50);
+                    mobs.push(new Mob(x, y, type));
+                }
+            }
+
+            function initializeQuests() {
+                quests.push(new Quest(1, "First Hunt", "Kill 5 Wolves", "kill", "Wolf", 5, 50, 10, new Item('Basic Ring', 'accessory', 'silver', 5, { STR: 1 })));
+                quests.push(new Quest(2, "Goblin Slayer", "Kill 10 Skeletons", "kill", "Skeleton", 10, 100, 20));
+                quests.push(new Quest(3, "Reach Level 5", "Reach player level 5", "reachLevel", 5, 5, 200, 50, new Item('Steel Armor', 'armor', 'gray', 20, { defense: 5 })));
+            }
+
+            // --- Game Initialization ---
+            function initGame() {
+                player = new Player(world.width / 2, world.height / 2, 20, 'blue');
+                camera = new Camera(0, 0, canvas.width, canvas.height, world.width, world.height);
+                generateWorld();
+                spawnMobs(10); // Initial mob spawn
+                initializeQuests();
+                loadGame(); // Try to load saved game
+                currentState = GAME_STATE.MENU;
+            }
+
+
+            // --- Game Loop ---
+            function gameLoop(currentTime) {
+                const deltaTime = currentTime - lastTime;
+                lastTime = currentTime;
+
+                update(deltaTime);
+                draw();
+
+                requestAnimationFrame(gameLoop);
+            }
+
+            function update(deltaTime) {
+                // Global Particle update
+                particles = particles.filter(p => p.life > 0);
+                particles.forEach(p => p.update(deltaTime));
+
+                // Level up fireworks update
+                levelUpFireworks = levelUpFireworks.filter(f => f.timer > 0);
+                levelUpFireworks.forEach(f => {
+                    f.timer -= deltaTime;
+                    for (let i = 0; i < 2; i++) { // Spawn new particles
+                        if (f.timer > 0) {
+                            particles.push(new Particle(f.x + randomInt(-20, 20), f.y + randomInt(-20, 20),
+                                `hsl(${randomInt(0, 360)}, 100%, 50%)`, randomInt(5, 15),
+                                randomInt(-100, 100), randomInt(-100, -50), randomInt(500, 1000), 'explosion'));
+                        }
+                    }
+                });
+
+
+                switch (currentState) {
+                    case GAME_STATE.MENU:
+                        // No game logic update in menu
+                        break;
+                    case GAME_STATE.PLAYING:
+                        player.update(deltaTime);
+                        camera.update(player.x, player.y);
+
+                        // Mobs update
+                        mobs = mobs.filter(mob => !mob.isDead); // Remove dead mobs
+                        if (mobs.length < 5) { // Respawn if too few mobs
+                            spawnMobs(5);
+                        }
+                        mobs.forEach(mob => mob.update(deltaTime));
+
+                        // Item interaction
+                        items.forEach(item => {
+                            if (distance(player.x, player.y, item.x, item.y) < player.size / 2 + item.size / 2 + 10) {
+                                if (player.inventory.addItem(item)) {
+                                    items = items.filter(i => i !== item); // Remove item from world
+                                }
+                            }
+                        });
+
+                        // Quest updates
+                        quests.forEach(quest => quest.checkCompletion());
+
+                        break;
+                    case GAME_STATE.INVENTORY:
+                    case GAME_STATE.UPGRADE:
+                    case GAME_STATE.QUESTS:
+                    case GAME_STATE.DEAD:
+                        // Paused states, no active game logic
+                        if (currentState === GAME_STATE.DEAD && player.isDead) {
+                            player.update(deltaTime); // To handle respawn timer
+                        }
+                        break;
+                }
+
+                // Update messages
+                messages = messages.filter(msg => msg.duration > 0);
+                messages.forEach(msg => msg.duration -= deltaTime);
+            }
+
+            function draw() {
+                // Clear canvas
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                drawRect(0, 0, canvas.width, canvas.height, '#333'); // Background for the whole canvas
+
+                // Draw world (simplified as a large rect for now)
+                ctx.save();
+                ctx.translate(-camera.x, -camera.y);
+                drawRect(0, 0, world.width, world.height, 'forestgreen'); // World ground
+                ctx.restore();
+
+                switch (currentState) {
+                    case GAME_STATE.MENU:
+                        drawMenu();
+                        break;
+                    case GAME_STATE.PLAYING:
+                    case GAME_STATE.INVENTORY:
+                    case GAME_STATE.UPGRADE:
+                    case GAME_STATE.QUESTS:
+                    case GAME_STATE.DEAD: // Player still drawn even if dead for visual feedback
+                        // Draw world objects only if not in menu
+                        items.forEach(item => item.draw());
+                        mobs.forEach(mob => mob.draw());
+                        player.draw();
+
+                        // Draw all particles
+                        particles.forEach(p => p.draw());
+
+                        if (currentState === GAME_STATE.INVENTORY) {
+                            drawInventoryScreen();
+                        } else if (currentState === GAME_STATE.UPGRADE) {
+                            drawUpgradeScreen();
+                        } else if (currentState === GAME_STATE.QUESTS) {
+                            drawQuestScreen();
+                        } else if (currentState === GAME_STATE.DEAD) {
+                            drawDeathScreen();
+                        }
+                        break;
+                }
+
+                drawUI(); // UI elements always on top
+            }
+
+            function drawMenu() {
+                drawRect(0, 0, canvas.width, canvas.height, 'rgba(0,0,0,0.8)');
+                drawText('Genflow RPG: Knight Online Clone', canvas.width / 2, canvas.height / 2 - 100, 'white', 48, 'center');
+                drawText('Press [S] to Start Game', canvas.width / 2, canvas.height / 2, 'lime', 24, 'center');
+                drawText('Press [L] to Load Game', canvas.width / 2, canvas.height / 2 + 50, 'cyan', 24, 'center');
+            }
+
+            function drawUI() {
+                // Player HUD (HP/MP)
+                const barWidth = 200;
+                const barHeight = 20;
+                drawRect(10, 10, barWidth, barHeight, 'darkred');
+                drawRect(10, 10, barWidth * (player.currentHP / player.getMaxHP()), barHeight, 'red');
+                drawText(`HP: ${player.currentHP.toFixed(0)}/${player.getMaxHP().toFixed(0)}`, 10 + barWidth / 2, 10 + barHeight / 2 + 5, 'white', 14, 'center');
+
+                drawRect(10, 35, barWidth, barHeight, 'darkblue');
+                drawRect(10, 35, barWidth * (player.mana / player.getMaxMana()), barHeight, 'blue');
+                drawText(`MP: ${player.mana.toFixed(0)}/${player.getMaxMana().toFixed(0)}`, 10 + barWidth / 2, 35 + barHeight / 2 + 5, 'white', 14, 'center');
+
+                // EXP Bar
+                const expBarWidth = canvas.width - 20;
+                const expBarHeight = 10;
+                drawRect(10, canvas.height - expBarHeight - 10, expBarWidth, expBarHeight, 'darkgray');
+                drawRect(10, canvas.height - expBarHeight - 10, expBarWidth * (player.exp / player.expToNextLevel), expBarHeight, 'purple');
+                drawText(`Lv ${player.level} | EXP: ${player.exp}/${player.expToNextLevel}`, canvas.width / 2, canvas.height - expBarHeight - 2, 'white', 12, 'center');
+
+                // Gold (Noah)
+                drawText(`Noah: ${player.gold}`, canvas.width - 10, 25, 'gold', 18, 'right');
+
+                // Stat Points
+                if (player.statPoints > 0) {
+                    drawText(`Stat Points: ${player.statPoints}`, canvas.width - 10, 50, 'yellow', 18, 'right');
+                }
+                // Skill Points
+                if (player.skillPoints > 0) {
+                    drawText(`Skill Points: ${player.skillPoints}`, canvas.width - 10, 75, 'yellow', 18, 'right');
+                }
+
+                // Skill Bar (bottom center)
+                const skillBarY = canvas.height - 70;
+                const skillIconSize = 40;
+                const skillBarStartX = canvas.width / 2 - (player.availableSkills.length * (skillIconSize + 5)) / 2;
+
+                player.availableSkills.forEach((skillName, index) => {
+                    const skill = player.skills[skillName];
+                    const x = skillBarStartX + index * (skillIconSize + 5);
+                    drawRect(x, skillBarY, skillIconSize, skillIconSize, 'rgba(0,0,0,0.5)'); // Background
+
+                    const cooldownRemaining = player.currentSkillCooldowns[skillName];
+                    if (cooldownRemaining > 0) {
+                        const cooldownRatio = cooldownRemaining / skill.cooldown;
+                        drawRect(x, skillBarY, skillIconSize, skillIconSize * cooldownRatio, 'rgba(100,100,100,0.7)'); // Cooldown overlay
+                        drawText((cooldownRemaining / 1000).toFixed(1), x + skillIconSize / 2, skillBarY + skillIconSize / 2 + 5, 'white', 14, 'center');
+                    }
+                    drawText(skillName[0].toUpperCase(), x + skillIconSize / 2, skillBarY + skillIconSize / 2 + 5, 'white', 18, 'center'); // First letter as icon
+                });
+
+
+                // In-game messages
+                let messageY = canvas.height / 2 - 100;
+                messages.forEach(msg => {
+                    const alpha = msg.duration / 3000; // Fade out over 3 seconds
+                    drawText(msg.text, canvas.width / 2, messageY, msg.color, 20, 'center', alpha);
+                    messageY += 25;
+                });
+            }
+
+            function drawInventoryScreen() {
+                drawRect(0, 0, canvas.width, canvas.height, 'rgba(0,0,0,0.8)'); // Dark overlay
+                player.inventory.draw(canvas.width / 2 - 200, canvas.height / 2 - 150); // Centered inventory
+
+                // Equipment display
+                const equipX = canvas.width / 2 + 50;
+                const equipY = canvas.height / 2 - 150;
+                drawText('Equipment', equipX + 75, equipY + 20, 'white', 20, 'center');
+                const slotSize = 40;
+                drawText('Weapon:', equipX, equipY + 50, 'white', 14, 'left');
+                drawRect(equipX + 60, equipY + 40, slotSize, slotSize, 'rgba(50,50,50,0.8)');
+                if (player.equipment.weapon) {
+                    drawRect(equipX + 62, equipY + 42, slotSize - 4, slotSize - 4, player.equipment.weapon.color);
+                    if (player.equipment.weapon.enchantmentLevel > 0) {
+                        applyShadow('yellow', 5, 0, 0);
+                        drawText(`+${player.equipment.weapon.enchantmentLevel}`, equipX + 60 + slotSize - 10, equipY + 40 + slotSize - 5, 'gold', 10, 'right');
+                        clearShadow();
+                    }
+                    drawText(player.equipment.weapon.name.substring(0, 3), equipX + 60 + slotSize / 2, equipY + 40 + slotSize / 2 + 5, 'white', 10, 'center');
+                }
+
+                drawText('Armor:', equipX, equipY + 100, 'white', 14, 'left');
+                drawRect(equipX + 60, equipY + 90, slotSize, slotSize, 'rgba(50,50,50,0.8)');
+                if (player.equipment.armor) {
+                    drawRect(equipX + 62, equipY + 92, slotSize - 4, slotSize - 4, player.equipment.armor.color);
+                    if (player.equipment.armor.enchantmentLevel > 0) {
+                        applyShadow('yellow', 5, 0, 0);
+                        drawText(`+${player.equipment.armor.enchantmentLevel}`, equipX + 60 + slotSize - 10, equipY + 90 + slotSize - 5, 'gold', 10, 'right');
+                        clearShadow();
+                    }
+                    drawText(player.equipment.armor.name.substring(0, 3), equipX + 60 + slotSize / 2, equipY + 90 + slotSize / 2 + 5, 'white', 10, 'center');
+                }
+            }
+
+            function drawUpgradeScreen() {
+                drawRect(0, 0, canvas.width, canvas.height, 'rgba(0,0,0,0.8)'); // Dark overlay
+
+                const anvilX = canvas.width / 2 - 150;
+                const anvilY = canvas.height / 2 - 100;
+                const anvilWidth = 300;
+                const anvilHeight = 200;
+
+                drawRect(anvilX, anvilY, anvilWidth, anvilHeight, 'rgba(50,50,50,0.9)');
+                drawText('Anvil (Upgrade Item)', anvilX + anvilWidth / 2, anvilY + 30, 'white', 24, 'center');
+
+                drawText('Drag item here', anvilX + anvilWidth / 2, anvilY + anvilHeight / 2, 'gray', 18, 'center');
+
+                // Display player inventory for selection
+                player.inventory.draw(anvilX - 220, anvilY); // Display inventory next to anvil
+            }
+
+            function drawQuestScreen() {
+                drawRect(0, 0, canvas.width, canvas.height, 'rgba(0,0,0,0.8)'); // Dark overlay
+                const panelX = canvas.width / 2 - 250;
+                const panelY = canvas.height / 2 - 200;
+                const panelWidth = 500;
+                const panelHeight = 400;
+
+                drawRect(panelX, panelY, panelWidth, panelHeight, 'rgba(0,0,0,0.7)');
+                drawText('Quest Log', panelX + panelWidth / 2, panelY + 30, 'white', 28, 'center');
+
+                let questDisplayY = panelY + 60;
+                quests.forEach(quest => {
+                    const color = quest.isClaimed ? 'gray' : (quest.isCompleted ? 'lime' : 'white');
+                    drawText(`${quest.name} (${quest.currentAmount}/${quest.requiredAmount})`, panelX + 30, questDisplayY, color, 18, 'left');
+                    drawText(quest.description, panelX + 50, questDisplayY + 20, 'lightgray', 14, 'left');
+                    drawText(`Reward: ${quest.rewardExp} EXP, ${quest.rewardGold} Noah`, panelX + 50, questDisplayY + 40, 'lightgray', 14, 'left');
+
+                    if (quest.isCompleted && !quest.isClaimed) {
+                        drawText('[Claim Reward]', panelX + panelWidth - 120, questDisplayY + 20, 'gold', 16, 'left');
+                    }
+                    questDisplayY += 70;
+                });
+            }
+
+            function drawDeathScreen() {
+                drawRect(0, 0, canvas.width, canvas.height, 'rgba(100,0,0,0.8)');
+                drawText('You Died!', canvas.width / 2, canvas.height / 2 - 50, 'white', 48, 'center');
+                drawText(`Respawning in ${(player.respawnTimer / 1000).toFixed(0)} seconds...`, canvas.width / 2, canvas.height / 2, 'lightgray', 24, 'center');
+            }
+
+            // --- Event Listeners ---
+            const keys = {};
+            window.addEventListener('keydown', (e) => {
+                keys[e.key] = true;
+                handleKeyPress(e.key);
+            });
+            window.addEventListener('keyup', (e) => {
+                keys[e.key] = false;
+            });
+
+            function handleKeyPress(key) {
+                switch (currentState) {
+                    case GAME_STATE.MENU:
+                        if (key === 's') {
+                            currentState = GAME_STATE.PLAYING;
+                            messages.push({ text: "Game Started! Good luck!", color: 'lime', duration: 2000 });
+                        } else if (key === 'l') {
+                            loadGame();
+                            currentState = GAME_STATE.PLAYING; // Assume if loaded, player wants to play
+                            messages.push({ text: "Game Loaded!", color: 'cyan', duration: 2000 });
+                        }
+                        break;
+                    case GAME_STATE.PLAYING:
+                        if (key === 'w') player.isMoving.up = true;
+                        if (key === 's') player.isMoving.down = true;
+                        if (key === 'a') player.isMoving.left = true;
+                        if (key === 'd') player.isMoving.right = true;
+                        if (key === 'i') currentState = GAME_STATE.INVENTORY;
+                        if (key === 'u') currentState = GAME_STATE.UPGRADE;
+                        if (key === 'q') currentState = GAME_STATE.QUESTS;
+                        if (key === '1') player.useSkill(player.availableSkills[0] || 'attack');
+                        if (key === '2') player.useSkill(player.availableSkills[1] || 'attack');
+                        if (key === '3') player.useSkill(player.availableSkills[2] || 'attack');
+                        if (key === '4') player.useSkill(player.availableSkills[3] || 'attack');
+                        if (key === ' ') player.useSkill('attack'); // Spacebar for basic attack
+                        // Stat point allocation (simplistic, just for example)
+                        if (key === 'p' && player.statPoints > 0) currentState = GAME_STATE.INVENTORY; // Go to inventory to show stats and buttons
+                        break;
+                    case GAME_STATE.INVENTORY:
+                    case GAME_STATE.UPGRADE:
+                    case GAME_STATE.QUESTS:
+                        if (key === 'escape' || key === 'i' || key === 'u' || key === 'q') {
+                            currentState = GAME_STATE.PLAYING; // Exit these screens
+                        }
+                        break;
+                    case GAME_STATE.DEAD:
+                        // Only respawn logic here, no other actions
+                        break;
+                }
+            }
+
+            window.addEventListener('keyup', (e) => {
+                if (currentState === GAME_STATE.PLAYING) {
+                    if (e.key === 'w') player.isMoving.up = false;
+                    if (e.key === 's') player.isMoving.down = false;
+                    if (e.key === 'a') player.isMoving.left = false;
+                    if (e.key === 'd') player.isMoving.right = false;
+                }
+            });
+
+            // Mouse Click Handling for UI
+            canvas.addEventListener('click', (e) => {
+                const mouseX = e.clientX - canvas.getBoundingClientRect().left;
+                const mouseY = e.clientY - canvas.getBoundingClientRect().top;
+
+                if (currentState === GAME_STATE.MENU) {
+                    // Check for start/load buttons (if they were drawn as clickable regions)
+                    // For now, rely on keyboard 's' and 'l'
+                } else if (currentState === GAME_STATE.INVENTORY) {
+                    const offsetX = canvas.width / 2 - 200;
+                    const offsetY = canvas.height / 2 - 150;
+                    const slotSize = 40;
+                    const padding = 10;
+                    const startX = offsetX + padding;
+                    const startY = offsetY + 40;
+
+                    for (let i = 0; i < player.inventory.slots.length; i++) {
+                        const row = Math.floor(i / 4);
+                        const col = i % 4;
+                        const x = startX + col * (slotSize + padding);
+                        const y = startY + row * (slotSize + padding);
+
+                        if (mouseX > x && mouseX < x + slotSize && mouseY > y && mouseY < y + slotSize) {
+                            player.inventory.useItem(i);
+                            return;
+                        }
+                    }
+                } else if (currentState === GAME_STATE.QUESTS) {
+                    const panelX = canvas.width / 2 - 250;
+                    const panelY = canvas.height / 2 - 200;
+                    const panelWidth = 500;
+
+                    let questDisplayY = panelY + 60;
+                    quests.forEach(quest => {
+                        if (quest.isCompleted && !quest.isClaimed) {
+                            const claimBtnX = panelX + panelWidth - 120;
+                            const claimBtnY = questDisplayY + 5;
+                            const claimBtnWidth = 100;
+                            const claimBtnHeight = 25;
+                            if (mouseX > claimBtnX && mouseX < claimBtnX + claimBtnWidth && mouseY > claimBtnY && mouseY < claimBtnY + claimBtnHeight) {
+                                quest.claimReward();
+                                return;
+                            }
+                        }
+                        questDisplayY += 70;
+                    });
+                }
+            });
+
+            // Mobile Controls
+            let joystickActive = false;
+            let joystickCenterX, joystickCenterY;
+            let joystickCurrentX, joystickCurrentY;
+
+            if (isMobile) {
+                const joystickDiv = document.getElementById('joystick');
+                const joystickHandleDiv = document.getElementById('joystick-handle');
+
+                joystickDiv.addEventListener('touchstart', (e) => {
+                    joystickActive = true;
+                    const touch = e.touches[0];
+                    const rect = joystickDiv.getBoundingClientRect();
+                    joystickCenterX = rect.left + rect.width / 2;
+                    joystickCenterY = rect.top + rect.height / 2;
+                    joystickCurrentX = touch.clientX;
+                    joystickCurrentY = touch.clientY;
+                    joystickHandleDiv.style.left = `${joystickCurrentX - rect.left}px`;
+                    joystickHandleDiv.style.top = `${joystickCurrentY - rect.top}px`;
+                });
+
+                joystickDiv.addEventListener('touchmove', (e) => {
+                    if (!joystickActive) return;
+                    const touch = e.touches[0];
+                    const rect = joystickDiv.getBoundingClientRect();
+
+                    let newX = touch.clientX;
+                    let newY = touch.clientY;
+
+                    const dist = distance(joystickCenterX, joystickCenterY, newX, newY);
+                    const maxDist = rect.width / 2 - joystickHandleDiv.offsetWidth / 2;
+
+                    if (dist > maxDist) {
+                        const angle = Math.atan2(newY - joystickCenterY, newX - joystickCenterX);
+                        newX = joystickCenterX + Math.cos(angle) * maxDist;
+                        newY = joystickCenterY + Math.sin(angle) * maxDist;
+                    }
+
+                    joystickHandleDiv.style.left = `${newX - rect.left}px`;
+                    joystickHandleDiv.style.top = `${newY - rect.top}px`;
+
+                    // Update player movement based on joystick handle position
+                    let dx = (newX - joystickCenterX) / maxDist;
+                    let dy = (newY - joystickCenterY) / maxDist;
+
+                    player.isMoving.up = dy < -0.1;
+                    player.isMoving.down = dy > 0.1;
+                    player.isMoving.left = dx < -0.1;
+                    player.isMoving.right = dx > 0.1;
+                });
+
+                joystickDiv.addEventListener('touchend', () => {
+                    joystickActive = false;
+                    joystickHandleDiv.style.left = '50%';
+                    joystickHandleDiv.style.top = '50%';
+                    player.isMoving.up = player.isMoving.down = player.isMoving.left = player.isMoving.right = false;
+                });
+
+                skillButtons.forEach(button => {
+                    button.addEventListener('touchend', (e) => {
+                        const skillName = e.currentTarget.dataset.skill;
+                        if (skillName === 'attack') player.useSkill('attack');
+                        if (skillName === 'skill1') player.useSkill(player.availableSkills[1] || 'attack');
+                        if (skillName === 'skill2') player.useSkill(player.availableSkills[2] || 'attack');
+                        if (skillName === 'skill3') player.useSkill(player.availableSkills[3] || 'attack');
+                    });
+                });
+            }
+
+            // --- Save/Load System ---
+            function saveGame() {
+                const gameData = {
+                    player: {
+                        x: player.x,
+                        y: player.y,
+                        level: player.level,
+                        exp: player.exp,
+                        expToNextLevel: player.expToNextLevel,
+                        statPoints: player.statPoints,
+                        skillPoints: player.skillPoints,
+                        gold: player.gold,
+                        baseStats: { ...player.baseStats },
+                        currentHP: player.currentHP,
+                        mana: player.mana,
+                        maxMana: player.maxMana,
+                        inventory: player.inventory.slots.map(item => item ? {
+                            name: item.name, type: item.type, color: item.color, value: item.value, stats: item.stats, enchantmentLevel: item.enchantmentLevel
+                        } : null),
+                        equipment: {
+                            weapon: player.equipment.weapon ? {
+                                name: player.equipment.weapon.name, type: player.equipment.weapon.type, color: player.equipment.weapon.color, value: player.equipment.weapon.value, stats: player.equipment.weapon.stats, enchantmentLevel: player.equipment.weapon.enchantmentLevel
+                            } : null,
+                            armor: player.equipment.armor ? {
+                                name: player.equipment.armor.name, type: player.equipment.armor.type, color: player.equipment.armor.color, value: player.equipment.armor.value, stats: player.equipment.armor.stats, enchantmentLevel: player.equipment.armor.enchantmentLevel
+                            } : null,
+                            accessory: player.equipment.accessory ? {
+                                name: player.equipment.accessory.name, type: player.equipment.accessory.type, color: player.equipment.accessory.color, value: player.equipment.accessory.value, stats: player.equipment.accessory.stats, enchantmentLevel: player.equipment.accessory.enchantmentLevel
+                            } : null
+                        },
+                        skillLevels: { ...player.skillLevels },
+                        availableSkills: [...player.availableSkills]
+                    },
+                    quests: quests.map(quest => ({
+                        id: quest.id,
+                        name: quest.name,
+                        description: quest.description,
+                        type: quest.type,
+                        target: quest.target,
+                        requiredAmount: quest.requiredAmount,
+                        currentAmount: quest.currentAmount,
+                        rewardExp: quest.rewardExp,
+                        rewardGold: quest.rewardGold,
+                        rewardItem: quest.rewardItem ? {
+                            name: quest.rewardItem.name, type: quest.rewardItem.type, color: quest.rewardItem.color, value: quest.rewardItem.value, stats: quest.rewardItem.stats, enchantmentLevel: quest.rewardItem.enchantmentLevel
+                        } : null,
+                        isCompleted: quest.isCompleted,
+                        isClaimed: quest.isClaimed
+                    })),
+                    // Mobs and items on map are volatile, not saved for simplicity
+                };
+                localStorage.setItem('genflowRpgSave', JSON.stringify(gameData));
+                messages.push({ text: "Game Saved!", color: 'lime', duration: 1500 });
+                console.log("Game Saved:", gameData);
+            }
+
+            function loadGame() {
+                const savedData = localStorage.getItem('genflowRpgSave');
+                if (savedData) {
+                    const gameData = JSON.parse(savedData);
+
+                    // Restore Player
+                    player.x = gameData.player.x;
+                    player.y = gameData.player.y;
+                    player.level = gameData.player.level;
+                    player.exp = gameData.player.exp;
+                    player.expToNextLevel = gameData.player.expToNextLevel;
+                    player.statPoints = gameData.player.statPoints;
+                    player.skillPoints = gameData.player.skillPoints;
+                    player.gold = gameData.player.gold;
+                    player.baseStats = { ...gameData.player.baseStats };
+                    player.currentHP = gameData.player.currentHP;
+                    player.mana = gameData.player.mana;
+                    player.maxMana = gameData.player.maxMana;
+
+                    player.inventory.slots = gameData.player.inventory.map(itemData => itemData ? new Item(itemData.name, itemData.type, itemData.color, itemData.value, itemData.stats, itemData.enchantmentLevel) : null);
+                    if (gameData.player.equipment.weapon) player.equipment.weapon = new Item(gameData.player.equipment.weapon.name, gameData.player.equipment.weapon.type, gameData.player.equipment.weapon.color, gameData.player.equipment.weapon.value, gameData.player.equipment.weapon.stats, gameData.player.equipment.weapon.enchantmentLevel);
+                    if (gameData.player.equipment.armor) player.equipment.armor = new Item(gameData.player.equipment.armor.name, gameData.player.equipment.armor.type, gameData.player.equipment.armor.color, gameData.player.equipment.armor.value, gameData.player.equipment.armor.stats, gameData.player.equipment.armor.enchantmentLevel);
+                    if (gameData.player.equipment.accessory) player.equipment.accessory = new Item(gameData.player.equipment.accessory.name, gameData.player.equipment.accessory.type, gameData.player.equipment.accessory.color, gameData.player.equipment.accessory.value, gameData.player.equipment.accessory.stats, gameData.player.equipment.accessory.enchantmentLevel);
+
+                    player.skillLevels = { ...gameData.player.skillLevels };
+                    player.availableSkills = [...gameData.player.availableSkills];
+
+                    // Restore Quests
+                    quests = gameData.quests.map(questData => {
+                        const q = new Quest(questData.id, questData.name, questData.description, questData.type, questData.target, questData.requiredAmount, questData.rewardExp, questData.rewardGold, questData.rewardItem ? new Item(questData.rewardItem.name, questData.rewardItem.type, questData.rewardItem.color, questData.rewardItem.value, questData.rewardItem.stats, questData.rewardItem.enchantmentLevel) : null);
+                        q.currentAmount = questData.currentAmount;
+                        q.isCompleted = questData.isCompleted;
+                        q.isClaimed = questData.isClaimed;
+                        return q;
+                    });
+                    messages.push({ text: "Game Loaded Successfully!", color: 'cyan', duration: 2000 });
+                } else {
+                    messages.push({ text: "No saved game found.", color: 'orange', duration: 2000 });
+                }
+            }
+
+
+            // Start the game after all initializations
+            initGame();
+            requestAnimationFrame(gameLoop);
+        }; // End of window.onload
+    </script>
 </body>
 </html>
+```
