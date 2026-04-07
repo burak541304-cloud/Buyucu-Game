@@ -2,257 +2,74 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Knight Online 2D</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Knight Online 2D - RPG</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0a0a0a; overflow: hidden; touch-action: none; position: fixed; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; }
-        #gameContainer { position: relative; width: 100%; height: 100%; max-width: 1400px; max-height: 800px; }
-        canvas { 
-            position: absolute; 
-            top: 50%; 
-            left: 50%; 
-            transform: translate(-50%, -50%); 
-            background: linear-gradient(180deg, #1a3d1a 0%, #0d2610 100%); 
-            border-radius: 8px; 
-            box-shadow: 0 0 30px rgba(0,0,0,0.8);
-            width: 960px;
-            height: 540px;
-            max-width: 100%;
-            max-height: 100%;
-        }
-        .hud { position: absolute; top: 10px; left: 10px; right: 10px; bottom: 10px; pointer-events: none; }
-        .panel { position: absolute; background: rgba(16, 26, 45, 0.85); border: 1px solid rgba(116, 180, 255, 0.45); border-radius: 10px; padding: 12px 16px; color: #e6efff; font-size: 13px; pointer-events: auto; }
-        #leftPanel { top: 0; left: 0; min-width: 200px; }
-        #questPanel { top: 0; right: 0; min-width: 180px; }
-        .title { font-weight: 600; color: #f8c447; margin-bottom: 6px; font-size: 14px; border-bottom: 1px solid rgba(116, 180, 255, 0.45); padding-bottom: 4px; }
-        .row { display: flex; justify-content: space-between; gap: 12px; margin: 3px 0; }
-        .row span { color: #9eb7de; }
-        .bar { height: 10px; background: rgba(255,255,255,0.1); border-radius: 5px; margin: 6px 0; overflow: hidden; }
-        #hpFill { background: #64e87f; height: 100%; display: block; }
-        #manaFill { background: #4ed0ff; height: 100%; display: block; }
-        #xpFill { background: #f8c447; height: 100%; display: block; }
-        #messagePanel { bottom: 120px; left: 50%; transform: translateX(-50%); max-width: 500px; text-align: center; font-size: 12px; }
-        #controlsHint { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); color: #9eb7de; font-size: 11px; opacity: 0.7; }
-        .death { position: absolute; inset: 0; background: rgba(0,0,0,0.85); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 100; pointer-events: auto; }
-        .death button { margin-top: 12px; padding: 10px 22px; border: 1px solid #ff6b6b; background: transparent; color: #ff6b6b; border-radius: 6px; cursor: pointer; }
-        #joystick { position: absolute; bottom: 20px; left: 20px; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; display: none; z-index: 50; }
-        #joystickKnob { position: absolute; width: 50px; height: 50px; background: rgba(74, 144, 226, 0.8); border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%, -50%); }
-        #skillButtons { position: absolute; bottom: 20px; right: 20px; display: none; grid-template-columns: repeat(2, 60px); gap: 10px; z-index: 50; }
-        .skillButton { width: 60px; height: 60px; background: rgba(255,255,255,0.15); border: 2px solid rgba(255,255,255,0.3); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 28px; }
-        #mobileControls { position: absolute; bottom: 20px; right: 160px; display: none; flex-direction: column; gap: 10px; z-index: 50; }
-        .mobileButton { width: 70px; height: 70px; background: rgba(255,255,255,0.15); border: 2px solid rgba(255,255,255,0.3); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 32px; }
-        #mobileMenu { position: absolute; top: 20px; right: 20px; z-index: 50; display: none; }
-        .menuButton { width: 50px; height: 50px; background: rgba(255,255,255,0.15); border: 2px solid rgba(255,255,255,0.3); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; }
-        #inventoryPanel { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 400px; height: 300px; background: rgba(16, 26, 45, 0.95); border: 2px solid rgba(116, 180, 255, 0.45); border-radius: 10px; padding: 15px; display: none; z-index: 200; }
-        #inventoryGrid { display: grid; grid-template-columns: repeat(5, 60px); gap: 8px; margin-top: 10px; }
-        .invSlot { width: 60px; height: 60px; background: rgba(255,255,255,0.1); border: 1px solid rgba(116, 180, 255, 0.3); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer; position: relative; }
-        .invSlot:hover { background: rgba(255,255,255,0.2); }
-        .itemCount { position: absolute; bottom: 2px; right: 4px; font-size: 11px; color: #f8c447; font-weight: bold; }
-        #shopPanel { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 350px; height: 400px; background: rgba(16, 26, 45, 0.95); border: 2px solid rgba(116, 180, 255, 0.45); border-radius: 10px; padding: 15px; display: none; z-index: 200; }
-        .shopItem { display: flex; justify-content: space-between; align-items: center; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 6px; margin-bottom: 8px; cursor: pointer; }
-        .shopItem:hover { background: rgba(255,255,255,0.15); }
-        #dialogPanel { position: absolute; bottom: 150px; left: 50%; transform: translateX(-50%); width: 500px; background: rgba(16, 26, 45, 0.95); border: 2px solid rgba(116, 180, 255, 0.45); border-radius: 10px; padding: 15px; display: none; z-index: 200; }
-        #skillTreePanel { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 450px; height: 350px; background: rgba(16, 26, 45, 0.95); border: 2px solid rgba(116, 180, 255, 0.45); border-radius: 10px; padding: 15px; display: none; z-index: 200; }
-        .skillNode { width: 70px; height: 70px; background: rgba(255,255,255,0.1); border: 2px solid rgba(116, 180, 255, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; cursor: pointer; position: relative; }
-        .skillNode.unlocked { background: rgba(74, 144, 226, 0.4); border-color: #4ed0ff; }
-        .skillPoints { position: absolute; top: 10px; right: 15px; color: #f8c447; font-weight: bold; }
-        .closeBtn { position: absolute; top: 8px; right: 12px; font-size: 20px; cursor: pointer; color: #ff6b6b; }
-        .equipPanel { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 8px; }
-        .equipSlot { width: 50px; height: 50px; background: rgba(255,255,255,0.1); border: 2px solid rgba(116, 180, 255, 0.3); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
-        .npc { position: absolute; background: #4a90e2; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer; z-index: 40; }
-        .lootItem { position: absolute; width: 25px; height: 25px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; z-index: 30; animation: bounce 1s infinite; }
-        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
-        #notification { position: absolute; top: 100px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: #f8c447; padding: 10px 20px; border-radius: 20px; display: none; z-index: 300; }
-        .hotbar { position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%); display: flex; gap: 5px; }
-        .hotbarSlot { width: 45px; height: 45px; background: rgba(255,255,255,0.1); border: 2px solid rgba(116, 180, 255, 0.3); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
-        .hotbarSlot.active { border-color: #f8c447; }
-        #minimap { position: absolute; top: 10px; right: 10px; width: 150px; height: 100px; background: rgba(0,0,0,0.7); border: 2px solid rgba(116, 180, 255, 0.45); border-radius: 8px; z-index: 50; }
-        #questLog { position: absolute; top: 120px; right: 10px; width: 200px; max-height: 200px; background: rgba(16, 26, 45, 0.9); border: 1px solid rgba(116, 180, 255, 0.45); border-radius: 8px; padding: 10px; font-size: 11px; display: none; }
-        .questEntry { padding: 5px; margin-bottom: 5px; background: rgba(255,255,255,0.05); border-radius: 4px; border-left: 3px solid #f8c447; }
-        .questComplete { border-left-color: #64e87f; opacity: 0.6; }
-        #statsPanel { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 300px; background: rgba(16, 26, 45, 0.95); border: 2px solid rgba(116, 180, 255, 0.45); border-radius: 10px; padding: 15px; display: none; z-index: 200; }
-        .statRow { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); }
-        .statRow:last-child { border-bottom: none; }
-        .statName { color: #9eb7de; }
-        .statValue { color: #f8c447; font-weight: bold; }
-        .bossBar { position: absolute; top: 50px; left: 50%; transform: translateX(-50%); width: 400px; height: 30px; background: rgba(0,0,0,0.8); border: 2px solid #ff6b6b; border-radius: 15px; overflow: hidden; display: none; z-index: 60; }
-        .bossBarFill { height: 100%; background: linear-gradient(90deg, #ff6b6b, #ff0000); transition: width 0.3s; }
-        .bossName { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #fff; font-weight: bold; font-size: 14px; text-shadow: 1px 1px 2px #000; }
-        #storyPanel { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 500; }
-        #storyText { max-width: 600px; text-align: center; font-size: 18px; line-height: 1.6; color: #e6efff; margin-bottom: 30px; padding: 20px; }
-        #storyBtn { padding: 15px 40px; background: rgba(116, 180, 255, 0.3); border: 2px solid #4ed0ff; color: #4ed0ff; border-radius: 8px; cursor: pointer; font-size: 16px; }
-        #zoneIndicator { position: absolute; top: 80px; left: 50%; transform: translateX(-50%); font-size: 16px; color: #f8c447; text-shadow: 1px 1px 2px #000; z-index: 50; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0a0a0a; overflow: hidden; font-family: 'Segoe UI', sans-serif; }
+        #gameContainer { width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; }
+        canvas { background: #1a3d1a; border: 2px solid #333; }
+        .hud { position: absolute; top: 10px; left: 10px; color: white; pointer-events: none; }
+        .panel { background: rgba(0,0,0,0.7); padding: 10px; border-radius: 8px; margin-bottom: 10px; }
+        .title { color: #f8c447; font-weight: bold; margin-bottom: 5px; }
+        .bar { height: 10px; background: #333; border-radius: 5px; margin: 5px 0; }
+        .hp { background: #64e87f; height: 100%; border-radius: 5px; }
+        .mana { background: #4ed0ff; height: 100%; border-radius: 5px; }
+        .xp { background: #f8c447; height: 100%; border-radius: 5px; }
+        #storyPanel { position: fixed; inset: 0; background: rgba(0,0,0,0.95); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; color: white; }
+        #storyText { font-size: 20px; max-width: 600px; text-align: center; margin-bottom: 20px; }
+        #storyBtn { padding: 15px 30px; background: #4ed0ff; border: none; border-radius: 8px; color: white; font-size: 16px; cursor: pointer; }
     </style>
 </head>
 <body>
     <div id="gameContainer">
         <canvas id="gameCanvas" width="960" height="540"></canvas>
         <div class="hud">
-            <div id="leftPanel" class="panel">
-                <div class="title">Karakter</div>
-                <div class="row"><span>Sinif</span><strong>Battle Mage</strong></div>
-                <div class="row"><span>Seviye</span><strong id="level">1</strong></div>
-                <div class="row"><span>Altin</span><strong id="gold">0</strong></div>
-                <div class="row"><span>Iksir</span><strong id="potion">3</strong></div>
-                <div class="bar"><span id="hpFill" style="width:100%"></span></div>
-                <div class="row"><span>HP</span><strong id="hpText">120 / 120</strong></div>
-                <div class="bar"><span id="manaFill" style="width:100%"></span></div>
-                <div class="row"><span>Mana</span><strong id="manaText">100 / 100</strong></div>
-                <div class="bar"><span id="xpFill" style="width:0%"></span></div>
-                <div class="row"><span>XP</span><strong id="xpText">0 / 100</strong></div>
+            <div class="panel">
+                <div class="title">Battle Mage - Seviye <span id="level">1</span></div>
+                <div>Altın: <span id="gold">0</span> | İksir: <span id="potion">3</span></div>
+                <div class="bar"><div class="hp" id="hpBar" style="width:100%"></div></div>
+                <div>HP: <span id="hp">120/120</span></div>
+                <div class="bar"><div class="mana" id="manaBar" style="width:100%"></div></div>
+                <div>Mana: <span id="mana">100/100</span></div>
+                <div class="bar"><div class="xp" id="xpBar" style="width:0%"></div></div>
+                <div>XP: <span id="xp">0/100</span></div>
             </div>
-            <div id="questPanel" class="panel">
-                <div class="title">Gorev</div>
-                <div class="row"><span>Hedef</span><strong id="questTarget">Goblin</strong></div>
-                <div class="row"><span>Ilerleme</span><strong id="questProgress">0 / 5</strong></div>
+            <div class="panel">
+                <div class="title">Görev: <span id="questTarget">Goblin</span></div>
+                <div>İlerleme: <span id="questProgress">0/5</span></div>
             </div>
-            <div id="zoneIndicator">Moradon Ormani</div>
-            <div id="minimap"></div>
-            <div id="questLog">
-                <div class="title">Gorev Gunlugu</div>
-                <div id="questList"></div>
+            <div class="panel" style="position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%);">
+                WASD: Hareket | SPACE: Kılıç | TIK: Buz | Q: İksir
             </div>
-            <div id="statsPanel">
-                <div class="closeBtn" onclick="toggleStats()">✕</div>
-                <div class="title">Karakter Stats</div>
-                <div class="statRow"><span class="statName">Guc (STR)</span><span class="statValue" id="strVal">10</span></div>
-                <div class="statRow"><span class="statName">Ceviklik (DEX)</span><span class="statValue" id="dexVal">10</span></div>
-                <div class="statRow"><span class="statName">Zeka (INT)</span><span class="statValue" id="intVal">10</span></div>
-                <div class="statRow"><span class="statName">Dayaniklilik (VIT)</span><span class="statValue" id="vitVal">10</span></div>
-                <div class="statRow"><span class="statName">Kritik Vurus</span><span class="statValue" id="critVal">5%</span></div>
-                <div class="statRow"><span class="statName">Kacma</span><span class="statValue" id="dodgeVal">5%</span></div>
-            </div>
-            <div class="bossBar" id="bossBar">
-                <div class="bossBarFill" id="bossHpFill" style="width:100%"></div>
-                <div class="bossName" id="bossName">DEV BOSS</div>
-            </div>
-            <div id="inventoryPanel">
-                <div class="closeBtn" onclick="toggleInventory()">✕</div>
-                <div class="title">Envanter</div>
-                <div id="inventoryGrid"></div>
-                <div style="margin-top: 10px; font-size: 12px; color: #9eb7de;">E: Eşya kullan | T: At</div>
-            </div>
-            <div id="shopPanel">
-                <div class="closeBtn" onclick="toggleShop()">✕</div>
-                <div class="title">Tuccar</div>
-                <div id="shopItems"></div>
-            </div>
-            <div id="dialogPanel">
-                <div class="closeBtn" onclick="closeDialog()">✕</div>
-                <div id="dialogText" style="margin-bottom: 10px;"></div>
-                <div id="dialogOptions"></div>
-            </div>
-            <div id="skillTreePanel">
-                <div class="closeBtn" onclick="toggleSkillTree()">✕</div>
-                <div class="title">Skill Agaci <span class="skillPoints" id="skillPoints">SP: 0</span></div>
-                <div style="display: flex; justify-content: center; gap: 20px; margin-top: 20px;">
-                    <div class="skillNode" id="skill1" onclick="unlockSkill('powerStrike')">⚔️</div>
-                    <div class="skillNode" id="skill2" onclick="unlockSkill('fireWave')">🔥</div>
-                    <div class="skillNode" id="skill3" onclick="unlockSkill('healAura')">💚</div>
-                    <div class="skillNode" id="skill4" onclick="unlockSkill('iceArmor')">❄️</div>
-                </div>
-            </div>
-            <div id="storyPanel">
-                <div id="storyText"></div>
-                <button id="storyBtn" onclick="advanceStory()">Devam Et</button>
-            </div>
-            <div id="messagePanel" class="panel">Moradon ovasina hos geldin!</div>
-            <div id="controlsHint">WASD: Hareket | Space: Kilic | Sol Tik: Buz | Q: Iksir | I: Envanter | K: Skill | T: Tuccar | E: NPC | C: Stats | L: Gorevler | F5: Kaydet | F9: Yukle</div>
         </div>
-        <div id="deathScreen" class="death">
-            <div class="title" style="font-size:22px; color:#ff6b6b;">Yenildin!</div>
-            <button id="respawnBtn">Kamp Diril</button>
+        <div id="storyPanel">
+            <div id="storyText"></div>
+            <button id="storyBtn">Devam Et</button>
         </div>
     </div>
-    <div id="joystick"><div id="joystickKnob"></div></div>
-    <div id="skillButtons">
-        <div class="skillButton" data-skill="1">🔥</div>
-        <div class="skillButton" data-skill="2">⚡</div>
-        <div class="skillButton" data-skill="3">💚</div>
-        <div class="skillButton" data-skill="4">❄️</div>
-    </div>
-    <div id="mobileControls">
-        <div class="mobileButton" data-action="attack">⚔️</div>
-        <div class="mobileButton" data-action="potion">🧪</div>
-    </div>
-    <div id="mobileMenu"><div class="menuButton">☰</div></div>
+
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-        const ui = {
-            level: document.getElementById('level'), gold: document.getElementById('gold'), potion: document.getElementById('potion'),
-            hpText: document.getElementById('hpText'), manaText: document.getElementById('manaText'), xpText: document.getElementById('xpText'),
-            hpFill: document.getElementById('hpFill'), manaFill: document.getElementById('manaFill'), xpFill: document.getElementById('xpFill'),
-            questTarget: document.getElementById('questTarget'), questProgress: document.getElementById('questProgress'),
-            messagePanel: document.getElementById('messagePanel'), deathScreen: document.getElementById('deathScreen'), respawnBtn: document.getElementById('respawnBtn')
-        };
-        let player = { x: 480, y: 270, hp: 120, maxHp: 120, mana: 100, maxMana: 100, xp: 0, xpNeed: 100, level: 1, gold: 0, potions: 3, speed: 2.5, damage: 25, alive: true };
-        let camera = { x: 0, y: 0 }, keys = {}, enemies = [], projectiles = [], particles = [], quest = { target: 'Goblin', killed: 0, need: 5 };
-        function resizeCanvas() { 
-            const container = document.getElementById('gameContainer'); 
-            const aspect = 16 / 9; 
-            let w = container.clientWidth, h = container.clientHeight; 
-            if (w / h > aspect) w = h * aspect; 
-            else h = w / aspect; 
-            canvas.style.width = w + 'px'; 
-            canvas.style.height = h + 'px';
-            canvas.width = 960;
-            canvas.height = 540;
-        }
-        function spawnEnemy() { const types = ['Goblin', 'Orc', 'Wolf']; const type = types[Math.floor(Math.random() * types.length)]; const angle = Math.random() * Math.PI * 2, dist = 300 + Math.random() * 200; enemies.push({ x: player.x + Math.cos(angle) * dist, y: player.y + Math.sin(angle) * dist, type: type, hp: type === 'Orc' ? 80 : type === 'Wolf' ? 50 : 40, maxHp: type === 'Orc' ? 80 : type === 'Wolf' ? 50 : 40, speed: type === 'Wolf' ? 1.8 : 1.2, damage: type === 'Orc' ? 15 : 10, alive: true, attackCooldown: 0 }); }
-        function drawPlayer() { const sx = canvas.width / 2, sy = canvas.height / 2; ctx.fillStyle = '#4a90e2'; ctx.beginPath(); ctx.arc(sx, sy, 18, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#f4d03f'; ctx.beginPath(); ctx.arc(sx, sy - 8, 12, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = '#c0c0c0'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(sx + 15, sy + 5); ctx.lineTo(sx + 35, sy - 10); ctx.stroke(); const hpPercent = player.hp / player.maxHp; ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(sx - 25, sy - 45, 50, 8); ctx.fillStyle = hpPercent > 0.5 ? '#64e87f' : '#ff6b6b'; ctx.fillRect(sx - 25, sy - 45, 50 * hpPercent, 8); }
-        function drawEnemy(enemy) { const sx = enemy.x - camera.x + canvas.width / 2, sy = enemy.y - camera.y + canvas.height / 2; if (sx < -50 || sx > canvas.width + 50 || sy < -50 || sy > canvas.height + 50) return; let color = '#8b4513'; if (enemy.type === 'Orc') color = '#2d5016'; if (enemy.type === 'Wolf') color = '#555'; ctx.fillStyle = color; ctx.beginPath(); ctx.arc(sx, sy, 16, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#ff0000'; ctx.beginPath(); ctx.arc(sx - 5, sy - 3, 3, 0, Math.PI * 2); ctx.arc(sx + 5, sy - 3, 3, 0, Math.PI * 2); ctx.fill(); const hpPercent = enemy.hp / enemy.maxHp; ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(sx - 20, sy - 40, 40, 6); ctx.fillStyle = '#ff6b6b'; ctx.fillRect(sx - 20, sy - 40, 40 * hpPercent, 6); ctx.fillStyle = '#fff'; ctx.font = '11px sans-serif'; ctx.textAlign = 'center'; ctx.fillText(enemy.type, sx, sy - 45); }
-        function drawMap() { const offsetX = -camera.x % 100, offsetY = -camera.y % 100; ctx.fillStyle = '#0d2610'; for (let x = offsetX; x < canvas.width; x += 100) { for (let y = offsetY; y < canvas.height; y += 100) { if ((Math.floor((x + camera.x) / 100) + Math.floor((y + camera.y) / 100)) % 2 === 0) ctx.fillRect(x - 50, y - 50, 100, 100); } } const trees = [{x: 200, y: 200}, {x: 600, y: 150}, {x: 800, y: 400}, {x: 100, y: 500}, {x: 700, y: 350}, {x: 300, y: 100}]; trees.forEach(tree => { const sx = tree.x - camera.x + canvas.width / 2, sy = tree.y - camera.y + canvas.height / 2; if (sx > -50 && sx < canvas.width + 50 && sy > -50 && sy < canvas.height + 50) { ctx.fillStyle = '#228b22'; ctx.beginPath(); ctx.arc(sx, sy, 30, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#8b4513'; ctx.fillRect(sx - 5, sy, 10, 25); } }); }
-        function drawProjectile(proj) { const sx = proj.x - camera.x + canvas.width / 2, sy = proj.y - camera.y + canvas.height / 2; ctx.fillStyle = proj.type === 'fireball' ? '#ff6600' : proj.type === 'lightning' ? '#ffff00' : '#00ccff'; ctx.beginPath(); ctx.arc(sx, sy, 8, 0, Math.PI * 2); ctx.fill(); }
-        function drawParticle(p) { const sx = p.x - camera.x + canvas.width / 2, sy = p.y - camera.y + canvas.height / 2; ctx.fillStyle = p.color; ctx.globalAlpha = p.life; ctx.beginPath(); ctx.arc(sx, sy, p.size, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1; }
-        function update() { if (!player.alive) return; let dx = 0, dy = 0; if (keys['w'] || keys['arrowup']) dy = -1; if (keys['s'] || keys['arrowdown']) dy = 1; if (keys['a'] || keys['arrowleft']) dx = -1; if (keys['d'] || keys['arrowright']) dx = 1; if (dx !== 0 || dy !== 0) { const len = Math.sqrt(dx * dx + dy * dy); player.x += (dx / len) * player.speed; player.y += (dy / len) * player.speed; } camera.x = player.x; camera.y = player.y; if (player.mana < player.maxMana) player.mana += 0.1; enemies.forEach(enemy => { if (!enemy.alive) return; const dist = Math.hypot(player.x - enemy.x, player.y - enemy.y); if (dist < 300 && dist > 40) { enemy.x += (player.x - enemy.x) / dist * enemy.speed; enemy.y += (player.y - enemy.y) / dist * enemy.speed; } if (dist < 40 && enemy.attackCooldown <= 0) { player.hp -= enemy.damage; enemy.attackCooldown = 60; addParticle(player.x, player.y, '#ff0000', 20); } if (enemy.attackCooldown > 0) enemy.attackCooldown--; }); projectiles.forEach(proj => { proj.x += proj.vx; proj.y += proj.vy; proj.life--; enemies.forEach(enemy => { if (!enemy.alive) return; const dist = Math.hypot(proj.x - enemy.x, proj.y - enemy.y); if (dist < 25) { enemy.hp -= proj.damage; addParticle(enemy.x, enemy.y, '#ff6600', 15); if (enemy.hp <= 0) { enemy.alive = false; killEnemy(enemy); } proj.life = 0; } }); }); projectiles = projectiles.filter(p => p.life > 0); particles.forEach(p => { p.x += p.vx; p.y += p.vy; p.life -= 0.02; }); particles = particles.filter(p => p.life > 0); enemies = enemies.filter(e => e.alive); if (enemies.length < 5 && Math.random() < 0.02) spawnEnemy(); if (player.hp <= 0) { player.alive = false; ui.deathScreen.style.display = 'flex'; } updateUI(); }
-        function killEnemy(enemy) { player.xp += 20; player.gold += 5; if (enemy.type === quest.target) { quest.killed++; if (quest.killed >= quest.need) { quest.killed = 0; quest.need += 2; player.gold += 50; player.xp += 100; pushMessage('Gorev tamamlandi! +50 altin, +100 XP'); } } for (let i = 0; i < 10; i++) addParticle(enemy.x, enemy.y, '#ffff00', 8); tryLevelUp(); }
-        function tryLevelUp() { if (player.xp >= player.xpNeed) { player.level++; player.xp -= player.xpNeed; player.xpNeed = Math.floor(player.xpNeed * 1.5); player.maxHp += 20; player.hp = player.maxHp; player.maxMana += 15; player.mana = player.maxMana; player.damage += 5; pushMessage('Seviye atladin! Seviye ' + player.level); } }
-        function addParticle(x, y, color, size) { particles.push({ x: x, y: y, vx: (Math.random() - 0.5) * 4, vy: (Math.random() - 0.5) * 4, life: 1, color: color, size: Math.random() * size / 2 + 2 }); }
-        function castSkill(type, tx, ty) { const costs = { fireball: 15, lightning: 20, heal: 25, icebolt: 12 }; if (player.mana < costs[type]) { pushMessage('Yetersiz mana!'); return; } if (type === 'heal') { player.hp = Math.min(player.hp + 50, player.maxHp); player.mana -= costs[type]; addParticle(player.x, player.y, '#00ff00', 20); return; } player.mana -= costs[type]; const angle = Math.atan2(ty - player.y, tx - player.x); const speeds = { fireball: 6, lightning: 10, icebolt: 5 }; const damages = { fireball: 35, lightning: 50, icebolt: 25 }; projectiles.push({ x: player.x, y: player.y, vx: Math.cos(angle) * speeds[type], vy: Math.sin(angle) * speeds[type], damage: damages[type], life: 100, type: type }); }
-        function meleeSlash() { enemies.forEach(enemy => { const dist = Math.hypot(player.x - enemy.x, player.y - enemy.y); if (dist < 60) { enemy.hp -= player.damage; addParticle(enemy.x, enemy.y, '#ff0000', 12); if (enemy.hp <= 0) { enemy.alive = false; killEnemy(enemy); } } }); }
-        function usePotion() { if (player.potions > 0 && player.hp < player.maxHp) { player.potions--; player.hp = Math.min(player.hp + 60, player.maxHp); addParticle(player.x, player.y, '#00ff00', 15); } }
-        function respawn() { player.x = 480; player.y = 270; player.hp = player.maxHp; player.mana = player.maxMana; player.alive = true; ui.deathScreen.style.display = 'none'; enemies = []; projectiles = []; pushMessage('Kamp alaninda dirildin!'); }
-        function pushMessage(msg) { ui.messagePanel.textContent = msg; }
-        function updateUI() { ui.level.textContent = player.level; ui.gold.textContent = player.gold; ui.potion.textContent = player.potions; ui.hpText.textContent = Math.floor(player.hp) + ' / ' + player.maxHp; ui.manaText.textContent = Math.floor(player.mana) + ' / ' + player.maxMana; ui.xpText.textContent = Math.floor(player.xp) + ' / ' + player.xpNeed; ui.hpFill.style.width = (player.hp / player.maxHp * 100) + '%'; ui.manaFill.style.width = (player.mana / player.maxMana * 100) + '%'; ui.xpFill.style.width = (player.xp / player.xpNeed * 100) + '%'; ui.questTarget.textContent = quest.target; ui.questProgress.textContent = quest.killed + ' / ' + quest.need; }
-        function draw() { ctx.clearRect(0, 0, canvas.width, canvas.height); drawMap(); particles.forEach(drawParticle); projectiles.forEach(drawProjectile); enemies.forEach(drawEnemy); if (player.alive) drawPlayer(); }
-        function gameLoop() { update(); draw(); requestAnimationFrame(gameLoop); }
-        window.addEventListener('keydown', e => { keys[e.key.toLowerCase()] = true; if (e.code === 'Space') meleeSlash(); if (e.key.toLowerCase() === 'q') usePotion(); if (e.key.toLowerCase() === 'c') toggleStats(); if (e.key.toLowerCase() === 'l') toggleQuestLog(); });
-        window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
-        canvas.addEventListener('click', e => { if (!player.alive) return; const rect = canvas.getBoundingClientRect(); const scaleX = canvas.width / rect.width; const scaleY = canvas.height / rect.height; const tx = (e.clientX - rect.left) * scaleX - canvas.width / 2 + camera.x; const ty = (e.clientY - rect.top) * scaleY - canvas.height / 2 + camera.y; castSkill('icebolt', tx, ty); });
-        ui.respawnBtn.addEventListener('click', respawn);
-        const joystick = document.getElementById('joystick'), joystickKnob = document.getElementById('joystickKnob');
-        let joystickActive = false, joystickCenter = { x: 0, y: 0 };
-        joystick.addEventListener('touchstart', e => { e.preventDefault(); joystickActive = true; const rect = joystick.getBoundingClientRect(); joystickCenter = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }; }, { passive: false });
-        joystick.addEventListener('touchmove', e => { e.preventDefault(); if (!joystickActive) return; const touch = e.touches[0]; let dx = touch.clientX - joystickCenter.x, dy = touch.clientY - joystickCenter.y; const dist = Math.sqrt(dx * dx + dy * dy); const maxDist = 35; if (dist > maxDist) { dx = (dx / dist) * maxDist; dy = (dy / dist) * maxDist; } joystickKnob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`; keys['w'] = dy < -10; keys['s'] = dy > 10; keys['a'] = dx < -10; keys['d'] = dx > 10; }, { passive: false });
-        joystick.addEventListener('touchend', e => { e.preventDefault(); joystickActive = false; joystickKnob.style.transform = 'translate(-50%, -50%)'; keys['w'] = keys['s'] = keys['a'] = keys['d'] = false; });
-        document.querySelectorAll('.skillButton').forEach(btn => { btn.addEventListener('touchstart', e => { e.preventDefault(); const skill = parseInt(btn.dataset.skill); const targets = ['fireball', 'lightning', 'heal', 'icebolt']; if (skill === 3) castSkill('heal', 0, 0); else castSkill(targets[skill - 1], player.x + 100, player.y); }, { passive: false }); });
-        document.querySelectorAll('.mobileButton').forEach(btn => { btn.addEventListener('touchstart', e => { e.preventDefault(); const action = btn.dataset.action; if (action === 'attack') meleeSlash(); if (action === 'potion') usePotion(); }, { passive: false }); });
         
-        // RPG Sistemleri - GENISLETILMIS
-        let inventory = Array(30).fill(null);
-        let lootItems = [];
-        let npcs = [
-            {x: 400, y: 300, type: 'merchant', name: 'Tuccar', dialog: 'Merhaba! Bir seyler almak ister misin?'},
-            {x: 550, y: 220, type: 'villager', name: 'Koylu', dialog: 'Goblinler koyu tehdit ediyor! Lutfen bizi koru.'},
-            {x: 800, y: 600, type: 'quest', name: 'Kahraman', dialog: 'Ejderha Kalesine git ve kizi kurtar!'}
-        ];
-        let skills = {powerStrike: false, fireWave: false, healAura: false, iceArmor: false, poisonBlade: false, thunderStrike: false};
-        let skillPoints = 0;
-        let equipment = {weapon: null, armor: null, helmet: null, accessory: null};
+        // OYUN DURUMU
+        const player = { x: 480, y: 270, hp: 120, maxHp: 120, mana: 100, maxMana: 100, xp: 0, xpNeed: 100, level: 1, gold: 0, potions: 3, speed: 2.5, damage: 25, alive: true };
+        const camera = { x: 480, y: 270 };
+        const keys = {};
+        let enemies = [];
+        let projectiles = [];
+        let particles = [];
+        let quest = { target: 'Goblin', killed: 0, need: 5 };
         
-        // DUNYA - 5000x5000
-        const WORLD_SIZE = 5000;
-        let currentBiome = 'forest';
-        const biomes = {
-            forest: {name: 'Moradon Ormani', color: '#1a3d1a', enemyTypes: ['Goblin', 'Wolf', 'Orc'], treeColor: '#228b22'},
-            desert: {name: 'Kumul Colu', color: '#c2b280', enemyTypes: ['Scorpion', 'Bandit', 'SandWorm'], treeColor: '#d4a574'},
-            snow: {name: 'Buzul Dagi', color: '#e0e0e0', enemyTypes: ['Yeti', 'IceWolf', 'FrostGiant'], treeColor: '#b0c4de'},
-            cave: {name: 'Karanlik Magara', color: '#2d2d2d', enemyTypes: ['Spider', 'Bat', 'DarkKnight'], treeColor: '#4a4a4a'}
+        // CANAVARLAR
+        const enemyTypes = {
+            Goblin: { hp: 40, damage: 8, speed: 1.2, xp: 15, gold: 3, color: '#8b4513', icon: '👺' },
+            Orc: { hp: 80, damage: 15, speed: 0.9, xp: 30, gold: 8, color: '#2d5016', icon: '👹' },
+            Wolf: { hp: 50, damage: 12, speed: 1.8, xp: 20, gold: 5, color: '#555', icon: '🐺' }
         };
         
-        // SES EFEKTLERI
+        // SES
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         function playSound(type) {
             if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -261,275 +78,320 @@
             osc.connect(gain);
             gain.connect(audioCtx.destination);
             const now = audioCtx.currentTime;
-            switch(type) {
-                case 'sword': osc.type='square'; osc.frequency.setValueAtTime(150, now); osc.frequency.exponentialRampToValueAtTime(40, now+0.15); gain.gain.setValueAtTime(0.3, now); gain.gain.exponentialRampToValueAtTime(0.01, now+0.15); osc.start(now); osc.stop(now+0.15); break;
-                case 'hit': osc.type='sawtooth'; osc.frequency.setValueAtTime(200, now); osc.frequency.exponentialRampToValueAtTime(50, now+0.1); gain.gain.setValueAtTime(0.2, now); gain.gain.exponentialRampToValueAtTime(0.01, now+0.1); osc.start(now); osc.stop(now+0.1); break;
-                case 'fireball': osc.type='sine'; osc.frequency.setValueAtTime(400, now); osc.frequency.exponentialRampToValueAtTime(100, now+0.3); gain.gain.setValueAtTime(0.2, now); gain.gain.exponentialRampToValueAtTime(0.01, now+0.3); osc.start(now); osc.stop(now+0.3); break;
-                case 'levelup': [523, 659, 784, 1047].forEach((f, i) => { const o=audioCtx.createOscillator(), g=audioCtx.createGain(); o.connect(g); g.connect(audioCtx.destination); o.type='sine'; o.frequency.value=f; g.gain.setValueAtTime(0.2, now+i*0.1); g.gain.exponentialRampToValueAtTime(0.01, now+i*0.1+0.15); o.start(now+i*0.1); o.stop(now+i*0.1+0.15); }); break;
-                case 'coin': osc.type='sine'; osc.frequency.setValueAtTime(1200, now); osc.frequency.exponentialRampToValueAtTime(2000, now+0.1); gain.gain.setValueAtTime(0.15, now); gain.gain.exponentialRampToValueAtTime(0.01, now+0.1); osc.start(now); osc.stop(now+0.1); break;
-                case 'heal': osc.type='triangle'; osc.frequency.setValueAtTime(300, now); osc.frequency.linearRampToValueAtTime(600, now+0.3); gain.gain.setValueAtTime(0.2, now); gain.gain.exponentialRampToValueAtTime(0.01, now+0.3); osc.start(now); osc.stop(now+0.3); break;
+            if (type === 'sword') {
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.exponentialRampToValueAtTime(40, now + 0.15);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                osc.start(now);
+                osc.stop(now + 0.15);
             }
         }
         
-        // 12+ CANAVAR TURU
-        const enemyTypes = {
-            Goblin: {hp: 40, damage: 8, speed: 1.2, xp: 15, gold: 3, color: '#8b4513', icon: '👺', isBoss: false},
-            Orc: {hp: 80, damage: 15, speed: 0.9, xp: 30, gold: 8, color: '#2d5016', icon: '👹', isBoss: false},
-            Wolf: {hp: 50, damage: 12, speed: 1.8, xp: 20, gold: 5, color: '#555', icon: '🐺', isBoss: false},
-            Scorpion: {hp: 35, damage: 10, speed: 1.0, xp: 18, gold: 4, color: '#8b0000', icon: '🦂', isBoss: false},
-            Bandit: {hp: 60, damage: 14, speed: 1.3, xp: 25, gold: 10, color: '#800080', icon: '🥷', isBoss: false},
-            SandWorm: {hp: 100, damage: 20, speed: 0.7, xp: 50, gold: 15, color: '#d2691e', icon: '🐛', isBoss: false},
-            Yeti: {hp: 120, damage: 18, speed: 0.8, xp: 60, gold: 20, color: '#fff', icon: '❄️', isBoss: false},
-            IceWolf: {hp: 70, damage: 14, speed: 1.6, xp: 35, gold: 8, color: '#b0e0e6', icon: '🐺', isBoss: false},
-            FrostGiant: {hp: 200, damage: 25, speed: 0.5, xp: 100, gold: 40, color: '#4682b4', icon: '🧊', isBoss: true},
-            Spider: {hp: 30, damage: 8, speed: 1.1, xp: 12, gold: 3, color: '#2f4f4f', icon: '🕷️', isBoss: false},
-            Bat: {hp: 25, damage: 6, speed: 2.0, xp: 10, gold: 2, color: '#4b0082', icon: '🦇', isBoss: false},
-            DarkKnight: {hp: 150, damage: 22, speed: 0.9, xp: 80, gold: 30, color: '#191970', icon: '🛡️', isBoss: true},
-            Dragon: {hp: 500, damage: 40, speed: 0.6, xp: 500, gold: 200, color: '#ff0000', icon: '🐲', isBoss: true}
-        };
-        
-        // HIKAYE GOREVLERI
-        let quests = [
-            {id: 1, name: 'Goblin Avi', desc: '5 Goblin oldur', target: 'Goblin', count: 0, need: 5, completed: false, reward: {gold: 50, xp: 100}},
-            {id: 2, name: 'Koyun Koruyucusu', desc: '10 Wolf oldur', target: 'Wolf', count: 0, need: 10, completed: false, reward: {gold: 80, xp: 150}},
-            {id: 3, name: 'Col Macerasi', desc: 'Col bolgesine git ve 3 Bandit oldur', target: 'Bandit', count: 0, need: 3, completed: false, reward: {gold: 100, xp: 200}},
-            {id: 4, name: 'Buzul Tehlikesi', desc: 'Frost Giant oldur', target: 'FrostGiant', count: 0, need: 1, completed: false, reward: {gold: 200, xp: 500}},
-            {id: 5, name: 'Ejderha Avi', desc: 'Ejderhayi oldur ve prensesi kurtar!', target: 'Dragon', count: 0, need: 1, completed: false, reward: {gold: 1000, xp: 2000}}
-        ];
-        let activeQuest = 0;
-        
-        // STAT SISTEMI
-        let stats = {str: 10, dex: 10, int: 10, vit: 10};
-        let statPoints = 0;
-        
-        function updateBiome() {
-            const distFromCenter = Math.hypot(player.x - 2500, player.y - 2500);
-            if (distFromCenter < 1000) currentBiome = 'forest';
-            else if (distFromCenter < 2000) currentBiome = 'desert';
-            else if (distFromCenter < 3500) currentBiome = 'snow';
-            else currentBiome = 'cave';
-            document.getElementById('zoneIndicator').textContent = biomes[currentBiome].name;
-        }
-        
-        function spawnEnemy() {
-            const biomeData = biomes[currentBiome];
-            const type = biomeData.enemyTypes[Math.floor(Math.random() * biomeData.enemyTypes.length)];
-            const data = enemyTypes[type];
-            const angle = Math.random() * Math.PI * 2;
-            const dist = 300 + Math.random() * 300;
-            const ex = player.x + Math.cos(angle) * dist;
-            const ey = player.y + Math.sin(angle) * dist;
-            if (ex < 0 || ex > WORLD_SIZE || ey < 0 || ey > WORLD_SIZE) return;
-            enemies.push({
-                x: ex, y: ey, type: type, hp: data.hp, maxHp: data.hp,
-                speed: data.speed, damage: data.damage, alive: true,
-                attackCooldown: 0, xp: data.xp, gold: data.gold,
-                isBoss: data.isBoss, icon: data.icon, color: data.color
-            });
-        }
-        
-        function drawEnemy(enemy) {
-            const sx = enemy.x - camera.x + canvas.width / 2;
-            const sy = enemy.y - camera.y + canvas.height / 2;
-            if (sx < -60 || sx > canvas.width + 60 || sy < -60 || sy > canvas.height + 60) return;
-            ctx.fillStyle = enemy.color;
-            ctx.beginPath();
-            const size = enemy.isBoss ? 35 : 18;
-            ctx.arc(sx, sy, size, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.font = (enemy.isBoss ? '32px' : '20px') + ' sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText(enemy.icon, sx, sy + 8);
-            if (enemy.isBoss) {
-                ctx.fillStyle = '#ff0000';
-                ctx.fillRect(sx - 40, sy - 55, 80, 10);
-                ctx.fillStyle = '#64e87f';
-                ctx.fillRect(sx - 40, sy - 55, 80 * (enemy.hp / enemy.maxHp), 10);
-            }
-        }
-        
-        function drawMap() {
-            const biome = biomes[currentBiome];
-            ctx.fillStyle = biome.color;
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            const offsetX = -camera.x % 150;
-            const offsetY = -camera.y % 150;
-            ctx.fillStyle = 'rgba(0,0,0,0.1)';
-            for (let x = offsetX; x < canvas.width; x += 150) {
-                for (let y = offsetY; y < canvas.height; y += 150) {
-                    if ((Math.floor((x + camera.x) / 150) + Math.floor((y + camera.y) / 150)) % 2 === 0) {
-                        ctx.fillRect(x - 75, y - 75, 150, 150);
-                    }
-                }
-            }
-            for (let i = 0; i < 15; i++) {
-                const tx = (i * 347 + camera.x * 0.1) % (WORLD_SIZE);
-                const ty = (i * 523 + camera.y * 0.1) % (WORLD_SIZE);
-                const sx = tx - camera.x + canvas.width / 2;
-                const sy = ty - camera.y + canvas.height / 2;
-                if (sx > -60 && sx < canvas.width + 60 && sy > -60 && sy < canvas.height + 60) {
-                    ctx.fillStyle = biome.treeColor;
-                    ctx.beginPath();
-                    ctx.arc(sx, sy, 35, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-            }
-        }
-        
-        function drawMinimap() {
-            const mm = document.getElementById('minimap');
-            const mctx = mm.getContext ? mm.getContext('2d') : null;
-            if (!mctx) return;
-            mctx.fillStyle = '#000';
-            mctx.fillRect(0, 0, 150, 100);
-            const scaleX = 150 / WORLD_SIZE;
-            const scaleY = 100 / WORLD_SIZE;
-            mctx.fillStyle = '#0f0';
-            mctx.beginPath();
-            mctx.arc(player.x * scaleX, player.y * scaleY, 3, 0, Math.PI * 2);
-            mctx.fill();
-            mctx.fillStyle = '#f00';
-            enemies.forEach(e => {
-                mctx.beginPath();
-                mctx.arc(e.x * scaleX, e.y * scaleY, 2, 0, Math.PI * 2);
-                mctx.fill();
-            });
-        }
-        
-        function checkQuestProgress(enemyType) {
-            const quest = quests[activeQuest];
-            if (quest && !quest.completed && quest.target === enemyType) {
-                quest.count++;
-                if (quest.count >= quest.need) {
-                    quest.completed = true;
-                    player.gold += quest.reward.gold;
-                    player.xp += quest.reward.xp;
-                    showNotification(`Gorev tamamlandi: ${quest.name}! +${quest.reward.gold}🪙 +${quest.reward.xp}XP`);
-                    playSound('levelup');
-                    if (activeQuest < quests.length - 1) activeQuest++;
-                }
-                updateQuestUI();
-            }
-        }
-        
-        function updateQuestUI() {
-            const list = document.getElementById('questList');
-            list.innerHTML = '';
-            quests.forEach(q => {
-                const div = document.createElement('div');
-                div.className = 'questEntry' + (q.completed ? ' questComplete' : '');
-                div.innerHTML = `<strong>${q.name}</strong><br>${q.desc}<br>${q.count}/${q.need}`;
-                list.appendChild(div);
-            });
-        }
-        
-        function toggleQuestLog() {
-            const panel = document.getElementById('questLog');
-            panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-            if (panel.style.display === 'block') updateQuestUI();
-        }
-        
-        function toggleStats() {
-            const panel = document.getElementById('statsPanel');
-            panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-            if (panel.style.display === 'block') {
-                document.getElementById('strVal').textContent = stats.str;
-                document.getElementById('dexVal').textContent = stats.dex;
-                document.getElementById('intVal').textContent = stats.int;
-                document.getElementById('vitVal').textContent = stats.vit;
-                document.getElementById('critVal').textContent = Math.floor(5 + (stats.dex - 10) * 0.5) + '%';
-                document.getElementById('dodgeVal').textContent = Math.floor(5 + (stats.dex - 10) * 0.3) + '%';
-            }
-        }
-        
-        // HIKAYE SISTEMI
-        let storyIndex = 0;
+        // HIKAYE
         const storyLines = [
             "Moradon Kralligi'nda esrarengiz bir karanlik yukseliyor...",
             "Koyluler korku icinde, goblinler her gece saldiriyor.",
             "Sen, son Battle Mage, kralligin son umudusun!",
-            "Ejderha Kalesi'ne git, karanligin kaynagini yok et!",
-            "WASD ile hareket et, I ile envanterini ac, K ile skill agacina eris."
+            "Hemen goblin avina basla!"
         ];
+        let storyIndex = 0;
         
         function showStory() {
             document.getElementById('storyPanel').style.display = 'flex';
-            advanceStory();
+            document.getElementById('storyText').textContent = storyLines[storyIndex];
         }
         
         function advanceStory() {
+            storyIndex++;
             if (storyIndex < storyLines.length) {
-                document.getElementById('storyText').textContent = storyLines[storyIndex++];
+                document.getElementById('storyText').textContent = storyLines[storyIndex];
             } else {
                 document.getElementById('storyPanel').style.display = 'none';
             }
         }
         
-        // OVERRIDE - Yeni sistemlerle birlestir
-        const originalKillEnemy = killEnemy;
-        killEnemy = function(enemy) {
-            playSound('hit');
-            originalKillEnemy(enemy);
-            checkQuestProgress(enemy.type);
-            if (enemy.isBoss) {
-                document.getElementById('bossBar').style.display = 'none';
-            }
-        };
+        document.getElementById('storyBtn').addEventListener('click', advanceStory);
         
-        const originalMeleeSlash = meleeSlash;
-        meleeSlash = function() {
+        // CANAVAR URET
+        function spawnEnemy() {
+            const types = ['Goblin', 'Orc', 'Wolf'];
+            const type = types[Math.floor(Math.random() * types.length)];
+            const data = enemyTypes[type];
+            const angle = Math.random() * Math.PI * 2;
+            const dist = 150 + Math.random() * 100;
+            enemies.push({
+                x: player.x + Math.cos(angle) * dist,
+                y: player.y + Math.sin(angle) * dist,
+                type: type, hp: data.hp, maxHp: data.hp,
+                speed: data.speed, damage: data.damage, alive: true,
+                attackCooldown: 0, xp: data.xp, gold: data.gold,
+                icon: data.icon, color: data.color
+            });
+        }
+        
+        // CIzIM
+        function drawMap() {
+            ctx.fillStyle = '#0d2610';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#1a3d1a';
+            for (let x = 0; x < canvas.width; x += 100) {
+                for (let y = 0; y < canvas.height; y += 100) {
+                    if ((Math.floor((x + camera.x) / 100) + Math.floor((y + camera.y) / 100)) % 2 === 0) {
+                        ctx.fillRect(x, y, 100, 100);
+                    }
+                }
+            }
+        }
+        
+        function drawPlayer() {
+            const sx = canvas.width / 2;
+            const sy = canvas.height / 2;
+            ctx.fillStyle = '#4a90e2';
+            ctx.beginPath();
+            ctx.arc(sx, sy, 18, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#f4d03f';
+            ctx.beginPath();
+            ctx.arc(sx, sy - 8, 12, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#c0c0c0';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(sx + 15, sy + 5);
+            ctx.lineTo(sx + 35, sy - 10);
+            ctx.stroke();
+        }
+        
+        function drawEnemy(enemy) {
+            const sx = enemy.x - camera.x + canvas.width / 2;
+            const sy = enemy.y - camera.y + canvas.height / 2;
+            if (sx < -50 || sx > canvas.width + 50 || sy < -50 || sy > canvas.height + 50) return;
+            ctx.fillStyle = enemy.color;
+            ctx.beginPath();
+            ctx.arc(sx, sy, 16, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.font = '18px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(enemy.icon, sx, sy + 6);
+        }
+        
+        function drawProjectile(proj) {
+            const sx = proj.x - camera.x + canvas.width / 2;
+            const sy = proj.y - camera.y + canvas.height / 2;
+            ctx.fillStyle = '#00ccff';
+            ctx.beginPath();
+            ctx.arc(sx, sy, 8, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        
+        function drawParticle(p) {
+            const sx = p.x - camera.x + canvas.width / 2;
+            const sy = p.y - camera.y + canvas.height / 2;
+            ctx.fillStyle = p.color;
+            ctx.globalAlpha = p.life;
+            ctx.beginPath();
+            ctx.arc(sx, sy, p.size, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalAlpha = 1;
+        }
+        
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawMap();
+            particles.forEach(drawParticle);
+            projectiles.forEach(drawProjectile);
+            enemies.forEach(drawEnemy);
+            if (player.alive) drawPlayer();
+        }
+        
+        // GUNCELLEME
+        function update() {
+            if (!player.alive) return;
+            
+            let dx = 0, dy = 0;
+            if (keys['w'] || keys['arrowup']) dy = -1;
+            if (keys['s'] || keys['arrowdown']) dy = 1;
+            if (keys['a'] || keys['arrowleft']) dx = -1;
+            if (keys['d'] || keys['arrowright']) dx = 1;
+            if (dx !== 0 || dy !== 0) {
+                const len = Math.sqrt(dx * dx + dy * dy);
+                player.x += (dx / len) * player.speed;
+                player.y += (dy / len) * player.speed;
+            }
+            
+            camera.x = player.x;
+            camera.y = player.y;
+            
+            if (player.mana < player.maxMana) player.mana += 0.1;
+            
+            enemies.forEach(enemy => {
+                if (!enemy.alive) return;
+                const dist = Math.hypot(player.x - enemy.x, player.y - enemy.y);
+                if (dist < 300 && dist > 40) {
+                    enemy.x += (player.x - enemy.x) / dist * enemy.speed;
+                    enemy.y += (player.y - enemy.y) / dist * enemy.speed;
+                }
+                if (dist < 40 && enemy.attackCooldown <= 0) {
+                    player.hp -= enemy.damage;
+                    enemy.attackCooldown = 60;
+                    addParticle(player.x, player.y, '#ff0000', 20);
+                }
+                if (enemy.attackCooldown > 0) enemy.attackCooldown--;
+            });
+            
+            projectiles.forEach(proj => {
+                proj.x += proj.vx;
+                proj.y += proj.vy;
+                proj.life--;
+                enemies.forEach(enemy => {
+                    if (!enemy.alive) return;
+                    const dist = Math.hypot(proj.x - enemy.x, proj.y - enemy.y);
+                    if (dist < 25) {
+                        enemy.hp -= proj.damage;
+                        addParticle(enemy.x, enemy.y, '#ff6600', 15);
+                        if (enemy.hp <= 0) killEnemy(enemy);
+                        proj.life = 0;
+                    }
+                });
+            });
+            projectiles = projectiles.filter(p => p.life > 0);
+            
+            particles.forEach(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life -= 0.02;
+            });
+            particles = particles.filter(p => p.life > 0);
+            enemies = enemies.filter(e => e.alive);
+            
+            if (enemies.length < 5 && Math.random() < 0.02) spawnEnemy();
+            
+            if (player.hp <= 0) {
+                player.alive = false;
+                alert('Yenildin! Sayfa yenilenecek.');
+                location.reload();
+            }
+            
+            updateUI();
+        }
+        
+        function killEnemy(enemy) {
+            enemy.alive = false;
             playSound('sword');
-            originalMeleeSlash();
-        };
-        
-        const originalTryLevelUp = tryLevelUp;
-        tryLevelUp = function() {
-            const prevLevel = player.level;
-            originalTryLevelUp();
-            if (player.level > prevLevel) {
-                skillPoints++;
-                statPoints += 3;
-                playSound('levelup');
-                showNotification(`Seviye ${player.level}! 3 stat point, 1 skill point!`);
+            player.xp += enemy.xp;
+            player.gold += enemy.gold;
+            addParticle(enemy.x, enemy.y, '#ffff00', 10);
+            
+            if (enemy.type === quest.target) {
+                quest.killed++;
+                if (quest.killed >= quest.need) {
+                    quest.killed = 0;
+                    quest.need += 2;
+                    player.gold += 50;
+                    player.xp += 100;
+                    alert('Görev tamamlandı! +50 altın, +100 XP');
+                }
             }
-        };
+            
+            if (player.xp >= player.xpNeed) {
+                player.level++;
+                player.xp -= player.xpNeed;
+                player.xpNeed = Math.floor(player.xpNeed * 1.5);
+                player.maxHp += 20;
+                player.hp = player.maxHp;
+                player.maxMana += 15;
+                player.mana = player.maxMana;
+                player.damage += 5;
+                alert('Seviye atladın! Seviye ' + player.level);
+            }
+        }
         
-        const originalUsePotion = usePotion;
-        usePotion = function() {
-            playSound('heal');
-            originalUsePotion();
-        };
+        function addParticle(x, y, color, size) {
+            particles.push({
+                x: x, y: y,
+                vx: (Math.random() - 0.5) * 4,
+                vy: (Math.random() - 0.5) * 4,
+                life: 1, color: color,
+                size: Math.random() * size / 2 + 2
+            });
+        }
         
-        const originalDraw = draw;
-        draw = function() {
-            originalDraw();
-            drawLoot();
-            drawNPCs();
-        };
+        function updateUI() {
+            document.getElementById('level').textContent = player.level;
+            document.getElementById('gold').textContent = player.gold;
+            document.getElementById('potion').textContent = player.potions;
+            document.getElementById('hp').textContent = Math.floor(player.hp) + '/' + player.maxHp;
+            document.getElementById('mana').textContent = Math.floor(player.mana) + '/' + player.maxMana;
+            document.getElementById('xp').textContent = Math.floor(player.xp) + '/' + player.xpNeed;
+            document.getElementById('hpBar').style.width = (player.hp / player.maxHp * 100) + '%';
+            document.getElementById('manaBar').style.width = (player.mana / player.maxMana * 100) + '%';
+            document.getElementById('xpBar').style.width = (player.xp / player.xpNeed * 100) + '%';
+            document.getElementById('questTarget').textContent = quest.target;
+            document.getElementById('questProgress').textContent = quest.killed + '/' + quest.need;
+        }
         
-        const originalUpdate = update;
-        update = function() {
-            originalUpdate();
-            pickupLoot();
-            updateBiome();
-            if (Math.random() < 0.015) spawnEnemy();
-            enemies.forEach(e => {
-                if (e.isBoss && e.alive) {
-                    document.getElementById('bossBar').style.display = 'block';
-                    document.getElementById('bossName').textContent = e.type;
-                    document.getElementById('bossHpFill').style.width = (e.hp / e.maxHp * 100) + '%';
+        function meleeSlash() {
+            enemies.forEach(enemy => {
+                const dist = Math.hypot(player.x - enemy.x, player.y - enemy.y);
+                if (dist < 60) {
+                    enemy.hp -= player.damage;
+                    addParticle(enemy.x, enemy.y, '#ff0000', 12);
+                    if (enemy.hp <= 0) killEnemy(enemy);
                 }
             });
-        };
+        }
         
-        // Baslangic
+        function usePotion() {
+            if (player.potions > 0 && player.hp < player.maxHp) {
+                player.potions--;
+                player.hp = Math.min(player.hp + 60, player.maxHp);
+                addParticle(player.x, player.y, '#00ff00', 15);
+            }
+        }
+        
+        function castSkill(tx, ty) {
+            if (player.mana < 12) return;
+            player.mana -= 12;
+            const angle = Math.atan2(ty - player.y, tx - player.x);
+            projectiles.push({
+                x: player.x, y: player.y,
+                vx: Math.cos(angle) * 5,
+                vy: Math.sin(angle) * 5,
+                damage: 25, life: 100
+            });
+        }
+        
+        window.addEventListener('keydown', e => {
+            keys[e.key.toLowerCase()] = true;
+            if (e.code === 'Space') meleeSlash();
+            if (e.key.toLowerCase() === 'q') usePotion();
+        });
+        
+        window.addEventListener('keyup', e => {
+            keys[e.key.toLowerCase()] = false;
+        });
+        
+        canvas.addEventListener('click', e => {
+            if (!player.alive) return;
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const tx = (e.clientX - rect.left) * scaleX - canvas.width / 2 + camera.x;
+            const ty = (e.clientY - rect.top) * scaleY - canvas.height / 2 + camera.y;
+            castSkill(tx, ty);
+        });
+        
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // BASLAT
         showStory();
-        resizeCanvas(); 
-        window.addEventListener('resize', resizeCanvas); 
-        for (let i = 0; i < 5; i++) spawnEnemy(); 
-        pushMessage('Moradon ovasina hos geldin! Goblin avla!'); 
-        updateInventoryUI();
-        updateQuestUI();
+        for (let i = 0; i < 3; i++) spawnEnemy();
         gameLoop();
     </script>
 </body>
