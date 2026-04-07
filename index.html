@@ -1,1526 +1,2743 @@
-```html
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Genflow's Ultimate RPG Engine</title>
-    <style>
-        body { margin: 0; overflow: hidden; background-color: #333; display: flex; justify-content: center; align-items: center; height: 100vh; }
-        canvas { border: 1px solid #000; background-color: #000; }
-        #mobileControls {
-            position: absolute;
-            bottom: 10px;
-            left: 10px;
-            display: none; /* Will be shown if isMobile is true */
-        }
-        #joystick {
-            width: 100px;
-            height: 100px;
-            background-color: rgba(255, 255, 255, 0.2);
-            border-radius: 50%;
-            position: relative;
-            float: left;
-        }
-        #joystick-handle {
-            width: 40px;
-            height: 40px;
-            background-color: rgba(255, 255, 255, 0.7);
-            border-radius: 50%;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-        }
-        #skillBar {
-            float: right;
-            margin-left: 20px;
-            display: flex;
-        }
-        .skillButton {
-            width: 50px;
-            height: 50px;
-            background-color: rgba(0, 0, 0, 0.5);
-            border: 2px solid #fff;
-            border-radius: 5px;
-            margin: 0 5px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: #fff;
-            font-size: 14px;
-            cursor: pointer;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Knight Online RPG</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#000; overflow:hidden; font-family:'Segoe UI',Arial,sans-serif; }
+#c { display:block; touch-action:none; }
+#ui { position:fixed; top:0; left:0; pointer-events:none; }
+</style>
 </head>
 <body>
-    <canvas id="gameCanvas"></canvas>
-    <div id="mobileControls">
-        <div id="joystick">
-            <div id="joystick-handle"></div>
-        </div>
-        <div id="skillBar">
-            <div class="skillButton" data-skill="attack">A</div>
-            <div class="skillButton" data-skill="skill1">1</div>
-            <div class="skillButton" data-skill="skill2">2</div>
-            <div class="skillButton" data-skill="skill3">3</div>
-        </div>
-    </div>
+<canvas id="c"></canvas>
+<script>
+window.onload = function() {
+'use strict';
 
-    <script>
-        // Genflow: The super assistant of Terabox is starting the RPG engine!
+// === CONSTANTS ===
+const W = window.innerWidth, H = window.innerHeight;
+const WORLD_W = 5000, WORLD_H = 5000;
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+canvas.width = W; canvas.height = H;
 
-        window.onload = function() {
-            const canvas = document.getElementById('gameCanvas');
-            const ctx = canvas.getContext('2d');
+// === ITEM DEFINITIONS ===
+const ITEM_DEFS = {
+  rusty_sword:    { name:'Rusty Sword',    type:'weapon', atk:8,   color:'#888', symbol:'S' },
+  iron_sword:     { name:'Iron Sword',     type:'weapon', atk:18,  color:'#aaa', symbol:'S' },
+  steel_sword:    { name:'Steel Sword',    type:'weapon', atk:32,  color:'#cce', symbol:'S' },
+  war_axe:        { name:'War Axe',        type:'weapon', atk:45,  color:'#c84', symbol:'A' },
+  dark_blade:     { name:'Dark Blade',     type:'weapon', atk:65,  color:'#60a', symbol:'D' },
+  excalibur:      { name:'Excalibur',      type:'weapon', atk:95,  color:'#fd0', symbol:'E' },
+  leather_helm:   { name:'Leather Helm',   type:'head',   def:5,   hp:20,  color:'#864', symbol:'H' },
+  iron_helm:      { name:'Iron Helm',      type:'head',   def:12,  hp:40,  color:'#aaa', symbol:'H' },
+  knight_helm:    { name:'Knight Helm',    type:'head',   def:22,  hp:80,  color:'#46a', symbol:'H' },
+  leather_vest:   { name:'Leather Vest',   type:'chest',  def:8,   hp:30,  color:'#864', symbol:'V' },
+  iron_plate:     { name:'Iron Plate',     type:'chest',  def:20,  hp:80,  color:'#aaa', symbol:'P' },
+  knight_armor:   { name:'Knight Armor',   type:'chest',  def:38,  hp:150, color:'#46a', symbol:'A' },
+  leather_pants:  { name:'Leather Pants',  type:'legs',   def:6,   hp:20,  color:'#864', symbol:'L' },
+  iron_greaves:   { name:'Iron Greaves',   type:'legs',   def:15,  hp:50,  color:'#aaa', symbol:'G' },
+  leather_boots:  { name:'Leather Boots',  type:'boots',  def:4,   hp:15,  color:'#864', symbol:'B' },
+  iron_boots:     { name:'Iron Boots',     type:'boots',  def:10,  hp:30,  color:'#aaa', symbol:'B' },
+  hp_potion_s:    { name:'HP Potion S',    type:'potion', heal:100, color:'#f44', symbol:'!' },
+  hp_potion_m:    { name:'HP Potion M',    type:'potion', heal:300, color:'#f22', symbol:'!' },
+  hp_potion_l:    { name:'HP Potion L',    type:'potion', heal:600, color:'#f00', symbol:'!' },
+  mp_potion_s:    { name:'MP Potion S',    type:'potion', mp:80,   color:'#44f', symbol:'?' },
+  mp_potion_m:    { name:'MP Potion M',    type:'potion', mp:200,  color:'#22f', symbol:'?' },
+  elixir:         { name:'Elixir',         type:'potion', atk_buff:0.3, color:'#f8f', symbol:'X' },
+  worm_slime:     { name:'Worm Slime',     type:'material', color:'#4a4', symbol:'W' },
+  wolf_fang:      { name:'Wolf Fang',      type:'material', color:'#ddd', symbol:'F' },
+  bone_shard:     { name:'Bone Shard',     type:'material', color:'#eee', symbol:'O' },
+  stone_heart:    { name:'Stone Heart',    type:'material', color:'#888', symbol:'T' },
+  harpy_feather:  { name:'Harpy Feather',  type:'material', color:'#6af', symbol:'Y' },
+  troll_blood:    { name:'Troll Blood',    type:'material', color:'#4a2', symbol:'R' },
+  noah_bag:       { name:'Noah Bag',       type:'currency', value:200, color:'#fd0', symbol:'$' },
+};
 
-            if (!ctx) {
-                console.error("Canvas context not available. Aborting game initialization.");
-                return; // Zero-Black Screen protocol: Ensure context exists before proceeding.
+const SKILL_DEFS = {
+  slash:       { id:'slash',       name:'Slash',       unlockLv:5,  maxLv:5, cd:3,  mp:15, color:'#f80', desc:'Cone attack 80px, 150%-300% dmg' },
+  shield_bash: { id:'shield_bash', name:'Shield Bash', unlockLv:10, maxLv:5, cd:6,  mp:20, color:'#48f', desc:'Stun 1-2s + damage' },
+  charge:      { id:'charge',      name:'Charge',      unlockLv:20, maxLv:5, cd:8,  mp:25, color:'#ff0', desc:'Rush 250px, hit enemies in path' },
+  whirlwind:   { id:'whirlwind',   name:'Whirlwind',   unlockLv:30, maxLv:5, cd:10, mp:40, color:'#0dd', desc:'AoE 100px radius' },
+  war_cry:     { id:'war_cry',     name:'War Cry',     unlockLv:40, maxLv:5, cd:30, mp:35, color:'#f22', desc:'+15-40% ATK+DEF buff 8-20s' },
+  earthquake:  { id:'earthquake',  name:'Earthquake',  unlockLv:50, maxLv:5, cd:15, mp:60, color:'#a64', desc:'AoE 150px, massive dmg + knockback' },
+  blade_storm: { id:'blade_storm', name:'Blade Storm', unlockLv:60, maxLv:5, cd:25, mp:80, color:'#a0f', desc:'Ultimate AoE 200px, 4x-10x dmg' },
+};
+const SKILL_ORDER = ['slash','shield_bash','charge','whirlwind','war_cry','earthquake','blade_storm'];
+
+const QUEST_DEFS = [
+  { id:'pest_control', name:'Pest Control',      desc:'Kill 10 Worms',       unlockLv:1,  killType:'worm',     killCount:10, rewards:{ exp:200,  noah:150,  items:['hp_potion_s','hp_potion_s','hp_potion_s','hp_potion_s','hp_potion_s'] } },
+  { id:'wolf_hunt',    name:'Wolf Hunt',          desc:'Kill 10 Wolves',      unlockLv:5,  killType:'wolf',     killCount:10, rewards:{ exp:600,  noah:400,  items:['leather_vest'] } },
+  { id:'undead_purge', name:'Undead Purge',       desc:'Kill 15 Skeletons',   unlockLv:15, killType:'skeleton', killCount:15, rewards:{ exp:1500, noah:800,  items:['iron_sword'] } },
+  { id:'stone_giants', name:'Stone Giants',       desc:'Kill 8 Golems',       unlockLv:25, killType:'golem',    killCount:8,  rewards:{ exp:3000, noah:2000, items:['iron_plate'] } },
+  { id:'sky_terror',   name:'Sky Terror',         desc:'Kill 12 Harpies',     unlockLv:22, killType:'harpy',    killCount:12, rewards:{ exp:4000, noah:2500, items:['steel_sword'] } },
+  { id:'troll_slayer', name:'Troll Slayer',       desc:'Kill 5 Trolls',       unlockLv:40, killType:'troll',    killCount:5,  rewards:{ exp:10000,noah:6000, items:['war_axe','elixir','elixir','elixir'] } },
+  { id:'merchants_req',name:"Merchant's Request", desc:'Collect 500 Noah',    unlockLv:1,  collectNoah:500,                  rewards:{ exp:800,  noah:200,  items:['hp_potion_m','hp_potion_m','hp_potion_m','hp_potion_m','hp_potion_m'] } },
+];
+
+const MOB_DEFS = {
+  worm:     { name:'Worm',     level:1,  hp:60,   atk:6,   def:2,  speed:60,  aggroRange:150, attackRange:30, attackSpeed:1.2, exp:15,  noah:5,  color:'#4a4',
+              zone:{x1:0,y1:0,x2:2000,y2:2000}, loot:[{id:'worm_slime',chance:0.70},{id:'hp_potion_s',chance:0.15}] },
+  wolf:     { name:'Wolf',     level:8,  hp:180,  atk:18,  def:5,  speed:120, aggroRange:250, attackRange:40, attackSpeed:1.0, exp:45,  noah:15, color:'#876',
+              zone:{x1:800,y1:0,x2:2500,y2:2000}, loot:[{id:'wolf_fang',chance:0.60},{id:'hp_potion_s',chance:0.25},{id:'leather_helm',chance:0.05}] },
+  skeleton: { name:'Skeleton', level:18, hp:350,  atk:32,  def:12, speed:80,  aggroRange:200, attackRange:45, attackSpeed:1.4, exp:100, noah:25, color:'#ddd',
+              zone:{x1:1800,y1:500,x2:3500,y2:2500}, loot:[{id:'bone_shard',chance:0.75},{id:'hp_potion_m',chance:0.20},{id:'iron_helm',chance:0.06},{id:'iron_sword',chance:0.03}] },
+  golem:    { name:'Golem',    level:32, hp:1200, atk:65,  def:35, speed:50,  aggroRange:180, attackRange:55, attackSpeed:2.0, exp:280, noah:50, color:'#a86',
+              zone:{x1:2500,y1:1500,x2:4500,y2:3500}, loot:[{id:'stone_heart',chance:0.50},{id:'hp_potion_m',chance:0.30},{id:'iron_plate',chance:0.08},{id:'steel_sword',chance:0.04}] },
+  harpy:    { name:'Harpy',    level:28, hp:500,  atk:55,  def:18, speed:160, aggroRange:350, attackRange:45, attackSpeed:0.9, exp:200, noah:40, color:'#68a',
+              zone:{x1:1500,y1:2000,x2:4000,y2:4000}, loot:[{id:'harpy_feather',chance:0.65},{id:'mp_potion_m',chance:0.25},{id:'iron_greaves',chance:0.06}] },
+  troll:    { name:'Troll',    level:48, hp:3500, atk:120, def:55, speed:70,  aggroRange:220, attackRange:65, attackSpeed:2.2, exp:600, noah:80, color:'#4a2',
+              zone:{x1:3000,y1:3000,x2:5000,y2:5000}, loot:[{id:'troll_blood',chance:0.60},{id:'hp_potion_l',chance:0.35},{id:'war_axe',chance:0.08},{id:'dark_blade',chance:0.03},{id:'noah_bag',chance:0.50}] },
+};
+
+
+// === UTILITY FUNCTIONS ===
+function rnd(a,b){ return a + Math.random()*(b-a); }
+function rndInt(a,b){ return Math.floor(rnd(a,b+1)); }
+function clamp(v,mn,mx){ return Math.max(mn,Math.min(mx,v)); }
+function dist(a,b){ return Math.hypot(a.x-b.x,a.y-b.y); }
+function angle(a,b){ return Math.atan2(b.y-a.y,b.x-a.x); }
+function lerpColor(c1,c2,t){
+  const p=(s)=>parseInt(s,16);
+  const r1=p(c1.slice(1,3)),g1=p(c1.slice(3,5)),b1=p(c1.slice(5,7));
+  const r2=p(c2.slice(1,3)),g2=p(c2.slice(3,5)),b2=p(c2.slice(5,7));
+  return '#'+[r1+(r2-r1)*t,g1+(g2-g1)*t,b1+(b2-b1)*t].map(v=>Math.round(v).toString(16).padStart(2,'0')).join('');
+}
+function drawRoundRect(ctx,x,y,w,h,r,fill,stroke){
+  ctx.beginPath();
+  ctx.roundRect(x,y,w,h,r);
+  if(fill){ctx.fillStyle=fill;ctx.fill();}
+  if(stroke){ctx.strokeStyle=stroke;ctx.stroke();}
+}
+function worldToScreen(wx,wy,cam){
+  return { x: wx - cam.x + W/2, y: wy - cam.y + H/2 };
+}
+
+// === CAMERA ===
+class Camera {
+  constructor(){ this.x=500; this.y=500; }
+  follow(target, dt){
+    const spd = 8;
+    this.x += (target.x - this.x) * spd * dt;
+    this.y += (target.y - this.y) * spd * dt;
+    this.x = clamp(this.x, W/2, WORLD_W - W/2);
+    this.y = clamp(this.y, H/2, WORLD_H - H/2);
+  }
+}
+
+// === ITEM ===
+class Item {
+  constructor(id, enhance=0){
+    this.id = id;
+    this.enhance = enhance;
+    const def = ITEM_DEFS[id];
+    if(!def) { this.valid=false; return; }
+    this.valid = true;
+    Object.assign(this, def);
+    this.name = def.name;
+  }
+  getDisplayName(){
+    if(this.enhance>0) return this.name + ' +'+this.enhance;
+    return this.name;
+  }
+  getEnhancedAtk(){ return (this.atk||0) + this.enhance*3; }
+  getEnhancedDef(){ return (this.def||0) + this.enhance*2; }
+  getEnhancedHp(){ return (this.hp||0) + this.enhance*5; }
+  getGlowColor(){
+    if(this.enhance>=10) return null; // rainbow handled specially
+    if(this.enhance>=9) return '#f80';
+    if(this.enhance>=8) return '#a0f';
+    if(this.enhance>=7) return '#44f';
+    return null;
+  }
+  serialize(){ return { id:this.id, enhance:this.enhance }; }
+  static deserialize(d){ return d ? new Item(d.id, d.enhance||0) : null; }
+}
+
+// === INVENTORY ===
+class Inventory {
+  constructor(){
+    this.slots = new Array(24).fill(null);
+    this.equipment = { weapon:null, head:null, chest:null, legs:null, boots:null };
+    this.noah = 0;
+  }
+  addItem(item){
+    for(let i=0;i<24;i++){
+      if(!this.slots[i]){ this.slots[i]=item; return true; }
+    }
+    return false;
+  }
+  removeItem(idx){ this.slots[idx]=null; }
+  equip(idx, player){
+    const item = this.slots[idx];
+    if(!item) return;
+    const equipTypes = ['weapon','head','chest','legs','boots'];
+    if(!equipTypes.includes(item.type)) return;
+    const slot = item.type;
+    const old = this.equipment[slot];
+    this.equipment[slot] = item;
+    this.slots[idx] = old;
+    player.recalcStats();
+  }
+  unequip(slot, player){
+    const item = this.equipment[slot];
+    if(!item) return;
+    if(this.addItem(item)){ this.equipment[slot]=null; player.recalcStats(); }
+  }
+  usePotion(idx, player){
+    const item = this.slots[idx];
+    if(!item) return false;
+    if(item.type === 'potion'){
+      if(item.heal){ player.hp = Math.min(player.maxHp, player.hp + item.heal); G.particles.spawn('heal',player.x,player.y,'+'+item.heal); }
+      if(item.mp){ player.mp = Math.min(player.maxMp, player.mp + item.mp); G.particles.spawn('heal',player.x,player.y,'+'+item.mp+' MP'); }
+      if(item.atk_buff){ player.atkBuff = item.atk_buff; player.atkBuffTimer = 30; }
+      this.slots[idx] = null;
+      return true;
+    }
+    if(item.type === 'currency'){
+      this.noah += item.value||0;
+      this.slots[idx] = null;
+      return true;
+    }
+    return false;
+  }
+  getEquipBonus(){
+    let atk=0,def=0,hp=0;
+    for(const slot in this.equipment){
+      const it = this.equipment[slot];
+      if(it){ atk+=it.getEnhancedAtk(); def+=it.getEnhancedDef(); hp+=it.getEnhancedHp(); }
+    }
+    return {atk,def,hp};
+  }
+  serialize(){
+    return {
+      slots: this.slots.map(s=>s?s.serialize():null),
+      equipment: Object.fromEntries(Object.entries(this.equipment).map(([k,v])=>[k,v?v.serialize():null])),
+      noah: this.noah
+    };
+  }
+  static deserialize(d){
+    const inv = new Inventory();
+    if(!d) return inv;
+    if(d.slots) inv.slots = d.slots.map(s=>s?Item.deserialize(s):null);
+    if(d.equipment) for(const k in d.equipment) inv.equipment[k] = d.equipment[k]?Item.deserialize(d.equipment[k]):null;
+    inv.noah = d.noah||0;
+    return inv;
+  }
+}
+
+// === PLAYER ===
+class Player {
+  constructor(){
+    this.x = 500; this.y = 500;
+    this.level = 1; this.exp = 0; this.expNext = 100;
+    this.str = 10; this.dex = 10; this.int = 5;
+    this.statPoints = 0; this.skillPoints = 0;
+    this.atkBuff = 0; this.atkBuffTimer = 0;
+    this.inventory = new Inventory();
+    this.inventory.addItem(new Item('rusty_sword'));
+    this.inventory.addItem(new Item('hp_potion_s'));
+    this.inventory.addItem(new Item('hp_potion_s'));
+    this.recalcStats();
+    this.hp = this.maxHp; this.mp = this.maxMp;
+    this.moveTarget = null;
+    this.dx = 0; this.dy = 0;
+    this.attackTimer = 0;
+    this.attackSpeed = 1.5;
+    this.facingAngle = 0;
+    this.stunTimer = 0;
+    this.chargeTimer = 0;
+    this.chargeVx = 0; this.chargeVy = 0;
+    this.warCryTimer = 0; this.warCryAtk = 0; this.warCryDef = 0;
+    this.animFrame = 0;
+    this.swingAnim = 0;
+  }
+  recalcStats(){
+    const bonus = this.inventory.getEquipBonus();
+    this.maxHp = 200 + this.str*10 + bonus.hp;
+    this.maxMp = 100 + this.int*8;
+    this.baseAtk = 10 + this.str*2 + bonus.atk;
+    this.baseDef = 5 + this.str*0.5 + bonus.def;
+    this.critChance = 0.05 + this.dex*0.002;
+    this.speed = 180;
+    if(this.hp !== undefined) this.hp = Math.min(this.hp, this.maxHp);
+    if(this.mp !== undefined) this.mp = Math.min(this.mp, this.maxMp);
+  }
+  getAtk(){
+    let a = this.baseAtk;
+    if(this.atkBuff>0) a *= (1+this.atkBuff);
+    return a;
+  }
+  getDef(){ return this.baseDef + (this.warCryDef||0); }
+  expNeeded(lv){ return Math.floor(100 * Math.pow(1.4, lv-1)); }
+  gainExp(amount){
+    this.exp += amount;
+    G.particles.spawn('exp', this.x, this.y-30, '+'+amount+' EXP');
+    while(this.exp >= this.expNext){
+      this.exp -= this.expNext;
+      this.level++;
+      this.expNext = this.expNeeded(this.level);
+      this.statPoints += 5;
+      this.skillPoints += 1;
+      this.recalcStats();
+      this.hp = Math.min(this.hp + 50, this.maxHp);
+      this.mp = Math.min(this.mp + 30, this.maxMp);
+      G.particles.spawn('levelup', this.x, this.y, 'LEVEL UP!');
+      if(G.state==='playing') G.pendingStatScreen = true;
+    }
+  }
+  update(dt, keys, mobs){
+    this.animFrame += dt;
+    if(this.stunTimer>0){ this.stunTimer-=dt; return; }
+    if(this.atkBuffTimer>0){ this.atkBuffTimer-=dt; if(this.atkBuffTimer<=0){this.atkBuff=0;} }
+    if(this.warCryTimer>0){ this.warCryTimer-=dt; if(this.warCryTimer<=0){this.warCryAtk=0;this.warCryDef=0;} }
+
+    // Charge movement
+    if(this.chargeTimer>0){
+      this.chargeTimer -= dt;
+      this.x = clamp(this.x + this.chargeVx*dt, 0, WORLD_W);
+      this.y = clamp(this.y + this.chargeVy*dt, 0, WORLD_H);
+      return;
+    }
+
+    let vx=0,vy=0;
+    // Joystick
+    if(G.joystick && G.joystick.active){
+      vx = G.joystick.nx; vy = G.joystick.ny;
+    }
+    // WASD
+    if(keys['KeyW']||keys['ArrowUp']) vy=-1;
+    if(keys['KeyS']||keys['ArrowDown']) vy=1;
+    if(keys['KeyA']||keys['ArrowLeft']) vx=-1;
+    if(keys['KeyD']||keys['ArrowRight']) vx=1;
+
+    if(vx!==0||vy!==0){
+      const len=Math.hypot(vx,vy)||1;
+      vx/=len; vy/=len;
+      this.moveTarget=null;
+    }
+
+    // Click to move
+    if(this.moveTarget){
+      const d=dist(this,this.moveTarget);
+      if(d<8){ this.moveTarget=null; }
+      else {
+        const ang=angle(this,this.moveTarget);
+        vx=Math.cos(ang); vy=Math.sin(ang);
+      }
+    }
+
+    if(vx!==0||vy!==0){
+      this.facingAngle = Math.atan2(vy,vx);
+      this.x = clamp(this.x + vx*this.speed*dt, 0, WORLD_W);
+      this.y = clamp(this.y + vy*this.speed*dt, 0, WORLD_H);
+    }
+
+    // Auto-attack
+    this.attackTimer -= dt;
+    if(this.attackTimer<=0){
+      let nearest=null, nearestDist=Infinity;
+      for(const mob of mobs){
+        if(mob.dead) continue;
+        const d=dist(this,mob);
+        if(d<200 && d<nearestDist){ nearestDist=d; nearest=mob; }
+      }
+      if(nearest){
+        this.attackTimer = this.attackSpeed;
+        this.swingAnim = 0.3;
+        this.facingAngle = angle(this, nearest);
+        const dmg = this.calcDamage(nearest);
+        nearest.takeDamage(dmg.dmg, dmg.crit);
+      }
+    }
+    if(this.swingAnim>0) this.swingAnim -= dt*3;
+  }
+  calcDamage(target){
+    let atk = this.getAtk();
+    const crit = Math.random()<this.critChance;
+    if(crit) atk *= 2;
+    const dmg = Math.max(1, Math.floor(atk - (target.def||0)*0.4 + rnd(-3,3)));
+    return {dmg, crit};
+  }
+  takeDamage(amount){
+    const def = this.getDef();
+    const reduced = Math.max(1, Math.floor(amount - def*0.5));
+    this.hp -= reduced;
+    G.particles.spawn('damage', this.x, this.y-20, '-'+reduced);
+    G.particles.spawn('hit', this.x, this.y, '');
+    if(this.hp<=0){ this.hp=0; G.changeState('dead'); }
+    return reduced;
+  }
+  draw(cam){
+    const s = worldToScreen(this.x, this.y, cam);
+    const sx=s.x, sy=s.y;
+    if(sx<-50||sx>W+50||sy<-50||sy>H+50) return;
+    ctx.save();
+    ctx.translate(sx,sy);
+    const facing = this.facingAngle;
+    // Shadow
+    ctx.fillStyle='rgba(0,0,0,0.3)';
+    ctx.beginPath();
+    ctx.ellipse(0,16,12,5,0,0,Math.PI*2);
+    ctx.fill();
+    // Legs
+    const legAnim = Math.sin(this.animFrame*8)*4;
+    ctx.fillStyle='#335';
+    ctx.fillRect(-6,8,5,14+legAnim);
+    ctx.fillRect(1,8,5,14-legAnim);
+    // Body
+    ctx.fillStyle='#357';
+    ctx.fillRect(-8,-10,16,22);
+    // Knight chest detail
+    ctx.fillStyle='rgba(100,150,255,0.3)';
+    ctx.fillRect(-6,-8,12,10);
+    // Sword on right side
+    const swingOff = this.swingAnim * 60;
+    ctx.save();
+    ctx.rotate(facing + swingOff);
+    ctx.fillStyle='#ccc';
+    ctx.fillRect(8,-2,22,4);
+    ctx.fillStyle='#a84';
+    ctx.fillRect(8,-5,4,10);
+    ctx.restore();
+    // Head (gold circle)
+    ctx.fillStyle='#d4a';
+    ctx.beginPath();
+    ctx.arc(0,-18,10,0,Math.PI*2);
+    ctx.fill();
+    // Helmet
+    ctx.fillStyle='#46a';
+    ctx.beginPath();
+    ctx.arc(0,-20,11,Math.PI,0);
+    ctx.fill();
+    ctx.fillRect(-11,-20,22,5);
+    // Eyes
+    ctx.fillStyle='#0ff';
+    ctx.fillRect(-4,-19,3,2);
+    ctx.fillRect(1,-19,3,2);
+    ctx.restore();
+  }
+}
+
+
+// === MOB CLASS ===
+class Mob {
+  constructor(type, x, y){
+    this.type = type;
+    const def = MOB_DEFS[type];
+    Object.assign(this, def);
+    this.x = x; this.y = y;
+    this.spawnX = x; this.spawnY = y;
+    this.hp = def.hp; this.maxHp = def.hp;
+    this.state = 'idle';
+    this.wanderTimer = rnd(1,4);
+    this.wanderX = x; this.wanderY = y;
+    this.attackTimer = 0;
+    this.dead = false;
+    this.deadTimer = 0;
+    this.respawnTimer = 0;
+    this.damaged = false;
+    this.stunTimer = 0;
+    this.knockbackVx = 0; this.knockbackVy = 0; this.knockbackTimer = 0;
+    this.animTimer = 0;
+    this.lootDropped = false;
+  }
+  update(dt, player){
+    this.animTimer += dt;
+    if(this.knockbackTimer>0){
+      this.knockbackTimer-=dt;
+      this.x = clamp(this.x+this.knockbackVx*dt,0,WORLD_W);
+      this.y = clamp(this.y+this.knockbackVy*dt,0,WORLD_H);
+    }
+    if(this.stunTimer>0){ this.stunTimer-=dt; return; }
+    if(this.dead) return;
+    const dp = dist(this, player);
+    const dSpawn = dist(this, {x:this.spawnX,y:this.spawnY});
+
+    if(this.state==='idle'){
+      this.wanderTimer -= dt;
+      if(this.wanderTimer<=0){
+        this.wanderTimer = rnd(2,5);
+        this.wanderX = this.spawnX + rnd(-150,150);
+        this.wanderY = this.spawnY + rnd(-150,150);
+      }
+      const dw=dist(this,{x:this.wanderX,y:this.wanderY});
+      if(dw>10){
+        const ang=Math.atan2(this.wanderY-this.y,this.wanderX-this.x);
+        this.x=clamp(this.x+Math.cos(ang)*this.speed*0.4*dt,0,WORLD_W);
+        this.y=clamp(this.y+Math.sin(ang)*this.speed*0.4*dt,0,WORLD_H);
+      }
+      if(dp<this.aggroRange) this.state='aggro';
+    } else if(this.state==='aggro'){
+      if(dp<this.attackRange){ this.state='attack'; }
+      else if(dSpawn>600){ this.state='return'; }
+      else {
+        const ang=Math.atan2(player.y-this.y,player.x-this.x);
+        this.x=clamp(this.x+Math.cos(ang)*this.speed*dt,0,WORLD_W);
+        this.y=clamp(this.y+Math.sin(ang)*this.speed*dt,0,WORLD_H);
+      }
+    } else if(this.state==='attack'){
+      if(dp>this.attackRange*1.3){ this.state='aggro'; }
+      else {
+        this.attackTimer -= dt;
+        if(this.attackTimer<=0){
+          this.attackTimer = this.attackSpeed;
+          const dmg = Math.max(1, Math.floor(this.atk + rnd(-3,3)));
+          player.takeDamage(dmg);
+        }
+      }
+      if(dSpawn>600) this.state='return';
+    } else if(this.state==='return'){
+      const ang=Math.atan2(this.spawnY-this.y,this.spawnX-this.x);
+      this.x=clamp(this.x+Math.cos(ang)*this.speed*1.2*dt,0,WORLD_W);
+      this.y=clamp(this.y+Math.sin(ang)*this.speed*1.2*dt,0,WORLD_H);
+      if(dSpawn<20){
+        this.state='idle';
+        this.hp = this.maxHp; // heal on return
+      }
+      if(dp<this.aggroRange) this.state='aggro';
+    }
+  }
+  takeDamage(amount, crit){
+    if(this.dead) return;
+    const reduced = Math.max(1, Math.floor(amount - this.def*0.4));
+    this.hp -= reduced;
+    this.damaged = true;
+    this.state = 'aggro';
+    if(crit) G.particles.spawn('crit', this.x, this.y-30, 'CRIT! '+reduced);
+    else G.particles.spawn('damage', this.x, this.y-30, '-'+reduced);
+    G.particles.spawn('blood', this.x, this.y, '');
+    if(this.hp<=0){ this.hp=0; this.die(); }
+  }
+  die(){
+    this.dead = true;
+    this.deadTimer = 1.5;
+    if(!this.lootDropped){
+      this.lootDropped = true;
+      // Drop loot
+      for(const l of this.loot){
+        if(Math.random()<l.chance){
+          G.groundItems.push({x:this.x+rnd(-20,20),y:this.y+rnd(-20,20),item:new Item(l.id),glowTimer:0});
+        }
+      }
+      // Noah drop
+      const noahAmt = rndInt(Math.floor(this.noah*0.7), Math.floor(this.noah*1.3));
+      G.particles.spawn('noah', this.x, this.y-40, '+'+noahAmt+' Noah');
+      G.player.inventory.noah += noahAmt;
+      // EXP
+      G.player.gainExp(this.exp);
+      // Quest progress
+      G.quests.onKill(this.type);
+      G.particles.spawn('blood',this.x,this.y,'');
+    }
+    this.respawnTimer = 30;
+  }
+  respawn(){
+    this.x = this.spawnX; this.y = this.spawnY;
+    this.hp = this.maxHp;
+    this.dead = false;
+    this.deadTimer = 0;
+    this.lootDropped = false;
+    this.state = 'idle';
+    this.wanderTimer = rnd(1,3);
+    this.damaged = false;
+    this.stunTimer = 0;
+    this.knockbackTimer = 0;
+  }
+  drawWorm(sx,sy){
+    const t = this.animTimer;
+    const colors = ['#3a3','#4b4','#3a3'];
+    const sizes = [8,10,8];
+    for(let i=0;i<3;i++){
+      const ox = i*14 - 14;
+      const oy = Math.sin(t*3 + i*1.2)*6;
+      ctx.fillStyle = colors[i];
+      ctx.beginPath();
+      ctx.arc(sx+ox, sy+oy, sizes[i], 0, Math.PI*2);
+      ctx.fill();
+      ctx.strokeStyle='#2a2';
+      ctx.lineWidth=1;
+      ctx.stroke();
+    }
+    // Eyes on head
+    ctx.fillStyle='#000';
+    ctx.beginPath(); ctx.arc(sx+14-2,sy-4,2,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(sx+14+2,sy-4,2,0,Math.PI*2); ctx.fill();
+  }
+  drawWolf(sx,sy){
+    const t = this.animTimer;
+    const legAnim = Math.sin(t*8)*5;
+    ctx.fillStyle='#766';
+    // Legs
+    ctx.fillRect(sx-15,sy+5,5,12+legAnim);
+    ctx.fillRect(sx-5,sy+5,5,12-legAnim);
+    ctx.fillRect(sx+5,sy+5,5,12+legAnim);
+    ctx.fillRect(sx+10,sy+5,5,12-legAnim);
+    // Body
+    ctx.fillStyle='#876';
+    ctx.beginPath();
+    ctx.ellipse(sx,sy,20,12,0,0,Math.PI*2);
+    ctx.fill();
+    // Head
+    ctx.fillStyle='#987';
+    ctx.beginPath();
+    ctx.ellipse(sx+18,sy-4,10,8,0,0,Math.PI*2);
+    ctx.fill();
+    // Ears
+    ctx.fillStyle='#765';
+    ctx.beginPath();
+    ctx.moveTo(sx+14,sy-10); ctx.lineTo(sx+10,sy-22); ctx.lineTo(sx+18,sy-12); ctx.closePath(); ctx.fill();
+    ctx.moveTo(sx+20,sy-10); ctx.lineTo(sx+18,sy-22); ctx.lineTo(sx+26,sy-12); ctx.closePath(); ctx.fill();
+    // Snout
+    ctx.fillStyle='#a98';
+    ctx.beginPath(); ctx.ellipse(sx+26,sy-2,5,4,0,0,Math.PI*2); ctx.fill();
+    // Eye
+    ctx.fillStyle='#f80';
+    ctx.beginPath(); ctx.arc(sx+21,sy-6,2,0,Math.PI*2); ctx.fill();
+    // Tail
+    ctx.strokeStyle='#876'; ctx.lineWidth=4;
+    ctx.beginPath();
+    ctx.moveTo(sx-18,sy-5);
+    ctx.quadraticCurveTo(sx-28,sy-18,sx-22,sy-25);
+    ctx.stroke();
+  }
+  drawSkeleton(sx,sy){
+    // Body
+    ctx.fillStyle='#ddd';
+    ctx.fillRect(sx-6,sy-15,12,22);
+    // Skull
+    ctx.fillStyle='#eee';
+    ctx.beginPath();
+    ctx.arc(sx,sy-22,12,0,Math.PI*2);
+    ctx.fill();
+    ctx.strokeStyle='#bbb'; ctx.lineWidth=1; ctx.stroke();
+    // Eyes
+    ctx.fillStyle='#000';
+    ctx.beginPath(); ctx.arc(sx-4,sy-24,3,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(sx+4,sy-24,3,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#f00';
+    ctx.beginPath(); ctx.arc(sx-4,sy-24,1.5,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(sx+4,sy-24,1.5,0,Math.PI*2); ctx.fill();
+    // Jaw line
+    ctx.strokeStyle='#bbb'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(sx-6,sy-14); ctx.lineTo(sx+6,sy-14); ctx.stroke();
+    // Arms
+    const t = this.animTimer;
+    const armSwing = Math.sin(t*3)*15;
+    ctx.strokeStyle='#ddd'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.moveTo(sx-6,sy-12); ctx.lineTo(sx-18,sy-2+armSwing); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(sx+6,sy-12); ctx.lineTo(sx+18,sy-2-armSwing); ctx.stroke();
+    // Legs
+    ctx.beginPath(); ctx.moveTo(sx-3,sy+7); ctx.lineTo(sx-8,sy+20); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(sx+3,sy+7); ctx.lineTo(sx+8,sy+20); ctx.stroke();
+  }
+  drawGolem(sx,sy){
+    // Rocky patches texture
+    ctx.fillStyle='#6a4';
+    ctx.fillRect(sx-20,sy-25,40,50);
+    ctx.fillStyle='#8a6';
+    ctx.fillRect(sx-18,sy-23,36,46);
+    // Dark patches
+    ctx.fillStyle='#5a3';
+    ctx.fillRect(sx-10,sy-15,8,8);
+    ctx.fillRect(sx+4,sy-5,7,7);
+    ctx.fillRect(sx-14,sy+5,6,6);
+    ctx.fillRect(sx+8,sy+8,8,5);
+    // Head
+    ctx.fillStyle='#7a5';
+    ctx.beginPath();
+    ctx.arc(sx,sy-33,18,0,Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle='#5a3';
+    ctx.beginPath(); ctx.arc(sx-6,sy-36,4,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(sx+6,sy-36,4,0,Math.PI*2); ctx.fill();
+    // Orange eyes
+    ctx.fillStyle='#f80';
+    ctx.shadowColor='#f80'; ctx.shadowBlur=10;
+    ctx.beginPath(); ctx.arc(sx-6,sy-36,2.5,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(sx+6,sy-36,2.5,0,Math.PI*2); ctx.fill();
+    ctx.shadowBlur=0;
+    // Arms
+    ctx.fillStyle='#7a5';
+    ctx.fillRect(sx-34,sy-20,14,30);
+    ctx.fillRect(sx+20,sy-20,14,30);
+    // Fists
+    ctx.beginPath(); ctx.arc(sx-27,sy+14,8,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(sx+27,sy+14,8,0,Math.PI*2); ctx.fill();
+  }
+  drawHarpy(sx,sy){
+    const t = this.animTimer;
+    const wingFlap = Math.sin(t*6)*20;
+    // Wings
+    ctx.fillStyle='rgba(80,100,160,0.8)';
+    ctx.beginPath();
+    ctx.moveTo(sx,sy-5);
+    ctx.lineTo(sx-50,sy-15+wingFlap);
+    ctx.lineTo(sx-30,sy+10);
+    ctx.closePath(); ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(sx,sy-5);
+    ctx.lineTo(sx+50,sy-15+wingFlap);
+    ctx.lineTo(sx+30,sy+10);
+    ctx.closePath(); ctx.fill();
+    // Wing detail lines
+    ctx.strokeStyle='rgba(60,80,140,0.9)'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(sx,sy-5); ctx.lineTo(sx-40,sy-10+wingFlap); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(sx,sy-5); ctx.lineTo(sx+40,sy-10+wingFlap); ctx.stroke();
+    // Body
+    ctx.fillStyle='#6a9';
+    ctx.beginPath();
+    ctx.ellipse(sx,sy,12,18,0,0,Math.PI*2);
+    ctx.fill();
+    // Head
+    ctx.fillStyle='#7ba';
+    ctx.beginPath();
+    ctx.arc(sx,sy-22,10,0,Math.PI*2);
+    ctx.fill();
+    // Eyes
+    ctx.fillStyle='#f0f';
+    ctx.beginPath(); ctx.arc(sx-3,sy-23,2,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(sx+3,sy-23,2,0,Math.PI*2); ctx.fill();
+    // Claw feet
+    ctx.strokeStyle='#555'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(sx-5,sy+16); ctx.lineTo(sx-8,sy+26); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(sx-8,sy+26); ctx.lineTo(sx-14,sy+30); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(sx-8,sy+26); ctx.lineTo(sx-4,sy+32); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(sx+5,sy+16); ctx.lineTo(sx+8,sy+26); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(sx+8,sy+26); ctx.lineTo(sx+14,sy+30); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(sx+8,sy+26); ctx.lineTo(sx+4,sy+32); ctx.stroke();
+  }
+  drawTroll(sx,sy){
+    const t = this.animTimer;
+    const armSwing = Math.sin(t*3)*10;
+    // Shadow
+    ctx.fillStyle='rgba(0,0,0,0.4)';
+    ctx.beginPath(); ctx.ellipse(sx,sy+34,30,10,0,0,Math.PI*2); ctx.fill();
+    // Body (large green oval)
+    ctx.fillStyle='#3a2';
+    ctx.beginPath();
+    ctx.ellipse(sx,sy,27,35,0,0,Math.PI*2);
+    ctx.fill();
+    // Belly
+    ctx.fillStyle='#4b3';
+    ctx.beginPath();
+    ctx.ellipse(sx,sy+5,18,22,0,0,Math.PI*2);
+    ctx.fill();
+    // Head
+    ctx.fillStyle='#3a2';
+    ctx.beginPath();
+    ctx.arc(sx,sy-42,22,0,Math.PI*2);
+    ctx.fill();
+    // Eyes
+    ctx.fillStyle='#f40';
+    ctx.shadowColor='#f40'; ctx.shadowBlur=8;
+    ctx.beginPath(); ctx.arc(sx-7,sy-44,4,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(sx+7,sy-44,4,0,Math.PI*2); ctx.fill();
+    ctx.shadowBlur=0;
+    ctx.fillStyle='#000';
+    ctx.beginPath(); ctx.arc(sx-7,sy-44,2,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(sx+7,sy-44,2,0,Math.PI*2); ctx.fill();
+    // Mouth/tusks
+    ctx.fillStyle='#eee';
+    ctx.fillRect(sx-8,sy-36,4,6);
+    ctx.fillRect(sx+4,sy-36,4,6);
+    // Arms (massive)
+    ctx.fillStyle='#3a2';
+    ctx.fillRect(sx-42,sy-28+armSwing,14,40);
+    ctx.fillRect(sx+28,sy-28-armSwing,14,40);
+    // Club in right hand
+    ctx.fillStyle='#864';
+    ctx.fillRect(sx+40,sy-32-armSwing,8,40);
+    ctx.fillRect(sx+36,sy-40-armSwing,16,12);
+    // Legs
+    ctx.fillStyle='#2a1';
+    ctx.fillRect(sx-18,sy+28,14,20);
+    ctx.fillRect(sx+4,sy+28,14,20);
+  }
+  draw(cam){
+    const s = worldToScreen(this.x, this.y, cam);
+    const sx=s.x, sy=s.y;
+    if(sx<-80||sx>W+80||sy<-80||sy>H+80) return;
+    if(this.dead && this.deadTimer<=0) return;
+    ctx.save();
+    if(this.dead){ ctx.globalAlpha = Math.max(0, this.deadTimer/1.5); }
+    switch(this.type){
+      case 'worm':     this.drawWorm(sx,sy); break;
+      case 'wolf':     this.drawWolf(sx,sy); break;
+      case 'skeleton': this.drawSkeleton(sx,sy); break;
+      case 'golem':    this.drawGolem(sx,sy); break;
+      case 'harpy':    this.drawHarpy(sx,sy); break;
+      case 'troll':    this.drawTroll(sx,sy); break;
+    }
+    // HP bar (show when damaged and alive)
+    if(!this.dead && this.damaged){
+      const bw=50, bh=6, bx=sx-bw/2, by=sy-55;
+      ctx.fillStyle='#300';
+      ctx.fillRect(bx,by,bw,bh);
+      ctx.fillStyle='#f22';
+      ctx.fillRect(bx,by,bw*(this.hp/this.maxHp),bh);
+      ctx.strokeStyle='#600'; ctx.lineWidth=1;
+      ctx.strokeRect(bx,by,bw,bh);
+      // Name
+      ctx.fillStyle='#fff'; ctx.font='10px Arial'; ctx.textAlign='center';
+      ctx.fillText(this.name+' Lv'+this.level,sx,by-2);
+    }
+    ctx.restore();
+    if(this.dead){ this.deadTimer -= 1/60; }
+  }
+}
+
+
+// === PARTICLE SYSTEM ===
+class ParticleSystem {
+  constructor(){ this.particles = []; }
+  spawn(type, x, y, text){
+    switch(type){
+      case 'hit':
+        for(let i=0;i<5;i++){
+          const ang=rnd(0,Math.PI*2), spd=rnd(60,140);
+          this.particles.push({type:'hit',x,y,vx:Math.cos(ang)*spd,vy:Math.sin(ang)*spd,life:0.4,maxLife:0.4,color:'#f80'});
+        }
+        break;
+      case 'crit':
+        this.particles.push({type:'text',x,y,vy:-60,life:1.2,maxLife:1.2,text:text||'CRIT!',color:'#ff0',size:20});
+        break;
+      case 'damage':
+        this.particles.push({type:'text',x,y,vy:-50,life:1.0,maxLife:1.0,text:text,color:'#f44',size:16});
+        break;
+      case 'heal':
+        this.particles.push({type:'text',x,y,vy:-50,life:1.0,maxLife:1.0,text:text,color:'#4f4',size:16});
+        break;
+      case 'exp':
+        this.particles.push({type:'text',x,y,vy:-60,life:1.4,maxLife:1.4,text:text,color:'#fd0',size:14});
+        break;
+      case 'noah':
+        this.particles.push({type:'text',x,y,vy:-55,life:1.2,maxLife:1.2,text:text,color:'#ffa500',size:14});
+        break;
+      case 'levelup':
+        for(let i=0;i<40;i++){
+          const ang=rnd(0,Math.PI*2), spd=rnd(80,200);
+          const hue=rnd(0,360);
+          this.particles.push({type:'firework',x,y,vx:Math.cos(ang)*spd,vy:Math.sin(ang)*spd-50,life:1.2,maxLife:1.2,color:`hsl(${hue},100%,60%)`});
+        }
+        this.particles.push({type:'text',x,y:y-40,vy:-40,life:2.5,maxLife:2.5,text:'LEVEL UP!',color:'#fd0',size:28});
+        break;
+      case 'blood':
+        for(let i=0;i<8;i++){
+          const ang=rnd(0,Math.PI*2), spd=rnd(40,100);
+          this.particles.push({type:'blood',x,y,vx:Math.cos(ang)*spd,vy:Math.sin(ang)*spd-30,life:0.6,maxLife:0.6,color:'#a00',r:rnd(2,5)});
+        }
+        break;
+      case 'spark':
+        for(let i=0;i<12;i++){
+          const ang=rnd(0,Math.PI*2), spd=rnd(80,180);
+          const c=Math.random()<0.5?'#ff0':'#f80';
+          this.particles.push({type:'spark',x,y,vx:Math.cos(ang)*spd,vy:Math.sin(ang)*spd-60,life:0.8,maxLife:0.8,color:c});
+        }
+        break;
+      case 'burn':
+        for(let i=0;i<15;i++){
+          const ang=rnd(-Math.PI*0.8,-Math.PI*0.2), spd=rnd(40,120);
+          const c=Math.random()<0.5?'#f20':'#222';
+          this.particles.push({type:'burn',x,y,vx:Math.cos(ang)*spd,vy:Math.sin(ang)*spd,life:1.2,maxLife:1.2,color:c,r:rnd(4,10)});
+        }
+        break;
+    }
+  }
+  update(dt){
+    for(let i=this.particles.length-1;i>=0;i--){
+      const p=this.particles[i];
+      p.life -= dt;
+      if(p.life<=0){ this.particles.splice(i,1); continue; }
+      if(p.vx!==undefined){ p.x+=p.vx*dt; p.y+=p.vy*dt; p.vy+=200*dt; }
+      if(p.type==='firework') p.vy+=120*dt;
+    }
+  }
+  draw(cam){
+    for(const p of this.particles){
+      const s = worldToScreen(p.x,p.y,cam);
+      const alpha = Math.min(1, p.life/p.maxLife * 1.5);
+      ctx.globalAlpha = alpha;
+      if(p.type==='text'||p.type==='crit'){
+        ctx.fillStyle = p.color;
+        ctx.font = `bold ${p.size||14}px Arial`;
+        ctx.textAlign='center';
+        ctx.fillText(p.text, s.x, s.y);
+      } else if(p.type==='hit'||p.type==='spark'){
+        ctx.fillStyle=p.color;
+        ctx.beginPath(); ctx.arc(s.x,s.y,3,0,Math.PI*2); ctx.fill();
+      } else if(p.type==='blood'||p.type==='burn'){
+        ctx.fillStyle=p.color;
+        ctx.beginPath(); ctx.arc(s.x,s.y,p.r||4,0,Math.PI*2); ctx.fill();
+      } else if(p.type==='firework'){
+        ctx.fillStyle=p.color;
+        ctx.beginPath(); ctx.arc(s.x,s.y,3,0,Math.PI*2); ctx.fill();
+      }
+    }
+    ctx.globalAlpha=1;
+  }
+}
+
+// === SKILL TREE ===
+class SkillTree {
+  constructor(){
+    this.skills = {};
+    this.cooldowns = {};
+    for(const id of SKILL_ORDER){
+      this.skills[id] = 0;
+      this.cooldowns[id] = 0;
+    }
+  }
+  upgrade(id, player){
+    const def = SKILL_DEFS[id];
+    if(!def) return;
+    if(player.level < def.unlockLv) return;
+    if(this.skills[id] >= def.maxLv) return;
+    if(player.skillPoints <= 0) return;
+    player.skillPoints--;
+    this.skills[id]++;
+  }
+  canUse(id, player){
+    const def = SKILL_DEFS[id];
+    if(!def) return false;
+    if(this.skills[id]<=0) return false;
+    if(player.level < def.unlockLv) return false;
+    if(this.cooldowns[id]>0) return false;
+    if(player.mp < def.mp) return false;
+    return true;
+  }
+  use(id, player, mobs){
+    if(!this.canUse(id,player)) return false;
+    const def = SKILL_DEFS[id];
+    const lv = this.skills[id];
+    player.mp -= def.mp;
+    this.cooldowns[id] = def.cd;
+    switch(id){
+      case 'slash': this.doSlash(player,mobs,lv); break;
+      case 'shield_bash': this.doShieldBash(player,mobs,lv); break;
+      case 'charge': this.doCharge(player,mobs,lv); break;
+      case 'whirlwind': this.doWhirlwind(player,mobs,lv); break;
+      case 'war_cry': this.doWarCry(player,lv); break;
+      case 'earthquake': this.doEarthquake(player,mobs,lv); break;
+      case 'blade_storm': this.doBladeStorm(player,mobs,lv); break;
+    }
+    return true;
+  }
+  doSlash(player,mobs,lv){
+    const mult = 1.5 + (lv-1)*0.375; // 150% to 300%
+    const range = 80;
+    const coneAngle = Math.PI/2;
+    for(const mob of mobs){
+      if(mob.dead) continue;
+      const d=dist(player,mob);
+      if(d>range) continue;
+      const ang=Math.atan2(mob.y-player.y,mob.x-player.x);
+      let diff = ang - player.facingAngle;
+      while(diff>Math.PI) diff-=Math.PI*2;
+      while(diff<-Math.PI) diff+=Math.PI*2;
+      if(Math.abs(diff)<coneAngle/2){
+        const dmg = Math.floor(player.getAtk()*mult);
+        mob.takeDamage(dmg, false);
+      }
+    }
+    G.particles.spawn('spark',player.x,player.y,'');
+  }
+  doShieldBash(player,mobs,lv){
+    const stunDur = 1 + (lv-1)*0.25; // 1-2s
+    const range = 60;
+    const dmg = Math.floor(player.getAtk()*0.8);
+    for(const mob of mobs){
+      if(mob.dead) continue;
+      if(dist(player,mob)<range){
+        mob.takeDamage(dmg,false);
+        mob.stunTimer = stunDur;
+      }
+    }
+    G.particles.spawn('spark',player.x,player.y,'');
+  }
+  doCharge(player,mobs,lv){
+    const dist2 = 250 + lv*10;
+    const spd = 800;
+    player.chargeVx = Math.cos(player.facingAngle)*spd;
+    player.chargeVy = Math.sin(player.facingAngle)*spd;
+    player.chargeTimer = dist2/spd;
+    // Hit mobs in path (check periodically via timeout)
+    const dmg = Math.floor(player.getAtk()*1.2);
+    for(const mob of mobs){
+      if(mob.dead) continue;
+      const ang = Math.atan2(mob.y-player.y,mob.x-player.x);
+      let diff=ang-player.facingAngle;
+      while(diff>Math.PI)diff-=Math.PI*2;
+      while(diff<-Math.PI)diff+=Math.PI*2;
+      if(Math.abs(diff)<0.4 && dist(player,mob)<dist2){
+        mob.takeDamage(dmg,false);
+      }
+    }
+  }
+  doWhirlwind(player,mobs,lv){
+    const range = 100 + lv*5;
+    const dmg = Math.floor(player.getAtk()*(1+lv*0.3));
+    for(const mob of mobs){
+      if(mob.dead) continue;
+      if(dist(player,mob)<range) mob.takeDamage(dmg,false);
+    }
+    for(let i=0;i<20;i++){
+      const ang=rnd(0,Math.PI*2);
+      G.particles.spawn('spark',player.x+Math.cos(ang)*50,player.y+Math.sin(ang)*50,'');
+    }
+  }
+  doWarCry(player,lv){
+    const pct = 0.15 + (lv-1)*0.0625; // 15%-40%
+    const dur = 8 + (lv-1)*3; // 8-20s
+    player.warCryAtk = player.getAtk()*pct;
+    player.warCryDef = player.getDef()*pct;
+    player.warCryTimer = dur;
+    player.atkBuff = pct;
+    player.atkBuffTimer = dur;
+    G.particles.spawn('levelup',player.x,player.y,'WAR CRY!');
+  }
+  doEarthquake(player,mobs,lv){
+    const range = 150 + lv*10;
+    const dmg = Math.floor(player.getAtk()*(2+lv*0.5));
+    const kbForce = 200 + lv*30;
+    for(const mob of mobs){
+      if(mob.dead) continue;
+      const d=dist(player,mob);
+      if(d<range){
+        mob.takeDamage(dmg,false);
+        const ang=Math.atan2(mob.y-player.y,mob.x-player.x);
+        mob.knockbackVx=Math.cos(ang)*kbForce;
+        mob.knockbackVy=Math.sin(ang)*kbForce;
+        mob.knockbackTimer=0.4;
+      }
+    }
+    G.screenShake = 0.5;
+    for(let i=0;i<30;i++){
+      const ang=rnd(0,Math.PI*2), r=rnd(20,150);
+      G.particles.spawn('blood',player.x+Math.cos(ang)*r,player.y+Math.sin(ang)*r,'');
+    }
+  }
+  doBladeStorm(player,mobs,lv){
+    const range = 200 + lv*10;
+    const mult = 4 + (lv-1)*1.5; // 4x-10x
+    const dmg = Math.floor(player.getAtk()*mult);
+    for(const mob of mobs){
+      if(mob.dead) continue;
+      if(dist(player,mob)<range) mob.takeDamage(dmg,true);
+    }
+    for(let i=0;i<50;i++){
+      const ang=rnd(0,Math.PI*2), r=rnd(20,200);
+      G.particles.spawn('spark',player.x+Math.cos(ang)*r,player.y+Math.sin(ang)*r,'');
+    }
+  }
+  update(dt){
+    for(const id of SKILL_ORDER){
+      if(this.cooldowns[id]>0) this.cooldowns[id]-=dt;
+    }
+  }
+  serialize(){
+    return Object.fromEntries(SKILL_ORDER.map(id=>[id,this.skills[id]]));
+  }
+  static deserialize(d){
+    const st = new SkillTree();
+    if(d) for(const id of SKILL_ORDER) if(d[id]!==undefined) st.skills[id]=d[id];
+    return st;
+  }
+}
+
+// === QUEST LOG ===
+class QuestLog {
+  constructor(){
+    this.quests = {};
+    for(const q of QUEST_DEFS){
+      this.quests[q.id] = { status:'locked', progress:0 };
+    }
+  }
+  update(player){
+    for(const qd of QUEST_DEFS){
+      const qs = this.quests[qd.id];
+      if(qs.status==='locked' && player.level>=qd.unlockLv){ qs.status='available'; }
+      if(qs.status==='active' && qd.collectNoah && player.inventory.noah>=qd.collectNoah){
+        qs.progress = player.inventory.noah;
+      }
+    }
+  }
+  accept(id){
+    const qs = this.quests[id];
+    if(qs && qs.status==='available') qs.status='active';
+  }
+  abandon(id){
+    const qs = this.quests[id];
+    if(qs && qs.status==='active'){ qs.status='available'; qs.progress=0; }
+  }
+  onKill(mobType){
+    for(const qd of QUEST_DEFS){
+      if(!qd.killType) continue;
+      const qs = this.quests[qd.id];
+      if(qs.status!=='active') continue;
+      if(qd.killType===mobType){
+        qs.progress++;
+        if(qs.progress>=qd.killCount) this.complete(qd.id);
+      }
+    }
+  }
+  checkNoah(noah){
+    for(const qd of QUEST_DEFS){
+      if(!qd.collectNoah) continue;
+      const qs = this.quests[qd.id];
+      if(qs.status!=='active') continue;
+      qs.progress = noah;
+      if(noah>=qd.collectNoah) this.complete(qd.id);
+    }
+  }
+  complete(id){
+    const qs = this.quests[id];
+    const qd = QUEST_DEFS.find(q=>q.id===id);
+    if(!qs||!qd||qs.status==='completed') return;
+    qs.status='completed';
+    G.player.gainExp(qd.rewards.exp);
+    G.player.inventory.noah += qd.rewards.noah;
+    for(const iid of (qd.rewards.items||[])){
+      G.player.inventory.addItem(new Item(iid));
+    }
+    G.particles.spawn('levelup',G.player.x,G.player.y,'QUEST COMPLETE!');
+  }
+  getActive(){ return QUEST_DEFS.filter(q=>this.quests[q.id].status==='active'); }
+  getAvailable(){ return QUEST_DEFS.filter(q=>this.quests[q.id].status==='available'); }
+  getCompleted(){ return QUEST_DEFS.filter(q=>this.quests[q.id].status==='completed'); }
+  serialize(){
+    return Object.fromEntries(Object.entries(this.quests).map(([k,v])=>[k,{status:v.status,progress:v.progress}]));
+  }
+  static deserialize(d){
+    const ql = new QuestLog();
+    if(d) for(const id in d){ if(ql.quests[id]) Object.assign(ql.quests[id],d[id]); }
+    return ql;
+  }
+}
+
+
+// === VIRTUAL JOYSTICK ===
+class VirtualJoystick {
+  constructor(){
+    this.active=false;
+    this.baseX=120; this.baseY=H-120;
+    this.stickX=this.baseX; this.stickY=this.baseY;
+    this.nx=0; this.ny=0;
+    this.touchId=null;
+  }
+  onTouchStart(t){
+    if(t.clientX<W/2 && this.touchId===null){
+      this.active=true;
+      this.touchId=t.identifier;
+      this.baseX=t.clientX; this.baseY=t.clientY;
+      this.stickX=this.baseX; this.stickY=this.baseY;
+    }
+  }
+  onTouchMove(t){
+    if(t.identifier!==this.touchId) return;
+    const dx=t.clientX-this.baseX, dy=t.clientY-this.baseY;
+    const d=Math.hypot(dx,dy);
+    const maxR=60;
+    const r=Math.min(d,maxR);
+    const ang=Math.atan2(dy,dx);
+    this.stickX=this.baseX+Math.cos(ang)*r;
+    this.stickY=this.baseY+Math.sin(ang)*r;
+    this.nx=Math.cos(ang)*(r/maxR);
+    this.ny=Math.sin(ang)*(r/maxR);
+  }
+  onTouchEnd(t){
+    if(t.identifier===this.touchId){
+      this.active=false; this.touchId=null;
+      this.nx=0; this.ny=0;
+      this.baseX=120; this.baseY=H-120;
+      this.stickX=this.baseX; this.stickY=this.baseY;
+    }
+  }
+  draw(){
+    if(!this.active) return;
+    ctx.globalAlpha=0.4;
+    ctx.strokeStyle='#fff'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.arc(this.baseX,this.baseY,60,0,Math.PI*2); ctx.stroke();
+    ctx.fillStyle='rgba(255,255,255,0.2)';
+    ctx.beginPath(); ctx.arc(this.baseX,this.baseY,60,0,Math.PI*2); ctx.fill();
+    ctx.globalAlpha=0.7;
+    ctx.fillStyle='rgba(255,255,255,0.5)';
+    ctx.beginPath(); ctx.arc(this.stickX,this.stickY,25,0,Math.PI*2); ctx.fill();
+    ctx.globalAlpha=1;
+  }
+}
+
+// === WORLD GENERATOR ===
+class WorldGenerator {
+  constructor(){
+    this.decorations=[];
+    this.generate();
+  }
+  generate(){
+    // Trees
+    for(let i=0;i<300;i++){
+      this.decorations.push({
+        type:'tree',
+        x:rnd(0,WORLD_W), y:rnd(0,WORLD_H),
+        r:rnd(8,16), h:rnd(20,35)
+      });
+    }
+    // Rocks
+    for(let i=0;i<200;i++){
+      this.decorations.push({
+        type:'rock',
+        x:rnd(0,WORLD_W), y:rnd(0,WORLD_H),
+        rx:rnd(8,18), ry:rnd(6,14),
+        angle:rnd(0,Math.PI)
+      });
+    }
+  }
+  getZoneColor(wx,wy){
+    const totalDist = Math.hypot(wx-0, wy-0);
+    const highDist = Math.hypot(wx-WORLD_W*0.75, wy-WORLD_H*0.75);
+    if(highDist<1800) return { ground:'#2a2a2a', grass:'#333' }; // high zone
+    if(wx>1500||wy>1500) return { ground:'#3a2e1a', grass:'#4a3a20' }; // mid zone
+    return { ground:'#1a2d1a', grass:'#2a3d2a' }; // starter zone
+  }
+  drawTile(wx,wy,cam){
+    // Draw zone-specific tiles (called per-zone chunk)
+  }
+  draw(cam){
+    // Draw ground zones
+    // Starter zone
+    ctx.fillStyle='#1a2d1a';
+    const s1a = worldToScreen(0,0,cam);
+    const s1b = worldToScreen(2000,2000,cam);
+    ctx.fillRect(s1a.x,s1a.y,s1b.x-s1a.x,s1b.y-s1a.y);
+    // Mid zone
+    ctx.fillStyle='#3a2e1a';
+    const s2a = worldToScreen(0,0,cam);
+    const s2b = worldToScreen(WORLD_W,WORLD_H,cam);
+    // Render full world first
+    ctx.fillStyle='#3a2e1a';
+    ctx.fillRect(s2a.x,s2a.y,s2b.x-s2a.x,s2b.y-s2a.y);
+    // Overlay starter
+    ctx.fillStyle='#1a2d1a';
+    ctx.fillRect(s1a.x,s1a.y,s1b.x-s1a.x,s1b.y-s1a.y);
+    // High zone
+    ctx.fillStyle='#2a2a2a';
+    const s3a = worldToScreen(2800,2800,cam);
+    const s3b = worldToScreen(WORLD_W,WORLD_H,cam);
+    ctx.fillRect(s3a.x,s3a.y,s3b.x-s3a.x,s3b.y-s3a.y);
+
+    // Zone label guides (subtle)
+    ctx.fillStyle='rgba(255,255,255,0.04)';
+    ctx.font='bold 48px Arial'; ctx.textAlign='center';
+    const sl = worldToScreen(1000,1000,cam);
+    ctx.fillText('STARTER',sl.x,sl.y);
+    const sm = worldToScreen(2000,2000,cam);
+    ctx.fillText('MID ZONE',sm.x,sm.y);
+    const sh = worldToScreen(3800,3800,cam);
+    ctx.fillText('HIGH ZONE',sh.x,sh.y);
+
+    // Grid lines (subtle)
+    ctx.strokeStyle='rgba(255,255,255,0.03)';
+    ctx.lineWidth=1;
+    for(let gx=0;gx<=WORLD_W;gx+=500){
+      const ga=worldToScreen(gx,0,cam);
+      const gb=worldToScreen(gx,WORLD_H,cam);
+      if(ga.x>-5&&ga.x<W+5){
+        ctx.beginPath(); ctx.moveTo(ga.x,ga.y); ctx.lineTo(gb.x,gb.y); ctx.stroke();
+      }
+    }
+    for(let gy=0;gy<=WORLD_H;gy+=500){
+      const ga=worldToScreen(0,gy,cam);
+      const gb=worldToScreen(WORLD_W,gy,cam);
+      if(ga.y>-5&&ga.y<H+5){
+        ctx.beginPath(); ctx.moveTo(ga.x,ga.y); ctx.lineTo(gb.x,gb.y); ctx.stroke();
+      }
+    }
+
+    // Decorations
+    for(const d of this.decorations){
+      const s = worldToScreen(d.x,d.y,cam);
+      if(s.x<-50||s.x>W+50||s.y<-50||s.y>H+50) continue;
+      if(d.type==='tree'){
+        // Trunk
+        ctx.fillStyle='#5a3a20';
+        ctx.fillRect(s.x-3,s.y-d.h*0.4,6,d.h*0.4);
+        // Leaves
+        ctx.fillStyle='#2a5a2a';
+        ctx.beginPath();
+        ctx.arc(s.x,s.y-d.h*0.4,d.r,0,Math.PI*2);
+        ctx.fill();
+        ctx.fillStyle='#3a6a3a';
+        ctx.beginPath();
+        ctx.arc(s.x-d.r*0.2,s.y-d.h*0.4-d.r*0.3,d.r*0.7,0,Math.PI*2);
+        ctx.fill();
+      } else if(d.type==='rock'){
+        ctx.fillStyle='#666';
+        ctx.beginPath();
+        ctx.ellipse(s.x,s.y,d.rx,d.ry,d.angle,0,Math.PI*2);
+        ctx.fill();
+        ctx.fillStyle='#888';
+        ctx.beginPath();
+        ctx.ellipse(s.x-d.rx*0.2,s.y-d.ry*0.2,d.rx*0.5,d.ry*0.5,d.angle,0,Math.PI*2);
+        ctx.fill();
+      }
+    }
+
+    // World border
+    ctx.strokeStyle='#f80';
+    ctx.lineWidth=4;
+    const bA=worldToScreen(0,0,cam);
+    const bB=worldToScreen(WORLD_W,WORLD_H,cam);
+    ctx.strokeRect(bA.x,bA.y,bB.x-bA.x,bB.y-bA.y);
+  }
+}
+
+
+// === GLOBAL GAME STATE ===
+let G = {
+  state: 'menu',
+  player: null,
+  camera: null,
+  mobs: [],
+  groundItems: [],
+  particles: null,
+  world: null,
+  skills: null,
+  quests: null,
+  joystick: null,
+  keys: {},
+  mouseX: 0, mouseY: 0,
+  screenShake: 0,
+  pendingStatScreen: false,
+  menuParticles: [],
+  menuTimer: 0,
+  rainbowAngle: 0,
+  invTab: 'inv',
+  questTab: 'active',
+  anvilSelected: null,
+  anvilMsg: '',
+  anvilMsgTimer: 0,
+  anvilFlash: 0,
+  statPanelStats: null,
+  hoveredSlot: -1,
+  hoveredEquip: null,
+  changeState: function(s){ G.state=s; },
+  save: function(){ saveGame(); },
+  load: function(){ loadGame(); },
+};
+
+// === GAME INIT ===
+function initGame(fresh){
+  G.player = new Player();
+  G.camera = new Camera();
+  G.particles = new ParticleSystem();
+  G.world = new WorldGenerator();
+  G.joystick = new VirtualJoystick();
+  G.skills = new SkillTree();
+  G.quests = new QuestLog();
+  G.mobs = [];
+  G.groundItems = [];
+  G.screenShake = 0;
+  G.pendingStatScreen = false;
+
+  // Spawn mobs
+  for(const type in MOB_DEFS){
+    const def = MOB_DEFS[type];
+    for(let i=0;i<20;i++){
+      const x = rnd(def.zone.x1+50, def.zone.x2-50);
+      const y = rnd(def.zone.y1+50, def.zone.y2-50);
+      G.mobs.push(new Mob(type,x,y));
+    }
+  }
+
+  if(!fresh){
+    loadGame();
+  }
+  G.camera.x = G.player.x;
+  G.camera.y = G.player.y;
+}
+
+// === SAVE / LOAD ===
+function saveGame(){
+  const p = G.player;
+  const data = {
+    level: p.level, exp: p.exp, noah: p.inventory.noah,
+    str: p.str, dex: p.dex, int: p.int,
+    hp: p.hp, mp: p.mp,
+    statPoints: p.statPoints, skillPoints: p.skillPoints,
+    inventory: p.inventory.serialize(),
+    skills: G.skills.serialize(),
+    quests: G.quests.serialize(),
+    pos: { x: p.x, y: p.y }
+  };
+  localStorage.setItem('knight_rpg_save', JSON.stringify(data));
+}
+
+function loadGame(){
+  const raw = localStorage.getItem('knight_rpg_save');
+  if(!raw) return;
+  try {
+    const d = JSON.parse(raw);
+    const p = G.player;
+    p.level = d.level||1;
+    p.exp = d.exp||0;
+    p.expNext = p.expNeeded(p.level);
+    p.str = d.str||10; p.dex = d.dex||10; p.int = d.int||5;
+    p.statPoints = d.statPoints||0; p.skillPoints = d.skillPoints||0;
+    p.recalcStats();
+    p.hp = Math.min(d.hp||p.maxHp, p.maxHp);
+    p.mp = Math.min(d.mp||p.maxMp, p.maxMp);
+    if(d.inventory) p.inventory = Inventory.deserialize(d.inventory);
+    else { p.inventory = new Inventory(); }
+    p.inventory.noah = d.noah||0;
+    if(d.skills) G.skills = SkillTree.deserialize(d.skills);
+    if(d.quests) G.quests = QuestLog.deserialize(d.quests);
+    if(d.pos){ p.x=d.pos.x||500; p.y=d.pos.y||500; }
+  } catch(e){ console.warn('Load failed',e); }
+}
+
+function hasSave(){ return !!localStorage.getItem('knight_rpg_save'); }
+
+// === HUD DRAWING ===
+function drawHUD(){
+  const p = G.player;
+
+  // Screen shake offset
+  let shakeX=0, shakeY=0;
+  if(G.screenShake>0){
+    shakeX = rnd(-8,8)*G.screenShake;
+    shakeY = rnd(-8,8)*G.screenShake;
+    ctx.save();
+    ctx.translate(shakeX,shakeY);
+  }
+
+  // === Top-left bars ===
+  const barX=15, barY=15, barW=180, barH=16;
+  // HP Bar
+  ctx.fillStyle='rgba(0,0,0,0.6)';
+  ctx.fillRect(barX-2,barY-2,barW+4,barH+4);
+  ctx.fillStyle='#500';
+  ctx.fillRect(barX,barY,barW,barH);
+  ctx.fillStyle='#e22';
+  ctx.fillRect(barX,barY,barW*(p.hp/p.maxHp),barH);
+  ctx.fillStyle='#fff'; ctx.font='bold 11px Arial'; ctx.textAlign='left';
+  ctx.fillText(`HP: ${Math.floor(p.hp)} / ${p.maxHp}`,barX+4,barY+12);
+
+  // MP Bar
+  const mpY=barY+barH+5;
+  ctx.fillStyle='rgba(0,0,0,0.6)';
+  ctx.fillRect(barX-2,mpY-2,barW+4,barH+4);
+  ctx.fillStyle='#005';
+  ctx.fillRect(barX,mpY,barW,barH);
+  ctx.fillStyle='#26e';
+  ctx.fillRect(barX,mpY,barW*(p.mp/p.maxMp),barH);
+  ctx.fillStyle='#fff'; ctx.textAlign='left';
+  ctx.fillText(`MP: ${Math.floor(p.mp)} / ${p.maxMp}`,barX+4,mpY+12);
+
+  // EXP Bar
+  const expY=mpY+barH+5;
+  ctx.fillStyle='rgba(0,0,0,0.6)';
+  ctx.fillRect(barX-2,expY-2,barW+4,barH+4);
+  ctx.fillStyle='#330';
+  ctx.fillRect(barX,expY,barW,barH);
+  ctx.fillStyle='#da0';
+  const expPct = p.expNext>0?p.exp/p.expNext:0;
+  ctx.fillRect(barX,expY,barW*expPct,barH);
+  ctx.fillStyle='#fff'; ctx.textAlign='left';
+  ctx.fillText(`EXP: ${p.exp} / ${p.expNext}`,barX+4,expY+12);
+
+  // Level + Noah + Stats
+  ctx.fillStyle='rgba(0,0,0,0.5)';
+  ctx.fillRect(barX-2,expY+barH+5,barW+4,70);
+  ctx.fillStyle='#fd0'; ctx.font='bold 14px Arial';
+  ctx.fillText(`Lv.${p.level}  Noah: ${p.inventory.noah}`,barX+4,expY+barH+22);
+  ctx.fillStyle='#aaa'; ctx.font='12px Arial';
+  ctx.fillText(`STR:${p.str}  DEX:${p.dex}  INT:${p.int}`,barX+4,expY+barH+40);
+  ctx.fillText(`ATK:${Math.floor(p.getAtk())}  DEF:${Math.floor(p.getDef())}`,barX+4,expY+barH+56);
+
+  // Stat Points notification
+  if(p.statPoints>0){
+    G.rainbowAngle += 0.05;
+    const pulse = Math.sin(Date.now()*0.005)*0.3+0.7;
+    ctx.fillStyle=`hsl(${(G.rainbowAngle*60)%360},100%,60%)`;
+    ctx.globalAlpha=pulse;
+    ctx.font='bold 16px Arial'; ctx.textAlign='left';
+    ctx.fillText(`STAT POINTS! (${p.statPoints}) [P]`,barX,expY+barH+75);
+    ctx.globalAlpha=1;
+  }
+
+  // === Skill Points notification ===
+  if(p.skillPoints>0){
+    ctx.fillStyle='#a0f';
+    ctx.font='bold 14px Arial'; ctx.textAlign='left';
+    const spY = p.statPoints>0 ? expY+barH+92 : expY+barH+75;
+    ctx.fillText(`SKILL POINTS! (${p.skillPoints}) [K]`,barX,spY);
+  }
+
+  // Buff indicators
+  if(p.atkBuffTimer>0){
+    ctx.fillStyle='#f80'; ctx.font='12px Arial'; ctx.textAlign='left';
+    ctx.fillText(`ATK BUFF ${Math.ceil(p.atkBuffTimer)}s`,barX,H-160);
+  }
+
+  // === Quest tracker (top-right) ===
+  const active = G.quests.getActive();
+  if(active.length>0){
+    const q = active[0];
+    const qs = G.quests.quests[q.id];
+    const tx=W-220, ty=15, tw=200;
+    ctx.fillStyle='rgba(0,0,0,0.7)';
+    drawRoundRect(ctx,tx,ty,tw,60,6,'rgba(0,0,0,0.7)','#a80');
+    ctx.fillStyle='#fd0'; ctx.font='bold 13px Arial'; ctx.textAlign='left';
+    ctx.fillText('[Quest] '+q.name,tx+8,ty+18);
+    ctx.fillStyle='#ddd'; ctx.font='12px Arial';
+    const prog = q.killType ? `${Math.min(qs.progress,q.killCount)}/${q.killCount}` :
+                 q.collectNoah ? `${Math.min(qs.progress,q.collectNoah)}/${q.collectNoah} Noah` : '';
+    ctx.fillText(q.desc+' '+prog,tx+8,ty+38);
+    // Progress bar
+    const pct = q.killCount ? Math.min(qs.progress/q.killCount,1) :
+                q.collectNoah ? Math.min(qs.progress/q.collectNoah,1) : 0;
+    ctx.fillStyle='#333'; ctx.fillRect(tx+8,ty+46,tw-16,8);
+    ctx.fillStyle='#4f4'; ctx.fillRect(tx+8,ty+46,(tw-16)*pct,8);
+  }
+
+  // === Skill bar (bottom-center) ===
+  const sbW=7*56+8, sbX=W/2-sbW/2, sbY=H-70;
+  ctx.fillStyle='rgba(0,0,0,0.8)';
+  drawRoundRect(ctx,sbX-4,sbY-4,sbW+8,62,8,'rgba(0,0,0,0.8)','#555');
+
+  for(let i=0;i<SKILL_ORDER.length;i++){
+    const id=SKILL_ORDER[i];
+    const def=SKILL_DEFS[id];
+    const lv=G.skills.skills[id];
+    const cd=G.skills.cooldowns[id];
+    const sx=sbX+i*56, sy2=sbY;
+    const unlocked = lv>0 && p.level>=def.unlockLv;
+    // Slot bg
+    ctx.fillStyle=unlocked?'rgba(40,30,10,0.9)':'rgba(20,20,20,0.9)';
+    drawRoundRect(ctx,sx,sy2,50,54,4,unlocked?'rgba(40,30,10,0.9)':'rgba(20,20,20,0.9)','#444');
+    if(unlocked){
+      // Icon
+      ctx.fillStyle=def.color;
+      ctx.beginPath(); ctx.arc(sx+25,sy2+18,16,0,Math.PI*2); ctx.fill();
+      ctx.strokeStyle='rgba(255,255,255,0.3)'; ctx.lineWidth=1.5; ctx.stroke();
+      // Skill symbol
+      ctx.fillStyle='#fff'; ctx.font='bold 12px Arial'; ctx.textAlign='center';
+      ctx.fillText(def.name.slice(0,3),sx+25,sy2+23);
+      // Hotkey
+      ctx.fillStyle='#aaa'; ctx.font='11px Arial';
+      ctx.fillText(''+(i+1),sx+25,sy2+40);
+      // Level
+      ctx.fillStyle='#fd0'; ctx.font='10px Arial';
+      ctx.fillText('Lv'+lv,sx+25,sy2+52);
+      // Cooldown overlay
+      if(cd>0){
+        ctx.fillStyle='rgba(0,0,0,0.65)';
+        drawRoundRect(ctx,sx,sy2,50,54,4,'rgba(0,0,0,0.65)',null);
+        ctx.fillStyle='#fff'; ctx.font='bold 14px Arial'; ctx.textAlign='center';
+        ctx.fillText(Math.ceil(cd)+'s',sx+25,sy2+32);
+      }
+      // MP cost
+      if(cd<=0){
+        const canUse = p.mp>=def.mp;
+        ctx.fillStyle=canUse?'rgba(0,100,255,0.2)':'rgba(100,0,0,0.3)';
+        ctx.fillRect(sx,sy2+44,50*(p.mp/p.maxMp),10);
+      }
+    } else {
+      ctx.fillStyle='#555'; ctx.font='10px Arial'; ctx.textAlign='center';
+      ctx.fillText('Lv'+def.unlockLv,sx+25,sy2+28);
+      ctx.fillStyle='#333'; ctx.font='10px Arial';
+      ctx.fillText(def.name.slice(0,5),sx+25,sy2+40);
+    }
+  }
+
+  // === Mini-map (bottom-right) ===
+  const mmX=W-134, mmY=H-134, mmW=120, mmH=120;
+  ctx.fillStyle='rgba(0,0,0,0.8)';
+  ctx.fillRect(mmX,mmY,mmW,mmH);
+  ctx.strokeStyle='#888'; ctx.lineWidth=1.5;
+  ctx.strokeRect(mmX,mmY,mmW,mmH);
+  // World bounds
+  ctx.strokeStyle='#444'; ctx.lineWidth=1;
+  ctx.strokeRect(mmX+1,mmY+1,mmW-2,mmH-2);
+
+  const scaleX=mmW/WORLD_W, scaleY=mmH/WORLD_H;
+  // Mobs (red dots)
+  for(const mob of G.mobs){
+    if(mob.dead) continue;
+    ctx.fillStyle='#f44';
+    ctx.fillRect(mmX+mob.x*scaleX-1,mmY+mob.y*scaleY-1,2,2);
+  }
+  // Player (gold dot)
+  ctx.fillStyle='#fd0';
+  ctx.beginPath();
+  ctx.arc(mmX+p.x*scaleX,mmY+p.y*scaleY,3,0,Math.PI*2);
+  ctx.fill();
+
+  // Zone labels on minimap
+  ctx.fillStyle='rgba(255,255,255,0.3)'; ctx.font='8px Arial'; ctx.textAlign='left';
+  ctx.fillText('S',mmX+4,mmY+12);
+  ctx.fillText('M',mmX+50,mmY+60);
+  ctx.fillText('H',mmX+90,mmY+100);
+
+  // Controls hint
+  ctx.fillStyle='rgba(255,255,255,0.4)'; ctx.font='10px Arial'; ctx.textAlign='right';
+  ctx.fillText('I:Inv  K:Skills  J:Quests',W-8,H-10);
+  ctx.fillText('U:Anvil  P:Stats  F5:Save  F9:Load',W-8,H-22);
+
+  if(G.screenShake>0){ ctx.restore(); G.screenShake-=1/60; }
+}
+
+
+// === PANEL: INVENTORY ===
+function drawInventoryPanel(){
+  const pw=640, ph=460, px=(W-pw)/2, py=(H-ph)/2;
+  // Background
+  ctx.fillStyle='rgba(5,2,10,0.97)';
+  drawRoundRect(ctx,px,py,pw,ph,10,'rgba(5,2,10,0.97)','#a80');
+  ctx.lineWidth=2;
+
+  // Title
+  ctx.fillStyle='#fd0'; ctx.font='bold 18px Arial'; ctx.textAlign='center';
+  ctx.fillText('INVENTORY',px+pw/2,py+28);
+  ctx.fillStyle='#aaa'; ctx.font='12px Arial';
+  ctx.fillText('Click: Use/Equip  Shift+Click: Drop  [I] Close',px+pw/2,py+44);
+
+  const p = G.player;
+  // === Item slots (left) ===
+  const slotSize=48, slotPad=4, gridX=px+15, gridY=py+55;
+  const cols=6, rows=4;
+
+  for(let i=0;i<24;i++){
+    const col=i%cols, row=Math.floor(i/cols);
+    const sx=gridX+col*(slotSize+slotPad);
+    const sy=gridY+row*(slotSize+slotPad);
+    const item=p.inventory.slots[i];
+    // Slot bg
+    ctx.fillStyle=G.hoveredSlot===i?'rgba(80,60,20,0.8)':'rgba(30,20,10,0.8)';
+    drawRoundRect(ctx,sx,sy,slotSize,slotSize,4,G.hoveredSlot===i?'rgba(80,60,20,0.8)':'rgba(30,20,10,0.8)','#444');
+    if(item && item.valid){
+      // Glow for enhanced items
+      if(item.enhance>=7){
+        ctx.save();
+        const gc=item.getGlowColor();
+        if(gc){ ctx.shadowColor=gc; ctx.shadowBlur=12; }
+        else { // Rainbow
+          G.rainbowAngle += 0.001;
+          ctx.shadowColor=`hsl(${(Date.now()*0.2)%360},100%,60%)`;
+          ctx.shadowBlur=15;
+        }
+      }
+      ctx.fillStyle=item.color||'#888';
+      ctx.beginPath(); ctx.arc(sx+slotSize/2,sy+slotSize/2,18,0,Math.PI*2); ctx.fill();
+      if(item.enhance>=7) ctx.restore();
+      ctx.fillStyle='#fff'; ctx.font='bold 16px Arial'; ctx.textAlign='center';
+      ctx.fillText(item.symbol||'?',sx+slotSize/2,sy+slotSize/2+6);
+      if(item.enhance>0){
+        ctx.fillStyle='#fd0'; ctx.font='bold 10px Arial';
+        ctx.fillText('+'+item.enhance,sx+slotSize-8,sy+12);
+      }
+      // Item count or type indicator
+      ctx.fillStyle='rgba(0,0,0,0.5)';
+      ctx.fillRect(sx,sy+slotSize-14,slotSize,14);
+      ctx.fillStyle='#ccc'; ctx.font='9px Arial';
+      ctx.fillText(item.name.slice(0,8),sx+slotSize/2,sy+slotSize-3);
+    }
+    ctx.strokeStyle='#555'; ctx.lineWidth=1;
+    ctx.strokeRect(sx,sy,slotSize,slotSize);
+    // Slot number
+    ctx.fillStyle='#333'; ctx.font='9px Arial'; ctx.textAlign='left';
+    ctx.fillText(i+1,sx+2,sy+10);
+  }
+
+  // === Equipment slots (right) ===
+  const eqX=px+340, eqY=py+55;
+  ctx.fillStyle='#fd0'; ctx.font='bold 14px Arial'; ctx.textAlign='left';
+  ctx.fillText('EQUIPMENT',eqX,eqY+14);
+
+  const equipSlots=[
+    {key:'weapon',label:'Weapon',y:eqY+26},
+    {key:'head',label:'Head',y:eqY+82},
+    {key:'chest',label:'Chest',y:eqY+138},
+    {key:'legs',label:'Legs',y:eqY+194},
+    {key:'boots',label:'Boots',y:eqY+250},
+  ];
+  for(const es of equipSlots){
+    const item=p.inventory.equipment[es.key];
+    const hover=G.hoveredEquip===es.key;
+    ctx.fillStyle=hover?'rgba(80,60,20,0.8)':'rgba(30,20,10,0.8)';
+    drawRoundRect(ctx,eqX,es.y,270,50,4,hover?'rgba(80,60,20,0.8)':'rgba(30,20,10,0.8)','#666');
+    ctx.fillStyle='#888'; ctx.font='11px Arial'; ctx.textAlign='left';
+    ctx.fillText('['+es.label+']',eqX+6,es.y+16);
+    if(item&&item.valid){
+      if(item.enhance>=7){
+        ctx.save();
+        const gc=item.getGlowColor();
+        ctx.shadowColor=gc||`hsl(${(Date.now()*0.2)%360},100%,60%)`;
+        ctx.shadowBlur=10;
+      }
+      ctx.fillStyle=item.color||'#888';
+      ctx.beginPath(); ctx.arc(eqX+20,es.y+33,14,0,Math.PI*2); ctx.fill();
+      if(item.enhance>=7) ctx.restore();
+      ctx.fillStyle='#fff'; ctx.font='bold 13px Arial'; ctx.textAlign='center';
+      ctx.fillText(item.symbol,eqX+20,es.y+38);
+      ctx.fillStyle='#eee'; ctx.font='12px Arial'; ctx.textAlign='left';
+      ctx.fillText(item.getDisplayName(),eqX+40,es.y+30);
+      const stats=[];
+      if(item.getEnhancedAtk()>0) stats.push('ATK+'+item.getEnhancedAtk());
+      if(item.getEnhancedDef()>0) stats.push('DEF+'+item.getEnhancedDef());
+      if(item.getEnhancedHp()>0) stats.push('HP+'+item.getEnhancedHp());
+      ctx.fillStyle='#aaa'; ctx.font='10px Arial';
+      ctx.fillText(stats.join(' '),eqX+40,es.y+44);
+      ctx.fillStyle='#a66'; ctx.font='10px Arial';
+      ctx.fillText('Right-click to unequip',eqX+160,es.y+44);
+    } else {
+      ctx.fillStyle='#444'; ctx.font='12px Arial'; ctx.textAlign='center';
+      ctx.fillText('Empty',eqX+135,es.y+30);
+    }
+  }
+
+  // === Player stat summary ===
+  const statX=eqX, statY=eqY+310;
+  ctx.fillStyle='rgba(20,15,5,0.8)';
+  drawRoundRect(ctx,statX,statY,270,100,4,'rgba(20,15,5,0.8)','#555');
+  ctx.fillStyle='#fd0'; ctx.font='bold 12px Arial'; ctx.textAlign='left';
+  ctx.fillText('CHARACTER STATS',statX+8,statY+16);
+  ctx.fillStyle='#ccc'; ctx.font='11px Arial';
+  ctx.fillText(`ATK: ${Math.floor(p.getAtk())}  DEF: ${Math.floor(p.getDef())}`,statX+8,statY+34);
+  ctx.fillText(`HP: ${Math.floor(p.hp)}/${p.maxHp}  MP: ${Math.floor(p.mp)}/${p.maxMp}`,statX+8,statY+50);
+  ctx.fillText(`Crit: ${(p.critChance*100).toFixed(1)}%  Speed: ${p.speed}`,statX+8,statY+66);
+  ctx.fillStyle='#fd0'; ctx.font='bold 12px Arial';
+  ctx.fillText(`Noah: ${p.inventory.noah}`,statX+8,statY+84);
+
+  // Tooltip for hovered item
+  if(G.hoveredSlot>=0 && G.hoveredSlot<24){
+    const item=p.inventory.slots[G.hoveredSlot];
+    if(item&&item.valid) drawItemTooltip(item, G.mouseX, G.mouseY);
+  }
+  if(G.hoveredEquip){
+    const item=p.inventory.equipment[G.hoveredEquip];
+    if(item&&item.valid) drawItemTooltip(item, G.mouseX, G.mouseY);
+  }
+}
+
+function drawItemTooltip(item, mx, my){
+  const lines=[item.getDisplayName()];
+  if(item.type) lines.push('Type: '+item.type);
+  if(item.atk||item.getEnhancedAtk()>0) lines.push('ATK: +'+item.getEnhancedAtk());
+  if(item.def||item.getEnhancedDef()>0) lines.push('DEF: +'+item.getEnhancedDef());
+  if(item.hp||item.getEnhancedHp()>0) lines.push('HP: +'+item.getEnhancedHp());
+  if(item.heal) lines.push('Heal: '+item.heal+' HP');
+  if(item.mp) lines.push('Restore: '+item.mp+' MP');
+  if(item.atk_buff) lines.push('ATK Buff: +'+(item.atk_buff*100)+'%');
+  if(item.value) lines.push('Value: '+item.value+' Noah');
+  if(item.enhance>0) lines.push('Enhance: +'+item.enhance);
+  const tw=200, th=16+lines.length*16+8;
+  let tx=mx+15, ty=my-th/2;
+  if(tx+tw>W) tx=mx-tw-5;
+  if(ty<0) ty=0;
+  if(ty+th>H) ty=H-th;
+  ctx.fillStyle='rgba(5,2,15,0.95)';
+  drawRoundRect(ctx,tx,ty,tw,th,6,'rgba(5,2,15,0.95)','#fd0');
+  ctx.fillStyle='#fd0'; ctx.font='bold 12px Arial'; ctx.textAlign='left';
+  ctx.fillText(lines[0],tx+8,ty+16);
+  ctx.fillStyle='#ccc'; ctx.font='11px Arial';
+  for(let i=1;i<lines.length;i++) ctx.fillText(lines[i],tx+8,ty+16+i*15);
+}
+
+// === PANEL: SKILLS ===
+function drawSkillPanel(){
+  const pw=560, ph=500, px=(W-pw)/2, py=(H-ph)/2;
+  ctx.fillStyle='rgba(5,2,10,0.97)';
+  drawRoundRect(ctx,px,py,pw,ph,10,'rgba(5,2,10,0.97)','#a0f');
+  ctx.lineWidth=2;
+  ctx.fillStyle='#a0f'; ctx.font='bold 18px Arial'; ctx.textAlign='center';
+  ctx.fillText('SKILL TREE',px+pw/2,py+28);
+  const p=G.player;
+  ctx.fillStyle='#fd0'; ctx.font='bold 14px Arial';
+  ctx.fillText(`Skill Points: ${p.skillPoints}`,px+pw/2,py+46);
+
+  for(let i=0;i<SKILL_ORDER.length;i++){
+    const id=SKILL_ORDER[i];
+    const def=SKILL_DEFS[id];
+    const lv=G.skills.skills[id];
+    const unlocked=p.level>=def.unlockLv;
+    const sy=py+65+i*58;
+    // Row bg
+    ctx.fillStyle=unlocked?'rgba(30,20,50,0.8)':'rgba(15,10,25,0.8)';
+    drawRoundRect(ctx,px+10,sy,pw-20,52,6,unlocked?'rgba(30,20,50,0.8)':'rgba(15,10,25,0.8)','#333');
+    // Icon
+    ctx.fillStyle=unlocked?def.color:'#444';
+    ctx.beginPath(); ctx.arc(px+36,sy+26,20,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle=unlocked?def.color:'#333'; ctx.lineWidth=1.5; ctx.stroke();
+    ctx.fillStyle='#fff'; ctx.font='bold 10px Arial'; ctx.textAlign='center';
+    ctx.fillText(def.name.slice(0,3),px+36,sy+30);
+    // Name + info
+    ctx.fillStyle=unlocked?'#eee':'#555'; ctx.font='bold 13px Arial'; ctx.textAlign='left';
+    ctx.fillText(`${i+1}. ${def.name}`,px+64,sy+16);
+    ctx.fillStyle=unlocked?'#aaa':'#444'; ctx.font='11px Arial';
+    ctx.fillText(`${def.desc}  |  MP:${def.mp}  CD:${def.cd}s`,px+64,sy+30);
+    // Unlock info
+    if(!unlocked){
+      ctx.fillStyle='#f44'; ctx.font='bold 11px Arial';
+      ctx.fillText(`Requires Lv ${def.unlockLv}`,px+64,sy+44);
+    } else {
+      ctx.fillStyle='#fd0'; ctx.font='11px Arial';
+      ctx.fillText(`Lv: ${lv}/${def.maxLv}`,px+64,sy+44);
+    }
+    // Stars
+    for(let s=0;s<def.maxLv;s++){
+      ctx.fillStyle=s<lv?'#fd0':'#333';
+      ctx.beginPath(); ctx.arc(px+350+s*18,sy+26,7,0,Math.PI*2); ctx.fill();
+    }
+    // + button
+    if(unlocked && lv<def.maxLv && p.skillPoints>0){
+      ctx.fillStyle='#4f4';
+      drawRoundRect(ctx,px+pw-65,sy+12,50,28,6,'#4f4','#2a2');
+      ctx.fillStyle='#000'; ctx.font='bold 14px Arial'; ctx.textAlign='center';
+      ctx.fillText('+ UP',px+pw-40,sy+30);
+    } else if(lv>=def.maxLv && unlocked){
+      ctx.fillStyle='#fd0'; ctx.font='bold 11px Arial'; ctx.textAlign='center';
+      ctx.fillText('MAX',px+pw-40,sy+28);
+    }
+  }
+}
+
+
+// === PANEL: QUEST LOG ===
+function drawQuestPanel(){
+  const pw=560, ph=480, px=(W-pw)/2, py=(H-ph)/2;
+  ctx.fillStyle='rgba(5,2,10,0.97)';
+  drawRoundRect(ctx,px,py,pw,ph,10,'rgba(5,2,10,0.97)','#a80');
+  ctx.lineWidth=2;
+  ctx.fillStyle='#fd0'; ctx.font='bold 18px Arial'; ctx.textAlign='center';
+  ctx.fillText('QUEST LOG',px+pw/2,py+28);
+
+  // Tabs
+  const tabs=['active','available','completed'];
+  for(let i=0;i<tabs.length;i++){
+    const tx=px+10+i*180, ty=py+38;
+    const active=G.questTab===tabs[i];
+    ctx.fillStyle=active?'rgba(100,70,0,0.9)':'rgba(30,20,10,0.8)';
+    drawRoundRect(ctx,tx,ty,170,24,4,active?'rgba(100,70,0,0.9)':'rgba(30,20,10,0.8)',active?'#fd0':'#555');
+    ctx.fillStyle=active?'#fff':'#888'; ctx.font='bold 12px Arial'; ctx.textAlign='center';
+    ctx.fillText(tabs[i].charAt(0).toUpperCase()+tabs[i].slice(1),tx+85,ty+16);
+  }
+
+  let quests;
+  if(G.questTab==='active') quests=G.quests.getActive();
+  else if(G.questTab==='available') quests=G.quests.getAvailable();
+  else quests=G.quests.getCompleted();
+
+  const listY=py+72;
+  if(quests.length===0){
+    ctx.fillStyle='#555'; ctx.font='14px Arial'; ctx.textAlign='center';
+    ctx.fillText('No quests here.',px+pw/2,listY+60);
+  }
+
+  for(let i=0;i<quests.length;i++){
+    const q=quests[i];
+    const qs=G.quests.quests[q.id];
+    const qy=listY+i*90;
+    if(qy>py+ph-40) break;
+    ctx.fillStyle='rgba(20,15,5,0.9)';
+    drawRoundRect(ctx,px+10,qy,pw-20,82,6,'rgba(20,15,5,0.9)','#664');
+
+    ctx.fillStyle='#fd0'; ctx.font='bold 14px Arial'; ctx.textAlign='left';
+    ctx.fillText(q.name,px+18,qy+18);
+    ctx.fillStyle='#ccc'; ctx.font='12px Arial';
+    ctx.fillText(q.desc,px+18,qy+34);
+
+    // Progress
+    if(G.questTab==='active'){
+      const total=q.killCount||q.collectNoah;
+      const prog=Math.min(qs.progress,total);
+      const pct=prog/total;
+      ctx.fillStyle='#333'; ctx.fillRect(px+18,qy+42,pw-60,8);
+      ctx.fillStyle='#4f4'; ctx.fillRect(px+18,qy+42,(pw-60)*pct,8);
+      ctx.fillStyle='#aaa'; ctx.font='11px Arial';
+      ctx.fillText(`${prog}/${total}`,px+18,qy+64);
+    }
+
+    // Rewards
+    const rewards=[];
+    rewards.push(q.rewards.exp+' EXP');
+    rewards.push(q.rewards.noah+' Noah');
+    if(q.rewards.items&&q.rewards.items.length>0) rewards.push(q.rewards.items.map(id=>ITEM_DEFS[id]?ITEM_DEFS[id].name:'?').join(', '));
+    ctx.fillStyle='#a80'; ctx.font='11px Arial'; ctx.textAlign='left';
+    ctx.fillText('Reward: '+rewards.join(' | '),px+18,G.questTab==='active'?qy+78:qy+54);
+
+    // Buttons
+    if(G.questTab==='available'){
+      ctx.fillStyle='#4a4';
+      drawRoundRect(ctx,px+pw-90,qy+25,75,28,6,'#4a4','#2a2');
+      ctx.fillStyle='#fff'; ctx.font='bold 12px Arial'; ctx.textAlign='center';
+      ctx.fillText('Accept',px+pw-52,qy+43);
+    } else if(G.questTab==='active'){
+      ctx.fillStyle='#833';
+      drawRoundRect(ctx,px+pw-100,qy+25,85,28,6,'#833','#622');
+      ctx.fillStyle='#fff'; ctx.font='bold 12px Arial'; ctx.textAlign='center';
+      ctx.fillText('Abandon',px+pw-57,qy+43);
+    } else {
+      ctx.fillStyle='#353';
+      drawRoundRect(ctx,px+pw-90,qy+25,75,28,6,'#353','#242');
+      ctx.fillStyle='#4f4'; ctx.font='bold 12px Arial'; ctx.textAlign='center';
+      ctx.fillText('DONE',px+pw-52,qy+43);
+    }
+  }
+}
+
+// === PANEL: STAT ASSIGNMENT ===
+function drawStatPanel(){
+  const pw=400, ph=380, px=(W-pw)/2, py=(H-ph)/2;
+  ctx.fillStyle='rgba(5,2,10,0.97)';
+  drawRoundRect(ctx,px,py,pw,ph,10,'rgba(5,2,10,0.97)','#fd0');
+  ctx.lineWidth=2;
+  const p=G.player;
+  ctx.fillStyle='#fd0'; ctx.font='bold 18px Arial'; ctx.textAlign='center';
+  ctx.fillText('STAT ASSIGNMENT',px+pw/2,py+28);
+  ctx.fillStyle='#fff'; ctx.font='bold 14px Arial';
+  ctx.fillText(`Available Points: ${p.statPoints}`,px+pw/2,py+48);
+
+  if(!G.statPanelStats){
+    G.statPanelStats={str:p.str,dex:p.dex,int:p.int,extraHp:0,extraMp:0,points:p.statPoints};
+  }
+  const sp=G.statPanelStats;
+
+  const statRows=[
+    {key:'str',label:'STR',desc:'ATK, DEF, MaxHP',val:sp.str},
+    {key:'dex',label:'DEX',desc:'Crit Chance, Speed',val:sp.dex},
+    {key:'int',label:'INT',desc:'MaxMP, Skill Power',val:sp.int},
+    {key:'extraHp',label:'HP+',desc:'+30 MaxHP per point',val:sp.extraHp},
+    {key:'extraMp',label:'MP+',desc:'+20 MaxMP per point',val:sp.extraMp},
+  ];
+
+  for(let i=0;i<statRows.length;i++){
+    const row=statRows[i];
+    const ry=py+70+i*52;
+    ctx.fillStyle='rgba(20,15,5,0.8)';
+    drawRoundRect(ctx,px+15,ry,pw-30,44,6,'rgba(20,15,5,0.8)','#444');
+    ctx.fillStyle='#fd0'; ctx.font='bold 14px Arial'; ctx.textAlign='left';
+    ctx.fillText(row.label,px+28,ry+18);
+    ctx.fillStyle='#ccc'; ctx.font='11px Arial';
+    ctx.fillText(row.desc,px+70,ry+18);
+    ctx.fillStyle='#fff'; ctx.font='bold 16px Arial'; ctx.textAlign='center';
+    ctx.fillText(row.val,px+270,ry+28);
+    // - button
+    ctx.fillStyle=row.val>0?'#833':'#333';
+    drawRoundRect(ctx,px+230,ry+10,24,24,4,row.val>0?'#833':'#333','#555');
+    ctx.fillStyle='#fff'; ctx.font='bold 14px Arial'; ctx.textAlign='center';
+    ctx.fillText('-',px+242,ry+26);
+    // + button
+    ctx.fillStyle=sp.points>0?'#484':'#333';
+    drawRoundRect(ctx,px+300,ry+10,24,24,4,sp.points>0?'#484':'#333','#555');
+    ctx.fillStyle='#fff';
+    ctx.fillText('+',px+312,ry+26);
+  }
+
+  // Confirm button
+  ctx.fillStyle='#484';
+  drawRoundRect(ctx,px+pw/2-70,py+ph-55,140,36,8,'#484','#6f6');
+  ctx.fillStyle='#fff'; ctx.font='bold 16px Arial'; ctx.textAlign='center';
+  ctx.fillText('Confirm',px+pw/2,py+ph-30);
+
+  // Preview
+  const previewHp=200+(sp.str*10)+(sp.extraHp*30)+p.inventory.getEquipBonus().hp;
+  const previewMp=100+(sp.int*8)+(sp.extraMp*20);
+  ctx.fillStyle='#aaa'; ctx.font='11px Arial'; ctx.textAlign='center';
+  ctx.fillText(`Preview: HP ${previewHp}  MP ${previewMp}  ATK ${10+sp.str*2}`,px+pw/2,py+ph-12);
+}
+
+// === PANEL: ANVIL ===
+function drawAnvilPanel(){
+  const pw=580, ph=480, px=(W-pw)/2, py=(H-ph)/2;
+  ctx.fillStyle='rgba(5,2,10,0.97)';
+  drawRoundRect(ctx,px,py,pw,ph,10,'rgba(5,2,10,0.97)','#f80');
+  ctx.lineWidth=2;
+  ctx.fillStyle='#f80'; ctx.font='bold 18px Arial'; ctx.textAlign='center';
+  ctx.fillText('ANVIL - ITEM ENHANCEMENT',px+pw/2,py+28);
+
+  const p=G.player;
+  const inv=p.inventory;
+
+  // Left: item list
+  ctx.fillStyle='#aaa'; ctx.font='12px Arial'; ctx.textAlign='left';
+  ctx.fillText('Select item to enhance:',px+15,py+50);
+  const equipTypes=['weapon','head','chest','legs','boots'];
+  const enhanceable=[];
+  for(let i=0;i<24;i++){
+    const it=inv.slots[i];
+    if(it&&equipTypes.includes(it.type)) enhanceable.push({item:it,src:'inv',idx:i});
+  }
+  for(const slot of equipTypes){
+    const it=inv.equipment[slot];
+    if(it) enhanceable.push({item:it,src:'equip',slot});
+  }
+
+  const listX=px+10, listY=py+58, itemH=40;
+  for(let i=0;i<Math.min(enhanceable.length,9);i++){
+    const e=enhanceable[i];
+    const it=e.item;
+    const iy=listY+i*itemH;
+    const selected=G.anvilSelected&&G.anvilSelected.item===it;
+    ctx.fillStyle=selected?'rgba(100,60,0,0.9)':'rgba(30,20,10,0.8)';
+    drawRoundRect(ctx,listX,iy,240,36,4,selected?'rgba(100,60,0,0.9)':'rgba(30,20,10,0.8)','#555');
+    // Glow
+    if(it.enhance>=7){
+      ctx.save();
+      ctx.shadowColor=it.getGlowColor()||`hsl(${(Date.now()*0.2)%360},100%,60%)`;
+      ctx.shadowBlur=8;
+    }
+    ctx.fillStyle=it.color||'#888';
+    ctx.beginPath(); ctx.arc(listX+18,iy+18,13,0,Math.PI*2); ctx.fill();
+    if(it.enhance>=7) ctx.restore();
+    ctx.fillStyle='#fff'; ctx.font='bold 11px Arial'; ctx.textAlign='center';
+    ctx.fillText(it.symbol,listX+18,iy+22);
+    ctx.fillStyle=it.enhance>0?'#fd0':'#eee'; ctx.font='12px Arial'; ctx.textAlign='left';
+    ctx.fillText(it.getDisplayName(),listX+38,iy+14);
+    ctx.fillStyle='#aaa'; ctx.font='10px Arial';
+    if(it.getEnhancedAtk()>0) ctx.fillText('ATK+'+it.getEnhancedAtk(),listX+38,iy+28);
+    else if(it.getEnhancedDef()>0) ctx.fillText('DEF+'+it.getEnhancedDef()+' HP+'+it.getEnhancedHp(),listX+38,iy+28);
+  }
+
+  // Right: selected item detail + enhance button
+  const selX=px+270, selY=py+55;
+  ctx.fillStyle='rgba(20,15,5,0.8)';
+  drawRoundRect(ctx,selX,selY,pw-280,380,6,'rgba(20,15,5,0.8)','#555');
+
+  if(G.anvilSelected){
+    const it=G.anvilSelected.item;
+    const en=it.enhance;
+    // Preview
+    ctx.fillStyle='#fd0'; ctx.font='bold 14px Arial'; ctx.textAlign='center';
+    ctx.fillText(it.getDisplayName(),selX+(pw-280)/2,selY+22);
+
+    // Item icon large
+    if(en>=7){
+      ctx.save();
+      ctx.shadowColor=it.getGlowColor()||`hsl(${(Date.now()*0.2)%360},100%,60%)`;
+      ctx.shadowBlur=20;
+    }
+    ctx.fillStyle=it.color||'#888';
+    ctx.beginPath(); ctx.arc(selX+(pw-280)/2,selY+68,32,0,Math.PI*2); ctx.fill();
+    if(en>=7) ctx.restore();
+    ctx.fillStyle='#fff'; ctx.font='bold 24px Arial'; ctx.textAlign='center';
+    ctx.fillText(it.symbol,selX+(pw-280)/2,selY+78);
+
+    // Stats
+    ctx.fillStyle='#aaa'; ctx.font='12px Arial';
+    if(it.getEnhancedAtk()>0) ctx.fillText('ATK: +'+it.getEnhancedAtk()+' → +'+(it.getEnhancedAtk()+3),selX+(pw-280)/2,selY+112);
+    if(it.getEnhancedDef()>0) ctx.fillText('DEF: +'+it.getEnhancedDef()+' → +'+(it.getEnhancedDef()+2),selX+(pw-280)/2,selY+128);
+    if(it.getEnhancedHp()>0) ctx.fillText('HP: +'+it.getEnhancedHp()+' → +'+(it.getEnhancedHp()+5),selX+(pw-280)/2,selY+144);
+
+    // Enhance info
+    const cost = en>=6 ? (en+1)*300 : (en+1)*100;
+    let successChance, burnChance=0;
+    if(en<6){ successChance=0.60; }
+    else if(en===6){ successChance=0.60; }
+    else if(en===7){ successChance=0.70; burnChance=0.30; }
+    else if(en===8){ successChance=0.50; burnChance=0.50; }
+    else if(en===9){ successChance=0.30; burnChance=0.70; }
+    else { successChance=0.10; burnChance=0.90; }
+
+    ctx.fillStyle='#fd0'; ctx.font='bold 13px Arial'; ctx.textAlign='center';
+    ctx.fillText(`Enhance: ${en} → ${en+1}`,selX+(pw-280)/2,selY+170);
+    ctx.fillStyle='#fff'; ctx.font='12px Arial';
+    ctx.fillText(`Cost: ${cost} Noah`,selX+(pw-280)/2,selY+188);
+    ctx.fillStyle='#4f4';
+    ctx.fillText(`Success: ${Math.round(successChance*100)}%`,selX+(pw-280)/2,selY+204);
+    if(en>=6){
+      ctx.fillStyle='#f44';
+      ctx.fillText(`BURN/DESTROY: ${Math.round(burnChance*100)}%`,selX+(pw-280)/2,selY+220);
+      ctx.fillStyle='#f80'; ctx.font='bold 11px Arial';
+      ctx.fillText('WARNING: Item can be DESTROYED!',selX+(pw-280)/2,selY+238);
+    }
+
+    // Noah display
+    ctx.fillStyle=inv.noah>=cost?'#4f4':'#f44'; ctx.font='12px Arial';
+    ctx.fillText(`Your Noah: ${inv.noah}`,selX+(pw-280)/2,selY+258);
+
+    // ENHANCE button
+    const canAfford=inv.noah>=cost && en<10;
+    ctx.fillStyle=canAfford?'#f80':'#444';
+    drawRoundRect(ctx,selX+30,selY+272,pw-340,44,8,canAfford?'#f80':'#444',canAfford?'#fa0':'#333');
+    ctx.fillStyle=canAfford?'#000':'#666'; ctx.font='bold 18px Arial'; ctx.textAlign='center';
+    ctx.fillText(en>=10?'MAX ENHANCE':'ENHANCE!',selX+(pw-280)/2,selY+299);
+
+    // Anvil message
+    if(G.anvilMsgTimer>0){
+      G.anvilMsgTimer-=1/60;
+      ctx.fillStyle=G.anvilMsg.startsWith('SUCCESS')?'#4f4':'#f44';
+      ctx.font='bold 16px Arial'; ctx.textAlign='center';
+      ctx.fillText(G.anvilMsg,selX+(pw-280)/2,selY+330);
+    }
+
+  } else {
+    ctx.fillStyle='#555'; ctx.font='14px Arial'; ctx.textAlign='center';
+    ctx.fillText('Select an item from the list',selX+(pw-280)/2,selY+80);
+    ctx.fillText('to enhance it.',selX+(pw-280)/2,selY+100);
+    ctx.fillStyle='#888'; ctx.font='11px Arial';
+    ctx.fillText('+1 to +6: 60% success',selX+(pw-280)/2,selY+140);
+    ctx.fillText('+7 to +10: Burn risk!',selX+(pw-280)/2,selY+158);
+    ctx.fillText('Failed +7 destroys item!',selX+(pw-280)/2,selY+176);
+  }
+
+  if(G.anvilFlash>0){
+    ctx.fillStyle=`rgba(255,0,0,${G.anvilFlash*0.4})`;
+    ctx.fillRect(0,0,W,H);
+    G.anvilFlash-=1/60;
+  }
+}
+
+function doAnvilEnhance(){
+  if(!G.anvilSelected) return;
+  const it=G.anvilSelected.item;
+  const inv=G.player.inventory;
+  const en=it.enhance;
+  if(en>=10){ G.anvilMsg='Already MAX enhance!'; G.anvilMsgTimer=2; return; }
+  const cost=en>=6?(en+1)*300:(en+1)*100;
+  if(inv.noah<cost){ G.anvilMsg='Not enough Noah!'; G.anvilMsgTimer=2; return; }
+  inv.noah-=cost;
+
+  let successChance,burnChance=0;
+  if(en<6){ successChance=0.60; }
+  else if(en===6){ successChance=0.60; }
+  else if(en===7){ successChance=0.70; burnChance=0.30; }
+  else if(en===8){ successChance=0.50; burnChance=0.50; }
+  else if(en===9){ successChance=0.30; burnChance=0.70; }
+  else { successChance=0.10; burnChance=0.90; }
+
+  const roll=Math.random();
+  if(roll<successChance){
+    it.enhance++;
+    G.anvilMsg='SUCCESS! +'+it.enhance;
+    G.anvilMsgTimer=2;
+    G.particles.spawn('spark',G.player.x,G.player.y,'');
+    G.particles.spawn('spark',G.player.x+20,G.player.y-20,'');
+  } else if(en>=6 && roll<successChance+burnChance){
+    // Destroy item
+    G.anvilMsg='DESTROYED! Item burned to ash!';
+    G.anvilMsgTimer=3;
+    G.anvilFlash=1;
+    G.particles.spawn('burn',G.player.x,G.player.y,'');
+    // Remove from inventory or equipment
+    if(G.anvilSelected.src==='inv'){
+      inv.slots[G.anvilSelected.idx]=null;
+    } else {
+      inv.equipment[G.anvilSelected.slot]=null;
+      G.player.recalcStats();
+    }
+    G.anvilSelected=null;
+  } else {
+    G.anvilMsg='FAILED! Noah lost.';
+    G.anvilMsgTimer=2;
+  }
+}
+
+
+// === PANEL: DEATH SCREEN ===
+function drawDeathScreen(){
+  ctx.fillStyle='rgba(80,0,0,0.85)';
+  ctx.fillRect(0,0,W,H);
+  // Vignette
+  const grad=ctx.createRadialGradient(W/2,H/2,100,W/2,H/2,W/2);
+  grad.addColorStop(0,'rgba(0,0,0,0)');
+  grad.addColorStop(1,'rgba(120,0,0,0.7)');
+  ctx.fillStyle=grad;
+  ctx.fillRect(0,0,W,H);
+
+  ctx.fillStyle='#f00';
+  ctx.font='bold 72px Arial';
+  ctx.textAlign='center';
+  ctx.shadowColor='#f00'; ctx.shadowBlur=30;
+  ctx.fillText('YOU DIED',W/2,H/2-60);
+  ctx.shadowBlur=0;
+
+  ctx.fillStyle='#ddd'; ctx.font='18px Arial';
+  ctx.fillText('Your journey ends here... for now.',W/2,H/2-10);
+
+  // Respawn button
+  ctx.fillStyle='#484';
+  drawRoundRect(ctx,W/2-130,H/2+20,120,44,8,'#484','#6a6');
+  ctx.fillStyle='#fff'; ctx.font='bold 16px Arial';
+  ctx.fillText('Respawn',W/2-70,H/2+47);
+
+  // Load button
+  ctx.fillStyle='#448';
+  drawRoundRect(ctx,W/2+10,H/2+20,120,44,8,'#448','#66a');
+  ctx.fillStyle='#fff'; ctx.font='bold 16px Arial';
+  ctx.fillText('Load Save',W/2+70,H/2+47);
+
+  ctx.fillStyle='#888'; ctx.font='12px Arial';
+  ctx.fillText('Respawn at start with 50% HP',W/2,H/2+80);
+}
+
+// === MENU SCREEN ===
+function updateMenuParticles(dt){
+  G.menuTimer+=dt;
+  if(G.menuParticles.length<60){
+    G.menuParticles.push({
+      x:rnd(0,W), y:H+10,
+      vx:rnd(-20,20), vy:rnd(-50,-150),
+      color:`hsl(${rnd(30,60)},100%,${rnd(50,80)}%)`,
+      life:rnd(3,7), maxLife:rnd(3,7), r:rnd(2,5)
+    });
+  }
+  for(let i=G.menuParticles.length-1;i>=0;i--){
+    const p=G.menuParticles[i];
+    p.x+=p.vx*dt; p.y+=p.vy*dt;
+    p.life-=dt;
+    if(p.life<=0||p.y<-20) G.menuParticles.splice(i,1);
+  }
+}
+
+function drawMenuScreen(){
+  // Background gradient
+  const bg=ctx.createLinearGradient(0,0,0,H);
+  bg.addColorStop(0,'#050210');
+  bg.addColorStop(0.5,'#0a0420');
+  bg.addColorStop(1,'#150830');
+  ctx.fillStyle=bg;
+  ctx.fillRect(0,0,W,H);
+
+  // Stars
+  ctx.fillStyle='rgba(255,255,255,0.5)';
+  for(let i=0;i<100;i++){
+    const sx=(i*137.5+50)%W;
+    const sy=(i*97.3+30)%H;
+    const pulse=Math.sin(G.menuTimer*2+i)*0.5+0.5;
+    ctx.globalAlpha=pulse*0.6;
+    ctx.fillRect(sx,sy,1.5,1.5);
+  }
+  ctx.globalAlpha=1;
+
+  // Floating particles
+  for(const p of G.menuParticles){
+    ctx.globalAlpha=Math.min(1,p.life/p.maxLife*2);
+    ctx.fillStyle=p.color;
+    ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill();
+  }
+  ctx.globalAlpha=1;
+
+  // Title with glow
+  const t=G.menuTimer;
+  ctx.save();
+  ctx.shadowColor='#f80';
+  ctx.shadowBlur=30+Math.sin(t*2)*10;
+  ctx.fillStyle='#fd0';
+  ctx.font=`bold ${Math.floor(48+Math.sin(t)*3)}px Arial`;
+  ctx.textAlign='center';
+  ctx.fillText('\u2694 KNIGHT ONLINE RPG \u2694',W/2,H/2-120);
+  ctx.shadowBlur=0;
+
+  ctx.fillStyle='rgba(255,200,50,0.6)';
+  ctx.font='18px Arial';
+  ctx.fillText('An Epic Adventure Awaits',W/2,H/2-75);
+  ctx.restore();
+
+  // Decorative sword divider
+  ctx.strokeStyle='rgba(200,150,0,0.5)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(W/2-200,H/2-55); ctx.lineTo(W/2+200,H/2-55); ctx.stroke();
+
+  // Buttons
+  const btns=[
+    {label:'New Game', y:H/2-30, color:'#484', hov:'#5a5'},
+    {label:'Continue', y:H/2+30, color: hasSave()?'#448':'#333', hov:'#55a'},
+    {label:'Controls', y:H/2+90, color:'#644', hov:'#866'},
+  ];
+
+  for(const btn of btns){
+    const bx=W/2-110, bw=220, bh=44;
+    const hover=G.mouseX>=bx&&G.mouseX<=bx+bw&&G.mouseY>=btn.y&&G.mouseY<=btn.y+bh;
+    ctx.fillStyle=hover?btn.hov:btn.color;
+    drawRoundRect(ctx,bx,btn.y,bw,bh,10,hover?btn.hov:btn.color,'rgba(255,200,0,0.4)');
+    ctx.fillStyle='#fff'; ctx.font='bold 18px Arial'; ctx.textAlign='center';
+    ctx.fillText(btn.label,W/2,btn.y+28);
+    if(btn.label==='Continue'&&!hasSave()){
+      ctx.fillStyle='rgba(255,255,255,0.3)'; ctx.font='11px Arial';
+      ctx.fillText('No save found',W/2,btn.y+43);
+    }
+  }
+
+  // Controls info (shown inline or as overlay)
+  ctx.fillStyle='rgba(150,150,150,0.6)'; ctx.font='12px Arial'; ctx.textAlign='center';
+  ctx.fillText('WASD/Click to move  |  1-7 Skills  |  I K J U P for panels',W/2,H-30);
+  ctx.fillText('F5 Quick Save  |  F9 Quick Load  |  Escape to close panels',W/2,H-14);
+}
+
+// === GROUND ITEMS DRAWING ===
+function drawGroundItems(cam){
+  for(let i=G.groundItems.length-1;i>=0;i--){
+    const gi=G.groundItems[i];
+    gi.glowTimer+=1/60;
+    const s=worldToScreen(gi.x,gi.y,cam);
+    if(s.x<-30||s.x>W+30||s.y<-30||s.y>H+30) continue;
+    const glow=Math.sin(gi.glowTimer*4)*0.3+0.7;
+    ctx.save();
+    ctx.shadowColor=gi.item.color||'#fff';
+    ctx.shadowBlur=12*glow;
+    ctx.fillStyle=gi.item.color||'#aaa';
+    ctx.beginPath(); ctx.arc(s.x,s.y,10,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+    ctx.fillStyle='#fff'; ctx.font='bold 10px Arial'; ctx.textAlign='center';
+    ctx.fillText(gi.item.symbol||'?',s.x,s.y+4);
+    // Pick up if player nearby
+    if(dist(G.player,gi)<30){
+      const picked=G.player.inventory.addItem(gi.item);
+      if(picked) G.groundItems.splice(i,1);
+    }
+  }
+}
+
+// === INPUT HANDLERS ===
+function setupInput(){
+  document.addEventListener('keydown',e=>{
+    G.keys[e.code]=true;
+    if(G.state==='playing'||G.state==='inventory'||G.state==='skills'||G.state==='quests'||G.state==='anvil'||G.state==='stat'){
+      // Skill hotkeys
+      if(G.state==='playing'){
+        const skillKeys=['Digit1','Digit2','Digit3','Digit4','Digit5','Digit6','Digit7'];
+        const si=skillKeys.indexOf(e.code);
+        if(si>=0 && si<SKILL_ORDER.length) G.skills.use(SKILL_ORDER[si],G.player,G.mobs);
+      }
+      if(e.code==='KeyI'){ G.state=G.state==='inventory'?'playing':'inventory'; e.preventDefault(); }
+      if(e.code==='KeyK'){ G.state=G.state==='skills'?'playing':'skills'; e.preventDefault(); }
+      if(e.code==='KeyJ'){ G.state=G.state==='quests'?'playing':'quests'; e.preventDefault(); }
+      if(e.code==='KeyU'){ G.state=G.state==='anvil'?'playing':'anvil'; e.preventDefault(); }
+      if(e.code==='KeyP'){
+        if(G.state==='stat'){ applyStatPanel(); G.state='playing'; }
+        else { G.statPanelStats=null; G.state='stat'; }
+        e.preventDefault();
+      }
+      if(e.code==='Escape'){
+        if(G.state!=='playing') G.state='playing';
+        else G.state='menu';
+        e.preventDefault();
+      }
+      if(e.code==='F5'){ e.preventDefault(); saveGame(); G.particles.spawn('heal',G.player.x,G.player.y,'Saved!'); }
+      if(e.code==='F9'){ e.preventDefault(); loadGame(); G.particles.spawn('heal',G.player.x,G.player.y,'Loaded!'); }
+    }
+  });
+  document.addEventListener('keyup',e=>{ G.keys[e.code]=false; });
+
+  canvas.addEventListener('mousemove',e=>{
+    G.mouseX=e.clientX; G.mouseY=e.clientY;
+    if(G.state==='inventory'){
+      const p=G.player;
+      const pw=640, ph=460, px=(W-pw)/2, py=(H-ph)/2;
+      const slotSize=48, slotPad=4, gridX=px+15, gridY=py+55;
+      G.hoveredSlot=-1; G.hoveredEquip=null;
+      for(let i=0;i<24;i++){
+        const col=i%6, row=Math.floor(i/6);
+        const sx=gridX+col*(slotSize+slotPad);
+        const sy=gridY+row*(slotSize+slotPad);
+        if(G.mouseX>=sx&&G.mouseX<=sx+slotSize&&G.mouseY>=sy&&G.mouseY<=sy+slotSize) G.hoveredSlot=i;
+      }
+      const eqX=px+340, equipSlotDefs=[
+        {key:'weapon',y:py+81},{key:'head',y:py+137},{key:'chest',y:py+193},{key:'legs',y:py+249},{key:'boots',y:py+305}
+      ];
+      for(const es of equipSlotDefs){
+        if(G.mouseX>=eqX&&G.mouseX<=eqX+270&&G.mouseY>=es.y&&G.mouseY<=es.y+50) G.hoveredEquip=es.key;
+      }
+    }
+  });
+
+  canvas.addEventListener('click',e=>{
+    const mx=e.clientX, my=e.clientY;
+    if(G.state==='menu'){
+      const btns=[
+        {label:'New Game', y:H/2-30},
+        {label:'Continue', y:H/2+30},
+        {label:'Controls', y:H/2+90},
+      ];
+      for(const btn of btns){
+        if(mx>=W/2-110&&mx<=W/2+110&&my>=btn.y&&my<=btn.y+44){
+          if(btn.label==='New Game'){ initGame(true); G.state='playing'; }
+          else if(btn.label==='Continue'&&hasSave()){ initGame(false); G.state='playing'; }
+          else if(btn.label==='Controls'){
+            // Show controls inline (toggle)
+          }
+        }
+      }
+      return;
+    }
+    if(G.state==='dead'){
+      // Respawn button
+      if(mx>=W/2-130&&mx<=W/2-10&&my>=H/2+20&&my<=H/2+64){
+        G.player.x=500; G.player.y=500;
+        G.player.hp=Math.floor(G.player.maxHp*0.5);
+        G.player.mp=G.player.maxMp;
+        G.camera.x=500; G.camera.y=500;
+        G.state='playing';
+      }
+      // Load button
+      if(mx>=W/2+10&&mx<=W/2+130&&my>=H/2+20&&my<=H/2+64){
+        loadGame();
+        G.player.hp=Math.floor(G.player.maxHp*0.5);
+        G.camera.x=G.player.x; G.camera.y=G.player.y;
+        G.state='playing';
+      }
+      return;
+    }
+    if(G.state==='inventory'){
+      const p=G.player;
+      const pw=640, ph=460, px2=(W-pw)/2, py2=(H-ph)/2;
+      const slotSize=48, slotPad=4, gridX=px2+15, gridY=py2+55;
+      for(let i=0;i<24;i++){
+        const col=i%6, row=Math.floor(i/6);
+        const sx=gridX+col*(slotSize+slotPad);
+        const sy=gridY+row*(slotSize+slotPad);
+        if(mx>=sx&&mx<=sx+slotSize&&my>=sy&&my<=sy+slotSize){
+          const item=p.inventory.slots[i];
+          if(item){
+            if(e.shiftKey){ // Drop
+              G.groundItems.push({x:p.x+rnd(-30,30),y:p.y+rnd(-30,30),item,glowTimer:0});
+              p.inventory.slots[i]=null;
+            } else {
+              const equipTypes=['weapon','head','chest','legs','boots'];
+              if(equipTypes.includes(item.type)) p.inventory.equip(i,p);
+              else p.inventory.usePotion(i,p);
             }
-
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-
-            // Mobile Detection and Controls Setup
-            const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-            const mobileControls = document.getElementById('mobileControls');
-            const joystickHandle = document.getElementById('joystick-handle');
-            const skillButtons = document.querySelectorAll('.skillButton');
-
-            if (isMobile) {
-                mobileControls.style.display = 'block';
-                canvas.width = 800; // Fixed width for better mobile control layout
-                canvas.height = 600;
-            }
-
-            // Prevent scrolling on mobile
-            document.body.addEventListener('touchstart', function(e) {
-                if (isMobile) e.preventDefault();
-            }, { passive: false });
-            document.body.addEventListener('touchmove', function(e) {
-                if (isMobile) e.preventDefault();
-            }, { passive: false });
-            document.body.addEventListener('touchend', function(e) {
-                if (isMobile) e.preventDefault();
-            }, { passive: false });
-
-
-            // --- Game State Management ---
-            const GAME_STATE = {
-                MENU: 'MENU',
-                PLAYING: 'PLAYING',
-                INVENTORY: 'INVENTORY',
-                UPGRADE: 'UPGRADE',
-                QUESTS: 'QUESTS',
-                DEAD: 'DEAD'
-            };
-            let currentState = GAME_STATE.MENU;
-
-            // --- Game Core Variables ---
-            let lastTime = 0;
-            let player;
-            let camera;
-            let mobs = [];
-            let items = [];
-            let particles = [];
-            let quests = [];
-            let currentQuest = null;
-            let messages = []; // For in-game notifications
-            let levelUpFireworks = [];
-
-            // --- Utility Functions ---
-            function distance(x1, y1, x2, y2) {
-                return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
-            }
-
-            function randomInt(min, max) {
-                return Math.floor(Math.random() * (max - min + 1)) + min;
-            }
-
-            function drawRect(x, y, width, height, color, alpha = 1) {
-                ctx.save();
-                ctx.globalAlpha = alpha;
-                ctx.fillStyle = color;
-                ctx.fillRect(x, y, width, height);
-                ctx.restore();
-            }
-
-            function drawCircle(x, y, radius, color, alpha = 1) {
-                ctx.save();
-                ctx.globalAlpha = alpha;
-                ctx.fillStyle = color;
-                ctx.beginPath();
-                ctx.arc(x, y, radius, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.restore();
-            }
-
-            function drawText(text, x, y, color, size = 16, align = 'left', alpha = 1) {
-                ctx.save();
-                ctx.globalAlpha = alpha;
-                ctx.fillStyle = color;
-                ctx.font = `${size}px Arial`;
-                ctx.textAlign = align;
-                ctx.fillText(text, x, y);
-                ctx.restore();
-            }
-
-            function applyShadow(color, blur, offsetX, offsetY) {
-                ctx.shadowColor = color;
-                ctx.shadowBlur = blur;
-                ctx.shadowOffsetX = offsetX;
-                ctx.shadowOffsetY = offsetY;
-            }
-
-            function clearShadow() {
-                ctx.shadowColor = 'rgba(0,0,0,0)';
-                ctx.shadowBlur = 0;
-                ctx.shadowOffsetX = 0;
-                ctx.shadowOffsetY = 0;
-            }
-
-            // --- Classes ---
-
-            // Particle System
-            class Particle {
-                constructor(x, y, color, size, velocityX, velocityY, life, type = 'default') {
-                    this.x = x;
-                    this.y = y;
-                    this.color = color;
-                    this.size = size;
-                    this.vx = velocityX;
-                    this.vy = velocityY;
-                    this.life = life; // in milliseconds
-                    this.maxLife = life;
-                    this.type = type; // e.g., 'explosion', 'damage', 'levelup'
-                    this.text = null; // For damage/critical text
-                }
-
-                draw() {
-                    const alpha = this.life / this.maxLife;
-                    ctx.save();
-                    ctx.globalAlpha = alpha;
-                    if (this.text) {
-                        drawText(this.text, this.x - camera.x, this.y - camera.y, this.color, this.size, 'center', alpha);
-                    } else {
-                        drawCircle(this.x - camera.x, this.y - camera.y, this.size / 2, this.color, alpha);
-                    }
-                    ctx.restore();
-                }
-
-                update(deltaTime) {
-                    this.x += this.vx * deltaTime / 1000;
-                    this.y += this.vy * deltaTime / 1000;
-                    this.life -= deltaTime;
-
-                    if (this.type === 'damage' || this.type === 'critical') {
-                        this.y -= 0.1 * deltaTime; // Float upwards
-                        this.size += 0.05; // Grow slightly
-                    }
-                }
-            }
-
-            // Camera Class
-            class Camera {
-                constructor(x, y, width, height, worldWidth, worldHeight) {
-                    this.x = x;
-                    this.y = y;
-                    this.width = width;
-                    this.height = height;
-                    this.worldWidth = worldWidth;
-                    this.worldHeight = worldHeight;
-                }
-
-                update(targetX, targetY) {
-                    this.x = targetX - this.width / 2;
-                    this.y = targetY - this.height / 2;
-
-                    // Clamp camera to world boundaries
-                    this.x = Math.max(0, Math.min(this.x, this.worldWidth - this.width));
-                    this.y = Math.max(0, Math.min(this.y, this.worldHeight - this.height));
-                }
-            }
-
-            // Player Class
-            class Player {
-                constructor(x, y, size, color) {
-                    this.x = x;
-                    this.y = y;
-                    this.size = size;
-                    this.color = color;
-                    this.speed = 150; // pixels per second
-
-                    this.level = 1;
-                    this.exp = 0;
-                    this.expToNextLevel = 100;
-                    this.skillPoints = 0;
-                    this.statPoints = 0;
-                    this.gold = 0; // Noah
-
-                    // Base Stats
-                    this.baseStats = {
-                        STR: 10,
-                        HP: 100,
-                        DEX: 10,
-                        INT: 10
-                    };
-                    this.currentHP = this.getMaxHP();
-
-                    // Equipment (will influence stats)
-                    this.equipment = {
-                        weapon: null,
-                        armor: null,
-                        accessory: null
-                    };
-
-                    this.inventory = new Inventory(16); // 16 slots
-
-                    this.skills = {
-                        attack: new Skill('Basic Attack', 0, 1000, 10, 'Melee', 0), // name, cooldown, damage, range, type, mana cost
-                        piercingShot: new Skill('Piercing Shot', 5000, 25, 'Ranged', 5),
-                        fireball: new Skill('Fireball', 8000, 40, 'Magic', 10),
-                        heal: new Skill('Heal', 10000, -30, 'Support', 15) // negative damage for heal
-                    };
-                    this.availableSkills = ['attack']; // Skills player can use
-                    this.skillLevels = {
-                        'Basic Attack': 1,
-                        'Piercing Shot': 0,
-                        'Fireball': 0,
-                        'Heal': 0
-                    };
-                    this.skillUnlockLevels = {
-                        'Piercing Shot': 10,
-                        'Fireball': 20,
-                        'Heal': 45
-                    };
-                    this.mana = this.getMaxMana();
-                    this.maxMana = 50;
-                    this.manaRegen = 1; // mana per second
-
-                    this.isMoving = { up: false, down: false, left: false, right: false };
-                    this.facing = 'down'; // 'up', 'down', 'left', 'right'
-
-                    this.attackCooldown = 0;
-                    this.isAttacking = false;
-                    this.lastAttackTime = 0;
-                    this.currentSkillCooldowns = {}; // { skillName: remainingTime }
-                    Object.keys(this.skills).forEach(key => this.currentSkillCooldowns[key] = 0);
-
-                    this.isDead = false;
-                    this.respawnTimer = 0;
-                }
-
-                getMaxHP() {
-                    return this.baseStats.HP + (this.baseStats.STR * 5); // Example calculation
-                }
-
-                getMaxMana() {
-                    return this.maxMana + (this.baseStats.INT * 2); // Example calculation
-                }
-
-                getDamage() {
-                    let weaponDamage = this.equipment.weapon ? this.equipment.weapon.damage : 5;
-                    return weaponDamage + (this.baseStats.STR * 0.5) + (this.baseStats.DEX * 0.2); // Example calculation
-                }
-
-                getDefense() {
-                    let armorDefense = this.equipment.armor ? this.equipment.armor.defense : 0;
-                    return armorDefense + (this.baseStats.STR * 0.1); // Example calculation
-                }
-
-                addExp(amount) {
-                    this.exp += amount;
-                    while (this.exp >= this.expToNextLevel) {
-                        this.exp -= this.expToNextLevel;
-                        this.levelUp();
-                    }
-                }
-
-                levelUp() {
-                    this.level++;
-                    this.expToNextLevel = Math.floor(this.expToNextLevel * 1.5); // Increase exp required
-                    this.statPoints += 5; // Award stat points
-                    this.skillPoints += 1; // Award skill points
-                    this.currentHP = this.getMaxHP(); // Heal to full
-                    this.mana = this.getMaxMana(); // Restore mana
-
-                    messages.push({ text: `Level Up! You are now level ${this.level}!`, color: 'lime', duration: 3000 });
-                    levelUpFireworks.push({ x: this.x, y: this.y, timer: 1000 });
-
-                    // Check for skill unlocks
-                    for (const skillName in this.skillUnlockLevels) {
-                        if (this.level >= this.skillUnlockLevels[skillName] && !this.availableSkills.includes(skillName)) {
-                            this.availableSkills.push(skillName);
-                            messages.push({ text: `${skillName} Unlocked!`, color: 'cyan', duration: 3000 });
-                        }
-                    }
-                }
-
-                applyStatPoint(stat) {
-                    if (this.statPoints > 0 && this.baseStats[stat] !== undefined) {
-                        this.baseStats[stat]++;
-                        this.statPoints--;
-                        // Recalculate max HP/Mana if affecting those
-                        if (stat === 'HP' || stat === 'STR') this.currentHP = Math.min(this.currentHP, this.getMaxHP());
-                        if (stat === 'INT') this.mana = Math.min(this.mana, this.getMaxMana());
-                        saveGame(); // Save changes
-                    }
-                }
-
-                applySkillPoint(skillName) {
-                    if (this.skillPoints > 0 && this.skillLevels[skillName] !== undefined && this.skillLevels[skillName] < 5) { // Max skill level 5
-                        this.skillLevels[skillName]++;
-                        this.skillPoints--;
-                        messages.push({ text: `${skillName} skill level increased to ${this.skillLevels[skillName]}!`, color: 'gold', duration: 2000 });
-                        saveGame();
-                    }
-                }
-
-                takeDamage(amount) {
-                    let damageTaken = Math.max(0, amount - this.getDefense());
-                    this.currentHP -= damageTaken;
-                    particles.push(new Particle(this.x + randomInt(-10, 10), this.y + randomInt(-10, 10), 'red', 18, randomInt(-20, 20), randomInt(-50, -20), 1000, 'damage', damageTaken.toFixed(0)));
-                    if (this.currentHP <= 0) {
-                        this.currentHP = 0;
-                        this.die();
-                    }
-                }
-
-                die() {
-                    this.isDead = true;
-                    this.respawnTimer = 5000; // 5 seconds to respawn
-                    currentState = GAME_STATE.DEAD;
-                    messages.push({ text: "You have died!", color: 'darkred', duration: 5000 });
-                }
-
-                respawn() {
-                    this.isDead = false;
-                    this.currentHP = this.getMaxHP();
-                    this.mana = this.getMaxMana();
-                    this.x = world.width / 2;
-                    this.y = world.height / 2;
-                    currentState = GAME_STATE.PLAYING;
-                    messages.push({ text: "You have respawned!", color: 'lime', duration: 2000 });
-                }
-
-                useSkill(skillName) {
-                    const skill = this.skills[skillName];
-                    if (!skill || !this.availableSkills.includes(skillName)) return;
-                    if (this.currentSkillCooldowns[skillName] > 0) {
-                        messages.push({ text: `${skillName} is on cooldown!`, color: 'red', duration: 1000 });
-                        return;
-                    }
-                    if (this.mana < skill.manaCost) {
-                        messages.push({ text: "Not enough mana!", color: 'blue', duration: 1000 });
-                        return;
-                    }
-
-                    this.mana -= skill.manaCost;
-                    this.currentSkillCooldowns[skillName] = skill.cooldown;
-                    this.lastAttackTime = performance.now(); // Reset basic attack cooldown for fairness
-
-                    if (skill.damage < 0) { // It's a heal
-                        this.currentHP = Math.min(this.getMaxHP(), this.currentHP - skill.damage * (1 + this.skillLevels[skillName] * 0.1)); // Scale with skill level
-                        messages.push({ text: `Healed for ${(-skill.damage).toFixed(0)} HP!`, color: 'green', duration: 1500 });
-                        particles.push(new Particle(this.x, this.y - this.size, 'green', 25, 0, -20, 1000, 'heal'));
-                        return;
-                    }
-
-                    let targets = [];
-                    if (skill.type === 'Melee' || skill.type === 'AOE') {
-                        mobs.forEach(mob => {
-                            if (distance(this.x, this.y, mob.x, mob.y) < (skill.range + this.size / 2 + mob.size / 2)) {
-                                targets.push(mob);
-                            }
-                        });
-                    } else if (skill.type === 'Ranged' || skill.type === 'Magic') {
-                        // For ranged/magic, find the closest mob within range
-                        let closestMob = null;
-                        let minDistance = skill.range;
-                        mobs.forEach(mob => {
-                            const dist = distance(this.x, this.y, mob.x, mob.y);
-                            if (dist < minDistance) {
-                                minDistance = dist;
-                                closestMob = mob;
-                            }
-                        });
-                        if (closestMob) {
-                            targets.push(closestMob);
-                        }
-                    }
-
-                    targets.forEach(target => {
-                        let totalDamage = skill.damage * (1 + this.skillLevels[skillName] * 0.1) + this.getDamage();
-                        let isCrit = Math.random() < (this.baseStats.DEX * 0.01); // DEX for critical chance
-                        if (isCrit) {
-                            totalDamage *= 1.5; // Critical damage multiplier
-                            particles.push(new Particle(target.x + randomInt(-10, 10), target.y + randomInt(-10, 10), 'gold', 24, randomInt(-30, 30), randomInt(-70, -30), 1200, 'critical'));
-                            particles[particles.length - 1].text = `CRIT! ${totalDamage.toFixed(0)}`;
-                        } else {
-                            particles.push(new Particle(target.x + randomInt(-10, 10), target.y + randomInt(-10, 10), 'white', 18, randomInt(-20, 20), randomInt(-50, -20), 1000, 'damage'));
-                            particles[particles.length - 1].text = totalDamage.toFixed(0);
-                        }
-                        target.takeDamage(totalDamage);
-                        target.aggroTarget = this; // Aggro the target
-                    });
-
-                    this.isAttacking = true;
-                    setTimeout(() => this.isAttacking = false, 200); // Visual attack duration
-                }
-
-                update(deltaTime) {
-                    if (this.isDead) {
-                        this.respawnTimer -= deltaTime;
-                        if (this.respawnTimer <= 0) {
-                            this.respawn();
-                        }
-                        return;
-                    }
-
-                    const dtSeconds = deltaTime / 1000;
-                    let dx = 0, dy = 0;
-
-                    if (this.isMoving.up) dy -= 1;
-                    if (this.isMoving.down) dy += 1;
-                    if (this.isMoving.left) dx -= 1;
-                    if (this.isMoving.right) dx += 1;
-
-                    if (dx !== 0 || dy !== 0) {
-                        const magnitude = Math.sqrt(dx * dx + dy * dy);
-                        this.x += (dx / magnitude) * this.speed * dtSeconds;
-                        this.y += (dy / magnitude) * this.speed * dtSeconds;
-
-                        // Update facing direction
-                        if (Math.abs(dx) > Math.abs(dy)) {
-                            this.facing = dx > 0 ? 'right' : 'left';
-                        } else {
-                            this.facing = dy > 0 ? 'down' : 'up';
-                        }
-                    }
-
-                    // Mana regeneration
-                    this.mana = Math.min(this.getMaxMana(), this.mana + this.manaRegen * dtSeconds);
-
-                    // Cooldowns
-                    for (const skillName in this.currentSkillCooldowns) {
-                        if (this.currentSkillCooldowns[skillName] > 0) {
-                            this.currentSkillCooldowns[skillName] -= deltaTime;
-                            if (this.currentSkillCooldowns[skillName] < 0) {
-                                this.currentSkillCooldowns[skillName] = 0;
-                            }
-                        }
-                    }
-
-                    // Clamp to world boundaries
-                    this.x = Math.max(0 + this.size / 2, Math.min(this.x, world.width - this.size / 2));
-                    this.y = Math.max(0 + this.size / 2, Math.min(this.y, world.height - this.size / 2));
-                }
-
-                draw() {
-                    ctx.save();
-                    ctx.translate(this.x - camera.x, this.y - camera.y);
-
-                    // Body
-                    drawCircle(0, 0, this.size / 2, this.color);
-                    drawRect(-5, -this.size / 2 - 10, 10, 5, 'red'); // HP bar background
-                    drawRect(-5, -this.size / 2 - 10, 10 * (this.currentHP / this.getMaxHP()), 5, 'lime'); // HP bar
-                    drawRect(-5, -this.size / 2 - 4, 10, 3, 'darkblue'); // Mana bar background
-                    drawRect(-5, -this.size / 2 - 4, 10 * (this.mana / this.getMaxMana()), 3, 'cyan'); // Mana bar
-
-                    // Equipment Visuals (simplistic)
-                    if (this.equipment.weapon) {
-                        applyShadow('rgba(255,255,0,0.8)', 10, 0, 0); // Elemental Glow
-                        drawRect(this.size / 2 - 5, -5, 10, 5, this.equipment.weapon.color); // Example weapon visual
-                        clearShadow();
-                    }
-                    if (this.equipment.armor) {
-                        drawRect(-this.size / 2 + 2, -this.size / 2 + 2, this.size - 4, this.size - 4, this.equipment.armor.color, 0.5); // Example armor overlay
-                    }
-
-                    if (this.isAttacking) {
-                        // Simple attack animation based on facing direction
-                        ctx.strokeStyle = 'white';
-                        ctx.lineWidth = 2;
-                        ctx.beginPath();
-                        if (this.facing === 'up') {
-                            ctx.moveTo(0, -this.size / 2);
-                            ctx.lineTo(0, -this.size / 2 - 10);
-                        } else if (this.facing === 'down') {
-                            ctx.moveTo(0, this.size / 2);
-                            ctx.lineTo(0, this.size / 2 + 10);
-                        } else if (this.facing === 'left') {
-                            ctx.moveTo(-this.size / 2, 0);
-                            ctx.lineTo(-this.size / 2 - 10, 0);
-                        } else if (this.facing === 'right') {
-                            ctx.moveTo(this.size / 2, 0);
-                            ctx.lineTo(this.size / 2 + 10, 0);
-                        }
-                        ctx.stroke();
-                    }
-
-                    // Level and Name
-                    drawText(`Lv${this.level}`, 0, this.size / 2 + 15, 'white', 12, 'center');
-                    drawText('Player', 0, this.size / 2 + 30, 'lightblue', 14, 'center');
-
-
-                    ctx.restore();
-                }
-            }
-
-            // Skill Class
-            class Skill {
-                constructor(name, cooldown, baseDamage, range, type, manaCost) {
-                    this.name = name;
-                    this.cooldown = cooldown; // in milliseconds
-                    this.baseDamage = baseDamage;
-                    this.range = range;
-                    this.type = type; // 'Melee', 'Ranged', 'Magic', 'AOE', 'Support'
-                    this.manaCost = manaCost;
-                }
-            }
-
-            // Mob Class
-            class Mob {
-                constructor(x, y, type) {
-                    this.x = x;
-                    this.y = y;
-                    this.type = type;
-                    this.isDead = false;
-                    this.aggroTarget = null;
-                    this.lastAttackTime = 0;
-
-                    // Mob specific properties based on type
-                    switch (type) {
-                        case 'Worm':
-                            this.size = 15;
-                            this.color = 'brown';
-                            this.maxHP = 50;
-                            this.currentHP = 50;
-                            this.damage = 5;
-                            this.attackSpeed = 1500; // ms between attacks
-                            this.aggroRange = 100;
-                            this.speed = 50;
-                            this.expDrop = 10;
-                            this.lootTable = [{ item: new Item('Small Potion', 'potion', 'red', 10), chance: 0.3 }];
-                            break;
-                        case 'Wolf':
-                            this.size = 20;
-                            this.color = 'gray';
-                            this.maxHP = 80;
-                            this.currentHP = 80;
-                            this.damage = 10;
-                            this.attackSpeed = 1200;
-                            this.aggroRange = 150;
-                            this.speed = 70;
-                            this.expDrop = 15;
-                            this.lootTable = [{ item: new Item('Wolf Fur', 'material', 'tan', 1), chance: 0.5 }, { item: new Item('Rusty Sword', 'weapon', 'gray', 5), chance: 0.1 }];
-                            break;
-                        case 'Skeleton':
-                            this.size = 25;
-                            this.color = 'lightgray';
-                            this.maxHP = 120;
-                            this.currentHP = 120;
-                            this.damage = 15;
-                            this.attackSpeed = 1800;
-                            this.aggroRange = 120;
-                            this.speed = 40;
-                            this.expDrop = 25;
-                            this.lootTable = [{ item: new Item('Bone Shard', 'material', 'white', 1), chance: 0.7 }, { item: new Item('Old Shield', 'armor', 'silver', 10), chance: 0.15 }];
-                            break;
-                        case 'Golem':
-                            this.size = 40;
-                            this.color = 'darkslategray';
-                            this.maxHP = 300;
-                            this.currentHP = 300;
-                            this.damage = 25;
-                            this.attackSpeed = 2500;
-                            this.aggroRange = 80;
-                            this.speed = 30;
-                            this.expDrop = 50;
-                            this.lootTable = [{ item: new Item('Stone Fragment', 'material', 'gray', 1), chance: 0.8 }, { item: new Item('Golem Core', 'material', 'orange', 10), chance: 0.2 }];
-                            break;
-                        case 'Harpy':
-                            this.size = 22;
-                            this.color = 'lightseagreen';
-                            this.maxHP = 100;
-                            this.currentHP = 100;
-                            this.damage = 12;
-                            this.attackSpeed = 1000;
-                            this.aggroRange = 200;
-                            this.speed = 90;
-                            this.expDrop = 30;
-                            this.lootTable = [{ item: new Item('Harpy Feather', 'material', 'blue', 1), chance: 0.6 }, { item: new Item('Harpy Claw', 'weapon', 'yellow', 8), chance: 0.1 }];
-                            break;
-                        case 'Troll':
-                            this.size = 35;
-                            this.color = 'olivedrab';
-                            this.maxHP = 200;
-                            this.currentHP = 200;
-                            this.damage = 20;
-                            this.attackSpeed = 2000;
-                            this.aggroRange = 180;
-                            this.speed = 60;
-                            this.expDrop = 40;
-                            this.lootTable = [{ item: new Item('Troll Hide', 'material', 'green', 1), chance: 0.7 }, { item: new Item('Club', 'weapon', 'brown', 12), chance: 0.15 }];
-                            break;
-                    }
-                }
-
-                takeDamage(amount) {
-                    this.currentHP -= amount;
-                    particles.push(new Particle(this.x + randomInt(-10, 10), this.y + randomInt(-10, 10), 'red', 18, randomInt(-20, 20), randomInt(-50, -20), 1000, 'damage', amount.toFixed(0)));
-                    if (this.currentHP <= 0) {
-                        this.isDead = true;
-                        player.addExp(this.expDrop);
-                        player.gold += randomInt(1, 5); // Small gold drop
-
-                        // Loot Drop
-                        this.lootTable.forEach(drop => {
-                            if (Math.random() < drop.chance) {
-                                let droppedItem = drop.item.clone();
-                                droppedItem.x = this.x + randomInt(-20, 20);
-                                droppedItem.y = this.y + randomInt(-20, 20);
-                                items.push(droppedItem);
-                            }
-                        });
-
-                        // Update quest progress
-                        quests.forEach(quest => {
-                            if (quest.type === 'kill' && quest.target === this.type && quest.currentAmount < quest.requiredAmount) {
-                                quest.currentAmount++;
-                                messages.push({ text: `Quest: ${quest.name} (${quest.currentAmount}/${quest.requiredAmount})`, color: 'lightgray', duration: 1500 });
-                            }
-                        });
-                    }
-                }
-
-                update(deltaTime) {
-                    if (this.isDead) return;
-
-                    const dtSeconds = deltaTime / 1000;
-                    const distToPlayer = distance(this.x, this.y, player.x, player.y);
-
-                    if (this.aggroTarget) {
-                        // Chase aggro target
-                        const angle = Math.atan2(this.aggroTarget.y - this.y, this.aggroTarget.x - this.x);
-                        let dx = Math.cos(angle);
-                        let dy = Math.sin(angle);
-
-                        // If within attack range, stop and attack
-                        if (distToPlayer < this.size / 2 + player.size / 2 + 5) { // Close enough to attack
-                            dx = 0; dy = 0; // Stop moving
-                            if (performance.now() - this.lastAttackTime > this.attackSpeed) {
-                                player.takeDamage(this.damage);
-                                particles.push(new Particle(player.x, player.y, 'red', 15, 0, 0, 500, 'damage')); // Small visual indicator of hit
-                                this.lastAttackTime = performance.now();
-                            }
-                        } else {
-                            this.x += dx * this.speed * dtSeconds;
-                            this.y += dy * this.speed * dtSeconds;
-                        }
-
-                        // If target too far, lose aggro
-                        if (distToPlayer > this.aggroRange * 2) {
-                            this.aggroTarget = null;
-                        }
-
-                    } else if (distToPlayer < this.aggroRange) {
-                        this.aggroTarget = player; // Aggro player
-                    }
-                }
-
-                draw() {
-                    ctx.save();
-                    ctx.translate(this.x - camera.x, this.y - camera.y);
-
-                    // Body
-                    drawCircle(0, 0, this.size / 2, this.color);
-                    drawRect(-this.size / 2, -this.size / 2 - 10, this.size, 5, 'darkred'); // HP bar background
-                    drawRect(-this.size / 2, -this.size / 2 - 10, this.size * (this.currentHP / this.maxHP), 5, 'red'); // HP bar
-
-                    drawText(this.type, 0, this.size / 2 + 15, 'white', 12, 'center');
-
-                    ctx.restore();
-                }
-            }
-
-            // Item Class
-            class Item {
-                constructor(name, type, color, value, stats = {}, enchantmentLevel = 0) {
-                    this.name = name;
-                    this.type = type; // 'weapon', 'armor', 'potion', 'material', 'quest'
-                    this.color = color;
-                    this.value = value; // Gold value or specific effect value
-                    this.stats = stats; // e.g., { damage: 10, defense: 5 } for equipment
-                    this.enchantmentLevel = enchantmentLevel; // +1 to +10
-                    this.x = 0;
-                    this.y = 0;
-                    this.size = 10;
-                }
-
-                clone() {
-                    return new Item(this.name, this.type, this.color, this.value, { ...this.stats }, this.enchantmentLevel);
-                }
-
-                draw() {
-                    ctx.save();
-                    ctx.translate(this.x - camera.x, this.y - camera.y);
-                    drawRect(-this.size / 2, -this.size / 2, this.size, this.size, this.color);
-                    drawText(this.name, 0, this.size / 2 + 10, 'white', 10, 'center');
-                    ctx.restore();
-                }
-
-                get damage() { return this.stats.damage || 0; }
-                get defense() { return this.stats.defense || 0; }
-            }
-
-            // Inventory Class
-            class Inventory {
-                constructor(slots) {
-                    this.slots = Array(slots).fill(null);
-                }
-
-                addItem(item) {
-                    const existingStack = this.slots.find(slot => slot && slot.name === item.name && slot.type !== 'weapon' && slot.type !== 'armor');
-                    if (existingStack) { // Simple stacking for non-equipment items
-                        // For now, no stack limit. Just add.
-                        // In a real game, you'd have item.stackSize
-                    }
-                    for (let i = 0; i < this.slots.length; i++) {
-                        if (this.slots[i] === null) {
-                            this.slots[i] = item;
-                            messages.push({ text: `Picked up ${item.name}`, color: 'lightgreen', duration: 1500 });
-                            saveGame();
-                            return true;
-                        }
-                    }
-                    messages.push({ text: `Inventory is full!`, color: 'red', duration: 1500 });
-                    return false; // Inventory full
-                }
-
-                removeItem(itemToRemove) {
-                    const index = this.slots.indexOf(itemToRemove);
-                    if (index !== -1) {
-                        this.slots[index] = null;
-                        saveGame();
-                        return true;
-                    }
-                    return false;
-                }
-
-                getItem(index) {
-                    return this.slots[index];
-                }
-
-                useItem(itemIndex) {
-                    const item = this.slots[itemIndex];
-                    if (!item) return;
-
-                    switch (item.type) {
-                        case 'potion':
-                            player.currentHP = Math.min(player.getMaxHP(), player.currentHP + item.value);
-                            messages.push({ text: `Used ${item.name}. Restored ${item.value} HP!`, color: 'green', duration: 1500 });
-                            this.removeItem(item);
-                            break;
-                        case 'weapon':
-                        case 'armor':
-                            // Unequip current item, equip new one
-                            const oldEquip = player.equipment[item.type];
-                            if (oldEquip) {
-                                this.slots[itemIndex] = oldEquip; // Replace slot with old equipment
-                            } else {
-                                this.slots[itemIndex] = null; // Clear slot if no old equipment
-                            }
-                            player.equipment[item.type] = item;
-                            messages.push({ text: `Equipped ${item.name}!`, color: 'lightblue', duration: 1500 });
-                            break;
-                        default:
-                            messages.push({ text: `Cannot use ${item.name}`, color: 'yellow', duration: 1500 });
-                            break;
-                    }
-                    saveGame();
-                }
-
-                draw(offsetX, offsetY) {
-                    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-                    ctx.fillRect(offsetX, offsetY, 220, 300); // Inventory background
-
-                    drawText('Inventory', offsetX + 110, offsetY + 20, 'white', 20, 'center');
-
-                    const slotSize = 40;
-                    const padding = 10;
-                    const startX = offsetX + padding;
-                    const startY = offsetY + 40;
-
-                    for (let i = 0; i < this.slots.length; i++) {
-                        const row = Math.floor(i / 4);
-                        const col = i % 4;
-                        const x = startX + col * (slotSize + padding);
-                        const y = startY + row * (slotSize + padding);
-
-                        ctx.strokeStyle = 'gray';
-                        ctx.strokeRect(x, y, slotSize, slotSize);
-
-                        const item = this.slots[i];
-                        if (item) {
-                            drawRect(x + 2, y + 2, slotSize - 4, slotSize - 4, item.color);
-                            if (item.enchantmentLevel > 0) {
-                                applyShadow('yellow', 5, 0, 0); // Enchant glow
-                                drawText(`+${item.enchantmentLevel}`, x + slotSize - 10, y + slotSize - 5, 'gold', 10, 'right');
-                                clearShadow();
-                            }
-                            drawText(item.name.substring(0, 3), x + slotSize / 2, y + slotSize / 2 + 5, 'white', 10, 'center'); // Abbreviated name
-                        }
-                    }
-                }
-            }
-
-            // Quest Class
-            class Quest {
-                constructor(id, name, description, type, target, requiredAmount, rewardExp, rewardGold, rewardItem = null) {
-                    this.id = id;
-                    this.name = name;
-                    this.description = description;
-                    this.type = type; // 'kill', 'collect', 'reachLevel'
-                    this.target = target; // e.g., 'Wolf', 'Noah', 10
-                    this.requiredAmount = requiredAmount;
-                    this.currentAmount = 0;
-                    this.rewardExp = rewardExp;
-                    this.rewardGold = rewardGold;
-                    this.rewardItem = rewardItem;
-                    this.isCompleted = false;
-                    this.isClaimed = false;
-                }
-
-                checkCompletion() {
-                    if (this.isCompleted) return;
-
-                    switch (this.type) {
-                        case 'kill':
-                            if (this.currentAmount >= this.requiredAmount) {
-                                this.isCompleted = true;
-                            }
-                            break;
-                        case 'collect':
-                            if (this.target === 'Noah' && player.gold >= this.requiredAmount) {
-                                this.isCompleted = true;
-                            } else {
-                                // For collecting specific items, need to check inventory
-                                // (not implemented in a robust way yet for this example)
-                            }
-                            break;
-                        case 'reachLevel':
-                            if (player.level >= this.requiredAmount) {
-                                this.isCompleted = true;
-                            }
-                            break;
-                    }
-
-                    if (this.isCompleted) {
-                        messages.push({ text: `Quest Completed: ${this.name}!`, color: 'gold', duration: 3000 });
-                        saveGame();
-                    }
-                }
-
-                claimReward() {
-                    if (this.isCompleted && !this.isClaimed) {
-                        player.addExp(this.rewardExp);
-                        player.gold += this.rewardGold;
-                        if (this.rewardItem) {
-                            player.inventory.addItem(this.rewardItem.clone());
-                        }
-                        this.isClaimed = true;
-                        messages.push({ text: `Rewards claimed for ${this.name}!`, color: 'lime', duration: 2000 });
-                        saveGame();
-                    }
-                }
-            }
-
-
-            // --- Game World ---
-            const world = {
-                width: 2000,
-                height: 1500,
-                tiles: [] // Could be used for a grid-based map
-            };
-
-            function generateWorld() {
-                // Simplistic world generation: just a big open space for now
-            }
-
-            function spawnMobs(count) {
-                const mobTypes = ['Worm', 'Wolf', 'Skeleton', 'Golem', 'Harpy', 'Troll'];
-                for (let i = 0; i < count; i++) {
-                    const type = mobTypes[randomInt(0, mobTypes.length - 1)];
-                    const x = randomInt(50, world.width - 50);
-                    const y = randomInt(50, world.height - 50);
-                    mobs.push(new Mob(x, y, type));
-                }
-            }
-
-            function initializeQuests() {
-                quests.push(new Quest(1, "First Hunt", "Kill 5 Wolves", "kill", "Wolf", 5, 50, 10, new Item('Basic Ring', 'accessory', 'silver', 5, { STR: 1 })));
-                quests.push(new Quest(2, "Goblin Slayer", "Kill 10 Skeletons", "kill", "Skeleton", 10, 100, 20));
-                quests.push(new Quest(3, "Reach Level 5", "Reach player level 5", "reachLevel", 5, 5, 200, 50, new Item('Steel Armor', 'armor', 'gray', 20, { defense: 5 })));
-            }
-
-            // --- Game Initialization ---
-            function initGame() {
-                player = new Player(world.width / 2, world.height / 2, 20, 'blue');
-                camera = new Camera(0, 0, canvas.width, canvas.height, world.width, world.height);
-                generateWorld();
-                spawnMobs(10); // Initial mob spawn
-                initializeQuests();
-                loadGame(); // Try to load saved game
-                currentState = GAME_STATE.MENU;
-            }
-
-
-            // --- Game Loop ---
-            function gameLoop(currentTime) {
-                const deltaTime = currentTime - lastTime;
-                lastTime = currentTime;
-
-                update(deltaTime);
-                draw();
-
-                requestAnimationFrame(gameLoop);
-            }
-
-            function update(deltaTime) {
-                // Global Particle update
-                particles = particles.filter(p => p.life > 0);
-                particles.forEach(p => p.update(deltaTime));
-
-                // Level up fireworks update
-                levelUpFireworks = levelUpFireworks.filter(f => f.timer > 0);
-                levelUpFireworks.forEach(f => {
-                    f.timer -= deltaTime;
-                    for (let i = 0; i < 2; i++) { // Spawn new particles
-                        if (f.timer > 0) {
-                            particles.push(new Particle(f.x + randomInt(-20, 20), f.y + randomInt(-20, 20),
-                                `hsl(${randomInt(0, 360)}, 100%, 50%)`, randomInt(5, 15),
-                                randomInt(-100, 100), randomInt(-100, -50), randomInt(500, 1000), 'explosion'));
-                        }
-                    }
-                });
-
-
-                switch (currentState) {
-                    case GAME_STATE.MENU:
-                        // No game logic update in menu
-                        break;
-                    case GAME_STATE.PLAYING:
-                        player.update(deltaTime);
-                        camera.update(player.x, player.y);
-
-                        // Mobs update
-                        mobs = mobs.filter(mob => !mob.isDead); // Remove dead mobs
-                        if (mobs.length < 5) { // Respawn if too few mobs
-                            spawnMobs(5);
-                        }
-                        mobs.forEach(mob => mob.update(deltaTime));
-
-                        // Item interaction
-                        items.forEach(item => {
-                            if (distance(player.x, player.y, item.x, item.y) < player.size / 2 + item.size / 2 + 10) {
-                                if (player.inventory.addItem(item)) {
-                                    items = items.filter(i => i !== item); // Remove item from world
-                                }
-                            }
-                        });
-
-                        // Quest updates
-                        quests.forEach(quest => quest.checkCompletion());
-
-                        break;
-                    case GAME_STATE.INVENTORY:
-                    case GAME_STATE.UPGRADE:
-                    case GAME_STATE.QUESTS:
-                    case GAME_STATE.DEAD:
-                        // Paused states, no active game logic
-                        if (currentState === GAME_STATE.DEAD && player.isDead) {
-                            player.update(deltaTime); // To handle respawn timer
-                        }
-                        break;
-                }
-
-                // Update messages
-                messages = messages.filter(msg => msg.duration > 0);
-                messages.forEach(msg => msg.duration -= deltaTime);
-            }
-
-            function draw() {
-                // Clear canvas
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                drawRect(0, 0, canvas.width, canvas.height, '#333'); // Background for the whole canvas
-
-                // Draw world (simplified as a large rect for now)
-                ctx.save();
-                ctx.translate(-camera.x, -camera.y);
-                drawRect(0, 0, world.width, world.height, 'forestgreen'); // World ground
-                ctx.restore();
-
-                switch (currentState) {
-                    case GAME_STATE.MENU:
-                        drawMenu();
-                        break;
-                    case GAME_STATE.PLAYING:
-                    case GAME_STATE.INVENTORY:
-                    case GAME_STATE.UPGRADE:
-                    case GAME_STATE.QUESTS:
-                    case GAME_STATE.DEAD: // Player still drawn even if dead for visual feedback
-                        // Draw world objects only if not in menu
-                        items.forEach(item => item.draw());
-                        mobs.forEach(mob => mob.draw());
-                        player.draw();
-
-                        // Draw all particles
-                        particles.forEach(p => p.draw());
-
-                        if (currentState === GAME_STATE.INVENTORY) {
-                            drawInventoryScreen();
-                        } else if (currentState === GAME_STATE.UPGRADE) {
-                            drawUpgradeScreen();
-                        } else if (currentState === GAME_STATE.QUESTS) {
-                            drawQuestScreen();
-                        } else if (currentState === GAME_STATE.DEAD) {
-                            drawDeathScreen();
-                        }
-                        break;
-                }
-
-                drawUI(); // UI elements always on top
-            }
-
-            function drawMenu() {
-                drawRect(0, 0, canvas.width, canvas.height, 'rgba(0,0,0,0.8)');
-                drawText('Genflow RPG: Knight Online Clone', canvas.width / 2, canvas.height / 2 - 100, 'white', 48, 'center');
-                drawText('Press [S] to Start Game', canvas.width / 2, canvas.height / 2, 'lime', 24, 'center');
-                drawText('Press [L] to Load Game', canvas.width / 2, canvas.height / 2 + 50, 'cyan', 24, 'center');
-            }
-
-            function drawUI() {
-                // Player HUD (HP/MP)
-                const barWidth = 200;
-                const barHeight = 20;
-                drawRect(10, 10, barWidth, barHeight, 'darkred');
-                drawRect(10, 10, barWidth * (player.currentHP / player.getMaxHP()), barHeight, 'red');
-                drawText(`HP: ${player.currentHP.toFixed(0)}/${player.getMaxHP().toFixed(0)}`, 10 + barWidth / 2, 10 + barHeight / 2 + 5, 'white', 14, 'center');
-
-                drawRect(10, 35, barWidth, barHeight, 'darkblue');
-                drawRect(10, 35, barWidth * (player.mana / player.getMaxMana()), barHeight, 'blue');
-                drawText(`MP: ${player.mana.toFixed(0)}/${player.getMaxMana().toFixed(0)}`, 10 + barWidth / 2, 35 + barHeight / 2 + 5, 'white', 14, 'center');
-
-                // EXP Bar
-                const expBarWidth = canvas.width - 20;
-                const expBarHeight = 10;
-                drawRect(10, canvas.height - expBarHeight - 10, expBarWidth, expBarHeight, 'darkgray');
-                drawRect(10, canvas.height - expBarHeight - 10, expBarWidth * (player.exp / player.expToNextLevel), expBarHeight, 'purple');
-                drawText(`Lv ${player.level} | EXP: ${player.exp}/${player.expToNextLevel}`, canvas.width / 2, canvas.height - expBarHeight - 2, 'white', 12, 'center');
-
-                // Gold (Noah)
-                drawText(`Noah: ${player.gold}`, canvas.width - 10, 25, 'gold', 18, 'right');
-
-                // Stat Points
-                if (player.statPoints > 0) {
-                    drawText(`Stat Points: ${player.statPoints}`, canvas.width - 10, 50, 'yellow', 18, 'right');
-                }
-                // Skill Points
-                if (player.skillPoints > 0) {
-                    drawText(`Skill Points: ${player.skillPoints}`, canvas.width - 10, 75, 'yellow', 18, 'right');
-                }
-
-                // Skill Bar (bottom center)
-                const skillBarY = canvas.height - 70;
-                const skillIconSize = 40;
-                const skillBarStartX = canvas.width / 2 - (player.availableSkills.length * (skillIconSize + 5)) / 2;
-
-                player.availableSkills.forEach((skillName, index) => {
-                    const skill = player.skills[skillName];
-                    const x = skillBarStartX + index * (skillIconSize + 5);
-                    drawRect(x, skillBarY, skillIconSize, skillIconSize, 'rgba(0,0,0,0.5)'); // Background
-
-                    const cooldownRemaining = player.currentSkillCooldowns[skillName];
-                    if (cooldownRemaining > 0) {
-                        const cooldownRatio = cooldownRemaining / skill.cooldown;
-                        drawRect(x, skillBarY, skillIconSize, skillIconSize * cooldownRatio, 'rgba(100,100,100,0.7)'); // Cooldown overlay
-                        drawText((cooldownRemaining / 1000).toFixed(1), x + skillIconSize / 2, skillBarY + skillIconSize / 2 + 5, 'white', 14, 'center');
-                    }
-                    drawText(skillName[0].toUpperCase(), x + skillIconSize / 2, skillBarY + skillIconSize / 2 + 5, 'white', 18, 'center'); // First letter as icon
-                });
-
-
-                // In-game messages
-                let messageY = canvas.height / 2 - 100;
-                messages.forEach(msg => {
-                    const alpha = msg.duration / 3000; // Fade out over 3 seconds
-                    drawText(msg.text, canvas.width / 2, messageY, msg.color, 20, 'center', alpha);
-                    messageY += 25;
-                });
-            }
-
-            function drawInventoryScreen() {
-                drawRect(0, 0, canvas.width, canvas.height, 'rgba(0,0,0,0.8)'); // Dark overlay
-                player.inventory.draw(canvas.width / 2 - 200, canvas.height / 2 - 150); // Centered inventory
-
-                // Equipment display
-                const equipX = canvas.width / 2 + 50;
-                const equipY = canvas.height / 2 - 150;
-                drawText('Equipment', equipX + 75, equipY + 20, 'white', 20, 'center');
-                const slotSize = 40;
-                drawText('Weapon:', equipX, equipY + 50, 'white', 14, 'left');
-                drawRect(equipX + 60, equipY + 40, slotSize, slotSize, 'rgba(50,50,50,0.8)');
-                if (player.equipment.weapon) {
-                    drawRect(equipX + 62, equipY + 42, slotSize - 4, slotSize - 4, player.equipment.weapon.color);
-                    if (player.equipment.weapon.enchantmentLevel > 0) {
-                        applyShadow('yellow', 5, 0, 0);
-                        drawText(`+${player.equipment.weapon.enchantmentLevel}`, equipX + 60 + slotSize - 10, equipY + 40 + slotSize - 5, 'gold', 10, 'right');
-                        clearShadow();
-                    }
-                    drawText(player.equipment.weapon.name.substring(0, 3), equipX + 60 + slotSize / 2, equipY + 40 + slotSize / 2 + 5, 'white', 10, 'center');
-                }
-
-                drawText('Armor:', equipX, equipY + 100, 'white', 14, 'left');
-                drawRect(equipX + 60, equipY + 90, slotSize, slotSize, 'rgba(50,50,50,0.8)');
-                if (player.equipment.armor) {
-                    drawRect(equipX + 62, equipY + 92, slotSize - 4, slotSize - 4, player.equipment.armor.color);
-                    if (player.equipment.armor.enchantmentLevel > 0) {
-                        applyShadow('yellow', 5, 0, 0);
-                        drawText(`+${player.equipment.armor.enchantmentLevel}`, equipX + 60 + slotSize - 10, equipY + 90 + slotSize - 5, 'gold', 10, 'right');
-                        clearShadow();
-                    }
-                    drawText(player.equipment.armor.name.substring(0, 3), equipX + 60 + slotSize / 2, equipY + 90 + slotSize / 2 + 5, 'white', 10, 'center');
-                }
-            }
-
-            function drawUpgradeScreen() {
-                drawRect(0, 0, canvas.width, canvas.height, 'rgba(0,0,0,0.8)'); // Dark overlay
-
-                const anvilX = canvas.width / 2 - 150;
-                const anvilY = canvas.height / 2 - 100;
-                const anvilWidth = 300;
-                const anvilHeight = 200;
-
-                drawRect(anvilX, anvilY, anvilWidth, anvilHeight, 'rgba(50,50,50,0.9)');
-                drawText('Anvil (Upgrade Item)', anvilX + anvilWidth / 2, anvilY + 30, 'white', 24, 'center');
-
-                drawText('Drag item here', anvilX + anvilWidth / 2, anvilY + anvilHeight / 2, 'gray', 18, 'center');
-
-                // Display player inventory for selection
-                player.inventory.draw(anvilX - 220, anvilY); // Display inventory next to anvil
-            }
-
-            function drawQuestScreen() {
-                drawRect(0, 0, canvas.width, canvas.height, 'rgba(0,0,0,0.8)'); // Dark overlay
-                const panelX = canvas.width / 2 - 250;
-                const panelY = canvas.height / 2 - 200;
-                const panelWidth = 500;
-                const panelHeight = 400;
-
-                drawRect(panelX, panelY, panelWidth, panelHeight, 'rgba(0,0,0,0.7)');
-                drawText('Quest Log', panelX + panelWidth / 2, panelY + 30, 'white', 28, 'center');
-
-                let questDisplayY = panelY + 60;
-                quests.forEach(quest => {
-                    const color = quest.isClaimed ? 'gray' : (quest.isCompleted ? 'lime' : 'white');
-                    drawText(`${quest.name} (${quest.currentAmount}/${quest.requiredAmount})`, panelX + 30, questDisplayY, color, 18, 'left');
-                    drawText(quest.description, panelX + 50, questDisplayY + 20, 'lightgray', 14, 'left');
-                    drawText(`Reward: ${quest.rewardExp} EXP, ${quest.rewardGold} Noah`, panelX + 50, questDisplayY + 40, 'lightgray', 14, 'left');
-
-                    if (quest.isCompleted && !quest.isClaimed) {
-                        drawText('[Claim Reward]', panelX + panelWidth - 120, questDisplayY + 20, 'gold', 16, 'left');
-                    }
-                    questDisplayY += 70;
-                });
-            }
-
-            function drawDeathScreen() {
-                drawRect(0, 0, canvas.width, canvas.height, 'rgba(100,0,0,0.8)');
-                drawText('You Died!', canvas.width / 2, canvas.height / 2 - 50, 'white', 48, 'center');
-                drawText(`Respawning in ${(player.respawnTimer / 1000).toFixed(0)} seconds...`, canvas.width / 2, canvas.height / 2, 'lightgray', 24, 'center');
-            }
-
-            // --- Event Listeners ---
-            const keys = {};
-            window.addEventListener('keydown', (e) => {
-                keys[e.key] = true;
-                handleKeyPress(e.key);
-            });
-            window.addEventListener('keyup', (e) => {
-                keys[e.key] = false;
-            });
-
-            function handleKeyPress(key) {
-                switch (currentState) {
-                    case GAME_STATE.MENU:
-                        if (key === 's') {
-                            currentState = GAME_STATE.PLAYING;
-                            messages.push({ text: "Game Started! Good luck!", color: 'lime', duration: 2000 });
-                        } else if (key === 'l') {
-                            loadGame();
-                            currentState = GAME_STATE.PLAYING; // Assume if loaded, player wants to play
-                            messages.push({ text: "Game Loaded!", color: 'cyan', duration: 2000 });
-                        }
-                        break;
-                    case GAME_STATE.PLAYING:
-                        if (key === 'w') player.isMoving.up = true;
-                        if (key === 's') player.isMoving.down = true;
-                        if (key === 'a') player.isMoving.left = true;
-                        if (key === 'd') player.isMoving.right = true;
-                        if (key === 'i') currentState = GAME_STATE.INVENTORY;
-                        if (key === 'u') currentState = GAME_STATE.UPGRADE;
-                        if (key === 'q') currentState = GAME_STATE.QUESTS;
-                        if (key === '1') player.useSkill(player.availableSkills[0] || 'attack');
-                        if (key === '2') player.useSkill(player.availableSkills[1] || 'attack');
-                        if (key === '3') player.useSkill(player.availableSkills[2] || 'attack');
-                        if (key === '4') player.useSkill(player.availableSkills[3] || 'attack');
-                        if (key === ' ') player.useSkill('attack'); // Spacebar for basic attack
-                        // Stat point allocation (simplistic, just for example)
-                        if (key === 'p' && player.statPoints > 0) currentState = GAME_STATE.INVENTORY; // Go to inventory to show stats and buttons
-                        break;
-                    case GAME_STATE.INVENTORY:
-                    case GAME_STATE.UPGRADE:
-                    case GAME_STATE.QUESTS:
-                        if (key === 'escape' || key === 'i' || key === 'u' || key === 'q') {
-                            currentState = GAME_STATE.PLAYING; // Exit these screens
-                        }
-                        break;
-                    case GAME_STATE.DEAD:
-                        // Only respawn logic here, no other actions
-                        break;
-                }
-            }
-
-            window.addEventListener('keyup', (e) => {
-                if (currentState === GAME_STATE.PLAYING) {
-                    if (e.key === 'w') player.isMoving.up = false;
-                    if (e.key === 's') player.isMoving.down = false;
-                    if (e.key === 'a') player.isMoving.left = false;
-                    if (e.key === 'd') player.isMoving.right = false;
-                }
-            });
-
-            // Mouse Click Handling for UI
-            canvas.addEventListener('click', (e) => {
-                const mouseX = e.clientX - canvas.getBoundingClientRect().left;
-                const mouseY = e.clientY - canvas.getBoundingClientRect().top;
-
-                if (currentState === GAME_STATE.MENU) {
-                    // Check for start/load buttons (if they were drawn as clickable regions)
-                    // For now, rely on keyboard 's' and 'l'
-                } else if (currentState === GAME_STATE.INVENTORY) {
-                    const offsetX = canvas.width / 2 - 200;
-                    const offsetY = canvas.height / 2 - 150;
-                    const slotSize = 40;
-                    const padding = 10;
-                    const startX = offsetX + padding;
-                    const startY = offsetY + 40;
-
-                    for (let i = 0; i < player.inventory.slots.length; i++) {
-                        const row = Math.floor(i / 4);
-                        const col = i % 4;
-                        const x = startX + col * (slotSize + padding);
-                        const y = startY + row * (slotSize + padding);
-
-                        if (mouseX > x && mouseX < x + slotSize && mouseY > y && mouseY < y + slotSize) {
-                            player.inventory.useItem(i);
-                            return;
-                        }
-                    }
-                } else if (currentState === GAME_STATE.QUESTS) {
-                    const panelX = canvas.width / 2 - 250;
-                    const panelY = canvas.height / 2 - 200;
-                    const panelWidth = 500;
-
-                    let questDisplayY = panelY + 60;
-                    quests.forEach(quest => {
-                        if (quest.isCompleted && !quest.isClaimed) {
-                            const claimBtnX = panelX + panelWidth - 120;
-                            const claimBtnY = questDisplayY + 5;
-                            const claimBtnWidth = 100;
-                            const claimBtnHeight = 25;
-                            if (mouseX > claimBtnX && mouseX < claimBtnX + claimBtnWidth && mouseY > claimBtnY && mouseY < claimBtnY + claimBtnHeight) {
-                                quest.claimReward();
-                                return;
-                            }
-                        }
-                        questDisplayY += 70;
-                    });
-                }
-            });
-
-            // Mobile Controls
-            let joystickActive = false;
-            let joystickCenterX, joystickCenterY;
-            let joystickCurrentX, joystickCurrentY;
-
-            if (isMobile) {
-                const joystickDiv = document.getElementById('joystick');
-                const joystickHandleDiv = document.getElementById('joystick-handle');
-
-                joystickDiv.addEventListener('touchstart', (e) => {
-                    joystickActive = true;
-                    const touch = e.touches[0];
-                    const rect = joystickDiv.getBoundingClientRect();
-                    joystickCenterX = rect.left + rect.width / 2;
-                    joystickCenterY = rect.top + rect.height / 2;
-                    joystickCurrentX = touch.clientX;
-                    joystickCurrentY = touch.clientY;
-                    joystickHandleDiv.style.left = `${joystickCurrentX - rect.left}px`;
-                    joystickHandleDiv.style.top = `${joystickCurrentY - rect.top}px`;
-                });
-
-                joystickDiv.addEventListener('touchmove', (e) => {
-                    if (!joystickActive) return;
-                    const touch = e.touches[0];
-                    const rect = joystickDiv.getBoundingClientRect();
-
-                    let newX = touch.clientX;
-                    let newY = touch.clientY;
-
-                    const dist = distance(joystickCenterX, joystickCenterY, newX, newY);
-                    const maxDist = rect.width / 2 - joystickHandleDiv.offsetWidth / 2;
-
-                    if (dist > maxDist) {
-                        const angle = Math.atan2(newY - joystickCenterY, newX - joystickCenterX);
-                        newX = joystickCenterX + Math.cos(angle) * maxDist;
-                        newY = joystickCenterY + Math.sin(angle) * maxDist;
-                    }
-
-                    joystickHandleDiv.style.left = `${newX - rect.left}px`;
-                    joystickHandleDiv.style.top = `${newY - rect.top}px`;
-
-                    // Update player movement based on joystick handle position
-                    let dx = (newX - joystickCenterX) / maxDist;
-                    let dy = (newY - joystickCenterY) / maxDist;
-
-                    player.isMoving.up = dy < -0.1;
-                    player.isMoving.down = dy > 0.1;
-                    player.isMoving.left = dx < -0.1;
-                    player.isMoving.right = dx > 0.1;
-                });
-
-                joystickDiv.addEventListener('touchend', () => {
-                    joystickActive = false;
-                    joystickHandleDiv.style.left = '50%';
-                    joystickHandleDiv.style.top = '50%';
-                    player.isMoving.up = player.isMoving.down = player.isMoving.left = player.isMoving.right = false;
-                });
-
-                skillButtons.forEach(button => {
-                    button.addEventListener('touchend', (e) => {
-                        const skillName = e.currentTarget.dataset.skill;
-                        if (skillName === 'attack') player.useSkill('attack');
-                        if (skillName === 'skill1') player.useSkill(player.availableSkills[1] || 'attack');
-                        if (skillName === 'skill2') player.useSkill(player.availableSkills[2] || 'attack');
-                        if (skillName === 'skill3') player.useSkill(player.availableSkills[3] || 'attack');
-                    });
-                });
-            }
-
-            // --- Save/Load System ---
-            function saveGame() {
-                const gameData = {
-                    player: {
-                        x: player.x,
-                        y: player.y,
-                        level: player.level,
-                        exp: player.exp,
-                        expToNextLevel: player.expToNextLevel,
-                        statPoints: player.statPoints,
-                        skillPoints: player.skillPoints,
-                        gold: player.gold,
-                        baseStats: { ...player.baseStats },
-                        currentHP: player.currentHP,
-                        mana: player.mana,
-                        maxMana: player.maxMana,
-                        inventory: player.inventory.slots.map(item => item ? {
-                            name: item.name, type: item.type, color: item.color, value: item.value, stats: item.stats, enchantmentLevel: item.enchantmentLevel
-                        } : null),
-                        equipment: {
-                            weapon: player.equipment.weapon ? {
-                                name: player.equipment.weapon.name, type: player.equipment.weapon.type, color: player.equipment.weapon.color, value: player.equipment.weapon.value, stats: player.equipment.weapon.stats, enchantmentLevel: player.equipment.weapon.enchantmentLevel
-                            } : null,
-                            armor: player.equipment.armor ? {
-                                name: player.equipment.armor.name, type: player.equipment.armor.type, color: player.equipment.armor.color, value: player.equipment.armor.value, stats: player.equipment.armor.stats, enchantmentLevel: player.equipment.armor.enchantmentLevel
-                            } : null,
-                            accessory: player.equipment.accessory ? {
-                                name: player.equipment.accessory.name, type: player.equipment.accessory.type, color: player.equipment.accessory.color, value: player.equipment.accessory.value, stats: player.equipment.accessory.stats, enchantmentLevel: player.equipment.accessory.enchantmentLevel
-                            } : null
-                        },
-                        skillLevels: { ...player.skillLevels },
-                        availableSkills: [...player.availableSkills]
-                    },
-                    quests: quests.map(quest => ({
-                        id: quest.id,
-                        name: quest.name,
-                        description: quest.description,
-                        type: quest.type,
-                        target: quest.target,
-                        requiredAmount: quest.requiredAmount,
-                        currentAmount: quest.currentAmount,
-                        rewardExp: quest.rewardExp,
-                        rewardGold: quest.rewardGold,
-                        rewardItem: quest.rewardItem ? {
-                            name: quest.rewardItem.name, type: quest.rewardItem.type, color: quest.rewardItem.color, value: quest.rewardItem.value, stats: quest.rewardItem.stats, enchantmentLevel: quest.rewardItem.enchantmentLevel
-                        } : null,
-                        isCompleted: quest.isCompleted,
-                        isClaimed: quest.isClaimed
-                    })),
-                    // Mobs and items on map are volatile, not saved for simplicity
-                };
-                localStorage.setItem('genflowRpgSave', JSON.stringify(gameData));
-                messages.push({ text: "Game Saved!", color: 'lime', duration: 1500 });
-                console.log("Game Saved:", gameData);
-            }
-
-            function loadGame() {
-                const savedData = localStorage.getItem('genflowRpgSave');
-                if (savedData) {
-                    const gameData = JSON.parse(savedData);
-
-                    // Restore Player
-                    player.x = gameData.player.x;
-                    player.y = gameData.player.y;
-                    player.level = gameData.player.level;
-                    player.exp = gameData.player.exp;
-                    player.expToNextLevel = gameData.player.expToNextLevel;
-                    player.statPoints = gameData.player.statPoints;
-                    player.skillPoints = gameData.player.skillPoints;
-                    player.gold = gameData.player.gold;
-                    player.baseStats = { ...gameData.player.baseStats };
-                    player.currentHP = gameData.player.currentHP;
-                    player.mana = gameData.player.mana;
-                    player.maxMana = gameData.player.maxMana;
-
-                    player.inventory.slots = gameData.player.inventory.map(itemData => itemData ? new Item(itemData.name, itemData.type, itemData.color, itemData.value, itemData.stats, itemData.enchantmentLevel) : null);
-                    if (gameData.player.equipment.weapon) player.equipment.weapon = new Item(gameData.player.equipment.weapon.name, gameData.player.equipment.weapon.type, gameData.player.equipment.weapon.color, gameData.player.equipment.weapon.value, gameData.player.equipment.weapon.stats, gameData.player.equipment.weapon.enchantmentLevel);
-                    if (gameData.player.equipment.armor) player.equipment.armor = new Item(gameData.player.equipment.armor.name, gameData.player.equipment.armor.type, gameData.player.equipment.armor.color, gameData.player.equipment.armor.value, gameData.player.equipment.armor.stats, gameData.player.equipment.armor.enchantmentLevel);
-                    if (gameData.player.equipment.accessory) player.equipment.accessory = new Item(gameData.player.equipment.accessory.name, gameData.player.equipment.accessory.type, gameData.player.equipment.accessory.color, gameData.player.equipment.accessory.value, gameData.player.equipment.accessory.stats, gameData.player.equipment.accessory.enchantmentLevel);
-
-                    player.skillLevels = { ...gameData.player.skillLevels };
-                    player.availableSkills = [...gameData.player.availableSkills];
-
-                    // Restore Quests
-                    quests = gameData.quests.map(questData => {
-                        const q = new Quest(questData.id, questData.name, questData.description, questData.type, questData.target, questData.requiredAmount, questData.rewardExp, questData.rewardGold, questData.rewardItem ? new Item(questData.rewardItem.name, questData.rewardItem.type, questData.rewardItem.color, questData.rewardItem.value, questData.rewardItem.stats, questData.rewardItem.enchantmentLevel) : null);
-                        q.currentAmount = questData.currentAmount;
-                        q.isCompleted = questData.isCompleted;
-                        q.isClaimed = questData.isClaimed;
-                        return q;
-                    });
-                    messages.push({ text: "Game Loaded Successfully!", color: 'cyan', duration: 2000 });
-                } else {
-                    messages.push({ text: "No saved game found.", color: 'orange', duration: 2000 });
-                }
-            }
-
-
-            // Start the game after all initializations
-            initGame();
-            requestAnimationFrame(gameLoop);
-        }; // End of window.onload
-    </script>
+          }
+          return;
+        }
+      }
+      // Equip slots - right click to unequip
+      const eqX=px2+340;
+      const equipSlotDefs=[
+        {key:'weapon',y:py2+81},{key:'head',y:py2+137},{key:'chest',y:py2+193},{key:'legs',y:py2+249},{key:'boots',y:py2+305}
+      ];
+      for(const es of equipSlotDefs){
+        if(mx>=eqX&&mx<=eqX+270&&my>=es.y&&my<=es.y+50){
+          p.inventory.unequip(es.key,p);
+          return;
+        }
+      }
+      return;
+    }
+    if(G.state==='skills'){
+      const pw=560, ph=500, px2=(W-pw)/2, py2=(H-ph)/2;
+      for(let i=0;i<SKILL_ORDER.length;i++){
+        const id=SKILL_ORDER[i];
+        const def=SKILL_DEFS[id];
+        const lv=G.skills.skills[id];
+        const sy=py2+65+i*58;
+        // + button area
+        if(mx>=px2+pw-65&&mx<=px2+pw-15&&my>=sy+12&&my<=sy+40){
+          if(G.player.level>=def.unlockLv && lv<def.maxLv && G.player.skillPoints>0){
+            G.skills.upgrade(id,G.player);
+          }
+          return;
+        }
+      }
+      return;
+    }
+    if(G.state==='quests'){
+      const pw=560, ph=480, px2=(W-pw)/2, py2=(H-ph)/2;
+      // Tab clicks
+      const tabs=['active','available','completed'];
+      for(let i=0;i<tabs.length;i++){
+        const tx=px2+10+i*180, ty=py2+38;
+        if(mx>=tx&&mx<=tx+170&&my>=ty&&my<=ty+24){ G.questTab=tabs[i]; return; }
+      }
+      // Quest buttons
+      let quests;
+      if(G.questTab==='active') quests=G.quests.getActive();
+      else if(G.questTab==='available') quests=G.quests.getAvailable();
+      else quests=G.quests.getCompleted();
+      const listY=py2+72;
+      for(let i=0;i<quests.length;i++){
+        const q=quests[i];
+        const qy=listY+i*90;
+        if(qy>py2+ph-40) break;
+        if(G.questTab==='available'){
+          if(mx>=px2+pw-90&&mx<=px2+pw-15&&my>=qy+25&&my<=qy+53){ G.quests.accept(q.id); return; }
+        } else if(G.questTab==='active'){
+          if(mx>=px2+pw-100&&mx<=px2+pw-15&&my>=qy+25&&my<=qy+53){ G.quests.abandon(q.id); return; }
+        }
+      }
+      return;
+    }
+    if(G.state==='stat'){
+      handleStatPanelClick(mx,my);
+      return;
+    }
+    if(G.state==='anvil'){
+      handleAnvilClick(mx,my);
+      return;
+    }
+  });
+
+  canvas.addEventListener('contextmenu',e=>{
+    e.preventDefault();
+    if(G.state==='playing'){
+      const cam=G.camera;
+      G.player.moveTarget={
+        x: e.clientX - W/2 + cam.x,
+        y: e.clientY - H/2 + cam.y
+      };
+    }
+  });
+
+  // Touch events
+  canvas.addEventListener('touchstart',e=>{
+    e.preventDefault();
+    for(const t of e.changedTouches){
+      G.joystick.onTouchStart(t);
+      // Right side tap = attack button
+      if(t.clientX>W*0.6 && t.clientY>H*0.5){
+        // Auto-attack is on timer, but also try skill 1
+        if(t.clientY<H*0.75){
+          G.skills.use(SKILL_ORDER[0],G.player,G.mobs);
+        }
+      }
+    }
+  },{passive:false});
+  canvas.addEventListener('touchmove',e=>{
+    e.preventDefault();
+    for(const t of e.changedTouches) G.joystick.onTouchMove(t);
+  },{passive:false});
+  canvas.addEventListener('touchend',e=>{
+    e.preventDefault();
+    for(const t of e.changedTouches) G.joystick.onTouchEnd(t);
+  },{passive:false});
+
+  window.addEventListener('resize',()=>{
+    canvas.width=window.innerWidth;
+    canvas.height=window.innerHeight;
+  });
+}
+
+function handleStatPanelClick(mx,my){
+  const pw=400, ph=380, px=(W-pw)/2, py=(H-ph)/2;
+  const p=G.player;
+  if(!G.statPanelStats) G.statPanelStats={str:p.str,dex:p.dex,int:p.int,extraHp:0,extraMp:0,points:p.statPoints};
+  const sp=G.statPanelStats;
+  const statKeys=['str','dex','int','extraHp','extraMp'];
+
+  for(let i=0;i<statKeys.length;i++){
+    const key=statKeys[i];
+    const ry=py+70+i*52;
+    // - button
+    if(mx>=px+230&&mx<=px+254&&my>=ry+10&&my<=ry+34){
+      const base={str:p.str,dex:p.dex,int:p.int,extraHp:0,extraMp:0};
+      if(sp[key]>base[key]||sp[key]>0){
+        if(key==='str'&&sp.str>p.str){ sp.str--; sp.points++; }
+        else if(key==='dex'&&sp.dex>p.dex){ sp.dex--; sp.points++; }
+        else if(key==='int'&&sp.int>p.int){ sp.int--; sp.points++; }
+        else if(key==='extraHp'&&sp.extraHp>0){ sp.extraHp--; sp.points++; }
+        else if(key==='extraMp'&&sp.extraMp>0){ sp.extraMp--; sp.points++; }
+      }
+      return;
+    }
+    // + button
+    if(mx>=px+300&&mx<=px+324&&my>=ry+10&&my<=ry+34){
+      if(sp.points>0){
+        sp[key]++;
+        sp.points--;
+      }
+      return;
+    }
+  }
+  // Confirm
+  if(mx>=px+pw/2-70&&mx<=px+pw/2+70&&my>=py+ph-55&&my<=py+ph-19){
+    applyStatPanel();
+    G.state='playing';
+    G.pendingStatScreen=false;
+  }
+}
+
+function applyStatPanel(){
+  if(!G.statPanelStats) return;
+  const sp=G.statPanelStats;
+  const p=G.player;
+  p.str=sp.str; p.dex=sp.dex; p.int=sp.int;
+  p.maxHp+=sp.extraHp*30;
+  p.maxMp+=sp.extraMp*20;
+  p.statPoints=sp.points;
+  p.recalcStats();
+  G.statPanelStats=null;
+}
+
+function handleAnvilClick(mx,my){
+  const pw=580, ph=480, px=(W-pw)/2, py=(H-ph)/2;
+  const p=G.player;
+  const inv=p.inventory;
+  const equipTypes=['weapon','head','chest','legs','boots'];
+  const enhanceable=[];
+  for(let i=0;i<24;i++){
+    const it=inv.slots[i];
+    if(it&&equipTypes.includes(it.type)) enhanceable.push({item:it,src:'inv',idx:i});
+  }
+  for(const slot of equipTypes){
+    const it=inv.equipment[slot];
+    if(it) enhanceable.push({item:it,src:'equip',slot});
+  }
+
+  const listX=px+10, listY=py+58;
+  for(let i=0;i<Math.min(enhanceable.length,9);i++){
+    const iy=listY+i*40;
+    if(mx>=listX&&mx<=listX+240&&my>=iy&&my<=iy+36){
+      G.anvilSelected=enhanceable[i];
+      return;
+    }
+  }
+
+  // Enhance button
+  if(G.anvilSelected){
+    const selX=px+270, selY=py+55;
+    const bx=selX+30, by=selY+272, bw=pw-340, bh=44;
+    if(mx>=bx&&mx<=bx+bw&&my>=by&&my<=by+bh){
+      doAnvilEnhance();
+      return;
+    }
+  }
+}
+
+
+// === MOBILE UI BUTTONS ===
+function drawMobileUI(){
+  const isMobile = ('ontouchstart' in window);
+  if(!isMobile) return;
+  // Joystick
+  G.joystick.draw();
+
+  // Attack button (right side)
+  ctx.globalAlpha=0.7;
+  ctx.fillStyle='rgba(200,30,30,0.8)';
+  ctx.beginPath(); ctx.arc(W-80,H-130,44,0,Math.PI*2); ctx.fill();
+  ctx.strokeStyle='#f44'; ctx.lineWidth=2; ctx.stroke();
+  ctx.fillStyle='#fff'; ctx.font='bold 14px Arial'; ctx.textAlign='center';
+  ctx.fillText('ATK',W-80,H-125);
+
+  // Mini skill buttons
+  const skillBtns=[
+    {id:SKILL_ORDER[0],x:W-160,y:H-100,r:28},
+    {id:SKILL_ORDER[1],x:W-200,y:H-170,r:28},
+    {id:SKILL_ORDER[2],x:W-130,y:H-200,r:28},
+    {id:SKILL_ORDER[3],x:W-60,y:H-210,r:28},
+  ];
+  for(const sb of skillBtns){
+    const def=SKILL_DEFS[sb.id];
+    const lv=G.skills.skills[sb.id];
+    const cd=G.skills.cooldowns[sb.id];
+    ctx.fillStyle=lv>0?def.color:'rgba(40,40,40,0.8)';
+    ctx.beginPath(); ctx.arc(sb.x,sb.y,sb.r,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,0.3)'; ctx.lineWidth=1; ctx.stroke();
+    ctx.fillStyle='#fff'; ctx.font='bold 10px Arial'; ctx.textAlign='center';
+    ctx.fillText(def.name.slice(0,3),sb.x,sb.y+4);
+    if(cd>0){
+      ctx.fillStyle='rgba(0,0,0,0.6)';
+      ctx.beginPath(); ctx.arc(sb.x,sb.y,sb.r,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='#fff'; ctx.font='bold 11px Arial';
+      ctx.fillText(Math.ceil(cd),sb.x,sb.y+5);
+    }
+  }
+  ctx.globalAlpha=1;
+}
+
+// === MAIN GAME LOOP ===
+let lastTime=0;
+function gameLoop(ts){
+  const dt=Math.min((ts-lastTime)/1000, 0.05);
+  lastTime=ts;
+
+  ctx.clearRect(0,0,W,H);
+
+  if(G.state==='menu'){
+    updateMenuParticles(dt);
+    drawMenuScreen();
+    requestAnimationFrame(gameLoop);
+    return;
+  }
+
+  if(G.state==='dead'){
+    // Still draw world behind
+    if(G.world) G.world.draw(G.camera);
+    drawDeathScreen();
+    requestAnimationFrame(gameLoop);
+    return;
+  }
+
+  // === UPDATE ===
+  if(G.state==='playing'){
+    G.player.update(dt, G.keys, G.mobs);
+    G.camera.follow(G.player, dt);
+    G.skills.update(dt);
+    G.quests.update(G.player);
+    G.quests.checkNoah(G.player.inventory.noah);
+
+    // Mob updates + respawn
+    for(const mob of G.mobs){
+      if(mob.dead){
+        if(mob.respawnTimer>0){
+          mob.respawnTimer-=dt;
+          if(mob.respawnTimer<=0) mob.respawn();
+        }
+      } else {
+        mob.update(dt, G.player);
+      }
+    }
+
+    G.particles.update(dt);
+
+    if(G.pendingStatScreen){
+      G.pendingStatScreen=false;
+      G.statPanelStats=null;
+      G.state='stat';
+    }
+  } else {
+    // Still update particles + camera in panels
+    G.particles.update(dt);
+    G.camera.follow(G.player, dt);
+    G.skills.update(dt);
+    G.quests.update(G.player);
+    G.quests.checkNoah(G.player.inventory.noah);
+  }
+
+  // === DRAW WORLD ===
+  G.world.draw(G.camera);
+  drawGroundItems(G.camera);
+
+  // Draw mobs
+  for(const mob of G.mobs){
+    if(!mob.dead || mob.deadTimer>0) mob.draw(G.camera);
+  }
+
+  // Draw player
+  G.player.draw(G.camera);
+
+  // Draw particles
+  G.particles.draw(G.camera);
+
+  // === DRAW HUD ===
+  drawHUD();
+  drawMobileUI();
+
+  // === DRAW PANELS ===
+  if(G.state==='inventory') drawInventoryPanel();
+  else if(G.state==='skills') drawSkillPanel();
+  else if(G.state==='quests') drawQuestPanel();
+  else if(G.state==='stat') drawStatPanel();
+  else if(G.state==='anvil') drawAnvilPanel();
+
+  requestAnimationFrame(gameLoop);
+}
+
+// === STARTUP ===
+setupInput();
+
+// Init with menu particles
+G.menuParticles=[];
+G.menuTimer=0;
+G.rainbowAngle=0;
+
+// Start menu loop
+requestAnimationFrame(gameLoop);
+
+}; // end window.onload
+</script>
 </body>
 </html>
-```
