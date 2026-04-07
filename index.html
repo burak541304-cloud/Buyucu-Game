@@ -2,27 +2,64 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Knight Online RPG</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>⚔ Knight Online RPG</title>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
-body { background:#000; overflow:hidden; font-family:'Segoe UI',Arial,sans-serif; }
+body { background:#000; overflow:hidden; font-family:'Segoe UI',Arial,sans-serif; touch-action:none; }
 #c { display:block; touch-action:none; }
 #ui { position:fixed; top:0; left:0; pointer-events:none; }
+
+/* ── Landscape zorunluluk overlay ── */
+#rot-overlay {
+  display:none;
+  position:fixed; top:0; left:0; width:100%; height:100%;
+  background:linear-gradient(135deg,#0a0005,#050015);
+  z-index:9999;
+  flex-direction:column; align-items:center; justify-content:center;
+  color:#fd0; font-family:'Segoe UI',Arial,sans-serif;
+  text-align:center; gap:16px;
+}
+@media (orientation:portrait) { #rot-overlay { display:flex; } }
+#rot-arrow {
+  font-size:72px; line-height:1;
+  animation: rotpulse 1.2s ease-in-out infinite alternate;
+}
+@keyframes rotpulse {
+  from { transform:rotate(-15deg) scale(0.9); opacity:0.6; }
+  to   { transform:rotate(15deg)  scale(1.1); opacity:1;   }
+}
+#rot-text1 { font-size:20px; font-weight:bold; letter-spacing:1px; }
+#rot-text2 { font-size:13px; color:#aaa; }
 </style>
 </head>
 <body>
+<!-- Cihazı yatay çevirme uyarısı -->
+<div id="rot-overlay">
+  <div id="rot-arrow">⟳</div>
+  <div id="rot-text1">Cihazı Yatay Çevirin</div>
+  <div id="rot-text2">Please rotate to landscape mode</div>
+</div>
 <canvas id="c"></canvas>
 <script>
 window.onload = function() {
 'use strict';
 
 // === CONSTANTS ===
-const W = window.innerWidth, H = window.innerHeight;
+let W = window.innerWidth, H = window.innerHeight;
 const WORLD_W = 5000, WORLD_H = 5000;
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
 canvas.width = W; canvas.height = H;
+const isMobile = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+
+// Landscape-lock girişimi (destekleyen tarayıcılarda)
+if(isMobile && screen.orientation && screen.orientation.lock) {
+  screen.orientation.lock('landscape').catch(()=>{});
+}
 
 // === ITEM DEFINITIONS ===
 const ITEM_DEFS = {
@@ -336,9 +373,10 @@ class Player {
       this.y = clamp(this.y + vy*this.speed*dt, 0, WORLD_H);
     }
 
-    // Auto-attack
+    // Auto-attack (veya force attack buton ile tetiklenmiş)
     this.attackTimer -= dt;
-    if(this.attackTimer<=0){
+    if(this.attackTimer<=0 || G.forceAttack){
+      if(G.forceAttack){ G.forceAttack=false; this.attackTimer=Math.max(0,this.attackTimer); }
       let nearest=null, nearestDist=Infinity;
       for(const mob of mobs){
         if(mob.dead) continue;
@@ -1128,6 +1166,12 @@ class VirtualJoystick {
     this.nx=0; this.ny=0;
     this.touchId=null;
   }
+  resetBase(){
+    if(!this.active){
+      this.baseX=120; this.baseY=H-120;
+      this.stickX=this.baseX; this.stickY=this.baseY;
+    }
+  }
   onTouchStart(t){
     if(t.clientX<W/2 && this.touchId===null){
       this.active=true;
@@ -1317,6 +1361,7 @@ let G = {
   invTab: 'inv',
   questTab: 'active',
   anvilSelected: null,
+  forceAttack: false,
   anvilMsg: '',
   anvilMsgTimer: 0,
   anvilFlash: 0,
@@ -1413,179 +1458,162 @@ function drawHUD(){
     ctx.translate(shakeX,shakeY);
   }
 
-  // === Top-left bars ===
-  const barX=15, barY=15, barW=180, barH=16;
-  // HP Bar
-  ctx.fillStyle='rgba(0,0,0,0.6)';
-  ctx.fillRect(barX-2,barY-2,barW+4,barH+4);
-  ctx.fillStyle='#500';
-  ctx.fillRect(barX,barY,barW,barH);
-  ctx.fillStyle='#e22';
-  ctx.fillRect(barX,barY,barW*(p.hp/p.maxHp),barH);
-  ctx.fillStyle='#fff'; ctx.font='bold 11px Arial'; ctx.textAlign='left';
-  ctx.fillText(`HP: ${Math.floor(p.hp)} / ${p.maxHp}`,barX+4,barY+12);
+  // ── Responsive ölçekler ──
+  const scale  = Math.min(W, H) / 420;         // küçük ekranlarda küç
+  const barW   = Math.min(200, W * 0.28);
+  const barH   = Math.max(12, Math.round(15 * scale));
+  const fontSize = Math.max(9, Math.round(11 * scale));
+  const barX   = 12, barY = 12;
+  const barGap = barH + 5;
 
-  // MP Bar
-  const mpY=barY+barH+5;
-  ctx.fillStyle='rgba(0,0,0,0.6)';
-  ctx.fillRect(barX-2,mpY-2,barW+4,barH+4);
-  ctx.fillStyle='#005';
-  ctx.fillRect(barX,mpY,barW,barH);
-  ctx.fillStyle='#26e';
-  ctx.fillRect(barX,mpY,barW*(p.mp/p.maxMp),barH);
-  ctx.fillStyle='#fff'; ctx.textAlign='left';
-  ctx.fillText(`MP: ${Math.floor(p.mp)} / ${p.maxMp}`,barX+4,mpY+12);
+  // ── HP Bar ──
+  ctx.fillStyle='rgba(0,0,0,0.65)'; ctx.fillRect(barX-2,barY-2,barW+4,barH+4);
+  ctx.fillStyle='#500'; ctx.fillRect(barX,barY,barW,barH);
+  ctx.fillStyle='#e22'; ctx.fillRect(barX,barY,barW*(p.hp/p.maxHp),barH);
+  ctx.fillStyle='#fff'; ctx.font=`bold ${fontSize}px Arial`; ctx.textAlign='left';
+  ctx.fillText(`HP ${Math.floor(p.hp)}/${p.maxHp}`,barX+4,barY+barH-3);
 
-  // EXP Bar
-  const expY=mpY+barH+5;
-  ctx.fillStyle='rgba(0,0,0,0.6)';
-  ctx.fillRect(barX-2,expY-2,barW+4,barH+4);
-  ctx.fillStyle='#330';
-  ctx.fillRect(barX,expY,barW,barH);
+  // ── MP Bar ──
+  const mpY = barY + barGap;
+  ctx.fillStyle='rgba(0,0,0,0.65)'; ctx.fillRect(barX-2,mpY-2,barW+4,barH+4);
+  ctx.fillStyle='#005'; ctx.fillRect(barX,mpY,barW,barH);
+  ctx.fillStyle='#26e'; ctx.fillRect(barX,mpY,barW*(p.mp/p.maxMp),barH);
+  ctx.fillStyle='#fff'; ctx.font=`bold ${fontSize}px Arial`;
+  ctx.fillText(`MP ${Math.floor(p.mp)}/${p.maxMp}`,barX+4,mpY+barH-3);
+
+  // ── EXP Bar ──
+  const expY = mpY + barGap;
+  ctx.fillStyle='rgba(0,0,0,0.65)'; ctx.fillRect(barX-2,expY-2,barW+4,barH+4);
+  ctx.fillStyle='#330'; ctx.fillRect(barX,expY,barW,barH);
   ctx.fillStyle='#da0';
-  const expPct = p.expNext>0?p.exp/p.expNext:0;
-  ctx.fillRect(barX,expY,barW*expPct,barH);
-  ctx.fillStyle='#fff'; ctx.textAlign='left';
-  ctx.fillText(`EXP: ${p.exp} / ${p.expNext}`,barX+4,expY+12);
+  ctx.fillRect(barX,expY,barW*Math.min(p.exp/p.expNext,1),barH);
+  ctx.fillStyle='#fff'; ctx.font=`bold ${fontSize}px Arial`;
+  ctx.fillText(`EXP ${p.exp}/${p.expNext}`,barX+4,expY+barH-3);
 
-  // Level + Noah + Stats
-  ctx.fillStyle='rgba(0,0,0,0.5)';
-  ctx.fillRect(barX-2,expY+barH+5,barW+4,70);
-  ctx.fillStyle='#fd0'; ctx.font='bold 14px Arial';
-  ctx.fillText(`Lv.${p.level}  Noah: ${p.inventory.noah}`,barX+4,expY+barH+22);
-  ctx.fillStyle='#aaa'; ctx.font='12px Arial';
-  ctx.fillText(`STR:${p.str}  DEX:${p.dex}  INT:${p.int}`,barX+4,expY+barH+40);
-  ctx.fillText(`ATK:${Math.floor(p.getAtk())}  DEF:${Math.floor(p.getDef())}`,barX+4,expY+barH+56);
+  // ── Level + Noah + ATK/DEF bilgisi ──
+  const infoY = expY + barGap + 4;
+  ctx.fillStyle='rgba(0,0,0,0.55)'; ctx.fillRect(barX-2,infoY-2,barW+4, Math.round(52*scale));
+  ctx.fillStyle='#fd0'; ctx.font=`bold ${Math.round(13*scale)}px Arial`;
+  ctx.fillText(`Lv.${p.level}  ⚜ ${p.inventory.noah}`,barX+4,infoY+Math.round(14*scale));
+  ctx.fillStyle='#bbb'; ctx.font=`${Math.round(11*scale)}px Arial`;
+  ctx.fillText(`STR:${p.str} DEX:${p.dex} INT:${p.int}`,barX+4,infoY+Math.round(28*scale));
+  ctx.fillText(`ATK:${Math.floor(p.getAtk())} DEF:${Math.floor(p.getDef())}`,barX+4,infoY+Math.round(43*scale));
 
-  // Stat Points notification
+  // ── Stat/Skill points bildirimi ──
   if(p.statPoints>0){
-    G.rainbowAngle += 0.05;
+    G.rainbowAngle += 0.04;
     const pulse = Math.sin(Date.now()*0.005)*0.3+0.7;
-    ctx.fillStyle=`hsl(${(G.rainbowAngle*60)%360},100%,60%)`;
     ctx.globalAlpha=pulse;
-    ctx.font='bold 16px Arial'; ctx.textAlign='left';
-    ctx.fillText(`STAT POINTS! (${p.statPoints}) [P]`,barX,expY+barH+75);
+    ctx.fillStyle=`hsl(${(G.rainbowAngle*60)%360},100%,60%)`;
+    ctx.font=`bold ${Math.round(13*scale)}px Arial`; ctx.textAlign='left';
+    ctx.fillText(`★ STAT POINTS (${p.statPoints}) [P]`,barX,infoY+Math.round(58*scale));
     ctx.globalAlpha=1;
   }
-
-  // === Skill Points notification ===
   if(p.skillPoints>0){
-    ctx.fillStyle='#a0f';
-    ctx.font='bold 14px Arial'; ctx.textAlign='left';
-    const spY = p.statPoints>0 ? expY+barH+92 : expY+barH+75;
-    ctx.fillText(`SKILL POINTS! (${p.skillPoints}) [K]`,barX,spY);
+    ctx.fillStyle='#c0f';
+    ctx.font=`bold ${Math.round(12*scale)}px Arial`;
+    const spY2 = infoY + Math.round((p.statPoints>0?73:58)*scale);
+    ctx.fillText(`★ SKILL POINTS (${p.skillPoints}) [K]`,barX,spY2);
   }
-
-  // Buff indicators
   if(p.atkBuffTimer>0){
-    ctx.fillStyle='#f80'; ctx.font='12px Arial'; ctx.textAlign='left';
-    ctx.fillText(`ATK BUFF ${Math.ceil(p.atkBuffTimer)}s`,barX,H-160);
+    ctx.fillStyle='#f80'; ctx.font=`${Math.round(11*scale)}px Arial`;
+    ctx.fillText(`⚡ ATK BUFF ${Math.ceil(p.atkBuffTimer)}s`,barX,infoY+Math.round(88*scale));
   }
 
-  // === Quest tracker (top-right) ===
+  // ── Quest tracker (üst sağ — mobilde sadece progress bar ve kısa metin) ──
   const active = G.quests.getActive();
   if(active.length>0){
-    const q = active[0];
+    const q  = active[0];
     const qs = G.quests.quests[q.id];
-    const tx=W-220, ty=15, tw=200;
-    ctx.fillStyle='rgba(0,0,0,0.7)';
-    drawRoundRect(ctx,tx,ty,tw,60,6,'rgba(0,0,0,0.7)','#a80');
-    ctx.fillStyle='#fd0'; ctx.font='bold 13px Arial'; ctx.textAlign='left';
-    ctx.fillText('[Quest] '+q.name,tx+8,ty+18);
-    ctx.fillStyle='#ddd'; ctx.font='12px Arial';
+    const tw = Math.min(220, W*0.30);
+    const tx = W - tw - 10, ty = 10;
+    const th = isMobile ? 46 : 60;
+    drawRoundRect(ctx,tx,ty,tw,th,6,'rgba(0,0,0,0.72)','#a80');
+    ctx.fillStyle='#fd0'; ctx.font=`bold ${Math.round(12*scale)}px Arial`; ctx.textAlign='left';
+    ctx.fillText(q.name.slice(0,22),tx+7,ty+15);
+    ctx.fillStyle='#ccc'; ctx.font=`${Math.round(10*scale)}px Arial`;
     const prog = q.killType ? `${Math.min(qs.progress,q.killCount)}/${q.killCount}` :
-                 q.collectNoah ? `${Math.min(qs.progress,q.collectNoah)}/${q.collectNoah} Noah` : '';
-    ctx.fillText(q.desc+' '+prog,tx+8,ty+38);
-    // Progress bar
+                 q.collectNoah ? `${qs.progress}/${q.collectNoah}N` : '';
+    ctx.fillText(q.desc.slice(0,28)+' '+prog,tx+7,ty+29);
     const pct = q.killCount ? Math.min(qs.progress/q.killCount,1) :
                 q.collectNoah ? Math.min(qs.progress/q.collectNoah,1) : 0;
-    ctx.fillStyle='#333'; ctx.fillRect(tx+8,ty+46,tw-16,8);
-    ctx.fillStyle='#4f4'; ctx.fillRect(tx+8,ty+46,(tw-16)*pct,8);
+    ctx.fillStyle='#333'; ctx.fillRect(tx+7,ty+33,tw-14,7);
+    ctx.fillStyle='#4f4'; ctx.fillRect(tx+7,ty+33,(tw-14)*pct,7);
   }
 
-  // === Skill bar (bottom-center) ===
-  const sbW=7*56+8, sbX=W/2-sbW/2, sbY=H-70;
-  ctx.fillStyle='rgba(0,0,0,0.8)';
-  drawRoundRect(ctx,sbX-4,sbY-4,sbW+8,62,8,'rgba(0,0,0,0.8)','#555');
-
-  for(let i=0;i<SKILL_ORDER.length;i++){
-    const id=SKILL_ORDER[i];
-    const def=SKILL_DEFS[id];
-    const lv=G.skills.skills[id];
-    const cd=G.skills.cooldowns[id];
-    const sx=sbX+i*56, sy2=sbY;
-    const unlocked = lv>0 && p.level>=def.unlockLv;
-    // Slot bg
-    ctx.fillStyle=unlocked?'rgba(40,30,10,0.9)':'rgba(20,20,20,0.9)';
-    drawRoundRect(ctx,sx,sy2,50,54,4,unlocked?'rgba(40,30,10,0.9)':'rgba(20,20,20,0.9)','#444');
-    if(unlocked){
-      // Icon
-      ctx.fillStyle=def.color;
-      ctx.beginPath(); ctx.arc(sx+25,sy2+18,16,0,Math.PI*2); ctx.fill();
-      ctx.strokeStyle='rgba(255,255,255,0.3)'; ctx.lineWidth=1.5; ctx.stroke();
-      // Skill symbol
-      ctx.fillStyle='#fff'; ctx.font='bold 12px Arial'; ctx.textAlign='center';
-      ctx.fillText(def.name.slice(0,3),sx+25,sy2+23);
-      // Hotkey
-      ctx.fillStyle='#aaa'; ctx.font='11px Arial';
-      ctx.fillText(''+(i+1),sx+25,sy2+40);
-      // Level
-      ctx.fillStyle='#fd0'; ctx.font='10px Arial';
-      ctx.fillText('Lv'+lv,sx+25,sy2+52);
-      // Cooldown overlay
-      if(cd>0){
-        ctx.fillStyle='rgba(0,0,0,0.65)';
-        drawRoundRect(ctx,sx,sy2,50,54,4,'rgba(0,0,0,0.65)',null);
-        ctx.fillStyle='#fff'; ctx.font='bold 14px Arial'; ctx.textAlign='center';
-        ctx.fillText(Math.ceil(cd)+'s',sx+25,sy2+32);
+  // ── Skill bar (alt orta) — sadece masaüstünde; mobilde drawMobileUI çizer ──
+  if(!isMobile){
+    const sbW=7*56+8, sbX=W/2-sbW/2, sbY=H-70;
+    ctx.fillStyle='rgba(0,0,0,0.8)';
+    drawRoundRect(ctx,sbX-4,sbY-4,sbW+8,62,8,'rgba(0,0,0,0.8)','#555');
+    for(let i=0;i<SKILL_ORDER.length;i++){
+      const id=SKILL_ORDER[i];
+      const def=SKILL_DEFS[id];
+      const lv=G.skills.skills[id];
+      const cd=G.skills.cooldowns[id];
+      const sx=sbX+i*56, sy2=sbY;
+      const unlocked=lv>0&&p.level>=def.unlockLv;
+      ctx.fillStyle=unlocked?'rgba(40,30,10,0.9)':'rgba(20,20,20,0.9)';
+      drawRoundRect(ctx,sx,sy2,50,54,4,unlocked?'rgba(40,30,10,0.9)':'rgba(20,20,20,0.9)','#444');
+      if(unlocked){
+        ctx.fillStyle=def.color;
+        ctx.beginPath(); ctx.arc(sx+25,sy2+18,16,0,Math.PI*2); ctx.fill();
+        ctx.strokeStyle='rgba(255,255,255,0.3)'; ctx.lineWidth=1.5; ctx.stroke();
+        ctx.fillStyle='#fff'; ctx.font='bold 12px Arial'; ctx.textAlign='center';
+        ctx.fillText(def.name.slice(0,3),sx+25,sy2+23);
+        ctx.fillStyle='#aaa'; ctx.font='11px Arial'; ctx.fillText(''+(i+1),sx+25,sy2+40);
+        ctx.fillStyle='#fd0'; ctx.font='10px Arial'; ctx.fillText('Lv'+lv,sx+25,sy2+52);
+        if(cd>0){
+          ctx.fillStyle='rgba(0,0,0,0.65)';
+          drawRoundRect(ctx,sx,sy2,50,54,4,'rgba(0,0,0,0.65)',null);
+          ctx.fillStyle='#fff'; ctx.font='bold 14px Arial'; ctx.textAlign='center';
+          ctx.fillText(Math.ceil(cd)+'s',sx+25,sy2+32);
+        }
+      } else {
+        ctx.fillStyle='#555'; ctx.font='10px Arial'; ctx.textAlign='center';
+        ctx.fillText('Lv'+def.unlockLv,sx+25,sy2+28);
+        ctx.fillStyle='#333'; ctx.font='10px Arial';
+        ctx.fillText(def.name.slice(0,5),sx+25,sy2+40);
       }
-      // MP cost
-      if(cd<=0){
-        const canUse = p.mp>=def.mp;
-        ctx.fillStyle=canUse?'rgba(0,100,255,0.2)':'rgba(100,0,0,0.3)';
-        ctx.fillRect(sx,sy2+44,50*(p.mp/p.maxMp),10);
-      }
-    } else {
-      ctx.fillStyle='#555'; ctx.font='10px Arial'; ctx.textAlign='center';
-      ctx.fillText('Lv'+def.unlockLv,sx+25,sy2+28);
-      ctx.fillStyle='#333'; ctx.font='10px Arial';
-      ctx.fillText(def.name.slice(0,5),sx+25,sy2+40);
     }
   }
 
-  // === Mini-map (bottom-right) ===
-  const mmX=W-134, mmY=H-134, mmW=120, mmH=120;
-  ctx.fillStyle='rgba(0,0,0,0.8)';
-  ctx.fillRect(mmX,mmY,mmW,mmH);
-  ctx.strokeStyle='#888'; ctx.lineWidth=1.5;
-  ctx.strokeRect(mmX,mmY,mmW,mmH);
-  // World bounds
-  ctx.strokeStyle='#444'; ctx.lineWidth=1;
-  ctx.strokeRect(mmX+1,mmY+1,mmW-2,mmH-2);
-
-  const scaleX=mmW/WORLD_W, scaleY=mmH/WORLD_H;
-  // Mobs (red dots)
+  // ── Mini-map (sağ alt — mobilde daha küçük) ──
+  const mmS   = isMobile ? 90  : 120;
+  const mmPad = isMobile ? 6   : 10;
+  // mobilde, butonların üstüne çakışmasın diye biraz yukarı al
+  const mmBottomOff = isMobile ? Math.min(180, H*0.45) : 75;
+  const mmX   = W - mmS - mmPad;
+  const mmY   = H - mmS - mmBottomOff;
+  ctx.fillStyle='rgba(0,0,0,0.82)'; ctx.fillRect(mmX-1,mmY-1,mmS+2,mmS+2);
+  ctx.strokeStyle='#666'; ctx.lineWidth=1.5; ctx.strokeRect(mmX,mmY,mmS,mmS);
+  // Zone renkleri (minimap üstünde)
+  const ms = mmS/WORLD_W;
+  ctx.fillStyle='#1a2d1a'; ctx.fillRect(mmX, mmY, mmS*0.4, mmS*0.4);
+  ctx.fillStyle='#3a2e1a'; ctx.fillRect(mmX, mmY, mmS, mmS);
+  ctx.fillStyle='#1a2d1a'; ctx.fillRect(mmX, mmY, mmS*0.4, mmS*0.4);
+  ctx.fillStyle='#2a2a2a'; ctx.fillRect(mmX+mmS*0.56, mmY+mmS*0.56, mmS*0.44, mmS*0.44);
+  // Mob noktaları
   for(const mob of G.mobs){
     if(mob.dead) continue;
-    ctx.fillStyle='#f44';
-    ctx.fillRect(mmX+mob.x*scaleX-1,mmY+mob.y*scaleY-1,2,2);
+    ctx.fillStyle = mob.state==='aggro'||mob.state==='attack' ? '#f22' : '#a44';
+    ctx.fillRect(mmX+mob.x*ms-1, mmY+mob.y*ms-1, 2, 2);
   }
-  // Player (gold dot)
+  // Oyuncu noktası
   ctx.fillStyle='#fd0';
-  ctx.beginPath();
-  ctx.arc(mmX+p.x*scaleX,mmY+p.y*scaleY,3,0,Math.PI*2);
-  ctx.fill();
+  ctx.beginPath(); ctx.arc(mmX+p.x*ms, mmY+p.y*ms, 3, 0, Math.PI*2); ctx.fill();
+  // Zone etiketleri
+  ctx.fillStyle='rgba(255,255,255,0.35)'; ctx.font='7px Arial'; ctx.textAlign='left';
+  ctx.fillText('S',mmX+3,mmY+9);
+  ctx.fillText('M',mmX+mmS*0.45,mmY+mmS*0.55);
+  ctx.fillText('H',mmX+mmS*0.7,mmY+mmS*0.9);
 
-  // Zone labels on minimap
-  ctx.fillStyle='rgba(255,255,255,0.3)'; ctx.font='8px Arial'; ctx.textAlign='left';
-  ctx.fillText('S',mmX+4,mmY+12);
-  ctx.fillText('M',mmX+50,mmY+60);
-  ctx.fillText('H',mmX+90,mmY+100);
-
-  // Controls hint
-  ctx.fillStyle='rgba(255,255,255,0.4)'; ctx.font='10px Arial'; ctx.textAlign='right';
-  ctx.fillText('I:Inv  K:Skills  J:Quests',W-8,H-10);
-  ctx.fillText('U:Anvil  P:Stats  F5:Save  F9:Load',W-8,H-22);
+  // Kontrol ipuçları (sadece masaüstü)
+  if(!isMobile){
+    ctx.fillStyle='rgba(255,255,255,0.4)'; ctx.font='10px Arial'; ctx.textAlign='right';
+    ctx.fillText('I:Envanter  K:Yetenekler  J:Görevler',W-8,H-12);
+    ctx.fillText('U:Örs  P:Stats  F5:Kaydet  F9:Yükle',W-8,H-24);
+  }
 
   if(G.screenShake>0){ ctx.restore(); G.screenShake-=1/60; }
 }
@@ -1593,7 +1621,8 @@ function drawHUD(){
 
 // === PANEL: INVENTORY ===
 function drawInventoryPanel(){
-  const pw=640, ph=460, px=(W-pw)/2, py=(H-ph)/2;
+  const pw=Math.min(640, W-20), ph=Math.min(460, H-20);
+  const px=(W-pw)/2, py=(H-ph)/2;
   // Background
   ctx.fillStyle='rgba(5,2,10,0.97)';
   drawRoundRect(ctx,px,py,pw,ph,10,'rgba(5,2,10,0.97)','#a80');
@@ -2194,26 +2223,27 @@ function updateMenuParticles(dt){
 }
 
 function drawMenuScreen(){
-  // Background gradient
-  const bg=ctx.createLinearGradient(0,0,0,H);
-  bg.addColorStop(0,'#050210');
-  bg.addColorStop(0.5,'#0a0420');
-  bg.addColorStop(1,'#150830');
+  // Arka plan gradient
+  const bg=ctx.createLinearGradient(0,0,W,H);
+  bg.addColorStop(0,'#040112');
+  bg.addColorStop(0.4,'#0a0520');
+  bg.addColorStop(1,'#180a35');
   ctx.fillStyle=bg;
   ctx.fillRect(0,0,W,H);
 
-  // Stars
-  ctx.fillStyle='rgba(255,255,255,0.5)';
-  for(let i=0;i<100;i++){
+  // Yıldızlar
+  for(let i=0;i<120;i++){
     const sx=(i*137.5+50)%W;
     const sy=(i*97.3+30)%H;
-    const pulse=Math.sin(G.menuTimer*2+i)*0.5+0.5;
-    ctx.globalAlpha=pulse*0.6;
-    ctx.fillRect(sx,sy,1.5,1.5);
+    const pulse=Math.sin(G.menuTimer*1.5+i*0.7)*0.5+0.5;
+    ctx.globalAlpha=pulse*0.7;
+    const sz = i%5===0?2:1;
+    ctx.fillStyle='#fff';
+    ctx.fillRect(sx,sy,sz,sz);
   }
   ctx.globalAlpha=1;
 
-  // Floating particles
+  // Uçuşan parçacıklar
   for(const p of G.menuParticles){
     ctx.globalAlpha=Math.min(1,p.life/p.maxLife*2);
     ctx.fillStyle=p.color;
@@ -2221,50 +2251,68 @@ function drawMenuScreen(){
   }
   ctx.globalAlpha=1;
 
-  // Title with glow
-  const t=G.menuTimer;
+  const t = G.menuTimer;
+  const titleScale = isMobile ? 0.75 : 1;
+
+  // Dekoratif top çizgi
   ctx.save();
+  ctx.strokeStyle='rgba(200,150,0,0.4)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(W/2-280*titleScale,H/2-130*titleScale); ctx.lineTo(W/2+280*titleScale,H/2-130*titleScale); ctx.stroke();
+
+  // Başlık ışıltısı
   ctx.shadowColor='#f80';
-  ctx.shadowBlur=30+Math.sin(t*2)*10;
+  ctx.shadowBlur=28+Math.sin(t*2)*8;
   ctx.fillStyle='#fd0';
-  ctx.font=`bold ${Math.floor(48+Math.sin(t)*3)}px Arial`;
+  ctx.font=`bold ${Math.floor((44+Math.sin(t)*2)*titleScale)}px Arial`;
   ctx.textAlign='center';
-  ctx.fillText('\u2694 KNIGHT ONLINE RPG \u2694',W/2,H/2-120);
+  ctx.fillText('⚔ KNIGHT ONLINE RPG ⚔',W/2,H/2 - 90*titleScale);
   ctx.shadowBlur=0;
 
-  ctx.fillStyle='rgba(255,200,50,0.6)';
-  ctx.font='18px Arial';
-  ctx.fillText('An Epic Adventure Awaits',W/2,H/2-75);
+  ctx.fillStyle='rgba(255,200,80,0.55)';
+  ctx.font=`${Math.floor(16*titleScale)}px Arial`;
+  ctx.fillText('Sonsuz Bir Macera Sizi Bekliyor',W/2,H/2 - 60*titleScale);
+
+  // Dekoratif alt çizgi
+  ctx.strokeStyle='rgba(200,150,0,0.4)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(W/2-280*titleScale,H/2-48*titleScale); ctx.lineTo(W/2+280*titleScale,H/2-48*titleScale); ctx.stroke();
   ctx.restore();
 
-  // Decorative sword divider
-  ctx.strokeStyle='rgba(200,150,0,0.5)'; ctx.lineWidth=1;
-  ctx.beginPath(); ctx.moveTo(W/2-200,H/2-55); ctx.lineTo(W/2+200,H/2-55); ctx.stroke();
-
-  // Buttons
+  // Butonlar
+  const btnW = isMobile ? Math.min(240, W*0.55) : 240;
+  const btnH = isMobile ? 44 : 50;
+  const btnGap = isMobile ? 56 : 64;
   const btns=[
-    {label:'New Game', y:H/2-30, color:'#484', hov:'#5a5'},
-    {label:'Continue', y:H/2+30, color: hasSave()?'#448':'#333', hov:'#55a'},
-    {label:'Controls', y:H/2+90, color:'#644', hov:'#866'},
+    { label:'Yeni Oyun',  desc:'',                      color:'#2a4a2a', hover:'#3a6a3a', border:'#4f4' },
+    { label:'Devam Et',   desc:hasSave()?'':'Kayıt yok', color:hasSave()?'#2a2a5a':'#222', hover:'#3a3a7a', border:hasSave()?'#44f':'#444' },
+    { label:'Kontroller', desc:'',                      color:'#3a2a1a', hover:'#5a4a2a', border:'#f80' },
   ];
 
-  for(const btn of btns){
-    const bx=W/2-110, bw=220, bh=44;
-    const hover=G.mouseX>=bx&&G.mouseX<=bx+bw&&G.mouseY>=btn.y&&G.mouseY<=btn.y+bh;
-    ctx.fillStyle=hover?btn.hov:btn.color;
-    drawRoundRect(ctx,bx,btn.y,bw,bh,10,hover?btn.hov:btn.color,'rgba(255,200,0,0.4)');
-    ctx.fillStyle='#fff'; ctx.font='bold 18px Arial'; ctx.textAlign='center';
-    ctx.fillText(btn.label,W/2,btn.y+28);
-    if(btn.label==='Continue'&&!hasSave()){
-      ctx.fillStyle='rgba(255,255,255,0.3)'; ctx.font='11px Arial';
-      ctx.fillText('No save found',W/2,btn.y+43);
+  btns.forEach((btn,i)=>{
+    const by = H/2 - 20 + i * btnGap;
+    const bx = W/2 - btnW/2;
+    const hover = G.mouseX>=bx && G.mouseX<=bx+btnW && G.mouseY>=by && G.mouseY<=by+btnH;
+    ctx.save();
+    if(hover){ ctx.shadowColor=btn.border; ctx.shadowBlur=12; }
+    drawRoundRect(ctx,bx,by,btnW,btnH,10,hover?btn.hover:btn.color,btn.border);
+    ctx.restore();
+    ctx.fillStyle='#fff'; ctx.font=`bold ${isMobile?16:18}px Arial`; ctx.textAlign='center';
+    ctx.fillText(btn.label,W/2,by+btnH/2+6);
+    if(btn.desc){
+      ctx.fillStyle='rgba(255,255,255,0.35)'; ctx.font=`${isMobile?9:10}px Arial`;
+      ctx.fillText(btn.desc,W/2,by+btnH-4);
     }
-  }
+  });
 
-  // Controls info (shown inline or as overlay)
-  ctx.fillStyle='rgba(150,150,150,0.6)'; ctx.font='12px Arial'; ctx.textAlign='center';
-  ctx.fillText('WASD/Click to move  |  1-7 Skills  |  I K J U P for panels',W/2,H-30);
-  ctx.fillText('F5 Quick Save  |  F9 Quick Load  |  Escape to close panels',W/2,H-14);
+  // Alt bilgi
+  ctx.fillStyle='rgba(150,150,180,0.5)'; ctx.textAlign='center';
+  if(isMobile){
+    ctx.font='11px Arial';
+    ctx.fillText('Sol → Joystick  |  Sağ → ATK + Skill butonları',W/2,H-18);
+  } else {
+    ctx.font='12px Arial';
+    ctx.fillText('WASD/Tıkla → Hareket  |  1-7 → Yetenekler  |  I K J U P → Paneller',W/2,H-28);
+    ctx.fillText('F5 Hızlı Kaydet  |  F9 Hızlı Yükle  |  Esc → Menü',W/2,H-12);
+  }
 }
 
 // === GROUND ITEMS DRAWING ===
@@ -2326,7 +2374,7 @@ function setupInput(){
     G.mouseX=e.clientX; G.mouseY=e.clientY;
     if(G.state==='inventory'){
       const p=G.player;
-      const pw=640, ph=460, px=(W-pw)/2, py=(H-ph)/2;
+      const pw=Math.min(640,W-20), ph=Math.min(460,H-20), px=(W-pw)/2, py=(H-ph)/2;
       const slotSize=48, slotPad=4, gridX=px+15, gridY=py+55;
       G.hoveredSlot=-1; G.hoveredEquip=null;
       for(let i=0;i<24;i++){
@@ -2347,18 +2395,16 @@ function setupInput(){
   canvas.addEventListener('click',e=>{
     const mx=e.clientX, my=e.clientY;
     if(G.state==='menu'){
-      const btns=[
-        {label:'New Game', y:H/2-30},
-        {label:'Continue', y:H/2+30},
-        {label:'Controls', y:H/2+90},
-      ];
-      for(const btn of btns){
-        if(mx>=W/2-110&&mx<=W/2+110&&my>=btn.y&&my<=btn.y+44){
-          if(btn.label==='New Game'){ initGame(true); G.state='playing'; }
-          else if(btn.label==='Continue'&&hasSave()){ initGame(false); G.state='playing'; }
-          else if(btn.label==='Controls'){
-            // Show controls inline (toggle)
-          }
+      const btnW = isMobile ? Math.min(240, W*0.55) : 240;
+      const btnH = isMobile ? 44 : 50;
+      const btnGap = isMobile ? 56 : 64;
+      const labels = ['Yeni Oyun','Devam Et','Kontroller'];
+      for(let i=0;i<labels.length;i++){
+        const by = H/2 - 20 + i * btnGap;
+        const bx = W/2 - btnW/2;
+        if(mx>=bx&&mx<=bx+btnW&&my>=by&&my<=by+btnH){
+          if(i===0){ initGame(true); G.state='playing'; }
+          else if(i===1&&hasSave()){ initGame(false); G.state='playing'; }
         }
       }
       return;
@@ -2383,7 +2429,7 @@ function setupInput(){
     }
     if(G.state==='inventory'){
       const p=G.player;
-      const pw=640, ph=460, px2=(W-pw)/2, py2=(H-ph)/2;
+      const pw=Math.min(640,W-20), ph=Math.min(460,H-20), px2=(W-pw)/2, py2=(H-ph)/2;
       const slotSize=48, slotPad=4, gridX=px2+15, gridY=py2+55;
       for(let i=0;i<24;i++){
         const col=i%6, row=Math.floor(i/6);
@@ -2485,28 +2531,82 @@ function setupInput(){
   canvas.addEventListener('touchstart',e=>{
     e.preventDefault();
     for(const t of e.changedTouches){
-      G.joystick.onTouchStart(t);
-      // Right side tap = attack button
-      if(t.clientX>W*0.6 && t.clientY>H*0.5){
-        // Auto-attack is on timer, but also try skill 1
-        if(t.clientY<H*0.75){
-          G.skills.use(SKILL_ORDER[0],G.player,G.mobs);
+      // Joystick - sol %45
+      if(t.clientX < W * 0.45 && G.joystick.touchId === null){
+        G.joystick.onTouchStart(t);
+        continue;
+      }
+      // Sağ taraf - buton alanı
+      if(G.state === 'playing'){
+        const btns = getMobileBtns();
+        // ATK butonu
+        const atk = btns.atk;
+        if(Math.hypot(t.clientX-atk.x, t.clientY-atk.y) < atk.r + 8){
+          // Manuel atak (auto attack zaten var, burada zorla tetikle)
+          G.forceAttack = true;
+          continue;
+        }
+        // Skill butonları
+        let hitSkill = false;
+        for(const sb of btns.skills){
+          if(Math.hypot(t.clientX-sb.x, t.clientY-sb.y) < sb.r + 6){
+            G.skills.use(sb.id, G.player, G.mobs);
+            hitSkill = true;
+            break;
+          }
+        }
+        if(hitSkill) continue;
+        // Potion butonu
+        const pot = btns.potion;
+        if(Math.hypot(t.clientX-pot.x, t.clientY-pot.y) < pot.r + 6){
+          const potSlot = G.player.inventory.slots.findIndex(s=>s&&s.type==='potion'&&(s.heal||s.mp));
+          if(potSlot >= 0) G.player.inventory.usePotion(potSlot, G.player);
+          continue;
+        }
+        // Panel butonları
+        for(const pb of btns.panels){
+          if(Math.hypot(t.clientX-pb.x, t.clientY-pb.y) < pb.r + 6){
+            G.state = G.state === pb.panel ? 'playing' : pb.panel;
+            break;
+          }
+        }
+      } else {
+        // Panel açıkken panel butonlarına bak
+        const btns = getMobileBtns();
+        for(const pb of btns.panels){
+          if(Math.hypot(t.clientX-pb.x, t.clientY-pb.y) < pb.r + 6){
+            G.state = G.state === pb.panel ? 'playing' : pb.panel;
+            break;
+          }
         }
       }
     }
   },{passive:false});
+
   canvas.addEventListener('touchmove',e=>{
     e.preventDefault();
     for(const t of e.changedTouches) G.joystick.onTouchMove(t);
   },{passive:false});
+
   canvas.addEventListener('touchend',e=>{
     e.preventDefault();
-    for(const t of e.changedTouches) G.joystick.onTouchEnd(t);
+    for(const t of e.changedTouches){
+      G.joystick.onTouchEnd(t);
+      G.forceAttack = false;
+    }
   },{passive:false});
 
   window.addEventListener('resize',()=>{
-    canvas.width=window.innerWidth;
-    canvas.height=window.innerHeight;
+    W = window.innerWidth; H = window.innerHeight;
+    canvas.width = W; canvas.height = H;
+    if(G.joystick){ G.joystick.resetBase(); }
+  });
+  window.addEventListener('orientationchange',()=>{
+    setTimeout(()=>{
+      W = window.innerWidth; H = window.innerHeight;
+      canvas.width = W; canvas.height = H;
+      if(G.joystick){ G.joystick.resetBase(); }
+    }, 300);
   });
 }
 
@@ -2597,44 +2697,178 @@ function handleAnvilClick(mx,my){
 }
 
 
+// === MOBILE BUTTON LAYOUT ===
+// Landscape düzeni:
+//   Sol %45 → Joystick alanı
+//   Sağ %55 → Panel butonları (üst), Skill butonları (orta), ATK (sağ alt), Potion (sol alt sağda)
+//
+//   ┌─────────────────────────────────────────┐
+//   │                        [INV][SKL][QST][ANV]│
+//   │                                         │
+//   │  JOYSTICK         [1][2][3][4] [ATK]   │
+//   │                   [5][6][7][POT]        │
+//   └─────────────────────────────────────────┘
+function getMobileBtns(){
+  const btnR   = Math.min(30, H * 0.072);   // skill buton yarıçapı - ekrana göre
+  const atkR   = Math.min(44, H * 0.108);   // ATK yarıçapı
+  const panR   = Math.min(22, H * 0.055);   // panel buton yarıçapı
+  const pad    = 8;
+
+  // ATK butonu - sağ alt köşe
+  const atkX   = W - atkR - pad;
+  const atkY   = H - atkR - pad;
+
+  // Skill grid: 4 sütun × 2 satır, ATK'nın soluna yerleştirilmiş
+  const skillCols = 4;
+  const skillRows = 2;
+  const cellW  = btnR * 2 + 6;
+  const cellH  = btnR * 2 + 6;
+  const gridW  = skillCols * cellW;
+  const gridH  = skillRows * cellH;
+  const gridX  = atkX - atkR - pad - gridW;      // ATK'nın solundan başla
+  const gridY  = H - gridH - pad;
+
+  const skills = SKILL_ORDER.map((id, i) => {
+    const col = i % skillCols;
+    const row = Math.floor(i / skillCols);
+    return {
+      id,
+      x: gridX + col * cellW + btnR,
+      y: gridY + row * cellH + btnR,
+      r: btnR,
+    };
+  });
+
+  // Potion butonu - grid'in sol altı
+  const potion = {
+    x: gridX - btnR - pad,
+    y: H - btnR - pad,
+    r: btnR,
+  };
+
+  // Panel butonları - üst sağ köşe, yatay sıra
+  const panelDefs = [
+    { panel:'inventory', label:'INV', color:'#c80' },
+    { panel:'skills',    label:'SKL', color:'#80f' },
+    { panel:'quests',    label:'QST', color:'#0a0' },
+    { panel:'anvil',     label:'ANV', color:'#f60' },
+  ];
+  const panels = panelDefs.map((pd, i) => ({
+    ...pd,
+    x: W - (panelDefs.length - i) * (panR * 2 + 6) + panR + 4,
+    y: panR + pad,
+    r: panR,
+  }));
+
+  return { atk:{ x:atkX, y:atkY, r:atkR }, skills, panels, potion };
+}
+
 // === MOBILE UI BUTTONS ===
 function drawMobileUI(){
-  const isMobile = ('ontouchstart' in window);
   if(!isMobile) return;
-  // Joystick
+
+  // Joystick çizimi
   G.joystick.draw();
 
-  // Attack button (right side)
-  ctx.globalAlpha=0.7;
-  ctx.fillStyle='rgba(200,30,30,0.8)';
-  ctx.beginPath(); ctx.arc(W-80,H-130,44,0,Math.PI*2); ctx.fill();
-  ctx.strokeStyle='#f44'; ctx.lineWidth=2; ctx.stroke();
-  ctx.fillStyle='#fff'; ctx.font='bold 14px Arial'; ctx.textAlign='center';
-  ctx.fillText('ATK',W-80,H-125);
+  const p = G.player;
+  const btns = getMobileBtns();
 
-  // Mini skill buttons
-  const skillBtns=[
-    {id:SKILL_ORDER[0],x:W-160,y:H-100,r:28},
-    {id:SKILL_ORDER[1],x:W-200,y:H-170,r:28},
-    {id:SKILL_ORDER[2],x:W-130,y:H-200,r:28},
-    {id:SKILL_ORDER[3],x:W-60,y:H-210,r:28},
-  ];
-  for(const sb of skillBtns){
-    const def=SKILL_DEFS[sb.id];
-    const lv=G.skills.skills[sb.id];
-    const cd=G.skills.cooldowns[sb.id];
-    ctx.fillStyle=lv>0?def.color:'rgba(40,40,40,0.8)';
-    ctx.beginPath(); ctx.arc(sb.x,sb.y,sb.r,0,Math.PI*2); ctx.fill();
-    ctx.strokeStyle='rgba(255,255,255,0.3)'; ctx.lineWidth=1; ctx.stroke();
-    ctx.fillStyle='#fff'; ctx.font='bold 10px Arial'; ctx.textAlign='center';
-    ctx.fillText(def.name.slice(0,3),sb.x,sb.y+4);
-    if(cd>0){
-      ctx.fillStyle='rgba(0,0,0,0.6)';
-      ctx.beginPath(); ctx.arc(sb.x,sb.y,sb.r,0,Math.PI*2); ctx.fill();
-      ctx.fillStyle='#fff'; ctx.font='bold 11px Arial';
-      ctx.fillText(Math.ceil(cd),sb.x,sb.y+5);
-    }
+  // ── Panel toggle butonları (üst sağ) ──
+  for(const pb of btns.panels){
+    const active = G.state === pb.panel;
+    ctx.globalAlpha = 0.85;
+    ctx.fillStyle = active ? pb.color : 'rgba(20,15,5,0.85)';
+    ctx.beginPath(); ctx.arc(pb.x, pb.y, pb.r, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = pb.color; ctx.lineWidth = active?2.5:1.5; ctx.stroke();
+    ctx.fillStyle = active ? '#000' : pb.color;
+    ctx.font = `bold 10px Arial`; ctx.textAlign='center';
+    ctx.fillText(pb.label, pb.x, pb.y+4);
   }
+
+  // ── ATK butonu ──
+  const atk = btns.atk;
+  const atkPulse = Math.sin(Date.now()*0.006)*0.12 + 0.88;
+  ctx.globalAlpha = 0.9 * atkPulse;
+  // Glow
+  ctx.shadowColor='#f22'; ctx.shadowBlur=18;
+  ctx.fillStyle='rgba(160,20,20,0.85)';
+  ctx.beginPath(); ctx.arc(atk.x, atk.y, atk.r, 0, Math.PI*2); ctx.fill();
+  ctx.shadowBlur=0;
+  ctx.strokeStyle='#ff4444'; ctx.lineWidth=2.5; ctx.stroke();
+  // ATK metni
+  ctx.fillStyle='#fff'; ctx.font='bold 16px Arial'; ctx.textAlign='center';
+  ctx.fillText('⚔', atk.x, atk.y-4);
+  ctx.font='bold 11px Arial';
+  ctx.fillText('ATK', atk.x, atk.y+12);
+  ctx.globalAlpha=1; ctx.shadowBlur=0;
+
+  // ── Skill butonları ──
+  for(const sb of btns.skills){
+    const def = SKILL_DEFS[sb.id];
+    const lv  = G.skills.skills[sb.id];
+    const cd  = G.skills.cooldowns[sb.id];
+    const unlocked = lv > 0 && p.level >= def.unlockLv;
+    const hasMP = p.mp >= def.mp;
+
+    ctx.globalAlpha = unlocked ? 0.92 : 0.45;
+
+    // Arka plan
+    if(unlocked){
+      ctx.fillStyle = hasMP ? 'rgba(15,10,25,0.88)' : 'rgba(30,10,10,0.88)';
+    } else {
+      ctx.fillStyle = 'rgba(15,15,15,0.75)';
+    }
+    ctx.beginPath(); ctx.arc(sb.x, sb.y, sb.r, 0, Math.PI*2); ctx.fill();
+
+    // Kenar
+    ctx.strokeStyle = unlocked ? (cd>0?'#555':def.color) : '#333';
+    ctx.lineWidth = unlocked ? 2 : 1;
+    ctx.stroke();
+
+    if(unlocked){
+      // Renk dolgu (üst yarı)
+      ctx.fillStyle = def.color;
+      ctx.globalAlpha = cd>0 ? 0.25 : 0.55;
+      ctx.beginPath(); ctx.arc(sb.x, sb.y, sb.r, Math.PI, 0); ctx.closePath(); ctx.fill();
+      ctx.globalAlpha = 0.92;
+      // İkon
+      ctx.fillStyle = cd>0?'#888':'#fff';
+      ctx.font = `bold 11px Arial`; ctx.textAlign='center';
+      ctx.fillText(def.name.slice(0,3), sb.x, sb.y-2);
+      // Seviye
+      ctx.fillStyle='#fd0'; ctx.font=`9px Arial`;
+      ctx.fillText('Lv'+lv, sb.x, sb.y+11);
+      // Cooldown overlay (pie şeklinde)
+      if(cd > 0){
+        const cdRatio = Math.min(cd / def.cd, 1);
+        ctx.fillStyle='rgba(0,0,0,0.65)';
+        ctx.beginPath();
+        ctx.moveTo(sb.x, sb.y);
+        ctx.arc(sb.x, sb.y, sb.r, -Math.PI/2, -Math.PI/2 + Math.PI*2*cdRatio);
+        ctx.closePath(); ctx.fill();
+        ctx.fillStyle='#fff'; ctx.font=`bold 12px Arial`;
+        ctx.fillText(Math.ceil(cd), sb.x, sb.y+5);
+      }
+    } else {
+      ctx.fillStyle='#555'; ctx.font=`9px Arial`; ctx.textAlign='center';
+      ctx.fillText('Lv'+def.unlockLv, sb.x, sb.y-2);
+      ctx.fillStyle='#333'; ctx.font=`8px Arial`;
+      ctx.fillText(def.name.slice(0,4), sb.x, sb.y+10);
+    }
+    ctx.globalAlpha=1;
+  }
+
+  // ── HP Potion kısayol butonu ──
+  const potBtn = btns.potion;
+  const potSlot = p.inventory.slots.findIndex(s=>s&&s.type==='potion'&&s.heal);
+  ctx.globalAlpha=0.85;
+  ctx.fillStyle = potSlot>=0 ? 'rgba(100,0,0,0.85)' : 'rgba(30,30,30,0.7)';
+  ctx.beginPath(); ctx.arc(potBtn.x, potBtn.y, potBtn.r, 0, Math.PI*2); ctx.fill();
+  ctx.strokeStyle = potSlot>=0?'#f44':'#444'; ctx.lineWidth=1.5; ctx.stroke();
+  ctx.fillStyle = potSlot>=0?'#fff':'#555'; ctx.font=`bold 10px Arial`; ctx.textAlign='center';
+  ctx.fillText('🧪', potBtn.x, potBtn.y+2);
+  ctx.font=`8px Arial`;
+  ctx.fillText('POT', potBtn.x, potBtn.y+12);
   ctx.globalAlpha=1;
 }
 
