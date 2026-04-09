@@ -1,283 +1,383 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
-<title>The Warrior's Journey — 2D RPG</title>
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Savaşçının Yolculuğu - 2D RPG</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-*{margin:0;padding:0;box-sizing:border-box;}
+*{margin:0;padding:0;box-sizing:border-box}
 :root{
-  --bg:#0f1419;--fg:#e8dcc8;--card:rgba(18,24,33,0.92);--card-fg:#e8dcc8;
-  --primary:#d4a520;--primary-fg:#0f1419;
-  --secondary:#b33030;--secondary-fg:#f5f0e8;
-  --muted:#1e2736;--muted-fg:#6b7a8d;
-  --border:#2a3444;--accent:#7c3aed;
-  --hp-bar:linear-gradient(90deg,#8b2020,#cc3333);
-  --mp-bar:linear-gradient(90deg,#1e3a8a,#3b82f6);
-  --power-bar:linear-gradient(90deg,#92400e,#d4a520);
-  --xp-bar:linear-gradient(90deg,#14532d,#22c55e);
-  --gold:#d4a520;
+--bg:#0d1420;--fg:#e8dcc8;--card:rgba(20,28,40,0.92);--card-solid:#141c28;
+--border:#1e2a3a;--muted:#1a2233;--muted-fg:#6b7a8d;
+--primary-h:45;--primary-s:90%;--primary-l:55%;
+--primary:hsl(45,90%,55%);--primary-fg:#0d1420;
+--secondary:hsl(0,70%,45%);--secondary-fg:#f5f0e8;
+--accent:hsl(280,50%,40%);
 }
-html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-family:'Inter',sans-serif;user-select:none;-webkit-user-select:none;touch-action:none;}
-canvas{display:block;position:absolute;top:0;left:0;}
-.font-d{font-family:'Cinzel',serif;}
-
-/* HUD */
-#hud{position:absolute;top:8px;left:8px;width:220px;z-index:10;pointer-events:none;}
-#hud .box{background:var(--card);backdrop-filter:blur(6px);border:1px solid var(--border);border-radius:6px;padding:8px;}
-.bar-wrap{display:flex;align-items:center;gap:5px;margin:2px 0;}
-.bar-icon{font-size:11px;width:16px;text-align:center;}
-.bar-outer{flex:1;height:16px;background:var(--muted);border-radius:3px;overflow:hidden;position:relative;}
-.bar-inner{height:100%;transition:width .3s;}
-.bar-text{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--fg);text-shadow:0 1px 2px #000;}
-.bar-hp .bar-inner{background:var(--hp-bar);}
-.bar-mp .bar-inner{background:var(--mp-bar);}
-.bar-pw .bar-inner{background:var(--power-bar);}
-.bar-xp .bar-inner{background:var(--xp-bar);}
-.stat-row{display:flex;justify-content:space-between;font-size:9px;color:var(--muted-fg);padding-top:3px;}
-
-/* Combat log */
-#combatLog{position:absolute;bottom:8px;left:8px;width:260px;z-index:10;pointer-events:none;background:var(--card);border:1px solid var(--border);border-radius:6px;padding:6px;max-height:90px;overflow:hidden;}
-#combatLog div{font-size:10px;line-height:1.3;}
-#combatLog div:first-child{color:var(--fg);}
-#combatLog div:not(:first-child){color:var(--muted-fg);}
-
-/* Skill bar */
-#skillBar{position:absolute;z-index:20;display:flex;gap:6px;}
-.skill-btn{width:52px;height:52px;border-radius:6px;border:2px solid var(--border);background:var(--card);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;position:relative;transition:all .15s;}
-.skill-btn:not(.disabled):hover{border-color:var(--primary);background:rgba(212,165,32,.15);}
-.skill-btn:not(.disabled):active{transform:scale(.93);}
-.skill-btn.disabled{opacity:.5;cursor:not-allowed;}
-.skill-btn.glow-pulse{border-color:var(--gold);animation:pulse-glow 1.5s infinite;}
-@keyframes pulse-glow{0%,100%{box-shadow:0 0 6px rgba(212,165,32,.3);}50%{box-shadow:0 0 16px rgba(212,165,32,.6);}}
-.skill-icon{font-size:20px;z-index:1;}
-.skill-key{font-size:8px;color:var(--muted-fg);z-index:1;}
-.skill-cd{position:absolute;inset:0;background:rgba(30,39,54,.75);border-radius:4px;}
-.skill-mana{position:absolute;top:-4px;right:-4px;background:#3b82f6;font-size:7px;font-weight:700;border-radius:50%;width:16px;height:16px;display:flex;align-items:center;justify-content:center;}
-
-.potion-btn{width:48px;height:52px;border-radius:6px;border:1px solid var(--border);background:var(--card);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;}
-.potion-btn:not(.disabled):hover{background:rgba(255,255,255,.05);}
-.potion-btn:not(.disabled):active{transform:scale(.93);}
-.potion-btn.disabled{opacity:.35;cursor:not-allowed;}
-.potion-icon{font-size:18px;}
-.potion-count{font-size:8px;color:var(--muted-fg);}
-
-/* Menu buttons */
-#menuBtns{position:absolute;z-index:20;display:flex;gap:6px;}
-.menu-btn{display:flex;align-items:center;gap:4px;padding:6px 10px;border-radius:6px;background:var(--card);border:1px solid var(--border);font-size:12px;color:var(--fg);cursor:pointer;transition:background .15s;}
-.menu-btn:hover{background:var(--muted);}
-.menu-btn .shortcut{font-size:8px;color:var(--muted-fg);}
-
-/* Panels (Inventory/Shop/Quest) */
-.panel-overlay{position:absolute;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;background:rgba(15,20,25,.85);backdrop-filter:blur(4px);}
-.panel{background:rgba(18,24,33,.97);border:1px solid var(--border);border-radius:10px;padding:16px;width:90vw;max-width:480px;max-height:80vh;overflow-y:auto;}
-.panel h2{font-family:'Cinzel',serif;color:var(--primary);font-size:18px;font-weight:700;}
-.panel .close-btn{font-size:20px;color:var(--muted-fg);cursor:pointer;background:none;border:none;}
-.panel .close-btn:hover{color:var(--fg);}
-.panel-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
-.gold-display{font-size:13px;color:var(--gold);}
-
-/* Equip slots */
-.equip-slots{display:flex;gap:8px;margin-bottom:12px;padding:8px;background:rgba(30,39,54,.4);border-radius:6px;}
-.equip-slot{flex:1;padding:8px;background:var(--card);border:1px solid var(--border);border-radius:6px;text-align:center;}
-.equip-slot .label{font-size:9px;color:var(--muted-fg);margin-bottom:4px;}
-.equip-slot .icon{font-size:20px;}
-.equip-slot .name{font-size:9px;}
-.equip-slot .bonus{font-size:8px;color:var(--muted-fg);}
-
-/* Inventory grid */
-.inv-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;}
-.inv-slot{aspect-ratio:1;border-radius:5px;border:1px solid var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;cursor:pointer;transition:border-color .15s;font-size:10px;background:rgba(30,39,54,.2);}
-.inv-slot:hover{border-color:var(--primary);}
-.inv-slot.empty{opacity:.4;cursor:default;}
-.inv-slot .item-icon{font-size:18px;}
-.inv-slot .item-name{font-size:7px;line-height:1.1;max-width:100%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
-.inv-slot .lock-badge{position:absolute;top:1px;left:3px;font-size:8px;}
-.inv-slot .actions{position:absolute;bottom:0;left:0;right:0;display:flex;font-size:7px;}
-.inv-slot .actions button{flex:1;border:none;cursor:pointer;padding:1px;font-size:7px;}
-.inv-slot .actions .equip-btn{background:rgba(212,165,32,.7);color:var(--primary-fg);}
-.inv-slot .actions .sell-btn{background:rgba(179,48,48,.7);color:#fff;}
-.inv-slot .actions .lock-btn{background:var(--muted);color:var(--muted-fg);}
-
-.sell-trash-btn{width:100%;padding:7px;margin-bottom:8px;border-radius:5px;background:var(--secondary);color:var(--secondary-fg);border:none;cursor:pointer;font-size:11px;transition:opacity .15s;}
-.sell-trash-btn:hover{opacity:.85;}
-
-/* Shop */
-.shop-item{display:flex;align-items:center;justify-content:space-between;padding:8px;background:rgba(30,39,54,.25);border-radius:5px;margin-bottom:4px;}
-.shop-item:hover{background:rgba(30,39,54,.45);}
-.shop-item .info{display:flex;align-items:center;gap:8px;}
-.shop-item .info .icon{font-size:20px;}
-.shop-item .info .name{font-size:13px;font-weight:500;}
-.shop-item .info .stats{font-size:9px;color:var(--muted-fg);}
-.buy-btn{padding:4px 10px;border-radius:5px;border:none;font-size:11px;cursor:pointer;background:var(--primary);color:var(--primary-fg);font-weight:600;}
-.buy-btn:disabled{background:var(--muted);color:var(--muted-fg);cursor:not-allowed;}
-
-/* Quest */
-.quest-box{padding:12px;background:rgba(30,39,54,.35);border:1px solid var(--border);border-radius:6px;}
-.quest-box h3{font-family:'Cinzel',serif;font-size:14px;color:var(--primary);font-weight:700;}
-.quest-box p{font-size:11px;color:var(--muted-fg);margin-top:4px;}
-.quest-progress{margin-top:8px;display:flex;align-items:center;gap:6px;}
-.quest-progress .track{flex:1;height:8px;background:var(--muted);border-radius:4px;overflow:hidden;}
-.quest-progress .fill{height:100%;background:var(--xp-bar);}
-.quest-progress .count{font-size:11px;font-weight:700;}
-.quest-reward{margin-top:8px;font-size:9px;color:var(--muted-fg);}
-.quest-btn{width:100%;padding:10px;margin-top:12px;border-radius:6px;border:none;background:var(--primary);color:var(--primary-fg);font-family:'Cinzel',serif;font-size:14px;cursor:pointer;transition:opacity .15s;}
-.quest-btn:hover{opacity:.88;}
-
-/* Quest tracker */
-#questTracker{position:absolute;top:8px;left:50%;transform:translateX(-50%);z-index:10;pointer-events:none;}
-#questTracker .inner{background:var(--card);backdrop-filter:blur(4px);border:1px solid var(--border);border-radius:5px;padding:4px 12px;text-align:center;}
-#questTracker .qname{font-size:10px;color:var(--primary);font-family:'Cinzel',serif;}
-#questTracker .qcount{font-size:10px;color:var(--muted-fg);margin-left:8px;}
-
-/* Death screen */
-#deathScreen{position:absolute;inset:0;z-index:40;display:none;align-items:center;justify-content:center;background:rgba(15,20,25,.92);backdrop-filter:blur(8px);}
-#deathScreen.show{display:flex;}
-#deathScreen .inner{text-align:center;}
-#deathScreen h1{font-family:'Cinzel',serif;font-size:40px;font-weight:900;color:var(--secondary);text-shadow:0 0 15px rgba(179,48,48,.6);}
-#deathScreen p{color:var(--muted-fg);font-size:13px;margin:16px 0;}
-#deathScreen button{padding:12px 32px;border-radius:8px;background:var(--primary);color:var(--primary-fg);font-family:'Cinzel',serif;font-size:18px;border:none;cursor:pointer;transition:opacity .15s;}
-#deathScreen button:hover{opacity:.88;}
-
-/* Joystick */
-#joystick{position:absolute;bottom:32px;left:32px;width:128px;height:128px;z-index:9999;touch-action:none;display:none;}
-#joystick .base{position:absolute;inset:0;border-radius:50%;background:rgba(30,39,54,.35);border:2px solid rgba(42,52,68,.5);}
-#joystick .deadzone-ring{position:absolute;border-radius:50%;border:1px solid rgba(42,52,68,.25);}
-#joystick .knob{position:absolute;width:56px;height:56px;border-radius:50%;background:rgba(212,165,32,.55);border:2px solid var(--primary);box-shadow:0 2px 10px rgba(0,0,0,.4);left:calc(50% - 28px);top:calc(50% - 28px);transition:transform .15s ease-out;}
-
-/* PC hints */
-#pcHints{position:absolute;bottom:8px;right:8px;z-index:10;pointer-events:none;background:rgba(18,24,33,.6);backdrop-filter:blur(4px);border:1px solid var(--border);border-radius:5px;padding:5px 8px;font-size:8px;color:var(--muted-fg);line-height:1.4;}
-
-/* Rarity colors */
-.r-common{color:#9ca3af;}.r-uncommon{color:#22c55e;}.r-rare{color:#3b82f6;}.r-epic{color:#a855f7;}.r-legendary{color:#f59e0b;}
+body{background:var(--bg);color:var(--fg);font-family:'Inter',sans-serif;overflow:hidden;user-select:none;-webkit-user-select:none;touch-action:none;margin:0;padding:0}
+canvas{display:block;position:absolute;top:0;left:0}
+.hud-bars{position:absolute;top:8px;left:8px;width:220px;z-index:10;pointer-events:none}
+.hud-card{background:var(--card);backdrop-filter:blur(8px);border-radius:6px;padding:8px;border:1px solid var(--border)}
+.bar-row{display:flex;align-items:center;gap:6px;margin-bottom:3px}
+.bar-icon{font-size:11px;width:16px;text-align:center}
+.bar-track{flex:1;height:16px;background:var(--muted);border-radius:3px;overflow:hidden;position:relative}
+.bar-fill{height:100%;transition:width .3s}
+.bar-text{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--fg);text-shadow:0 1px 2px rgba(0,0,0,.6)}
+.bar-hp .bar-fill{background:linear-gradient(90deg,hsl(0,70%,35%),hsl(0,70%,50%))}
+.bar-mp .bar-fill{background:linear-gradient(90deg,hsl(220,70%,35%),hsl(220,70%,55%))}
+.bar-pwr .bar-fill{background:linear-gradient(90deg,hsl(30,80%,40%),hsl(45,90%,55%))}
+.bar-xp .bar-fill{background:linear-gradient(90deg,hsl(120,40%,25%),hsl(120,50%,45%))}
+.hud-stats{display:flex;justify-content:space-between;font-size:9px;color:var(--muted-fg);margin-top:3px}
+.player-info{display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px}
+.player-name{font-family:'Cinzel',serif;font-weight:700;color:var(--primary)}
+.combat-log{position:absolute;bottom:8px;left:8px;width:260px;z-index:10;pointer-events:none}
+.log-card{background:var(--card);backdrop-filter:blur(8px);border-radius:6px;padding:8px;border:1px solid var(--border);max-height:90px;overflow:hidden}
+.log-line{font-size:9px;line-height:1.4}
+.log-line:first-child{color:var(--fg)}.log-line:not(:first-child){color:var(--muted-fg)}
+.menu-btns{position:absolute;z-index:20;display:flex;gap:6px}
+.menu-btn{display:flex;align-items:center;gap:4px;padding:4px 8px;border-radius:4px;background:var(--card);border:1px solid var(--border);color:var(--fg);font-size:11px;cursor:pointer;transition:background .2s}
+.menu-btn:hover{background:var(--muted)}
+.menu-btn.active{background:rgba(200,170,50,.2);border-color:var(--primary)}
+.menu-shortcut{font-size:7px;color:var(--muted-fg)}
+.skill-bar{position:absolute;z-index:20;display:flex;gap:8px}
+.skill-btn{position:relative;width:56px;height:56px;border-radius:6px;border:2px solid var(--primary);background:var(--card-solid);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all .15s}
+.skill-btn:hover:not(.disabled){background:rgba(200,170,50,.15)}
+.skill-btn:active:not(.disabled){transform:scale(.93)}
+.skill-btn.disabled{border-color:var(--muted);opacity:.5;cursor:not-allowed}
+.skill-btn.ultimate{border-color:#f59e0b;animation:pulse 1.5s infinite}
+.skill-icon{font-size:20px;z-index:1}.skill-key{font-size:7px;color:var(--muted-fg);z-index:1}
+.skill-mana{position:absolute;top:-4px;right:-4px;background:hsl(220,70%,50%);font-size:6px;color:#fff;border-radius:50%;width:16px;height:16px;display:flex;align-items:center;justify-content:center;font-weight:700}
+.skill-cd{position:absolute;inset:0;background:rgba(26,34,51,.7);border-radius:4px}
+.potion-btn{width:48px;height:56px;border-radius:6px;border:1px solid var(--border);background:var(--card-solid);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all .15s}
+.potion-btn:hover:not(.disabled){background:rgba(200,170,50,.1)}
+.potion-btn.disabled{opacity:.3;cursor:not-allowed}
+.potion-icon{font-size:18px}.potion-count{font-size:7px;color:var(--muted-fg)}
+@keyframes pulse{0%,100%{box-shadow:0 0 5px rgba(245,158,11,.3)}50%{box-shadow:0 0 15px rgba(245,158,11,.6)}}
+.joystick-area{position:absolute;bottom:32px;left:32px;width:112px;height:112px;z-index:20}
+.joystick-base{position:absolute;inset:0;border-radius:50%;background:rgba(26,34,51,.4);border:2px solid rgba(30,42,58,.5)}
+.joystick-knob{position:absolute;width:48px;height:48px;border-radius:50%;background:rgba(200,170,50,.5);border:2px solid var(--primary);box-shadow:0 2px 10px rgba(0,0,0,.3);transition:none}
+.panel-overlay{position:absolute;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;background:rgba(13,20,32,.8);backdrop-filter:blur(4px)}
+.panel{background:var(--card-solid);border:1px solid var(--border);border-radius:8px;padding:16px;width:90vw;max-width:480px;max-height:80vh;overflow-y:auto}
+.panel h2{font-family:'Cinzel',serif;color:var(--primary);font-size:18px;font-weight:700}
+.panel-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.close-btn{color:var(--muted-fg);font-size:20px;cursor:pointer;background:none;border:none}
+.close-btn:hover{color:var(--fg)}
+.equip-row{display:flex;gap:8px;margin-bottom:12px;padding:8px;background:rgba(26,34,51,.3);border-radius:6px}
+.equip-slot{flex:1;padding:8px;background:var(--card-solid);border-radius:4px;border:1px solid var(--border);text-align:center}
+.equip-label{font-size:9px;color:var(--muted-fg);margin-bottom:4px}
+.equip-icon{font-size:20px}
+.equip-name{font-size:8px;margin-top:2px}
+.equip-stats{font-size:7px;color:var(--muted-fg)}
+.inv-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.inv-slot{aspect-ratio:1;border-radius:4px;border:1px solid var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;cursor:pointer;transition:border-color .2s;background:rgba(26,34,51,.15)}
+.inv-slot:hover{border-color:var(--primary)}.inv-slot.equipped{box-shadow:0 0 0 1px var(--primary)}
+.inv-slot .item-icon{font-size:16px}.inv-slot .item-name{font-size:6px;line-height:1.2}
+.inv-slot .lock-icon{position:absolute;top:1px;left:3px;font-size:7px}
+.inv-actions{position:absolute;bottom:0;left:0;right:0;display:flex;font-size:6px}
+.inv-actions button{flex:1;border:none;cursor:pointer;padding:1px 0;font-size:6px}
+.act-equip{background:rgba(200,170,50,.7);color:var(--primary-fg)}.act-equip:hover{background:var(--primary)}
+.act-sell{background:rgba(180,50,50,.7);color:var(--secondary-fg)}.act-sell:hover{background:var(--secondary)}
+.act-lock{background:var(--muted);color:var(--muted-fg)}.act-lock:hover{background:var(--accent)}
+.trash-btn{width:100%;padding:6px;margin-bottom:8px;border-radius:4px;background:var(--secondary);color:var(--secondary-fg);border:none;cursor:pointer;font-size:11px;transition:opacity .2s}
+.trash-btn:hover{opacity:.8}
+.shop-item{display:flex;align-items:center;justify-content:space-between;padding:8px;background:rgba(26,34,51,.2);border-radius:4px;margin-bottom:4px}
+.shop-item:hover{background:rgba(26,34,51,.4)}
+.shop-info{display:flex;align-items:center;gap:8px}
+.shop-icon{font-size:18px}
+.shop-name{font-size:12px;font-weight:500}
+.shop-stats{font-size:9px;color:var(--muted-fg)}
+.buy-btn{font-size:11px;padding:4px 8px;border-radius:4px;border:none;cursor:pointer;transition:opacity .2s}
+.buy-btn.can-buy{background:var(--primary);color:var(--primary-fg)}.buy-btn.can-buy:hover{opacity:.8}
+.buy-btn.no-buy{background:var(--muted);color:var(--muted-fg);cursor:not-allowed}
+.quest-block{padding:12px;background:rgba(26,34,51,.3);border-radius:6px;border:1px solid var(--border);margin-bottom:8px}
+.quest-title{font-family:'Cinzel',serif;font-size:13px;font-weight:700;color:var(--primary)}
+.quest-desc{font-size:11px;color:var(--muted-fg);margin-top:4px}
+.quest-progress{margin-top:8px;display:flex;align-items:center;gap:8px}
+.quest-bar{flex:1;height:8px;background:var(--muted);border-radius:4px;overflow:hidden}
+.quest-bar-fill{height:100%;background:linear-gradient(90deg,hsl(120,40%,25%),hsl(120,50%,45%));transition:width .3s}
+.quest-count{font-size:11px;font-weight:700}
+.quest-rewards{font-size:9px;color:var(--muted-fg);margin-top:8px}
+.quest-accept-btn,.quest-turnin-btn{width:100%;padding:8px;margin-top:12px;border-radius:4px;border:none;cursor:pointer;font-family:'Cinzel',serif;font-size:13px;transition:opacity .2s}
+.quest-accept-btn{background:var(--primary);color:var(--primary-fg)}.quest-accept-btn:hover{opacity:.85}
+.quest-turnin-btn{background:var(--primary);color:var(--primary-fg)}.quest-turnin-btn:hover{opacity:.85}
+.quest-tracker{position:absolute;top:8px;left:50%;transform:translateX(-50%);z-index:10;pointer-events:none}
+.tracker-card{background:var(--card);backdrop-filter:blur(4px);border-radius:4px;padding:4px 12px;border:1px solid var(--border);text-align:center;white-space:nowrap}
+.tracker-name{font-size:10px;color:var(--primary);font-family:'Cinzel',serif}
+.tracker-count{font-size:10px;color:var(--muted-fg);margin-left:8px}
+.death-overlay{position:absolute;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;background:rgba(13,20,32,.92);backdrop-filter:blur(8px)}
+.death-title{font-family:'Cinzel',serif;font-size:36px;font-weight:700;color:var(--secondary);text-shadow:0 0 10px rgba(180,50,50,.6)}
+.death-sub{color:var(--muted-fg);font-size:13px;margin:12px 0 20px}
+.respawn-btn{padding:12px 24px;border-radius:6px;background:var(--primary);color:var(--primary-fg);font-family:'Cinzel',serif;font-size:16px;border:none;cursor:pointer;transition:opacity .2s}
+.respawn-btn:hover{opacity:.85}
+.kb-hints{position:absolute;bottom:8px;right:8px;z-index:10;pointer-events:none}
+.kb-card{background:rgba(20,28,40,.6);backdrop-filter:blur(4px);border-radius:4px;padding:6px;border:1px solid var(--border);font-size:7px;color:var(--muted-fg);line-height:1.6}
+.gold-display{font-size:12px;color:hsl(45,90%,55%)}
+.rarity-common{color:#9ca3af}.rarity-uncommon{color:#22c55e}.rarity-rare{color:#3b82f6}.rarity-epic{color:#a855f7}.rarity-legendary{color:#f59e0b}
+.auto-sell-row{display:flex;align-items:center;justify-content:space-between;padding:6px 8px;margin-bottom:8px;background:rgba(26,34,51,.3);border-radius:4px;border:1px solid var(--border)}
+.auto-sell-label{font-size:10px;color:var(--muted-fg)}
+.auto-sell-toggles{display:flex;gap:4px}
+.auto-sell-btn{padding:2px 6px;border-radius:3px;border:1px solid var(--border);background:var(--muted);color:var(--muted-fg);font-size:8px;cursor:pointer;transition:all .2s}
+.auto-sell-btn.active{background:var(--primary);color:var(--primary-fg);border-color:var(--primary)}
 </style>
 </head>
 <body>
 <canvas id="gameCanvas"></canvas>
-
-<!-- HUD -->
-<div id="hud"><div class="box">
-  <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px;">
-    <span class="font-d" style="color:var(--primary);font-weight:700;" id="hudName">Savaşçı</span>
-    <span style="color:var(--muted-fg)" id="hudLevel">Lv.1</span>
-  </div>
-  <div class="bar-wrap bar-hp"><span class="bar-icon">❤️</span><div class="bar-outer"><div class="bar-inner" id="barHp"></div><span class="bar-text" id="barHpText"></span></div></div>
-  <div class="bar-wrap bar-mp"><span class="bar-icon">💎</span><div class="bar-outer"><div class="bar-inner" id="barMp"></div><span class="bar-text" id="barMpText"></span></div></div>
-  <div class="bar-wrap bar-pw"><span class="bar-icon">⚡</span><div class="bar-outer"><div class="bar-inner" id="barPw"></div><span class="bar-text" id="barPwText"></span></div></div>
-  <div class="bar-wrap bar-xp"><span class="bar-icon">✨</span><div class="bar-outer"><div class="bar-inner" id="barXp"></div><span class="bar-text" id="barXpText"></span></div></div>
-  <div class="stat-row"><span id="hudAtk">⚔️ ATK: 15</span><span id="hudDef">🛡️ DEF: 10</span><span id="hudGold">💰 100G</span></div>
-</div></div>
-
-<div id="combatLog"></div>
-<div id="skillBar"></div>
-<div id="menuBtns"></div>
-<div id="questTracker" style="display:none;"><div class="inner"><span class="qname" id="qtName"></span><span class="qcount" id="qtCount"></span></div></div>
-<div id="deathScreen"><div class="inner"><h1>💀 ÖLDÜN</h1><p>Güvenli bölgede yeniden doğacaksın.</p><button onclick="respawn()">🔄 Yeniden Doğ</button></div></div>
-<div id="joystick"><div class="base"></div><div class="deadzone-ring"></div><div class="knob" id="joystickKnob"></div></div>
-<div id="pcHints">WASD: Hareket | 1-4: Yetenekler<br>Q: Can Potu | E: Mana Potu<br>I: Envanter | B: Market | J: Görev</div>
-
-<!-- Panels rendered dynamically -->
-<div id="panelContainer"></div>
-
+<div id="ui-root"></div>
 <script>
-// ============================================================
-// THE WARRIOR'S JOURNEY — STANDALONE ENGINE
-// ============================================================
-
-// === CONSTANTS ===
-const WORLD_W=200,WORLD_H=200,SAFE_ZONE={x:0,y:0,radius:30},WORM_ZONE={x:50,y:50};
-const INV_SIZE=20,TILE=40,SCALE=4,EXP_BASE=100,EXP_GROWTH=1.5;
-const BASE_STATS={maxHp:150,hp:150,maxMp:50,mp:50,attack:15,defense:10,speed:3};
-const STATS_PER_LVL={maxHp:20,maxMp:8,attack:3,defense:2,speed:0.1};
+// ==================== CONSTANTS ====================
 const RARITY_COLORS={common:'#9ca3af',uncommon:'#22c55e',rare:'#3b82f6',epic:'#a855f7',legendary:'#f59e0b'};
+const RARITY_ORDER=['common','uncommon','rare','epic','legendary'];
+const SAFE_ZONE={x:0,y:0,radius:30};
+const WORM_ZONE={x:100,y:100};
+const WOLF_ZONE={x:-100,y:80};
+const SKELETON_ZONE={x:-80,y:-100};
+const GOLEM_ZONE={x:120,y:-80};
+const INVENTORY_SIZE=20;
+const BASE_STATS={maxHp:150,hp:150,maxMp:50,mp:50,attack:15,defense:10,speed:3};
+const STATS_PER_LEVEL={maxHp:20,maxMp:8,attack:3,defense:2,speed:0.1};
+const EXP_BASE=100,EXP_GROWTH=1.5;
+const SCALE=4;
+const MAP_LIMIT=300;
 
+// ==================== SKILLS ====================
 const WARRIOR_SKILLS=[
-  {id:'basic_attack',name:'Temel Vuruş',desc:'Basit bir kılıç darbesi.',unlock:1,mana:0,cd:0.8,mult:1,aoe:false,aoeR:0,needsPower:false,curCd:0,icon:'⚔️',key:'1'},
-  {id:'power_strike',name:'Güçlü Vuruş',desc:'%150 hasar, 20 Mana. 5sn.',unlock:3,mana:20,cd:5,mult:1.5,aoe:false,aoeR:0,needsPower:false,curCd:0,icon:'🗡️',key:'2'},
-  {id:'sword_spin',name:'Kılıç Döngüsü',desc:'AOE hasar, 35 Mana. 10sn.',unlock:7,mana:35,cd:10,mult:1.2,aoe:true,aoeR:80,needsPower:false,curCd:0,icon:'🌀',key:'3'},
-  {id:'dragon_strike',name:'Ejderha Vuruşu',desc:'5x hasar! Power Bar gerekli.',unlock:10,mana:0,cd:0,mult:5,aoe:true,aoeR:999,needsPower:true,curCd:0,icon:'🐉',key:'4'},
+  {id:'basic_attack',name:'Temel Vuruş',description:'Basit bir kılıç darbesi.',unlockLevel:1,manaCost:0,cooldown:0.8,damageMultiplier:1,isAoe:false,aoeRadius:0,requiresPowerBar:false,currentCooldown:0,icon:'⚔️',key:'1'},
+  {id:'power_strike',name:'Güçlü Vuruş',description:'%150 hasar, 20 Mana.',unlockLevel:3,manaCost:20,cooldown:5,damageMultiplier:1.5,isAoe:false,aoeRadius:0,requiresPowerBar:false,currentCooldown:0,icon:'🗡️',key:'2'},
+  {id:'whirlwind',name:'Kasırga',description:'AOE %120, 30 Mana.',unlockLevel:5,manaCost:30,cooldown:8,damageMultiplier:1.2,isAoe:true,aoeRadius:70,requiresPowerBar:false,currentCooldown:0,icon:'🌪️',key:'3'},
+  {id:'sword_spin',name:'Kılıç Döngüsü',description:'AOE %140, 35 Mana.',unlockLevel:7,manaCost:35,cooldown:10,damageMultiplier:1.4,isAoe:true,aoeRadius:80,requiresPowerBar:false,currentCooldown:0,icon:'🌀',key:'4'},
+  {id:'heal',name:'İyileşme',description:'HP yenile, 25 Mana.',unlockLevel:4,manaCost:25,cooldown:12,damageMultiplier:0,isAoe:false,aoeRadius:0,requiresPowerBar:false,currentCooldown:0,icon:'💚',key:'5',isHeal:true,healAmount:0.3},
+  {id:'dragon_strike',name:'Ejderha Vuruşu',description:'5x hasar! Power Bar doluyken.',unlockLevel:10,manaCost:0,cooldown:0,damageMultiplier:5,isAoe:true,aoeRadius:999,requiresPowerBar:true,currentCooldown:0,icon:'🐉',key:'6'},
 ];
 
+// ==================== SHOP ====================
 const SHOP_ITEMS=[
-  {name:'Demir Kılıç',type:'sword',rarity:'common',value:50,atk:5,def:0,heal:0,mana:0,icon:'🗡️'},
-  {name:'Çelik Kılıç',type:'sword',rarity:'uncommon',value:150,atk:12,def:0,heal:0,mana:0,icon:'⚔️'},
-  {name:'Deri Zırh',type:'armor',rarity:'common',value:40,atk:0,def:5,heal:0,mana:0,icon:'🛡️'},
-  {name:'Zincir Zırh',type:'armor',rarity:'uncommon',value:120,atk:0,def:10,heal:0,mana:0,icon:'🛡️'},
-  {name:'Can Potu',type:'hp_potion',rarity:'common',value:20,atk:0,def:0,heal:50,mana:0,icon:'❤️'},
-  {name:'Mana Potu',type:'mp_potion',rarity:'common',value:25,atk:0,def:0,heal:0,mana:30,icon:'💙'},
+  {name:'Demir Kılıç',type:'sword',rarity:'common',value:50,attackBonus:5,defenseBonus:0,healAmount:0,manaAmount:0,locked:false,equipped:false,icon:'🗡️'},
+  {name:'Deri Zırh',type:'armor',rarity:'common',value:40,attackBonus:0,defenseBonus:5,healAmount:0,manaAmount:0,locked:false,equipped:false,icon:'🛡️'},
+  {name:'Çelik Kılıç',type:'sword',rarity:'uncommon',value:150,attackBonus:12,defenseBonus:0,healAmount:0,manaAmount:0,locked:false,equipped:false,icon:'⚔️'},
+  {name:'Zincir Zırh',type:'armor',rarity:'uncommon',value:120,attackBonus:0,defenseBonus:10,healAmount:0,manaAmount:0,locked:false,equipped:false,icon:'🛡️'},
+  {name:'Gümüş Pala',type:'sword',rarity:'rare',value:450,attackBonus:25,defenseBonus:2,healAmount:0,manaAmount:0,locked:false,equipped:false,icon:'✨'},
+  {name:'Şövalye Zırhı',type:'armor',rarity:'rare',value:400,attackBonus:2,defenseBonus:22,healAmount:0,manaAmount:0,locked:false,equipped:false,icon:'🧥'},
+  {name:'Alev Kılıcı',type:'sword',rarity:'epic',value:1200,attackBonus:55,defenseBonus:0,healAmount:0,manaAmount:0,locked:false,equipped:false,icon:'🔥'},
+  {name:'Kristal Zırh',type:'armor',rarity:'epic',value:1100,attackBonus:5,defenseBonus:45,healAmount:0,manaAmount:0,locked:false,equipped:false,icon:'💎'},
+  {name:'Ejderha Katili',type:'sword',rarity:'legendary',value:5000,attackBonus:120,defenseBonus:10,healAmount:0,manaAmount:0,locked:false,equipped:false,icon:'🐉'},
+  {name:'Güneş Muhafızı',type:'armor',rarity:'legendary',value:4500,attackBonus:15,defenseBonus:100,healAmount:0,manaAmount:0,locked:false,equipped:false,icon:'☀️'},
+  {name:'Can Potu',type:'hp_potion',rarity:'common',value:20,attackBonus:0,defenseBonus:0,healAmount:50,manaAmount:0,locked:false,equipped:false,icon:'❤️'},
+  {name:'Mana Potu',type:'mp_potion',rarity:'common',value:25,attackBonus:0,defenseBonus:0,healAmount:0,manaAmount:30,locked:false,equipped:false,icon:'💙'},
+  {name:'Büyük Can Potu',type:'hp_potion',rarity:'rare',value:100,attackBonus:0,defenseBonus:0,healAmount:200,manaAmount:0,locked:false,equipped:false,icon:'🧪'},
+  {name:'Büyük Mana Potu',type:'mp_potion',rarity:'rare',value:110,attackBonus:0,defenseBonus:0,healAmount:0,manaAmount:100,locked:false,equipped:false,icon:'🔮'},
 ];
 
+// ==================== QUESTS ====================
 const QUEST_TEMPLATES=[
-  {name:'Solucan Avı',desc:'3 solucan öldür.',target:'worm',count:3,rExp:150,rGold:80,rItem:{name:'Solucan Kırıcı',type:'sword',rarity:'rare',value:200,atk:18,def:0,heal:0,mana:0,icon:'🔥',locked:true}},
-  {name:'Büyük Tehdit',desc:'Boss Solucanı yenilgiye uğrat!',target:'boss',count:1,rExp:500,rGold:300,rItem:{name:'Ejderha Zırhı',type:'armor',rarity:'epic',value:500,atk:5,def:25,heal:0,mana:0,icon:'🐲',locked:true}},
-  {name:'Solucan Katliamı',desc:'7 solucan öldür.',target:'worm',count:7,rExp:400,rGold:200,rItem:{name:'Kaos Kılıcı',type:'sword',rarity:'epic',value:600,atk:30,def:0,heal:0,mana:0,icon:'⚡',locked:true}},
+  {name:'Solucan Avı',description:'3 solucan öldür.',target:'worm',targetCount:3,rewardExp:150,rewardGold:80,
+   rewardItem:{id:'qs1',name:'Solucan Kırıcı',type:'sword',rarity:'rare',value:200,attackBonus:18,defenseBonus:0,healAmount:0,manaAmount:0,locked:true,equipped:false,icon:'🔥'}},
+  {name:'Kurt Avcısı',description:'4 kurt öldür.',target:'wolf',targetCount:4,rewardExp:250,rewardGold:150,
+   rewardItem:{id:'qw1',name:'Kurt Pençesi',type:'sword',rarity:'rare',value:300,attackBonus:22,defenseBonus:3,healAmount:0,manaAmount:0,locked:true,equipped:false,icon:'🐺'}},
+  {name:'İskelet Savaşçı',description:'5 iskelet öldür.',target:'skeleton',targetCount:5,rewardExp:350,rewardGold:200,
+   rewardItem:{id:'qk1',name:'Kemik Zırh',type:'armor',rarity:'epic',value:400,attackBonus:0,defenseBonus:30,healAmount:0,manaAmount:0,locked:true,equipped:false,icon:'💀'}},
+  {name:'Golem Yıkıcı',description:'3 golem öldür.',target:'golem',targetCount:3,rewardExp:500,rewardGold:350,
+   rewardItem:{id:'qg1',name:'Taş Yumruk',type:'sword',rarity:'epic',value:700,attackBonus:40,defenseBonus:10,healAmount:0,manaAmount:0,locked:true,equipped:false,icon:'🪨'}},
+  {name:'Büyük Tehdit',description:'Herhangi bir Boss yenilgiye uğrat!',target:'boss',targetCount:1,rewardExp:600,rewardGold:400,
+   rewardItem:{id:'qa1',name:'Ejderha Zırhı',type:'armor',rarity:'epic',value:500,attackBonus:5,defenseBonus:25,healAmount:0,manaAmount:0,locked:true,equipped:false,icon:'🐲'}},
+  {name:'Katliam',description:'Toplam 10 düşman öldür.',target:'any',targetCount:10,rewardExp:700,rewardGold:500,
+   rewardItem:{id:'qs3',name:'Kaos Kılıcı',type:'sword',rarity:'legendary',value:2000,attackBonus:80,defenseBonus:5,healAmount:0,manaAmount:0,locked:true,equipped:false,icon:'⚡'}},
 ];
 
-// === UID ===
-let _uid=1;const uid=()=>'id_'+(_uid++);
+// ==================== LOOT TABLES ====================
+const LOOT_TABLES={
+  worm:[
+    {name:'Solucan Derisi',type:'trash',rarity:'common',icon:'🪱',valueBase:5},
+    {name:'Zehir Kesesi',type:'trash',rarity:'uncommon',icon:'🧫',valueBase:12},
+    {name:'Çürümüş Kılıç',type:'sword',rarity:'common',icon:'🗡️',atkBase:4,defBase:0},
+    {name:'Solucan Zırhı',type:'armor',rarity:'uncommon',icon:'🛡️',atkBase:0,defBase:7},
+  ],
+  wolf:[
+    {name:'Kurt Kürkü',type:'trash',rarity:'common',icon:'🐺',valueBase:8},
+    {name:'Keskin Diş',type:'trash',rarity:'uncommon',icon:'🦷',valueBase:15},
+    {name:'Kurt Pençe Kılıcı',type:'sword',rarity:'uncommon',icon:'🐾',atkBase:10,defBase:1},
+    {name:'Kurt Derisi Zırh',type:'armor',rarity:'rare',icon:'🧥',atkBase:1,defBase:14},
+    {name:'Alfa Pençesi',type:'sword',rarity:'epic',icon:'🌙',atkBase:25,defBase:3},
+  ],
+  skeleton:[
+    {name:'Kemik Parçası',type:'trash',rarity:'common',icon:'🦴',valueBase:10},
+    {name:'Ruh Taşı',type:'trash',rarity:'rare',icon:'💎',valueBase:25},
+    {name:'Kemik Kılıç',type:'sword',rarity:'rare',icon:'💀',atkBase:18,defBase:0},
+    {name:'Hayalet Zırh',type:'armor',rarity:'rare',icon:'👻',atkBase:3,defBase:18},
+    {name:'Ölüm Tırpanı',type:'sword',rarity:'epic',icon:'⚰️',atkBase:35,defBase:0},
+  ],
+  golem:[
+    {name:'Granit Parçası',type:'trash',rarity:'uncommon',icon:'🪨',valueBase:18},
+    {name:'Sihirli Çekirdek',type:'trash',rarity:'epic',icon:'✨',valueBase:50},
+    {name:'Taş Kılıç',type:'sword',rarity:'epic',icon:'⛏️',atkBase:30,defBase:5},
+    {name:'Golem Zırhı',type:'armor',rarity:'epic',icon:'🏔️',atkBase:5,defBase:35},
+    {name:'Titan Kalkanı',type:'armor',rarity:'legendary',icon:'🌋',atkBase:10,defBase:60},
+  ],
+};
 
-// === STATE ===
-let isMobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)||window.innerWidth<768;
-let state,keys=new Set(),joystickDir={x:0,y:0},combatLog=['⚔️ Savaşçının Yolculuğu başladı!'];
-let showInventory=false,showShop=false,showQuest=false;
+// ==================== UTILITIES ====================
+let nextId=1;
+function uid(){return 'id_'+(nextId++)}
+function dist(a,b){return Math.sqrt((a.x-b.x)**2+(a.y-b.y)**2)}
+function calcDamage(atk,def,mult){const base=Math.max(1,atk*mult-def*.5);return Math.floor(base*(.9+Math.random()*.2))}
+function seededRandom(x,y,seed){let h=seed+x*374761393+y*668265263;h=(h^(h>>13))*1274126177;h=h^(h>>16);return(h&0x7fffffff)/0x7fffffff}
 
-function makeItem(o){return{id:uid(),name:o.name,type:o.type,rarity:o.rarity,value:o.value,atk:o.atk||0,def:o.def||0,heal:o.heal||0,mana:o.mana||0,locked:o.locked||false,equipped:false,icon:o.icon};}
+// ==================== PARTICLES & EFFECTS ====================
+const particles=[];
+const floatingTexts=[];
+let screenShake={x:0,y:0,intensity:0,duration:0};
 
-function createPlayer(){
-  return{
-    name:'Savaşçı',level:1,exp:0,expToNext:EXP_BASE,
-    stats:{...BASE_STATS},baseStats:{...BASE_STATS},
-    pos:{x:0,y:0},gold:100,powerBar:0,maxPowerBar:100,
-    inventory:new Array(INV_SIZE).fill(null),
-    eqSword:null,eqArmor:null,
-    skills:WARRIOR_SKILLS.map(s=>({...s})),
-    quest:null,kills:{worm:0,boss:0},
-    alive:true,atkRange:60,facingRight:true,isAttacking:false,atkTimer:0,
-  };
-}
-
-function createWorm(level,isBoss=false){
-  const m=1+(level-1)*0.2,bm=isBoss?5:1;
-  const hp=Math.floor(60*m*bm),atk=Math.floor(8*m*bm),def=Math.floor(3*m*bm);
-  const a=Math.random()*Math.PI*2,d=10+Math.random()*30;
-  return{
-    id:uid(),name:isBoss?'Büyük Solucan':'Solucan Lv.'+level,level,isBoss,
-    stats:{maxHp:hp,hp,maxMp:0,mp:0,attack:atk,defense:def,speed:1.5},
-    pos:{x:WORM_ZONE.x+Math.cos(a)*d,y:WORM_ZONE.y+Math.sin(a)*d},
-    reward:{exp:Math.floor((isBoss?200:30)*m),gold:Math.floor((isBoss?100:15)*m),items:genLoot(level,isBoss)},
-    atkCd:isBoss?2:1.5,curAtkCd:0,
-  };
-}
-
-function genLoot(lv,boss){
-  const items=[];const roll=Math.random();
-  if(boss||roll<0.4){
-    const rs=boss?['rare','epic','legendary']:['common','uncommon','rare'];
-    const r=rs[Math.floor(Math.random()*rs.length)];
-    const isW=Math.random()>0.5;
-    items.push(makeItem({name:isW?(r==='legendary'?'Efsane Kılıcı':'Savaş Kılıcı'):(r==='legendary'?'Efsane Zırhı':'Savaş Zırhı'),
-      type:isW?'sword':'armor',rarity:r,value:Math.floor(30*(1+lv*0.5)*(boss?3:1)),
-      atk:isW?Math.floor(5+lv*3*(boss?2:1)):0,def:!isW?Math.floor(4+lv*2*(boss?2:1)):0,icon:isW?'⚔️':'🛡️'}));
+function addParticle(x,y,color,count,speed,life,size){
+  for(let i=0;i<count;i++){
+    const angle=Math.random()*Math.PI*2;
+    const spd=speed*(0.5+Math.random());
+    particles.push({x,y,vx:Math.cos(angle)*spd,vy:Math.sin(angle)*spd,life:life*(0.7+Math.random()*0.6),maxLife:life,color,size:size*(0.5+Math.random())});
   }
-  if(Math.random()<0.6){
-    items.push(makeItem({name:'Solucan Derisi',type:'trash',rarity:'common',value:Math.floor(5+lv*2),icon:'🪱'}));
+}
+
+function addFloatingText(x,y,text,color,size){
+  floatingTexts.push({x,y,text,color,size:size||14,life:1.2,maxLife:1.2,vy:-40});
+}
+
+function shakeScreen(intensity,duration){
+  screenShake.intensity=intensity;screenShake.duration=duration;
+}
+
+function updateParticles(delta){
+  for(let i=particles.length-1;i>=0;i--){
+    const p=particles[i];
+    p.x+=p.vx*delta;p.y+=p.vy*delta;
+    p.vy+=80*delta; // gravity
+    p.life-=delta;
+    if(p.life<=0)particles.splice(i,1);
+  }
+  for(let i=floatingTexts.length-1;i>=0;i--){
+    const ft=floatingTexts[i];
+    ft.y+=ft.vy*delta;
+    ft.life-=delta;
+    if(ft.life<=0)floatingTexts.splice(i,1);
+  }
+  if(screenShake.duration>0){
+    screenShake.duration-=delta;
+    screenShake.x=(Math.random()-0.5)*screenShake.intensity*2;
+    screenShake.y=(Math.random()-0.5)*screenShake.intensity*2;
+    if(screenShake.duration<=0){screenShake.x=0;screenShake.y=0;screenShake.intensity=0;}
+  }
+}
+
+function drawParticles(ox,oy){
+  particles.forEach(p=>{
+    const alpha=Math.max(0,p.life/p.maxLife);
+    ctx.globalAlpha=alpha;
+    ctx.fillStyle=p.color;
+    ctx.beginPath();ctx.arc(p.x*SCALE+ox,p.y*SCALE+oy,p.size,0,Math.PI*2);ctx.fill();
+  });
+  ctx.globalAlpha=1;
+  floatingTexts.forEach(ft=>{
+    const alpha=Math.max(0,ft.life/ft.maxLife);
+    ctx.globalAlpha=alpha;
+    ctx.fillStyle=ft.color;
+    ctx.font='bold '+ft.size+'px Inter';
+    ctx.textAlign='center';
+    ctx.fillText(ft.text,ft.x*SCALE+ox,ft.y*SCALE+oy);
+  });
+  ctx.globalAlpha=1;
+}
+
+// ==================== ENEMY CREATION ====================
+function generateLoot(enemyType,level,isBoss){
+  const items=[];
+  const table=LOOT_TABLES[enemyType]||LOOT_TABLES.worm;
+  const dropChance=isBoss?1:(0.3+level*0.02);
+  
+  if(Math.random()<dropChance){
+    // Pick from loot table weighted by rarity
+    const weights={common:40,uncommon:25,rare:15,epic:8,legendary:2};
+    if(isBoss){weights.rare=30;weights.epic=25;weights.legendary=15;}
+    const candidates=table.filter(l=>{
+      const w=weights[l.rarity]||10;
+      return Math.random()*100<w;
+    });
+    if(candidates.length>0){
+      const loot=candidates[Math.floor(Math.random()*candidates.length)];
+      const item={id:uid(),name:loot.name,type:loot.type,rarity:loot.rarity,icon:loot.icon,
+        locked:false,equipped:false,healAmount:0,manaAmount:0};
+      if(loot.type==='trash'){
+        item.value=Math.floor(loot.valueBase*(1+level*0.3)*(isBoss?3:1));
+        item.attackBonus=0;item.defenseBonus=0;
+      }else{
+        item.attackBonus=Math.floor((loot.atkBase||0)*(1+level*0.2)*(isBoss?2:1));
+        item.defenseBonus=Math.floor((loot.defBase||0)*(1+level*0.2)*(isBoss?2:1));
+        item.value=Math.floor(20*(1+level*0.5)*(isBoss?3:1)*(RARITY_ORDER.indexOf(loot.rarity)+1));
+      }
+      items.push(item);
+    }
+  }
+  // Extra trash drop
+  if(Math.random()<0.5){
+    const trashTable=table.filter(l=>l.type==='trash');
+    if(trashTable.length>0){
+      const t=trashTable[Math.floor(Math.random()*trashTable.length)];
+      items.push({id:uid(),name:t.name,type:'trash',rarity:t.rarity,icon:t.icon,
+        value:Math.floor(t.valueBase*(1+level*0.2)),attackBonus:0,defenseBonus:0,healAmount:0,manaAmount:0,locked:false,equipped:false});
+    }
   }
   return items;
 }
 
-function spawnEnemies(){
-  const e=[];for(let i=0;i<5;i++)e.push(createWorm(Math.floor(Math.random()*5)+1));
-  e.push(createWorm(5,true));return e;
+function createEnemy(type,level,isBoss){
+  const configs={
+    worm:{zone:WORM_ZONE,zoneR:30,baseHp:60,baseAtk:8,baseDef:3,spd:1.5,name:'Solucan',bossName:'Dev Solucan',color:'#a855f7',bossColor:'#dc2626'},
+    wolf:{zone:WOLF_ZONE,zoneR:30,baseHp:80,baseAtk:12,baseDef:5,spd:2.2,name:'Kurt',bossName:'Alfa Kurt',color:'#6b7280',bossColor:'#f59e0b'},
+    skeleton:{zone:SKELETON_ZONE,zoneR:30,baseHp:100,baseAtk:15,baseDef:8,spd:1.8,name:'İskelet',bossName:'İskelet Kral',color:'#d1d5db',bossColor:'#a855f7'},
+    golem:{zone:GOLEM_ZONE,zoneR:30,baseHp:200,baseAtk:20,baseDef:20,spd:1,name:'Golem',bossName:'Taş Dev',color:'#78716c',bossColor:'#f97316'},
+  };
+  const c=configs[type]||configs.worm;
+  const m=1+(level-1)*0.2,bm=isBoss?5:1;
+  const hp=Math.floor(c.baseHp*m*bm),atk=Math.floor(c.baseAtk*m*bm),def=Math.floor(c.baseDef*m*bm);
+  const angle=Math.random()*Math.PI*2,d=10+Math.random()*c.zoneR;
+  const items=generateLoot(type,level,isBoss);
+  return{id:uid(),name:isBoss?c.bossName:(c.name+' Lv.'+level),level,type,
+    stats:{maxHp:hp,hp,maxMp:0,mp:0,attack:atk,defense:def,speed:c.spd},
+    position:{x:c.zone.x+Math.cos(angle)*d,y:c.zone.y+Math.sin(angle)*d},
+    isBoss,color:isBoss?c.bossColor:c.color,
+    reward:{exp:Math.floor((isBoss?200:30)*m*(type==='golem'?2:type==='skeleton'?1.5:type==='wolf'?1.2:1)),
+            gold:Math.floor((isBoss?100:15)*m*(type==='golem'?2:type==='skeleton'?1.5:type==='wolf'?1.2:1)),items},
+    attackCooldown:isBoss?2:1.5,currentAttackCooldown:0,hitFlash:0};
 }
 
-function dist(a,b){return Math.sqrt((a.x-b.x)**2+(a.y-b.y)**2);}
-function calcDmg(atk,def,mult){const base=Math.max(1,atk*mult-def*0.5);return Math.floor(base*(0.9+Math.random()*0.2));}
+function spawnEnemies(){
+  const e=[];
+  for(let i=0;i<5;i++)e.push(createEnemy('worm',Math.floor(Math.random()*5)+1));
+  e.push(createEnemy('worm',5,true));
+  for(let i=0;i<4;i++)e.push(createEnemy('wolf',Math.floor(Math.random()*5)+2));
+  e.push(createEnemy('wolf',6,true));
+  for(let i=0;i<4;i++)e.push(createEnemy('skeleton',Math.floor(Math.random()*5)+3));
+  e.push(createEnemy('skeleton',7,true));
+  for(let i=0;i<3;i++)e.push(createEnemy('golem',Math.floor(Math.random()*4)+5));
+  e.push(createEnemy('golem',8,true));
+  return e;
+}
+
+// ==================== PLAYER ====================
+function createPlayer(){
+  return{
+    name:'Savaşçı',level:1,exp:0,expToNext:EXP_BASE,
+    stats:{...BASE_STATS},baseStats:{...BASE_STATS},
+    position:{x:0,y:0},gold:100,powerBar:0,maxPowerBar:100,
+    inventory:new Array(INVENTORY_SIZE).fill(null),
+    equippedSword:null,equippedArmor:null,
+    skills:WARRIOR_SKILLS.map(s=>({...s})),
+    activeQuest:null,killCount:{worm:0,boss:0,wolf:0,skeleton:0,golem:0,any:0},
+    isAlive:true,attackRange:60,facingRight:true,isAttacking:false,attackAnimTimer:0,
+    autoSell:{common:false,uncommon:false}
+  };
+}
 
 function recalcStats(p){
   let ba=0,bd=0;
-  if(p.eqSword)ba+=p.eqSword.atk;
-  if(p.eqArmor)bd+=p.eqArmor.def;
+  if(p.equippedSword){ba+=p.equippedSword.attackBonus;bd+=p.equippedSword.defenseBonus||0;}
+  if(p.equippedArmor){bd+=p.equippedArmor.defenseBonus;ba+=p.equippedArmor.attackBonus||0;}
   p.stats.maxHp=p.baseStats.maxHp;p.stats.maxMp=p.baseStats.maxMp;
   p.stats.attack=p.baseStats.attack+ba;p.stats.defense=p.baseStats.defense+bd;
   p.stats.speed=p.baseStats.speed;
@@ -285,488 +385,888 @@ function recalcStats(p){
   p.stats.mp=Math.min(p.stats.mp,p.stats.maxMp);
 }
 
-function checkLevelUp(p){
+function checkLevelUp(p,log){
   while(p.exp>=p.expToNext){
     p.exp-=p.expToNext;p.level++;
     p.expToNext=Math.floor(EXP_BASE*Math.pow(EXP_GROWTH,p.level-1));
-    p.baseStats.maxHp+=STATS_PER_LVL.maxHp;p.baseStats.maxMp+=STATS_PER_LVL.maxMp;
-    p.baseStats.attack+=STATS_PER_LVL.attack;p.baseStats.defense+=STATS_PER_LVL.defense;
-    p.baseStats.speed+=STATS_PER_LVL.speed;
+    p.baseStats.maxHp+=STATS_PER_LEVEL.maxHp;p.baseStats.maxMp+=STATS_PER_LEVEL.maxMp;
+    p.baseStats.attack+=STATS_PER_LEVEL.attack;p.baseStats.defense+=STATS_PER_LEVEL.defense;
+    p.baseStats.speed+=STATS_PER_LEVEL.speed;
     recalcStats(p);p.stats.hp=p.stats.maxHp;p.stats.mp=p.stats.maxMp;
-    addLog('⬆️ Seviye '+p.level+'! Statlar arttı.');
-    p.skills.forEach(s=>{if(s.unlock===p.level)addLog('🔓 Yeni yetenek: '+s.name+'!');});
+    log.push('⬆️ Seviye '+p.level+'! Tüm statlar arttı!');
+    // Level up effect
+    addParticle(p.position.x,p.position.y,'#fbbf24',20,30,1.5,4);
+    addParticle(p.position.x,p.position.y,'#22c55e',15,25,1.2,3);
+    addFloatingText(p.position.x,p.position.y-10,'SEVİYE '+p.level+'!','#fbbf24',18);
+    p.skills.forEach(s=>{if(s.unlockLevel===p.level)log.push('🔓 Yeni yetenek: '+s.name+'!')});
   }
 }
 
-function addToInv(p,item){const i=p.inventory.indexOf(null);if(i===-1)return false;p.inventory[i]={...item,id:uid()};return true;}
-function addLog(msg){combatLog.push(msg);if(combatLog.length>50)combatLog=combatLog.slice(-50);}
+function addToInventory(p,item){
+  // Auto-sell check
+  if(p.autoSell&&p.autoSell[item.rarity]&&!item.locked){
+    p.gold+=item.value||0;
+    state.combatLog.push('🔄 Oto-satış: '+item.name+' → '+item.value+'G');
+    return true;
+  }
+  const slot=p.inventory.findIndex(s=>s===null);
+  if(slot===-1)return false;
+  p.inventory[slot]={...item,id:uid()};return true;
+}
 
-function genQuest(){
+// ==================== QUEST ====================
+function generateQuest(){
   const t=QUEST_TEMPLATES[Math.floor(Math.random()*QUEST_TEMPLATES.length)];
-  return{id:uid(),name:t.name,desc:t.desc,target:t.target,targetCount:t.count,curCount:0,
-    rExp:t.rExp,rGold:t.rGold,rItem:t.rItem?makeItem(t.rItem):null,completed:false,turnedIn:false};
+  return{...t,id:uid(),currentCount:0,completed:false,turnedIn:false,
+    rewardItem:t.rewardItem?{...t.rewardItem,id:uid()}:null};
 }
 
-// === SAVE/LOAD ===
-const SAVE_KEY='warriors_journey_save';
-function saveGame(){try{localStorage.setItem(SAVE_KEY,JSON.stringify({p:state.player,t:state.gameTime}));}catch(e){}}
-function loadGame(){try{const d=localStorage.getItem(SAVE_KEY);if(!d)return null;const o=JSON.parse(d);if(!o.p||typeof o.p.level!=='number')return null;return o;}catch(e){localStorage.removeItem(SAVE_KEY);return null;}}
-
-function initState(){
-  const saved=loadGame();
-  let p;
-  if(saved&&saved.p){p=createPlayer();Object.assign(p,saved.p);
-    // Fix inventory size
-    while(p.inventory.length<INV_SIZE)p.inventory.push(null);
-    p.inventory=p.inventory.slice(0,INV_SIZE);
-    if(!p.skills||!p.skills.length)p.skills=WARRIOR_SKILLS.map(s=>({...s}));
-    if(!p.baseStats)p.baseStats={...BASE_STATS};
-    if(!p.kills)p.kills={worm:0,boss:0};
-    if(p.alive===undefined)p.alive=true;
-  }else{p=createPlayer();}
-  recalcStats(p);
-  state={player:p,enemies:spawnEnemies(),gameTime:saved?.t||0};
+// ==================== SAVE/LOAD ====================
+function saveGame(st){
+  try{localStorage.setItem('warriors_journey_save',JSON.stringify({player:st.player,gameTime:st.gameTime}))}catch(e){}
+}
+function loadGame(){
+  try{const d=localStorage.getItem('warriors_journey_save');if(!d)return null;const p=JSON.parse(d);if(!p.player||typeof p.player.level!=='number')return null;return p}catch(e){localStorage.removeItem('warriors_journey_save');return null}
 }
 
-// === ACTIONS ===
-function movePlayer(dir){
-  if(!state.player.alive)return;
-  const p=state.player,sp=p.stats.speed;
-  p.pos.x+=dir.x*sp;p.pos.y+=dir.y*sp;
-  if(dir.x!==0)p.facingRight=dir.x>0;
-}
+// ==================== STATE INIT ====================
+const isMobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)||window.innerWidth<768;
+const saved=loadGame();
+const player=saved?.player?{...createPlayer(),...saved.player}:createPlayer();
+while(player.inventory.length<INVENTORY_SIZE)player.inventory.push(null);
+player.inventory=player.inventory.slice(0,INVENTORY_SIZE);
+if(!player.skills||!player.skills.length)player.skills=WARRIOR_SKILLS.map(s=>({...s}));
+if(!player.autoSell)player.autoSell={common:false,uncommon:false};
+if(!player.killCount.wolf)player.killCount={...player.killCount,wolf:0,skeleton:0,golem:0,any:0};
+recalcStats(player);
 
-function useSkill(skillId){
-  const p=state.player;if(!p.alive)return;
-  // Potions
-  if(skillId==='potion_hp'||skillId==='potion_mp'){
-    const pt=skillId==='potion_hp'?'hp_potion':'mp_potion';
-    const idx=p.inventory.findIndex(i=>i&&i.type===pt);if(idx===-1)return;
-    const pot=p.inventory[idx];
-    if(pt==='hp_potion'){p.stats.hp=Math.min(p.stats.maxHp,p.stats.hp+pot.heal);addLog('❤️ Can Potu kullanıldı! +'+pot.heal+' HP');}
-    else{p.stats.mp=Math.min(p.stats.maxMp,p.stats.mp+pot.mana);addLog('💙 Mana Potu kullanıldı! +'+pot.mana+' MP');}
-    p.inventory[idx]=null;return;
-  }
-  const sk=p.skills.find(s=>s.id===skillId);if(!sk)return;
-  if(sk.unlock>p.level)return;
-  if(sk.curCd>0)return;
-  if(sk.mana>p.stats.mp){addLog('⚠️ Yeterli mana yok!');return;}
-  if(sk.needsPower&&p.powerBar<p.maxPowerBar){addLog('⚠️ Power Bar dolu değil!');return;}
-  p.stats.mp-=sk.mana;
-  if(sk.needsPower)p.powerBar=0;
-  sk.curCd=sk.cd;p.isAttacking=true;p.atkTimer=0.3;
+const state={
+  player,enemies:spawnEnemies(),gameTime:saved?.gameTime??0,
+  combatLog:['⚔️ Savaşçının Yolculuğu başladı!','🌍 4 farklı bölge keşfet!'],
+  showInventory:false,showShop:false,showQuest:false,
+  joystickDir:{x:0,y:0}
+};
+const keys=new Set();
 
-  let hits=0;
-  state.enemies.forEach(e=>{
-    if(e.stats.hp<=0)return;
-    const d=dist(p.pos,e.pos);
-    const inRange=sk.aoe?(sk.aoeR>=999||d<=sk.aoeR):d<=p.atkRange;
-    if(!inRange)return;
-    const dmg=calcDmg(p.stats.attack,e.stats.defense,sk.mult);
-    e.stats.hp=Math.max(0,e.stats.hp-dmg);hits++;
-    addLog('⚔️ '+sk.name+' → '+e.name+': '+dmg+' hasar!');
-    if(!sk.needsPower)p.powerBar=Math.min(p.maxPowerBar,p.powerBar+8);
-    if(e.stats.hp<=0){
-      addLog('💀 '+e.name+' yenildi! +'+e.reward.exp+'EXP +'+e.reward.gold+'G');
-      p.exp+=e.reward.exp;p.gold+=e.reward.gold;
-      p.kills[e.isBoss?'boss':'worm']++;
-      e.reward.items.forEach(it=>{if(addToInv(p,it))addLog('📦 '+it.name+' bulundu!');else addLog('⚠️ Envanter dolu!');});
-      if(p.quest&&!p.quest.turnedIn){
-        const q=p.quest;
-        if((q.target==='worm'&&!e.isBoss)||(q.target==='boss'&&e.isBoss)){
-          q.curCount++;if(q.curCount>=q.targetCount){q.completed=true;addLog("🎯 Görev tamamlandı! NPC'ye git.");}
-        }
-      }
-      checkLevelUp(p);
-    }
-  });
-  if(hits===0)addLog('💨 Hedef menzil dışında!');
-  // Respawn dead enemies
-  const alive=state.enemies.filter(e=>e.stats.hp>0&&!e.isBoss).length;
-  if(alive<3)state.enemies.push(createWorm(Math.floor(Math.random()*5)+1));
-  if(!state.enemies.some(e=>e.isBoss&&e.stats.hp>0))state.enemies.push(createWorm(5,true));
-}
-
-function tick(delta){
-  const p=state.player;state.gameTime+=delta;
-  p.skills.forEach(s=>{if(s.curCd>0)s.curCd=Math.max(0,s.curCd-delta);});
-  if(p.atkTimer>0){p.atkTimer-=delta;if(p.atkTimer<=0)p.isAttacking=false;}
-  if(p.alive){
-    state.enemies.forEach(e=>{
-      if(e.stats.hp<=0)return;const d=dist(p.pos,e.pos);
-      if(d<100&&d>30){const dx=p.pos.x-e.pos.x,dy=p.pos.y-e.pos.y,l=Math.sqrt(dx*dx+dy*dy);e.pos.x+=(dx/l)*e.stats.speed*delta;e.pos.y+=(dy/l)*e.stats.speed*delta;}
-      e.curAtkCd-=delta;
-      if(d<=40&&e.curAtkCd<=0){
-        const dmg=calcDmg(e.stats.attack,p.stats.defense,1);p.stats.hp=Math.max(0,p.stats.hp-dmg);e.curAtkCd=e.atkCd;
-        addLog('🔴 '+e.name+' sana '+dmg+' hasar verdi!');
-        if(p.stats.hp<=0){p.alive=false;addLog('💀 Öldün! Yeniden doğmak için butona bas.');}
-      }
-    });
-  }
-  if(p.alive&&dist(p.pos,{x:0,y:0})<SAFE_ZONE.radius){
-    p.stats.hp=Math.min(p.stats.maxHp,p.stats.hp+p.stats.maxHp*0.02*delta);
-    p.stats.mp=Math.min(p.stats.maxMp,p.stats.mp+p.stats.maxMp*0.03*delta);
-  }
-}
-
-function respawn(){
-  const p=state.player;p.alive=true;p.stats.hp=p.stats.maxHp;p.stats.mp=p.stats.maxMp;p.pos={x:0,y:0};p.powerBar=0;
-  addLog('🔄 Güvenli bölgede yeniden doğdun!');
-}
-
-function equipItem(idx){
-  const p=state.player,item=p.inventory[idx];if(!item)return;
-  if(item.type==='sword'){
-    if(p.eqSword){p.eqSword.equipped=false;p.inventory[idx]=p.eqSword;}else p.inventory[idx]=null;
-    item.equipped=true;p.eqSword=item;
-  }else if(item.type==='armor'){
-    if(p.eqArmor){p.eqArmor.equipped=false;p.inventory[idx]=p.eqArmor;}else p.inventory[idx]=null;
-    item.equipped=true;p.eqArmor=item;
-  }else return;
-  recalcStats(p);addLog('🔧 '+item.name+' kuşanıldı!');
-}
-
-function sellItem(idx){const p=state.player,item=p.inventory[idx];if(!item||item.locked)return;p.gold+=item.value;addLog('💰 '+item.name+' satıldı: '+item.value+'G');p.inventory[idx]=null;}
-function sellAllTrash(){const p=state.player;let t=0;p.inventory.forEach((it,i)=>{if(it&&it.type==='trash'&&!it.locked){t+=it.value;p.inventory[i]=null;}});if(t>0){p.gold+=t;addLog('🗑️ Tüm çöpler satıldı: '+t+'G');}}
-function lockItem(idx){const it=state.player.inventory[idx];if(it)it.locked=!it.locked;}
-function buyItem(shopItem){
-  const p=state.player;if(p.gold<shopItem.value){addLog('⚠️ Yeterli altın yok!');return;}
-  const ni=makeItem(shopItem);if(!addToInv(p,ni)){addLog('⚠️ Envanter dolu!');return;}
-  p.gold-=shopItem.value;addLog('🛒 '+ni.name+' satın alındı!');
-}
-function acceptQuest(q){state.player.quest=q;addLog('📜 Görev kabul edildi: '+q.name);showQuest=false;}
-function turnInQuest(){
-  const p=state.player,q=p.quest;if(!q||!q.completed)return;
-  p.exp+=q.rExp;p.gold+=q.rGold;
-  if(q.rItem){if(!addToInv(p,q.rItem))addLog('⚠️ Envanter dolu!');else addLog('🎁 '+q.rItem.name+' ödül olarak alındı!');}
-  addLog('✅ '+q.name+' tamamlandı! +'+q.rExp+'EXP +'+q.rGold+'G');
-  q.turnedIn=true;p.quest=null;checkLevelUp(p);showQuest=false;
-}
-
-// === CANVAS RENDERING ===
+// ==================== CANVAS ====================
 const canvas=document.getElementById('gameCanvas');
 const ctx=canvas.getContext('2d');
+function resize(){canvas.width=window.innerWidth;canvas.height=window.innerHeight}
+window.addEventListener('resize',resize);resize();
 
-function resizeCanvas(){canvas.width=window.innerWidth;canvas.height=window.innerHeight;}
-window.addEventListener('resize',()=>{resizeCanvas();layoutUI();});
-resizeCanvas();
+// ==================== TERRAIN ====================
+const TERRAIN_SEED=42;
+const terrainDecorations=[];const terrainTrees=[];const terrainRocks=[];const terrainFlowers=[];
+
+for(let wx=-MAP_LIMIT;wx<=MAP_LIMIT;wx+=8){
+  for(let wy=-MAP_LIMIT;wy<=MAP_LIMIT;wy+=8){
+    const r=seededRandom(wx,wy,TERRAIN_SEED);
+    if(r<0.12)terrainDecorations.push({x:wx+seededRandom(wx,wy,1)*6,y:wy+seededRandom(wx,wy,2)*6,shade:seededRandom(wx,wy,3)});
+    if(r>0.87&&r<0.93){
+      const colors=['#ff6b8a','#ffdb4d','#ff9f43','#a29bfe','#fd79a8','#ffeaa7'];
+      terrainFlowers.push({x:wx+seededRandom(wx,wy,4)*6,y:wy+seededRandom(wx,wy,5)*6,color:colors[Math.floor(seededRandom(wx,wy,6)*colors.length)]});
+    }
+  }
+}
+for(let wx=-MAP_LIMIT;wx<=MAP_LIMIT;wx+=25){
+  for(let wy=-MAP_LIMIT;wy<=MAP_LIMIT;wy+=25){
+    const r=seededRandom(wx,wy,77);
+    if(r<0.2){
+      const tx=wx+seededRandom(wx,wy,78)*20-10,ty=wy+seededRandom(wx,wy,79)*20-10;
+      const zones=[SAFE_ZONE,WORM_ZONE,WOLF_ZONE,SKELETON_ZONE,GOLEM_ZONE];
+      let tooClose=false;
+      zones.forEach(z=>{if(Math.sqrt((tx-z.x)**2+(ty-z.y)**2)<40)tooClose=true;});
+      if(!tooClose)terrainTrees.push({x:tx,y:ty,size:0.7+seededRandom(wx,wy,80)*0.6,type:seededRandom(wx,wy,81)>0.3?'oak':'pine'});
+    }
+  }
+}
+for(let wx=-MAP_LIMIT;wx<=MAP_LIMIT;wx+=35){
+  for(let wy=-MAP_LIMIT;wy<=MAP_LIMIT;wy+=35){
+    if(seededRandom(wx,wy,99)<0.15)terrainRocks.push({x:wx+seededRandom(wx,wy,100)*20,y:wy+seededRandom(wx,wy,101)*20,size:0.5+seededRandom(wx,wy,102)*0.8});
+  }
+}
+
+function drawTerrain(ox,oy,W,H){
+  ctx.fillStyle='#2d5a1e';ctx.fillRect(0,0,W,H);
+  const tileSize=40;
+  const startTX=Math.floor(-ox/tileSize)-1,startTY=Math.floor(-oy/tileSize)-1;
+  const endTX=Math.ceil((W-ox)/tileSize)+1,endTY=Math.ceil((H-oy)/tileSize)+1;
+  for(let tx=startTX;tx<=endTX;tx++){
+    for(let ty=startTY;ty<=endTY;ty++){
+      const sx=tx*tileSize+ox,sy=ty*tileSize+oy;
+      const shade=seededRandom(tx,ty,TERRAIN_SEED+10);
+      if(shade<0.3){ctx.fillStyle='rgba(45,110,30,0.3)';ctx.fillRect(sx,sy,tileSize,tileSize);}
+      else if(shade>0.7){ctx.fillStyle='rgba(35,80,20,0.25)';ctx.fillRect(sx,sy,tileSize,tileSize);}
+    }
+  }
+  // Paths
+  function drawPath(x1,y1,x2,y2,cx2,cy2,curved){
+    ctx.strokeStyle='#6B5B3E';ctx.lineWidth=16;ctx.lineCap='round';ctx.beginPath();
+    ctx.moveTo(x1*SCALE+ox,y1*SCALE+oy);
+    if(curved)ctx.quadraticCurveTo(cx2*SCALE+ox,cy2*SCALE+oy,x2*SCALE+ox,y2*SCALE+oy);
+    else ctx.lineTo(x2*SCALE+ox,y2*SCALE+oy);ctx.stroke();
+    ctx.strokeStyle='#C4A97D';ctx.lineWidth=10;ctx.beginPath();
+    ctx.moveTo(x1*SCALE+ox,y1*SCALE+oy);
+    if(curved)ctx.quadraticCurveTo(cx2*SCALE+ox,cy2*SCALE+oy,x2*SCALE+ox,y2*SCALE+oy);
+    else ctx.lineTo(x2*SCALE+ox,y2*SCALE+oy);ctx.stroke();
+    ctx.strokeStyle='#D4B98A';ctx.lineWidth=4;ctx.beginPath();
+    ctx.moveTo(x1*SCALE+ox,y1*SCALE+oy);
+    if(curved)ctx.quadraticCurveTo(cx2*SCALE+ox,cy2*SCALE+oy,x2*SCALE+ox,y2*SCALE+oy);
+    else ctx.lineTo(x2*SCALE+ox,y2*SCALE+oy);ctx.stroke();
+  }
+  drawPath(0,0,WORM_ZONE.x,WORM_ZONE.y,50,30,true);
+  drawPath(0,0,WOLF_ZONE.x,WOLF_ZONE.y,-50,30,true);
+  drawPath(0,0,SKELETON_ZONE.x,SKELETON_ZONE.y,-40,-40,true);
+  drawPath(0,0,GOLEM_ZONE.x,GOLEM_ZONE.y,60,-30,true);
+  drawPath(0,0,-15,-5,0,0,false);
+  drawPath(0,0,15,-5,0,0,false);
+  
+  const viewMinX=(-ox)/SCALE-20,viewMaxX=(W-ox)/SCALE+20;
+  const viewMinY=(-oy)/SCALE-20,viewMaxY=(H-oy)/SCALE+20;
+  
+  terrainDecorations.forEach(d=>{
+    if(d.x<viewMinX||d.x>viewMaxX||d.y<viewMinY||d.y>viewMaxY)return;
+    const sx=d.x*SCALE+ox,sy=d.y*SCALE+oy;
+    ctx.strokeStyle='rgb('+Math.floor(30+d.shade*20)+','+Math.floor(80+d.shade*60)+','+Math.floor(20+d.shade*15)+')';
+    ctx.lineWidth=1.5;
+    for(let i=-1;i<=1;i++){ctx.beginPath();ctx.moveTo(sx+i*3,sy);ctx.lineTo(sx+i*3+i,sy-5-d.shade*4);ctx.stroke();}
+  });
+  terrainFlowers.forEach(f=>{
+    if(f.x<viewMinX||f.x>viewMaxX||f.y<viewMinY||f.y>viewMaxY)return;
+    const sx=f.x*SCALE+ox,sy=f.y*SCALE+oy;
+    ctx.fillStyle=f.color;ctx.beginPath();ctx.arc(sx,sy,2.5,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#ffeaa7';ctx.beginPath();ctx.arc(sx,sy,1,0,Math.PI*2);ctx.fill();
+  });
+  terrainRocks.forEach(r=>{
+    if(r.x<viewMinX||r.x>viewMaxX||r.y<viewMinY||r.y>viewMaxY)return;
+    const sx=r.x*SCALE+ox,sy=r.y*SCALE+oy,s=r.size*SCALE;
+    ctx.fillStyle='#6b6b6b';ctx.beginPath();ctx.ellipse(sx,sy,s*2.5,s*1.8,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#8a8a8a';ctx.beginPath();ctx.ellipse(sx-s*.3,sy-s*.3,s*1.5,s*1,0,0,Math.PI*2);ctx.fill();
+  });
+  terrainTrees.forEach(t=>{
+    if(t.x<viewMinX||t.x>viewMaxX||t.y<viewMinY||t.y>viewMaxY)return;
+    const sx=t.x*SCALE+ox,sy=t.y*SCALE+oy,s=t.size;
+    ctx.fillStyle='rgba(0,0,0,0.15)';ctx.beginPath();ctx.ellipse(sx,sy+12*s,10*s,4*s,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#5D4037';ctx.fillRect(sx-3*s,sy-10*s,6*s,22*s);
+    if(t.type==='oak'){
+      ctx.fillStyle='#1B5E20';ctx.beginPath();ctx.arc(sx,sy-22*s,14*s,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#2E7D32';ctx.beginPath();ctx.arc(sx-5*s,sy-18*s,10*s,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#43A047';ctx.beginPath();ctx.arc(sx+4*s,sy-24*s,8*s,0,Math.PI*2);ctx.fill();
+    }else{
+      ctx.fillStyle='#1B5E20';ctx.beginPath();ctx.moveTo(sx,sy-35*s);ctx.lineTo(sx-12*s,sy-8*s);ctx.lineTo(sx+12*s,sy-8*s);ctx.closePath();ctx.fill();
+      ctx.fillStyle='#2E7D32';ctx.beginPath();ctx.moveTo(sx,sy-28*s);ctx.lineTo(sx-9*s,sy-13*s);ctx.lineTo(sx+9*s,sy-13*s);ctx.closePath();ctx.fill();
+    }
+  });
+}
+
+function drawNPC(x,y,emoji,label){
+  // NPC platform
+  ctx.fillStyle='rgba(139,119,101,0.3)';ctx.beginPath();ctx.ellipse(x,y+14,18,6,0,0,Math.PI*2);ctx.fill();
+  ctx.font='28px serif';ctx.textAlign='center';ctx.fillText(emoji,x,y+4);
+  ctx.fillStyle='#fbbf24';ctx.font='bold 10px Inter';ctx.fillText(label,x,y+26);
+}
+
+function drawZone(ox,oy,zone,radius,color,label,bgAlpha){
+  const zx=zone.x*SCALE+ox,zy=zone.y*SCALE+oy,zr=radius*SCALE;
+  ctx.fillStyle=color.replace('1)',bgAlpha+')');ctx.beginPath();ctx.arc(zx,zy,zr,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle=color;ctx.lineWidth=2;ctx.setLineDash([10,5]);ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle=color;ctx.font='bold 12px Inter';ctx.textAlign='center';
+  ctx.fillText(label,zx,zy-zr-8);
+}
+
+function drawEnemy(e,ox,oy){
+  if(e.stats.hp<=0)return;
+  const ex=e.position.x*SCALE+ox,ey=e.position.y*SCALE+oy;
+  const sz=e.isBoss?22:13;
+  
+  // Shadow
+  ctx.fillStyle='rgba(0,0,0,.3)';ctx.beginPath();
+  ctx.ellipse(ex,ey+(e.isBoss?26:18),e.isBoss?22:14,5,0,0,Math.PI*2);ctx.fill();
+  
+  // Hit flash
+  const flashAlpha=e.hitFlash||0;
+  
+  if(e.type==='wolf'){
+    // Wolf body
+    ctx.fillStyle=flashAlpha>0?'#fff':e.color;
+    ctx.beginPath();ctx.ellipse(ex,ey,sz*0.9,sz*0.5,0,0,Math.PI*2);ctx.fill();
+    // Head
+    ctx.beginPath();ctx.arc(ex+(e.isBoss?8:5),ey-sz*0.3,sz*0.4,0,Math.PI*2);ctx.fill();
+    // Ears
+    ctx.beginPath();ctx.moveTo(ex+sz*0.5,ey-sz*0.6);ctx.lineTo(ex+sz*0.3,ey-sz);ctx.lineTo(ex+sz*0.7,ey-sz*0.5);ctx.fill();
+    ctx.beginPath();ctx.moveTo(ex+sz*0.2,ey-sz*0.6);ctx.lineTo(ex,ey-sz);ctx.lineTo(ex+sz*0.4,ey-sz*0.5);ctx.fill();
+    // Eyes
+    ctx.fillStyle=e.isBoss?'#f59e0b':'#ef4444';
+    ctx.beginPath();ctx.arc(ex+sz*0.4,ey-sz*0.4,2,0,Math.PI*2);ctx.fill();
+    // Tail
+    ctx.strokeStyle=flashAlpha>0?'#fff':e.color;ctx.lineWidth=2;ctx.beginPath();
+    ctx.moveTo(ex-sz*0.8,ey);ctx.quadraticCurveTo(ex-sz,ey-sz*0.5,ex-sz*0.7,ey-sz*0.3);ctx.stroke();
+  }else if(e.type==='skeleton'){
+    // Skeleton
+    ctx.fillStyle=flashAlpha>0?'#fff':e.color;
+    // Skull
+    ctx.beginPath();ctx.arc(ex,ey-sz*0.7,sz*0.4,0,Math.PI*2);ctx.fill();
+    // Body
+    ctx.strokeStyle=flashAlpha>0?'#fff':e.color;ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(ex,ey-sz*0.3);ctx.lineTo(ex,ey+sz*0.3);ctx.stroke();
+    // Arms
+    ctx.beginPath();ctx.moveTo(ex-sz*0.5,ey);ctx.lineTo(ex+sz*0.5,ey);ctx.stroke();
+    // Legs
+    ctx.beginPath();ctx.moveTo(ex,ey+sz*0.3);ctx.lineTo(ex-sz*0.3,ey+sz*0.7);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(ex,ey+sz*0.3);ctx.lineTo(ex+sz*0.3,ey+sz*0.7);ctx.stroke();
+    // Eyes
+    ctx.fillStyle='#000';
+    ctx.beginPath();ctx.arc(ex-3,ey-sz*0.75,2,0,Math.PI*2);ctx.arc(ex+3,ey-sz*0.75,2,0,Math.PI*2);ctx.fill();
+    // Sword
+    if(e.isBoss){
+      ctx.fillStyle='#a855f7';ctx.fillRect(ex+sz*0.5,ey-sz*0.5,3,sz);
+      ctx.fillStyle='#d8b4fe';ctx.fillRect(ex+sz*0.5-2,ey-sz*0.1,7,3);
+    }
+  }else if(e.type==='golem'){
+    // Golem - big rocky body
+    ctx.fillStyle=flashAlpha>0?'#fff':e.color;
+    // Body
+    ctx.beginPath();ctx.roundRect?ctx.roundRect(ex-sz*0.6,ey-sz*0.5,sz*1.2,sz*1.2,4):ctx.fillRect(ex-sz*0.6,ey-sz*0.5,sz*1.2,sz*1.2);ctx.fill();
+    // Head
+    ctx.fillStyle=flashAlpha>0?'#fff':(e.isBoss?'#92400e':'#57534e');
+    ctx.beginPath();ctx.roundRect?ctx.roundRect(ex-sz*0.4,ey-sz,sz*0.8,sz*0.6,3):ctx.fillRect(ex-sz*0.4,ey-sz,sz*0.8,sz*0.6);ctx.fill();
+    // Eyes - glowing
+    ctx.fillStyle=e.isBoss?'#f97316':'#22d3ee';
+    ctx.beginPath();ctx.arc(ex-4,ey-sz*0.75,3,0,Math.PI*2);ctx.arc(ex+4,ey-sz*0.75,3,0,Math.PI*2);ctx.fill();
+    // Arms
+    ctx.fillStyle=flashAlpha>0?'#fff':e.color;
+    ctx.fillRect(ex-sz*0.9,ey-sz*0.3,sz*0.3,sz*0.8);
+    ctx.fillRect(ex+sz*0.6,ey-sz*0.3,sz*0.3,sz*0.8);
+    // Cracks
+    ctx.strokeStyle='rgba(0,0,0,0.3)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(ex-sz*0.2,ey-sz*0.3);ctx.lineTo(ex+sz*0.1,ey+sz*0.2);ctx.stroke();
+  }else{
+    // Worm (original)
+    ctx.fillStyle=flashAlpha>0?'#fff':e.color;
+    for(let i=0;i<4;i++){
+      const sx2=ex+Math.sin(Date.now()/300+i)*3,sy2=ey-i*(sz/3);
+      ctx.beginPath();ctx.arc(sx2,sy2,sz/2-i,0,Math.PI*2);ctx.fill();
+    }
+    ctx.fillStyle='#fff';ctx.beginPath();
+    ctx.arc(ex-3,ey-sz+2,2,0,Math.PI*2);ctx.arc(ex+3,ey-sz+2,2,0,Math.PI*2);ctx.fill();
+  }
+  
+  // HP bar
+  const bw=e.isBoss?60:40,bh=6,by=ey-(e.type==='golem'?sz+25:sz+15);
+  ctx.fillStyle='#1f2937';ctx.fillRect(ex-bw/2,by,bw,bh);
+  const hr=e.stats.hp/e.stats.maxHp;
+  ctx.fillStyle=hr>.5?'#22c55e':hr>.25?'#f59e0b':'#ef4444';
+  ctx.fillRect(ex-bw/2,by,bw*hr,bh);
+  ctx.strokeStyle='rgba(0,0,0,0.3)';ctx.lineWidth=1;ctx.strokeRect(ex-bw/2,by,bw,bh);
+  ctx.fillStyle='#fff';ctx.font='bold 8px Inter';ctx.textAlign='center';
+  ctx.fillText(e.stats.hp+'/'+e.stats.maxHp,ex,by-2);
+  ctx.fillStyle=e.isBoss?'#f59e0b':'#d1d5db';
+  ctx.font='bold '+(e.isBoss?11:9)+'px Inter';ctx.fillText(e.name,ex,by-12);
+}
 
 function drawGame(){
-  const cw=canvas.width,ch=canvas.height,p=state.player;
-  const cx=cw/2,cy=ch/2;
-  const ox=cx-p.pos.x*SCALE,oy=cy-p.pos.y*SCALE;
+  const W=canvas.width,H=canvas.height;
+  const p=state.player;
+  const cx=W/2,cy=H/2;
+  const shk=screenShake;
+  const ox=cx-p.position.x*SCALE+shk.x,oy=cy-p.position.y*SCALE+shk.y;
 
-  ctx.fillStyle='#0d1117';ctx.fillRect(0,0,cw,ch);
+  drawTerrain(ox,oy,W,H);
 
-  // Grid
-  ctx.strokeStyle='#1a2233';ctx.lineWidth=1;
-  const gs=40,sx=Math.floor(-ox/gs)*gs,sy=Math.floor(-oy/gs)*gs;
-  for(let gx=sx;gx<cw-ox;gx+=gs){ctx.beginPath();ctx.moveTo(gx+ox,0);ctx.lineTo(gx+ox,ch);ctx.stroke();}
-  for(let gy=sy;gy<ch-oy;gy+=gs){ctx.beginPath();ctx.moveTo(0,gy+oy);ctx.lineTo(cw,gy+oy);ctx.stroke();}
-
-  // Safe zone
-  ctx.fillStyle='rgba(34,197,94,0.08)';ctx.beginPath();ctx.arc(SAFE_ZONE.x*SCALE+ox,SAFE_ZONE.y*SCALE+oy,SAFE_ZONE.radius*SCALE,0,Math.PI*2);ctx.fill();
-  ctx.strokeStyle='rgba(34,197,94,0.3)';ctx.lineWidth=2;ctx.stroke();
-  ctx.fillStyle='#22c55e';ctx.font='bold 12px Inter';ctx.textAlign='center';
-  ctx.fillText('🏠 Güvenli Bölge',SAFE_ZONE.x*SCALE+ox,SAFE_ZONE.y*SCALE+oy-SAFE_ZONE.radius*SCALE-10);
+  // Zones
+  drawZone(ox,oy,SAFE_ZONE,SAFE_ZONE.radius,'rgba(34,197,94,1)','🏠 Güvenli Bölge',0.12);
+  drawZone(ox,oy,WORM_ZONE,40,'rgba(168,85,247,1)','🪱 Solucan Bölgesi',0.06);
+  drawZone(ox,oy,WOLF_ZONE,35,'rgba(107,114,128,1)','🐺 Kurt Bölgesi',0.06);
+  drawZone(ox,oy,SKELETON_ZONE,35,'rgba(209,213,219,1)','💀 İskelet Bölgesi',0.06);
+  drawZone(ox,oy,GOLEM_ZONE,35,'rgba(120,113,108,1)','🪨 Golem Bölgesi',0.06);
 
   // NPCs
-  drawNPC(ctx,-15*SCALE+ox,-5*SCALE+oy,'🏪','Market');
-  drawNPC(ctx,15*SCALE+ox,-5*SCALE+oy,'📜','Görevler');
+  drawNPC(-15*SCALE+ox,-5*SCALE+oy,'🏪','Market');
+  drawNPC(15*SCALE+ox,-5*SCALE+oy,'📜','Görevler');
 
-  // Worm zone
-  ctx.fillStyle='rgba(239,68,68,0.06)';ctx.beginPath();ctx.arc(WORM_ZONE.x*SCALE+ox,WORM_ZONE.y*SCALE+oy,40*SCALE,0,Math.PI*2);ctx.fill();
-  ctx.strokeStyle='rgba(239,68,68,0.2)';ctx.lineWidth=1;ctx.stroke();
-  ctx.fillStyle='#ef4444';ctx.font='bold 12px Inter';ctx.fillText('☠️ Solucan Bölgesi',WORM_ZONE.x*SCALE+ox,WORM_ZONE.y*SCALE+oy-42*SCALE);
+  // Map border
+  const ls=MAP_LIMIT*SCALE;
+  ctx.strokeStyle='rgba(255,68,68,0.4)';ctx.lineWidth=4;ctx.setLineDash([12,8]);
+  ctx.strokeRect(ox-ls,oy-ls,ls*2,ls*2);ctx.setLineDash([]);
 
   // Enemies
-  state.enemies.forEach(e=>{
-    if(e.stats.hp<=0)return;
-    const ex=e.pos.x*SCALE+ox,ey=e.pos.y*SCALE+oy;
-    ctx.fillStyle='rgba(0,0,0,0.3)';ctx.beginPath();ctx.ellipse(ex,ey+(e.isBoss?24:16),e.isBoss?20:12,5,0,0,Math.PI*2);ctx.fill();
-    const sz=e.isBoss?20:12;ctx.fillStyle=e.isBoss?'#dc2626':'#a855f7';
-    for(let i=0;i<4;i++){const sx2=ex+Math.sin(Date.now()/300+i)*3,sy2=ey-i*(sz/3);ctx.beginPath();ctx.arc(sx2,sy2,sz/2-i,0,Math.PI*2);ctx.fill();}
-    ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(ex-3,ey-sz+2,2,0,Math.PI*2);ctx.arc(ex+3,ey-sz+2,2,0,Math.PI*2);ctx.fill();
-    const bw=e.isBoss?60:40,bh=6,by=ey-sz-20;
-    ctx.fillStyle='#1f2937';ctx.fillRect(ex-bw/2,by,bw,bh);
-    const hr=e.stats.hp/e.stats.maxHp;ctx.fillStyle=hr>0.5?'#22c55e':hr>0.25?'#f59e0b':'#ef4444';
-    ctx.fillRect(ex-bw/2,by,bw*hr,bh);
-    ctx.fillStyle='#fff';ctx.font='bold 9px Inter';ctx.textAlign='center';ctx.fillText(e.stats.hp+'/'+e.stats.maxHp,ex,by-3);
-    ctx.fillStyle=e.isBoss?'#f59e0b':'#d1d5db';ctx.font='bold '+(e.isBoss?11:9)+'px Inter';ctx.fillText(e.name,ex,by-14);
-  });
+  state.enemies.forEach(e=>drawEnemy(e,ox,oy));
 
   // Player
-  const px=cx,py=cy;
-  ctx.fillStyle='rgba(0,0,0,0.4)';ctx.beginPath();ctx.ellipse(px,py+18,14,5,0,0,Math.PI*2);ctx.fill();
+  const px=cx+shk.x,py=cy+shk.y;
+  ctx.fillStyle='rgba(0,0,0,.4)';ctx.beginPath();ctx.ellipse(px,py+18,14,5,0,0,Math.PI*2);ctx.fill();
   ctx.fillStyle='#3b82f6';ctx.fillRect(px-8,py-10,16,20);
   ctx.fillStyle='#fbbf24';ctx.beginPath();ctx.arc(px,py-16,8,0,Math.PI*2);ctx.fill();
   ctx.fillStyle='#6b7280';ctx.beginPath();ctx.arc(px,py-18,9,Math.PI,0);ctx.fill();
-  const sa=p.isAttacking?(p.facingRight?-0.5:0.5):(p.facingRight?0.3:-0.3);
-  const swx=p.facingRight?px+12:px-12;
-  ctx.save();ctx.translate(swx,py-5);ctx.rotate(sa);
-  ctx.fillStyle='#d1d5db';ctx.fillRect(-2,-18,4,20);ctx.fillStyle='#fbbf24';ctx.fillRect(-4,0,8,4);ctx.restore();
-  ctx.fillStyle='#fbbf24';ctx.font='bold 11px Cinzel';ctx.textAlign='center';ctx.fillText(p.name+' Lv.'+p.level,px,py-30);
-  ctx.fillStyle='#6b7280';ctx.font='10px Inter';ctx.textAlign='left';ctx.fillText('X:'+Math.round(p.pos.x)+' Y:'+Math.round(p.pos.y),10,ch-10);
+  const sa=p.isAttacking?(p.facingRight?-.5:.5):(p.facingRight?.3:-.3);
+  const swX=p.facingRight?px+12:px-12;
+  ctx.save();ctx.translate(swX,py-5);ctx.rotate(sa);
+  ctx.fillStyle='#d1d5db';ctx.fillRect(-2,-18,4,20);
+  ctx.fillStyle='#fbbf24';ctx.fillRect(-4,0,8,4);ctx.restore();
+  ctx.fillStyle='#fbbf24';ctx.font='bold 11px Cinzel';ctx.textAlign='center';
+  ctx.fillText(p.name+' Lv.'+p.level,px,py-30);
+
+  // Particles
+  drawParticles(ox,oy);
+
+  // Coords
+  ctx.fillStyle='#e8dcc8';ctx.font='10px Inter';ctx.textAlign='left';
+  ctx.fillText('X:'+Math.round(p.position.x)+' Y:'+Math.round(p.position.y),10,H-10);
 
   // Minimap
-  const ms=100,mx=cw-ms-10,my=10,msc=ms/120;
-  ctx.fillStyle='rgba(0,0,0,0.7)';ctx.fillRect(mx,my,ms,ms);ctx.strokeStyle='#374151';ctx.strokeRect(mx,my,ms,ms);
-  ctx.fillStyle='rgba(34,197,94,0.3)';ctx.beginPath();ctx.arc(mx+10*msc,my+10*msc,SAFE_ZONE.radius*msc,0,Math.PI*2);ctx.fill();
-  state.enemies.forEach(e=>{if(e.stats.hp<=0)return;ctx.fillStyle=e.isBoss?'#f59e0b':'#ef4444';ctx.beginPath();ctx.arc(mx+(e.pos.x+10)*msc,my+(e.pos.y+10)*msc,e.isBoss?3:2,0,Math.PI*2);ctx.fill();});
-  ctx.fillStyle='#3b82f6';ctx.beginPath();ctx.arc(mx+(p.pos.x+10)*msc,my+(p.pos.y+10)*msc,3,0,Math.PI*2);ctx.fill();
+  const ms=120,mx=W-ms-10,my=10,mmRange=100,msc2=ms/mmRange;
+  const mmCx=mx+ms/2,mmCy=my+ms/2,ppx=p.position.x,ppy=p.position.y;
+  ctx.save();
+  ctx.fillStyle='#2d5a1e';ctx.fillRect(mx,my,ms,ms);
+  ctx.strokeStyle='#5D4037';ctx.lineWidth=2;ctx.strokeRect(mx,my,ms,ms);
+  ctx.beginPath();ctx.rect(mx,my,ms,ms);ctx.clip();
+  // Zones on minimap
+  [{z:SAFE_ZONE,r:SAFE_ZONE.radius,c:'rgba(34,197,94,.3)'},{z:WORM_ZONE,r:40,c:'rgba(168,85,247,.15)'},
+   {z:WOLF_ZONE,r:35,c:'rgba(107,114,128,.15)'},{z:SKELETON_ZONE,r:35,c:'rgba(209,213,219,.15)'},
+   {z:GOLEM_ZONE,r:35,c:'rgba(120,113,108,.15)'}].forEach(zd=>{
+    ctx.fillStyle=zd.c;ctx.beginPath();
+    ctx.arc(mmCx+(zd.z.x-ppx)*msc2,mmCy+(zd.z.y-ppy)*msc2,zd.r*msc2,0,Math.PI*2);ctx.fill();
+  });
+  // Paths on minimap
+  ctx.strokeStyle='#C4A97D';ctx.lineWidth=1;
+  [WORM_ZONE,WOLF_ZONE,SKELETON_ZONE,GOLEM_ZONE].forEach(z=>{
+    ctx.beginPath();ctx.moveTo(mmCx+(0-ppx)*msc2,mmCy+(0-ppy)*msc2);
+    ctx.lineTo(mmCx+(z.x-ppx)*msc2,mmCy+(z.y-ppy)*msc2);ctx.stroke();
+  });
+  // Border
+  ctx.strokeStyle='#ff4444';ctx.lineWidth=1;
+  ctx.strokeRect(mmCx+(-MAP_LIMIT-ppx)*msc2,mmCy+(-MAP_LIMIT-ppy)*msc2,MAP_LIMIT*2*msc2,MAP_LIMIT*2*msc2);
+  // Enemies
+  state.enemies.forEach(e=>{if(e.stats.hp<=0)return;ctx.fillStyle=e.isBoss?'#f59e0b':e.color;
+    ctx.beginPath();ctx.arc(mmCx+(e.position.x-ppx)*msc2,mmCy+(e.position.y-ppy)*msc2,e.isBoss?3:2,0,Math.PI*2);ctx.fill()});
+  // Player
+  ctx.fillStyle='#3b82f6';ctx.beginPath();ctx.arc(mmCx,mmCy,4,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='#93c5fd';ctx.lineWidth=1;ctx.stroke();
+  // NPCs
+  ctx.font='7px serif';ctx.textAlign='center';
+  ctx.fillText('🏪',mmCx+(-15-ppx)*msc2,mmCy+(-5-ppy)*msc2);
+  ctx.fillText('📜',mmCx+(15-ppx)*msc2,mmCy+(-5-ppy)*msc2);
+  ctx.restore();
+  ctx.fillStyle='#C4A97D';ctx.font='bold 8px Inter';ctx.textAlign='center';
+  ctx.fillText('MİNİ HARİTA',mx+ms/2,my+ms+10);
 }
 
-function drawNPC(c,x,y,emoji,label){c.font='24px serif';c.textAlign='center';c.fillText(emoji,x,y);c.fillStyle='#fbbf24';c.font='bold 10px Inter';c.fillText(label,x,y+20);}
+// ==================== COMBAT ====================
+function useSkill(skillId){
+  const p=state.player;const log=state.combatLog;
+  if(!p.isAlive)return;
 
-// === UI UPDATE ===
-function updateHUD(){
+  if(skillId==='potion_hp'||skillId==='potion_mp'){
+    const pt=skillId==='potion_hp'?'hp_potion':'mp_potion';
+    const idx=p.inventory.findIndex(i=>i?.type===pt);if(idx===-1)return;
+    const pot=p.inventory[idx];
+    if(pt==='hp_potion'){
+      const heal=pot.healAmount;
+      p.stats.hp=Math.min(p.stats.maxHp,p.stats.hp+heal);
+      log.push('❤️ Can Potu! +'+heal+' HP');
+      addParticle(p.position.x,p.position.y,'#ef4444',8,15,0.8,3);
+      addFloatingText(p.position.x,p.position.y-8,'+'+heal+' HP','#22c55e',14);
+    }else{
+      const mana=pot.manaAmount;
+      p.stats.mp=Math.min(p.stats.maxMp,p.stats.mp+mana);
+      log.push('💙 Mana Potu! +'+mana+' MP');
+      addParticle(p.position.x,p.position.y,'#3b82f6',8,15,0.8,3);
+      addFloatingText(p.position.x,p.position.y-8,'+'+mana+' MP','#60a5fa',14);
+    }
+    p.inventory[idx]=null;renderUI();return;
+  }
+
+  const skill=p.skills.find(s=>s.id===skillId);if(!skill)return;
+  if(skill.unlockLevel>p.level||skill.currentCooldown>0)return;
+  if(skill.manaCost>p.stats.mp){log.push('⚠️ Yeterli mana yok!');trimLog();renderUI();return}
+  if(skill.requiresPowerBar&&p.powerBar<p.maxPowerBar){log.push('⚠️ Power Bar dolu değil!');trimLog();renderUI();return}
+
+  p.stats.mp-=skill.manaCost;
+  if(skill.requiresPowerBar)p.powerBar=0;
+  skill.currentCooldown=skill.cooldown;
+
+  // Heal skill
+  if(skill.isHeal){
+    const heal=Math.floor(p.stats.maxHp*skill.healAmount);
+    p.stats.hp=Math.min(p.stats.maxHp,p.stats.hp+heal);
+    log.push('💚 '+skill.name+': +'+heal+' HP!');
+    addParticle(p.position.x,p.position.y,'#22c55e',12,20,1,3);
+    addFloatingText(p.position.x,p.position.y-8,'+'+heal+' HP','#22c55e',16);
+    trimLog();renderUI();return;
+  }
+
+  p.isAttacking=true;p.attackAnimTimer=.3;
+  
+  // Attack effect particles
+  if(skill.isAoe){
+    addParticle(p.position.x,p.position.y,'#fbbf24',15,40,0.8,3);
+    addParticle(p.position.x,p.position.y,'#f97316',10,35,0.6,2);
+    if(skill.requiresPowerBar){
+      addParticle(p.position.x,p.position.y,'#ef4444',25,60,1.2,5);
+      addParticle(p.position.x,p.position.y,'#fbbf24',20,50,1,4);
+      shakeScreen(8,0.5);
+    }else{
+      shakeScreen(3,0.2);
+    }
+  }else{
+    const dir=p.facingRight?1:-1;
+    addParticle(p.position.x+dir*10,p.position.y-5,'#d1d5db',6,20,0.5,2);
+  }
+
+  let hitCount=0;
+  state.enemies.forEach(e=>{
+    if(e.stats.hp<=0)return;
+    const d=dist(p.position,e.position);
+    const inRange=skill.isAoe?(skill.aoeRadius>=999||d<=skill.aoeRadius):d<=p.attackRange;
+    if(!inRange)return;
+    const dmg=calcDamage(p.stats.attack,e.stats.defense,skill.damageMultiplier);
+    e.stats.hp=Math.max(0,e.stats.hp-dmg);hitCount++;
+    e.hitFlash=0.15;
+    
+    // Hit particles
+    addParticle(e.position.x,e.position.y-3,'#ef4444',5,20,0.5,2);
+    addFloatingText(e.position.x+(Math.random()-0.5)*5,e.position.y-8,'-'+dmg,
+      dmg>50?'#f59e0b':'#ef4444',dmg>100?18:dmg>50?15:12);
+    
+    log.push('⚔️ '+skill.name+' → '+e.name+': '+dmg+' hasar!');
+    if(!skill.requiresPowerBar)p.powerBar=Math.min(p.maxPowerBar,p.powerBar+8);
+    if(e.stats.hp<=0){
+      // Death effects
+      addParticle(e.position.x,e.position.y,'#fbbf24',15,30,1,3);
+      addParticle(e.position.x,e.position.y,e.color,10,25,0.8,4);
+      addFloatingText(e.position.x,e.position.y-12,'+'+e.reward.exp+'EXP','#22c55e',13);
+      addFloatingText(e.position.x+5,e.position.y-6,'+'+e.reward.gold+'G','#fbbf24',11);
+      
+      log.push('💀 '+e.name+' yenildi! +'+e.reward.exp+'EXP +'+e.reward.gold+'G');
+      p.exp+=e.reward.exp;p.gold+=e.reward.gold;
+      const etype=e.type||'worm';
+      p.killCount[etype]=(p.killCount[etype]||0)+1;
+      if(e.isBoss)p.killCount.boss=(p.killCount.boss||0)+1;
+      p.killCount.any=(p.killCount.any||0)+1;
+      
+      e.reward.items.forEach(item=>{
+        if(addToInventory(p,item))log.push('📦 '+item.name+' bulundu!');
+        else log.push('⚠️ Envanter dolu!');
+      });
+      if(p.activeQuest&&!p.activeQuest.turnedIn){
+        const q=p.activeQuest;
+        const match=(q.target==='any')||(q.target===etype)||(q.target==='boss'&&e.isBoss);
+        if(match){
+          q.currentCount++;
+          if(q.currentCount>=q.targetCount){q.completed=true;log.push('🎯 Görev tamamlandı! NPC\'ye dön.')}
+        }
+      }
+      checkLevelUp(p,log);
+    }
+  });
+  if(hitCount===0)log.push('💨 Hedef menzil dışında!');
+
+  // Respawn
+  ['worm','wolf','skeleton','golem'].forEach(type=>{
+    const alive=state.enemies.filter(e=>e.stats.hp>0&&e.type===type&&!e.isBoss).length;
+    const minCount=type==='golem'?2:3;
+    if(alive<minCount){
+      const lvl=type==='golem'?Math.floor(Math.random()*4)+5:type==='skeleton'?Math.floor(Math.random()*5)+3:
+        type==='wolf'?Math.floor(Math.random()*5)+2:Math.floor(Math.random()*5)+1;
+      state.enemies.push(createEnemy(type,lvl));
+    }
+    if(!state.enemies.some(e=>e.isBoss&&e.type===type&&e.stats.hp>0)){
+      const bossLvl=type==='golem'?8:type==='skeleton'?7:type==='wolf'?6:5;
+      state.enemies.push(createEnemy(type,bossLvl,true));
+    }
+  });
+  trimLog();renderUI();
+}
+
+function trimLog(){while(state.combatLog.length>50)state.combatLog.shift()}
+
+// ==================== TICK ====================
+function tick(delta){
+  const p=state.player;const log=state.combatLog;
+  state.gameTime+=delta;
+
+  p.skills.forEach(s=>{if(s.currentCooldown>0)s.currentCooldown=Math.max(0,s.currentCooldown-delta)});
+  if(p.attackAnimTimer>0){p.attackAnimTimer-=delta;if(p.attackAnimTimer<=0)p.isAttacking=false}
+
+  // Enemy hit flash decay
+  state.enemies.forEach(e=>{if(e.hitFlash>0)e.hitFlash=Math.max(0,e.hitFlash-delta)});
+
+  updateParticles(delta);
+
+  if(p.isAlive){
+    state.enemies.forEach(e=>{
+      if(e.stats.hp<=0)return;
+      const d=dist(p.position,e.position);
+      if(d<100&&d>30){
+        const dx=p.position.x-e.position.x,dy=p.position.y-e.position.y;
+        const len=Math.sqrt(dx*dx+dy*dy);
+        e.position.x+=(dx/len)*e.stats.speed*delta;
+        e.position.y+=(dy/len)*e.stats.speed*delta;
+      }
+      e.currentAttackCooldown-=delta;
+      if(d<=40&&e.currentAttackCooldown<=0){
+        const dmg=calcDamage(e.stats.attack,p.stats.defense,1);
+        p.stats.hp=Math.max(0,p.stats.hp-dmg);
+        e.currentAttackCooldown=e.attackCooldown;
+        addParticle(p.position.x,p.position.y-3,'#ef4444',4,15,0.4,2);
+        addFloatingText(p.position.x,p.position.y-10,'-'+dmg,'#ef4444',13);
+        shakeScreen(2,0.1);
+        log.push('🔴 '+e.name+' sana '+dmg+' hasar verdi!');
+        if(p.stats.hp<=0){
+          p.isAlive=false;
+          addParticle(p.position.x,p.position.y,'#ef4444',20,30,1.5,4);
+          shakeScreen(6,0.4);
+          log.push('💀 Öldün! Yeniden doğmak için butona bas.');
+        }
+      }
+    });
+
+    // Safe zone regen
+    if(dist(p.position,{x:0,y:0})<SAFE_ZONE.radius){
+      p.stats.hp=Math.min(p.stats.maxHp,p.stats.hp+p.stats.maxHp*.03*delta);
+      p.stats.mp=Math.min(p.stats.maxMp,p.stats.mp+p.stats.maxMp*.04*delta);
+    }
+  }
+  trimLog();
+}
+
+function movePlayer(dx,dy){
+  if(!state.player.isAlive)return;
+  const s=state.player.stats.speed;
+  let nx=state.player.position.x+dx*s,ny=state.player.position.y+dy*s;
+  if(Math.abs(nx)<=MAP_LIMIT)state.player.position.x=nx;
+  if(Math.abs(ny)<=MAP_LIMIT)state.player.position.y=ny;
+  if(dx!==0)state.player.facingRight=dx>0;
+}
+
+// ==================== UI ====================
+const uiRoot=document.getElementById('ui-root');
+
+function renderUI(){
   const p=state.player;
-  document.getElementById('hudName').textContent=p.name;
-  document.getElementById('hudLevel').textContent='Lv.'+p.level;
-  setBar('barHp','barHpText',p.stats.hp,p.stats.maxHp,'HP');
-  setBar('barMp','barMpText',p.stats.mp,p.stats.maxMp,'MP');
-  setBar('barPw','barPwText',p.powerBar,p.maxPowerBar,'PWR');
-  setBar('barXp','barXpText',p.exp,p.expToNext,'EXP');
-  document.getElementById('hudAtk').textContent='⚔️ ATK: '+p.stats.attack;
-  document.getElementById('hudDef').textContent='🛡️ DEF: '+p.stats.defense;
-  document.getElementById('hudGold').textContent='💰 '+p.gold+'G';
+  const inSafe=dist(p.position,{x:0,y:0})<SAFE_ZONE.radius;
+  let html='';
+
+  // HUD
+  html+='<div class="hud-bars"><div class="hud-card">';
+  html+='<div class="player-info"><span class="player-name">'+p.name+'</span><span style="color:var(--muted-fg);font-size:10px">Lv.'+p.level+'</span></div>';
+  html+=bar(p.stats.hp,p.stats.maxHp,'bar-hp','HP','❤️');
+  html+=bar(p.stats.mp,p.stats.maxMp,'bar-mp','MP','💎');
+  html+=bar(p.powerBar,p.maxPowerBar,'bar-pwr','PWR','⚡');
+  html+=bar(p.exp,p.expToNext,'bar-xp','EXP','✨');
+  html+='<div class="hud-stats"><span>⚔️'+p.stats.attack+'</span><span>🛡️'+p.stats.defense+'</span><span>💰'+p.gold+'G</span><span>🏆'+p.killCount.any+'</span></div>';
+  html+='</div></div>';
 
   // Combat log
-  const cl=document.getElementById('combatLog');
-  cl.innerHTML=combatLog.slice(-5).reverse().map((m,i)=>'<div'+(i>0?' style="color:var(--muted-fg)"':'')+'>'+m+'</div>').join('');
+  html+='<div class="combat-log"><div class="log-card">';
+  state.combatLog.slice(-5).reverse().forEach((m,i)=>{
+    html+='<div class="log-line" style="color:'+(i===0?'var(--fg)':'var(--muted-fg)')+'">'+m+'</div>';
+  });
+  html+='</div></div>';
 
-  // Death screen
-  document.getElementById('deathScreen').className=p.alive?'':'show';
+  // Menu buttons
+  html+='<div class="menu-btns" style="'+(isMobile?'top:8px;right:8px;flex-direction:column':'top:8px;right:140px;flex-direction:row')+'">';
+  html+='<button class="menu-btn'+(state.showInventory?' active':'')+'" onclick="toggleInventory()">🎒 <span class="menu-shortcut">[I]</span></button>';
+  if(inSafe){
+    html+='<button class="menu-btn'+(state.showShop?' active':'')+'" onclick="toggleShop()">🏪 <span class="menu-shortcut">[B]</span></button>';
+    html+='<button class="menu-btn'+(state.showQuest?' active':'')+'" onclick="toggleQuest()">📜 <span class="menu-shortcut">[J]</span></button>';
+  }
+  // Auto-sell toggle
+  html+='<button class="menu-btn'+(p.autoSell.common||p.autoSell.uncommon?' active':'')+'" onclick="toggleAutoSellPanel()" title="Otomatik Satış">🔄 <span class="menu-shortcut">[T]</span></button>';
+  html+='</div>';
 
   // Quest tracker
-  const qt=document.getElementById('questTracker');
-  if(p.quest&&!p.quest.turnedIn){qt.style.display='';document.getElementById('qtName').textContent=p.quest.name;document.getElementById('qtCount').textContent=p.quest.curCount+'/'+p.quest.targetCount;}
-  else qt.style.display='none';
-}
+  if(p.activeQuest&&!p.activeQuest.turnedIn){
+    const q=p.activeQuest;
+    html+='<div class="quest-tracker"><div class="tracker-card"><span class="tracker-name">'+q.name+'</span><span class="tracker-count">'+q.currentCount+'/'+q.targetCount+'</span></div></div>';
+  }
 
-function setBar(barId,textId,val,max,label){
-  const pct=Math.max(0,Math.min(100,(val/max)*100));
-  document.getElementById(barId).style.width=pct+'%';
-  document.getElementById(textId).textContent=Math.floor(val)+'/'+max+' '+label;
-}
-
-function renderSkillBar(){
-  const p=state.player,sb=document.getElementById('skillBar');
-  const avail=p.skills.filter(s=>s.unlock<=p.level);
-  let html='';
+  // Skill bar
+  const avail=p.skills.filter(s=>s.unlockLevel<=p.level);
+  html+='<div class="skill-bar" style="'+(isMobile?'bottom:16px;right:16px;flex-direction:column':'bottom:16px;left:50%;transform:translateX(-50%);flex-direction:row')+'">';
   avail.forEach(sk=>{
-    const onCd=sk.curCd>0,noMana=p.stats.mp<sk.mana,noPow=sk.needsPower&&p.powerBar<p.maxPowerBar;
-    const dis=onCd||noMana||noPow;
-    const cdPct=onCd?(sk.curCd/sk.cd)*100:0;
-    html+='<button class="skill-btn'+(dis?' disabled':'')+(sk.needsPower&&!noPow?' glow-pulse':'')+'" onclick="useSkill(\''+sk.id+'\')">';
+    const onCd=sk.currentCooldown>0;const noMana=p.stats.mp<sk.manaCost;
+    const noPwr=sk.requiresPowerBar&&p.powerBar<p.maxPowerBar;
+    const dis=onCd||noMana||noPwr;
+    const cdPct=onCd?(sk.currentCooldown/sk.cooldown)*100:0;
+    const cls='skill-btn'+(dis?' disabled':'')+(sk.requiresPowerBar&&!noPwr?' ultimate':'');
+    html+='<button class="'+cls+'" onclick="useSkill(\''+sk.id+'\')"><span class="skill-icon">'+sk.icon+'</span>';
     if(onCd)html+='<div class="skill-cd" style="clip-path:inset('+(100-cdPct)+'% 0 0 0)"></div>';
-    html+='<span class="skill-icon">'+sk.icon+'</span>';
-    html+='<span class="skill-key">'+(onCd?Math.ceil(sk.curCd)+'s':'['+sk.key+']')+'</span>';
-    if(sk.mana>0)html+='<span class="skill-mana">'+sk.mana+'</span>';
+    html+='<span class="skill-key">'+(onCd?Math.ceil(sk.currentCooldown)+'s':'['+sk.key+']')+'</span>';
+    if(sk.manaCost>0)html+='<span class="skill-mana">'+sk.manaCost+'</span>';
     html+='</button>';
   });
-  // Potions
-  const hpCount=p.inventory.filter(i=>i&&i.type==='hp_potion').length;
-  const mpCount=p.inventory.filter(i=>i&&i.type==='mp_potion').length;
-  html+='<div style="display:flex;gap:6px;margin-left:16px;">';
+  const hpCount=p.inventory.filter(i=>i?.type==='hp_potion').length;
+  const mpCount=p.inventory.filter(i=>i?.type==='mp_potion').length;
+  html+='<div style="display:flex;gap:8px;margin-left:16px">';
   html+='<button class="potion-btn'+(hpCount===0?' disabled':'')+'" onclick="useSkill(\'potion_hp\')"><span class="potion-icon">❤️</span><span class="potion-count">'+hpCount+'x'+(isMobile?'':' [Q]')+'</span></button>';
   html+='<button class="potion-btn'+(mpCount===0?' disabled':'')+'" onclick="useSkill(\'potion_mp\')"><span class="potion-icon">💙</span><span class="potion-count">'+mpCount+'x'+(isMobile?'':' [E]')+'</span></button>';
-  html+='</div>';
-  sb.innerHTML=html;
-}
-
-function renderMenuBtns(){
-  const inSafe=dist(state.player.pos,{x:0,y:0})<SAFE_ZONE.radius;
-  let html='<button class="menu-btn" onclick="togglePanel(\'inv\')">🎒 <span class="shortcut">[I]</span></button>';
-  if(inSafe){
-    html+='<button class="menu-btn" onclick="togglePanel(\'shop\')">🏪 <span class="shortcut">[B]</span></button>';
-    html+='<button class="menu-btn" onclick="togglePanel(\'quest\')">📜 <span class="shortcut">[J]</span></button>';
-  }
-  document.getElementById('menuBtns').innerHTML=html;
-}
-
-function togglePanel(type){
-  if(type==='inv'){showInventory=!showInventory;showShop=false;showQuest=false;}
-  else if(type==='shop'){showShop=!showShop;showInventory=false;showQuest=false;}
-  else if(type==='quest'){showQuest=!showQuest;showInventory=false;showShop=false;}
-  renderPanel();
-}
-
-function renderPanel(){
-  const pc=document.getElementById('panelContainer');
-  if(!showInventory&&!showShop&&!showQuest){pc.innerHTML='';return;}
-  const p=state.player;
-  let html='<div class="panel-overlay" onclick="if(event.target===this){showInventory=showShop=showQuest=false;renderPanel();}"><div class="panel">';
-
-  if(showInventory||showShop){
-    html+='<div class="panel-header"><h2>'+(showShop?'🏪 Market':'🎒 Envanter')+'</h2><div style="display:flex;align-items:center;gap:10px;"><span class="gold-display">💰 '+p.gold+'G</span><button class="close-btn" onclick="showInventory=showShop=false;renderPanel()">✕</button></div></div>';
-    // Equip slots
-    html+='<div class="equip-slots">';
-    html+=eqSlotHTML('Kılıç',p.eqSword);
-    html+=eqSlotHTML('Zırh',p.eqArmor);
-    html+='</div>';
-
-    if(showShop){
-      SHOP_ITEMS.forEach((it,i)=>{
-        html+='<div class="shop-item"><div class="info"><span class="icon">'+it.icon+'</span><div><span class="name r-'+it.rarity+'">'+it.name+'</span><div class="stats">';
-        if(it.atk>0)html+='⚔️+'+it.atk+' ';if(it.def>0)html+='🛡️+'+it.def+' ';if(it.heal>0)html+='❤️+'+it.heal+' ';if(it.mana>0)html+='💙+'+it.mana;
-        html+='</div></div></div><button class="buy-btn" '+(p.gold<it.value?'disabled':'')+' onclick="buyItem(SHOP_ITEMS['+i+']);renderPanel();">'+it.value+'G</button></div>';
-      });
-    }else{
-      // Sell all trash
-      const tc=p.inventory.filter(i=>i&&i.type==='trash').length;
-      const tv=p.inventory.filter(i=>i&&i.type==='trash').reduce((s,i)=>s+(i?i.value:0),0);
-      if(tc>0)html+='<button class="sell-trash-btn" onclick="sellAllTrash();renderPanel();">🗑️ Tüm Çöpleri Sat ('+tc+' eşya = '+tv+'G)</button>';
-      html+='<div class="inv-grid">';
-      for(let i=0;i<INV_SIZE;i++){
-        const it=p.inventory[i];
-        if(!it){html+='<div class="inv-slot empty"></div>';continue;}
-        html+='<div class="inv-slot" title="'+it.name+'\nDeğer: '+it.value+'G">';
-        if(it.locked)html+='<span class="lock-badge">🔒</span>';
-        html+='<span class="item-icon">'+it.icon+'</span>';
-        html+='<span class="item-name r-'+it.rarity+'">'+it.name.slice(0,8)+'</span>';
-        html+='<div class="actions">';
-        if((it.type==='sword'||it.type==='armor')&&!it.equipped)html+='<button class="equip-btn" onclick="event.stopPropagation();equipItem('+i+');renderPanel();">E</button>';
-        if(!it.locked)html+='<button class="sell-btn" onclick="event.stopPropagation();sellItem('+i+');renderPanel();">S</button>';
-        html+='<button class="lock-btn" onclick="event.stopPropagation();lockItem('+i+');renderPanel();">'+(it.locked?'🔓':'🔒')+'</button>';
-        html+='</div></div>';
-      }
-      html+='</div>';
-    }
-  }else if(showQuest){
-    html+='<div class="panel-header"><h2>📜 Görevler</h2><button class="close-btn" onclick="showQuest=false;renderPanel()">✕</button></div>';
-    const q=p.quest;
-    if(q&&!q.turnedIn){
-      html+='<div class="quest-box"><h3>'+q.name+'</h3><p>'+q.desc+'</p>';
-      html+='<div class="quest-progress"><div class="track"><div class="fill" style="width:'+Math.min(100,(q.curCount/q.targetCount)*100)+'%"></div></div><span class="count">'+q.curCount+'/'+q.targetCount+'</span></div>';
-      html+='<div class="quest-reward">Ödül: ✨'+q.rExp+' EXP | 💰'+q.rGold+'G';
-      if(q.rItem)html+=' | <span class="r-'+q.rItem.rarity+'">'+q.rItem.icon+' '+q.rItem.name+'</span>';
-      html+='</div>';
-      if(q.completed)html+='<button class="quest-btn" onclick="turnInQuest();renderPanel();">✅ Görevi Teslim Et</button>';
-      html+='</div>';
-    }else{
-      if(!window._availQuest)window._availQuest=genQuest();
-      const aq=window._availQuest;
-      html+='<p style="font-size:11px;color:var(--muted-fg);margin-bottom:12px;">Görevci NPC yeni bir görev sunuyor:</p>';
-      html+='<div class="quest-box"><h3>'+aq.name+'</h3><p>'+aq.desc+'</p>';
-      html+='<div class="quest-reward">Ödül: ✨'+aq.rExp+' EXP | 💰'+aq.rGold+'G';
-      if(aq.rItem)html+=' | <span class="r-'+aq.rItem.rarity+'">'+aq.rItem.icon+' '+aq.rItem.name+'</span>';
-      html+='</div></div>';
-      html+='<button class="quest-btn" onclick="acceptQuest(window._availQuest);window._availQuest=genQuest();renderPanel();">📜 Görevi Kabul Et</button>';
-    }
-  }
-
   html+='</div></div>';
-  pc.innerHTML=html;
+
+  // Joystick
+  if(isMobile){
+    html+='<div class="joystick-area" id="joystickArea"><div class="joystick-base"></div><div class="joystick-knob" id="joystickKnob"></div></div>';
+  }
+
+  // Panels
+  if(state.showInventory||state.showShop)html+=renderInventoryPanel();
+  if(state.showQuest)html+=renderQuestPanel();
+  if(state.showAutoSell)html+=renderAutoSellPanel();
+
+  // Death
+  if(!p.isAlive){
+    html+='<div class="death-overlay"><div style="text-align:center"><div class="death-title">💀 ÖLDÜN</div><div class="death-sub">Güvenli bölgede yeniden doğacaksın.</div><button class="respawn-btn" onclick="respawn()">🔄 Yeniden Doğ</button></div></div>';
+  }
+
+  // KB hints
+  if(!isMobile){
+    html+='<div class="kb-hints"><div class="kb-card"><div>WASD: Hareket | 1-6: Yetenekler</div><div>Q: Can Potu | E: Mana Potu</div><div>I: Envanter | B: Market | J: Görev | T: Oto-Satış</div></div></div>';
+  }
+
+  uiRoot.innerHTML=html;
+  if(isMobile)setupJoystick();
 }
 
-function eqSlotHTML(label,item){
-  let h='<div class="equip-slot"><div class="label">'+label+'</div>';
-  if(item){h+='<span class="icon">'+item.icon+'</span><div class="name r-'+item.rarity+'">'+item.name+'</div><div class="bonus">';
-    if(item.atk>0)h+='⚔️+'+item.atk+' ';if(item.def>0)h+='🛡️+'+item.def;h+='</div>';}
-  else h+='<span style="color:var(--muted-fg);font-size:11px;">Boş</span>';
+function bar(val,max,cls,label,icon){
+  const pct=Math.max(0,Math.min(100,(val/max)*100));
+  return '<div class="bar-row"><span class="bar-icon">'+icon+'</span><div class="bar-track '+cls+'"><div class="bar-fill" style="width:'+pct+'%"></div><span class="bar-text">'+Math.floor(val)+'/'+max+' '+label+'</span></div></div>';
+}
+
+function renderAutoSellPanel(){
+  const p=state.player;let h='';
+  h+='<div class="panel-overlay" onclick="if(event.target===this){state.showAutoSell=false;renderUI()}"><div class="panel" style="max-width:340px">';
+  h+='<div class="panel-header"><h2>🔄 Otomatik Satış</h2><button class="close-btn" onclick="state.showAutoSell=false;renderUI()">✕</button></div>';
+  h+='<p style="font-size:10px;color:var(--muted-fg);margin-bottom:12px">Seçilen nadirlikteki düşen eşyalar otomatik olarak satılır. Kilitli eşyalar etkilenmez.</p>';
+  
+  RARITY_ORDER.forEach(r=>{
+    if(r==='legendary')return; // legendary never auto-sell
+    const active=p.autoSell[r]||false;
+    h+='<div class="auto-sell-row"><span class="auto-sell-label"><span class="rarity-'+r+'">● '+r.charAt(0).toUpperCase()+r.slice(1)+'</span></span>';
+    h+='<button class="auto-sell-btn'+(active?' active':'')+'" onclick="toggleAutoSell(\''+r+'\')">'+
+      (active?'✅ AÇIK':'❌ KAPALI')+'</button></div>';
+  });
+  h+='</div></div>';return h;
+}
+
+function toggleAutoSellPanel(){
+  state.showAutoSell=!state.showAutoSell;
+  state.showInventory=false;state.showShop=false;state.showQuest=false;
+  renderUI();
+}
+function toggleAutoSell(rarity){
+  state.player.autoSell[rarity]=!state.player.autoSell[rarity];
+  renderUI();
+}
+
+function renderInventoryPanel(){
+  const p=state.player;let h='';
+  h+='<div class="panel-overlay" onclick="if(event.target===this)closePanel()"><div class="panel">';
+  h+='<div class="panel-header"><h2>'+(state.showShop?'🏪 Market':'🎒 Envanter')+'</h2><div style="display:flex;align-items:center;gap:8px"><span class="gold-display">💰 '+p.gold+'G</span><button class="close-btn" onclick="closePanel()">✕</button></div></div>';
+  h+='<div class="equip-row">'+equipSlot('Kılıç',p.equippedSword)+equipSlot('Zırh',p.equippedArmor)+'</div>';
+  if(state.showShop){
+    SHOP_ITEMS.forEach((item,i)=>{
+      h+='<div class="shop-item"><div class="shop-info"><span class="shop-icon">'+item.icon+'</span><div><div class="shop-name rarity-'+item.rarity+'">'+item.name+'</div><div class="shop-stats">';
+      if(item.attackBonus>0)h+='⚔️+'+item.attackBonus+' ';if(item.defenseBonus>0)h+='🛡️+'+item.defenseBonus+' ';
+      if(item.healAmount>0)h+='❤️+'+item.healAmount+' ';if(item.manaAmount>0)h+='💙+'+item.manaAmount;
+      h+='</div></div></div><button class="buy-btn '+(p.gold>=item.value?'can-buy':'no-buy')+'" onclick="buyItem('+i+')">'+item.value+'G</button></div>';
+    });
+  }else{
+    const trashItems=p.inventory.filter(i=>i?.type==='trash'&&!i.locked);
+    const trashVal=trashItems.reduce((s,i)=>s+(i?.value??0),0);
+    if(trashItems.length>0)h+='<button class="trash-btn" onclick="sellAllTrash()">🗑️ Tüm Çöpleri Sat ('+trashItems.length+' = '+trashVal+'G)</button>';
+    h+='<div class="inv-grid">';
+    p.inventory.forEach((item,i)=>{
+      h+='<div class="inv-slot'+(item?.equipped?' equipped':'')+'">';
+      if(item){
+        h+='<span class="item-icon">'+item.icon+'</span><span class="item-name rarity-'+item.rarity+'">'+item.name.slice(0,8)+'</span>';
+        if(item.locked)h+='<span class="lock-icon">🔒</span>';
+        h+='<div class="inv-actions">';
+        if((item.type==='sword'||item.type==='armor')&&!item.equipped)h+='<button class="act-equip" onclick="event.stopPropagation();equipItem('+i+')">E</button>';
+        if(!item.locked)h+='<button class="act-sell" onclick="event.stopPropagation();sellItem('+i+')">S</button>';
+        h+='<button class="act-lock" onclick="event.stopPropagation();lockItem('+i+')">'+(item.locked?'🔓':'🔒')+'</button></div>';
+      }
+      h+='</div>';
+    });
+    h+='</div>';
+  }
+  h+='</div></div>';return h;
+}
+
+function equipSlot(label,item){
+  let h='<div class="equip-slot"><div class="equip-label">'+label+'</div>';
+  if(item){
+    h+='<div class="equip-icon">'+item.icon+'</div><div class="equip-name rarity-'+item.rarity+'">'+item.name+'</div>';
+    h+='<div class="equip-stats">';if(item.attackBonus>0)h+='⚔️+'+item.attackBonus+' ';if(item.defenseBonus>0)h+='🛡️+'+item.defenseBonus;h+='</div>';
+  }else h+='<span style="color:var(--muted-fg);font-size:11px">Boş</span>';
   return h+'</div>';
 }
 
-// === LAYOUT ===
-function layoutUI(){
-  const sb=document.getElementById('skillBar');
-  const mb=document.getElementById('menuBtns');
-  const jk=document.getElementById('joystick');
-  const hints=document.getElementById('pcHints');
-  if(isMobile){
-    sb.style.cssText='bottom:16px;right:16px;flex-direction:column;';
-    mb.style.cssText='top:8px;right:8px;flex-direction:column;';
-    jk.style.display='block';hints.style.display='none';
+function renderQuestPanel(){
+  const p=state.player;const q=p.activeQuest;let h='';
+  h+='<div class="panel-overlay" onclick="if(event.target===this)closePanel()"><div class="panel">';
+  h+='<div class="panel-header"><h2>📜 Görevler</h2><button class="close-btn" onclick="closePanel()">✕</button></div>';
+  if(q&&!q.turnedIn){
+    h+='<div class="quest-block"><div class="quest-title">'+q.name+'</div><div class="quest-desc">'+q.description+'</div>';
+    const qpct=Math.min(100,(q.currentCount/q.targetCount)*100);
+    h+='<div class="quest-progress"><div class="quest-bar"><div class="quest-bar-fill" style="width:'+qpct+'%"></div></div><span class="quest-count">'+q.currentCount+'/'+q.targetCount+'</span></div>';
+    h+='<div class="quest-rewards">Ödül: ✨'+q.rewardExp+' EXP | 💰'+q.rewardGold+'G';
+    if(q.rewardItem)h+=' | <span class="rarity-'+q.rewardItem.rarity+'">'+q.rewardItem.icon+' '+q.rewardItem.name+'</span>';
+    h+='</div></div>';
+    if(q.completed&&!q.turnedIn)h+='<button class="quest-turnin-btn" onclick="turnInQuest()">✅ Görevi Teslim Et</button>';
   }else{
-    sb.style.cssText='bottom:16px;left:50%;transform:translateX(-50%);flex-direction:row;';
-    mb.style.cssText='top:8px;right:120px;flex-direction:row;';
-    jk.style.display='none';hints.style.display='block';
+    if(!window._availQuest)window._availQuest=generateQuest();
+    const aq=window._availQuest;
+    h+='<p style="font-size:11px;color:var(--muted-fg);margin-bottom:8px">Görevci NPC yeni bir görev sunuyor:</p>';
+    h+='<div class="quest-block"><div class="quest-title">'+aq.name+'</div><div class="quest-desc">'+aq.description+'</div>';
+    h+='<div class="quest-rewards">Ödül: ✨'+aq.rewardExp+' EXP | 💰'+aq.rewardGold+'G';
+    if(aq.rewardItem)h+=' | <span class="rarity-'+aq.rewardItem.rarity+'">'+aq.rewardItem.icon+' '+aq.rewardItem.name+'</span>';
+    h+='</div></div>';
+    h+='<button class="quest-accept-btn" onclick="acceptQuest()">📜 Görevi Kabul Et</button>';
   }
+  h+='</div></div>';return h;
 }
 
-// === KEYBOARD ===
-window.addEventListener('keydown',e=>{
-  if(isMobile)return;
-  keys.add(e.key.toLowerCase());
-  switch(e.key){
-    case '1':useSkill('basic_attack');break;case '2':useSkill('power_strike');break;
-    case '3':useSkill('sword_spin');break;case '4':useSkill('dragon_strike');break;
-    case 'q':useSkill('potion_hp');break;case 'e':useSkill('potion_mp');break;
-    case 'i':togglePanel('inv');break;case 'b':togglePanel('shop');break;case 'j':togglePanel('quest');break;
-  }
-});
-window.addEventListener('keyup',e=>{keys.delete(e.key.toLowerCase());});
+// ==================== ACTIONS ====================
+function toggleInventory(){state.showInventory=!state.showInventory;state.showShop=false;state.showQuest=false;state.showAutoSell=false;renderUI()}
+function toggleShop(){state.showShop=!state.showShop;state.showInventory=false;state.showQuest=false;state.showAutoSell=false;renderUI()}
+function toggleQuest(){state.showQuest=!state.showQuest;state.showInventory=false;state.showShop=false;state.showAutoSell=false;renderUI()}
+function closePanel(){state.showInventory=false;state.showShop=false;state.showQuest=false;state.showAutoSell=false;renderUI()}
 
-// === JOYSTICK ===
-(function setupJoystick(){
-  const el=document.getElementById('joystick');
+function equipItem(i){
+  const p=state.player;const item=p.inventory[i];if(!item)return;
+  if(item.type==='sword'){
+    if(p.equippedSword){p.equippedSword.equipped=false;p.inventory[i]=p.equippedSword}else p.inventory[i]=null;
+    item.equipped=true;p.equippedSword=item;
+  }else if(item.type==='armor'){
+    if(p.equippedArmor){p.equippedArmor.equipped=false;p.inventory[i]=p.equippedArmor}else p.inventory[i]=null;
+    item.equipped=true;p.equippedArmor=item;
+  }
+  recalcStats(p);state.combatLog.push('🔧 '+item.name+' kuşanıldı!');trimLog();renderUI();
+}
+
+function sellItem(i){
+  const p=state.player;const item=p.inventory[i];if(!item||item.locked)return;
+  p.gold+=item.value;state.combatLog.push('💰 '+item.name+' satıldı: '+item.value+'G');
+  p.inventory[i]=null;trimLog();renderUI();
+}
+
+function sellAllTrash(){
+  const p=state.player;let total=0;
+  p.inventory.forEach((item,i)=>{if(item?.type==='trash'&&!item.locked){total+=item.value;p.inventory[i]=null}});
+  if(total>0){p.gold+=total;state.combatLog.push('🗑️ Tüm çöpler satıldı: '+total+'G')}
+  trimLog();renderUI();
+}
+
+function lockItem(i){const item=state.player.inventory[i];if(item)item.locked=!item.locked;renderUI()}
+
+function buyItem(shopIdx){
+  const p=state.player;const item=SHOP_ITEMS[shopIdx];
+  if(p.gold<item.value){state.combatLog.push('⚠️ Yeterli altın yok!');trimLog();renderUI();return}
+  const newItem={...item,id:uid()};
+  if(!addToInventory(p,newItem)){state.combatLog.push('⚠️ Envanter dolu!');trimLog();renderUI();return}
+  p.gold-=item.value;state.combatLog.push('🛒 '+newItem.name+' satın alındı!');trimLog();renderUI();
+}
+
+function acceptQuest(){
+  if(!window._availQuest)return;
+  state.player.activeQuest=window._availQuest;
+  state.combatLog.push('📜 Görev kabul edildi: '+window._availQuest.name);
+  window._availQuest=null;state.showQuest=false;trimLog();renderUI();
+}
+
+function turnInQuest(){
+  const p=state.player;const q=p.activeQuest;if(!q||!q.completed)return;
+  p.exp+=q.rewardExp;p.gold+=q.rewardGold;
+  if(q.rewardItem){if(addToInventory(p,q.rewardItem))state.combatLog.push('🎁 '+q.rewardItem.name+' ödül olarak alındı!');
+    else state.combatLog.push('⚠️ Envanter dolu!')}
+  state.combatLog.push('✅ '+q.name+' tamamlandı! +'+q.rewardExp+'EXP +'+q.rewardGold+'G');
+  q.turnedIn=true;p.activeQuest=null;checkLevelUp(p,state.combatLog);
+  addParticle(p.position.x,p.position.y,'#fbbf24',15,25,1,3);
+  state.showQuest=false;trimLog();renderUI();
+}
+
+function respawn(){
+  const p=state.player;p.isAlive=true;p.stats.hp=p.stats.maxHp;p.stats.mp=p.stats.maxMp;
+  p.position={x:0,y:0};p.powerBar=0;
+  state.combatLog.push('🔄 Güvenli bölgede yeniden doğdun!');trimLog();renderUI();
+}
+
+// ==================== JOYSTICK ====================
+function setupJoystick(){
+  const area=document.getElementById('joystickArea');
   const knob=document.getElementById('joystickKnob');
-  const MAX_R=44,DEADZONE=0.12;
-  let active=false;
-
-  function compute(cx2,cy2){
-    const rect=el.getBoundingClientRect();
-    const ccx=rect.left+rect.width/2,ccy=rect.top+rect.height/2;
-    let dx=cx2-ccx,dy=cy2-ccy;
+  if(!area||!knob)return;
+  let active=false;const maxR=40;
+  function update(cx,cy){
+    const rect=area.getBoundingClientRect();
+    const centerX=rect.left+rect.width/2,centerY=rect.top+rect.height/2;
+    let dx=cx-centerX,dy=cy-centerY;
     const d=Math.sqrt(dx*dx+dy*dy);
-    const cd=Math.min(d,MAX_R);
-    if(d>0){dx=(dx/d)*cd;dy=(dy/d)*cd;}
-    knob.style.transition='none';knob.style.transform='translate('+dx+'px,'+dy+'px)';
-    const nd=cd/MAX_R;
-    if(nd<DEADZONE){joystickDir={x:0,y:0};return;}
-    const angle=Math.atan2(dy,dx),mag=(nd-DEADZONE)/(1-DEADZONE);
-    joystickDir={x:Math.cos(angle)*mag,y:Math.sin(angle)*mag};
+    if(d>maxR){dx=(dx/d)*maxR;dy=(dy/d)*maxR}
+    knob.style.left='calc(50% + '+dx+'px - 24px)';knob.style.top='calc(50% + '+dy+'px - 24px)';
+    state.joystickDir={x:dx/maxR,y:dy/maxR};
   }
-  function end(){active=false;knob.style.transition='transform .15s ease-out';knob.style.transform='translate(0,0)';joystickDir={x:0,y:0};}
+  function end(){active=false;knob.style.left='calc(50% - 24px)';knob.style.top='calc(50% - 24px)';
+    knob.style.transition='all .2s';state.joystickDir={x:0,y:0}}
+  area.addEventListener('touchstart',e=>{e.preventDefault();active=true;knob.style.transition='none';update(e.touches[0].clientX,e.touches[0].clientY)},{passive:false});
+  area.addEventListener('touchmove',e=>{e.preventDefault();if(active){knob.style.transition='none';update(e.touches[0].clientX,e.touches[0].clientY)}},{passive:false});
+  area.addEventListener('touchend',end);
+  area.addEventListener('mousedown',e=>{active=true;knob.style.transition='none';update(e.clientX,e.clientY)});
+  area.addEventListener('mousemove',e=>{if(active){knob.style.transition='none';update(e.clientX,e.clientY)}});
+  area.addEventListener('mouseup',end);area.addEventListener('mouseleave',end);
+}
 
-  el.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();active=true;compute(e.touches[0].clientX,e.touches[0].clientY);},{passive:false});
-  el.addEventListener('touchmove',e=>{e.preventDefault();e.stopPropagation();if(active)compute(e.touches[0].clientX,e.touches[0].clientY);},{passive:false});
-  el.addEventListener('touchend',e=>{e.preventDefault();e.stopPropagation();end();},{passive:false});
-  el.addEventListener('touchcancel',e=>{e.preventDefault();end();},{passive:false});
-  el.addEventListener('mousedown',e=>{e.preventDefault();active=true;compute(e.clientX,e.clientY);});
-  el.addEventListener('mousemove',e=>{if(active)compute(e.clientX,e.clientY);});
-  el.addEventListener('mouseup',()=>{if(active)end();});
-  el.addEventListener('mouseleave',()=>{if(active)end();});
+// ==================== KEYBOARD ====================
+if(!isMobile){
+  window.addEventListener('keydown',e=>{
+    keys.add(e.key.toLowerCase());
+    switch(e.key){
+      case '1':useSkill('basic_attack');break;case '2':useSkill('power_strike');break;
+      case '3':useSkill('whirlwind');break;case '4':useSkill('sword_spin');break;
+      case '5':useSkill('heal');break;case '6':useSkill('dragon_strike');break;
+      case 'q':useSkill('potion_hp');break;case 'e':useSkill('potion_mp');break;
+      case 'i':toggleInventory();break;case 'b':toggleShop();break;
+      case 'j':toggleQuest();break;case 't':toggleAutoSellPanel();break;
+    }
+  });
+  window.addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));
+}
 
-  // Deadzone ring visual
-  const dzRing=el.querySelector('.deadzone-ring');
-  const dzPct=DEADZONE*100;
-  dzRing.style.width=dzPct+'%';dzRing.style.height=dzPct+'%';
-  dzRing.style.left=(50-dzPct/2)+'%';dzRing.style.top=(50-dzPct/2)+'%';
-})();
+// ==================== GAME LOOP ====================
+let lastTime=performance.now();
+let uiTimer=0;
+let saveTimer=0;
 
-// === MAIN LOOP ===
-initState();layoutUI();
-let lastTime=performance.now(),saveTimer=0;
+state.showAutoSell=false;
 
 function gameLoop(time){
-  const delta=Math.min((time-lastTime)/1000,0.1);lastTime=time;
+  const delta=Math.min((time-lastTime)/1000,.1);
+  lastTime=time;
 
-  // KB movement
   if(!isMobile){
-    const dir={x:0,y:0};
-    if(keys.has('w')||keys.has('arrowup'))dir.y=-1;
-    if(keys.has('s')||keys.has('arrowdown'))dir.y=1;
-    if(keys.has('a')||keys.has('arrowleft'))dir.x=-1;
-    if(keys.has('d')||keys.has('arrowright'))dir.x=1;
-    if(dir.x!==0||dir.y!==0){const l=Math.sqrt(dir.x*dir.x+dir.y*dir.y);movePlayer({x:dir.x/l,y:dir.y/l});}
+    let dx=0,dy=0;
+    if(keys.has('w')||keys.has('arrowup'))dy=-1;
+    if(keys.has('s')||keys.has('arrowdown'))dy=1;
+    if(keys.has('a')||keys.has('arrowleft'))dx=-1;
+    if(keys.has('d')||keys.has('arrowright'))dx=1;
+    if(dx||dy){const len=Math.sqrt(dx*dx+dy*dy);movePlayer(dx/len,dy/len)}
+  }else{
+    if(state.joystickDir.x||state.joystickDir.y)movePlayer(state.joystickDir.x,state.joystickDir.y);
   }
-
-  // Joystick movement
-  if(isMobile&&(joystickDir.x!==0||joystickDir.y!==0)){movePlayer(joystickDir);}
 
   tick(delta);
   drawGame();
-  updateHUD();
-  renderSkillBar();
-  renderMenuBtns();
 
-  // Auto-save
-  saveTimer+=delta;if(saveTimer>=10){saveTimer=0;saveGame();}
+  uiTimer+=delta;
+  if(uiTimer>.15){uiTimer=0;renderUI()}
+
+  saveTimer+=delta;
+  if(saveTimer>10){saveTimer=0;saveGame(state)}
 
   requestAnimationFrame(gameLoop);
 }
+
+renderUI();
 requestAnimationFrame(gameLoop);
 </script>
 </body>
