@@ -1243,6 +1243,7 @@ function gameLoop(time){
   const delta=Math.min((time-lastTime)/1000,.1);
   lastTime=time;
 
+  // Movement
   if(!isMobile){
     let dx=0,dy=0;
     if(keys.has('w')||keys.has('arrowup'))dy=-1;
