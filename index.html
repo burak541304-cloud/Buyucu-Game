@@ -1035,7 +1035,9 @@ function renderUI(){
   }
 
   uiRoot.innerHTML=html;
-  if(isMobile)setupJoystick();
+   if (isMobile) {
+   setupJoystick();  
+  }
 }
 
 function bar(val,max,cls,label,icon){
@@ -1211,69 +1213,39 @@ function setupJoystick(){
   let active = false;
   const maxR = 40;
 
-  // Merkeze sıfırla
-  function resetJoy() {
-    active = false;
-    knob.style.transition = 'all .2s';
-    knob.style.transform = 'translate(-50%, -50%)';
-    state.joystickDir = { x: 0, y: 0 };
-  }
-
   function update(cx, cy) {
     const rect = area.getBoundingClientRect();
     const centerX = rect.left + rect.width / 2;
     const centerY = rect.top + rect.height / 2;
-    
     let dx = cx - centerX;
     let dy = cy - centerY;
     const d = Math.sqrt(dx * dx + dy * dy);
-
-    if (d > maxR) {
-      dx = (dx / d) * maxR;
-      dy = (dy / d) * maxR;
-    }
-
-    knob.style.transition = 'none';
+    if (d > maxR) { dx = (dx/d)*maxR; dy = (dy/d)*maxR; }
+    
     knob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
-    state.joystickDir = { x: dx / maxR, y: dy / maxR };
+    state.joystickDir = { x: dx/maxR, y: dy/maxR };
   }
 
-  // --- MOUSE OLAYLARI ---
-  area.addEventListener('mousedown', e => {
-    if (e.button !== 0) return; // Sadece sol tık
-    active = true;
-    update(e.clientX, e.clientY);
-  });
+  function end() {
+    active = false;
+    knob.style.transform = 'translate(-50%, -50%)';
+    state.joystickDir = { x: 0, y: 0 };
+  }
 
-  // Pencere genelinde takip (Alan dışına çıksan da bırakmaz)
-  window.addEventListener('mousemove', e => {
-    if (active) {
-      update(e.clientX, e.clientY);
-    }
-  });
+  // Olayları sadece BİR KEZ ekliyoruz (area üzerinden)
+  area.onmousedown = (e) => { active = true; update(e.clientX, e.clientY); };
+  
+  // Pencere genelindeki hareketleri kontrol altına alıyoruz
+  if (!window.hasJoystickEvents) {
+    window.addEventListener('mousemove', e => { if(active) update(e.clientX, e.clientY); });
+    window.addEventListener('mouseup', end);
+    window.hasJoystickEvents = true; // Tekrar eklenmesini engeller
+  }
 
-  window.addEventListener('mouseup', resetJoy);
-
-  // --- MOBİL OLAYLARI ---
-  area.addEventListener('touchstart', e => {
-    e.preventDefault();
-    active = true;
-    update(e.touches[0].clientX, e.touches[0].clientY);
-  }, {passive: false});
-
-  area.addEventListener('touchmove', e => {
-    e.preventDefault();
-    if (active) update(e.touches[0].clientX, e.touches[0].clientY);
-  }, {passive: false});
-
-  area.addEventListener('touchend', e => {
-    e.preventDefault();
-    resetJoy();
-  }, {passive: false});
-
-  // --- KRİTİK: TARAYICI SÜRÜKLEMESİNİ ENGELLE ---
-  area.addEventListener('dragstart', e => e.preventDefault());
-  area.addEventListener('selectstart', e => e.preventDefault());
+  // Mobil için
+  area.ontouchstart = (e) => { e.preventDefault(); active = true; update(e.touches[0].clientX, e.touches[0].clientY); };
+  area.ontouchmove = (e) => { if(active) update(e.touches[0].clientX, e.touches[0].clientY); };
+  area.ontouchend = end;
 }
 // ==================== KEYBOARD ====================
 if(!isMobile){
