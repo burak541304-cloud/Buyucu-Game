@@ -1192,28 +1192,53 @@ function respawn(){
 }
 
 // ==================== JOYSTICK ====================
-function setupJoystick(){
-  const area=document.getElementById('joystickArea');
-  const knob=document.getElementById('joystickKnob');
-  if(!area||!knob)return;
-  let active=false;const maxR=40;
-  function update(cx,cy){
-    const rect=area.getBoundingClientRect();
-    const centerX=rect.left+rect.width/2,centerY=rect.top+rect.height/2;
-    let dx=cx-centerX,dy=cy-centerY;
-    const d=Math.sqrt(dx*dx+dy*dy);
-    if(d>maxR){dx=(dx/d)*maxR;dy=(dy/d)*maxR}
-    knob.style.left='calc(50% + '+dx+'px - 24px)';knob.style.top='calc(50% + '+dy+'px - 24px)';
-    state.joystickDir={x:dx/maxR,y:dy/maxR};
-  }
-  function end(){active=false;knob.style.left='calc(50% - 24px)';knob.style.top='calc(50% - 24px)';
-    knob.style.transition='all .2s';state.joystickDir={x:0,y:0}}
-  area.addEventListener('touchstart',e=>{e.preventDefault();active=true;knob.style.transition='none';update(e.touches[0].clientX,e.touches[0].clientY)},{passive:false});
-  area.addEventListener('touchmove',e=>{e.preventDefault();if(active){knob.style.transition='none';update(e.touches[0].clientX,e.touches[0].clientY)}},{passive:false});
-  area.addEventListener('touchend',end);
-  area.addEventListener('mousedown',e=>{active=true;knob.style.transition='none';update(e.clientX,e.clientY)});
-  area.addEventListener('mousemove',e=>{if(active){knob.style.transition='none';update(e.clientX,e.clientY)}});
-  area.addEventListener('mouseup',end);area.addEventListener('mouseleave',end);
+// Mobil Joystick Düzeltme Kodları
+const joyArea = document.querySelector('.joystick-area');
+const joyKnob = document.querySelector('.joystick-knob');
+
+if (isMobile && joyArea && joyKnob) {
+    const areaRect = joyArea.getBoundingClientRect();
+    const centerX = areaRect.width / 2;
+    const centerY = areaRect.height / 2;
+    const maxDist = areaRect.width / 2;
+
+    const handleTouch = (e) => {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const x = touch.clientX - areaRect.left;
+        const y = touch.clientY - areaRect.top;
+
+        // Merkezden uzaklık
+        let dx = x - centerX;
+        let dy = y - centerY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        // Maksimum sınırı aşma
+        if (distance > maxDist) {
+            dx *= maxDist / distance;
+            dy *= maxDist / distance;
+        }
+
+        // Knob'u (topu) görsel olarak hareket ettir
+        joyKnob.style.transform = `translate(${dx}px, ${dy}px)`;
+
+        // Oyunun hareket yönünü güncelle (-1 ile 1 arası normalize et)
+        state.joystickDir = {
+            x: dx / maxDist,
+            y: dy / maxDist
+        };
+    };
+
+    const resetJoy = () => {
+        joyKnob.style.transform = 'translate(0, 0)';
+        state.joystickDir = { x: 0, y: 0 };
+    };
+
+    joyArea.addEventListener('touchstart', handleTouch);
+    joyArea.addEventListener('touchmove', handleTouch);
+    joyArea.addEventListener('touchend', resetJoy);
+    joyArea.addEventListener('touchcancel', resetJoy);
+
 }
 
 // ==================== KEYBOARD ====================
