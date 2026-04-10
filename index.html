@@ -58,16 +58,15 @@ canvas{display:block;position:absolute;top:0;left:0}
 .joystick-base{position:absolute;inset:0;border-radius:50%;background:rgba(26,34,51,.4);border:2px solid rgba(30,42,58,.5)}
 .joystick-knob {
   position: absolute;
-  width: 48px; /* Boyutu koru */
+  width: 48px; 
   height: 48px;
   background: var(--primary);
   border-radius: 50%;
   left: 50%;
   top: 50%;
-  transform: translate(-50%, -50%); /* Bu satır başlangıçta tam merkezde tutar */
+  transform: translate(-50%, -50%); /* Bu çok önemli, başlangıcı merkeze sabitler */
+  margin: 0 !important; /* Eski margin-left ve margin-top değerlerini iptal et */
   pointer-events: none;
-  z-index: 1001;
-  margin: 0 !important; /* Varsa marginleri sıfırla */
 }
 .panel-overlay{position:absolute;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;background:rgba(13,20,32,.8);backdrop-filter:blur(4px)}
 .panel{background:var(--card-solid);border:1px solid var(--border);border-radius:8px;padding:16px;width:90vw;max-width:480px;max-height:80vh;overflow-y:auto}
@@ -1210,29 +1209,36 @@ function setupJoystick(){
   if(!area||!knob)return;
   let active=false;const maxR=40;
   function update(cx, cy) {
-   const rect = area.getBoundingClientRect();
-   // Merkezin tam koordinatları
+    const rect = area.getBoundingClientRect();
+  
+   // Joystick'in tam orta noktasının EKRANDAKİ koordinatları
    const centerX = rect.left + rect.width / 2;
    const centerY = rect.top + rect.height / 2;
   
-   // Dokunulan yer ile merkez arasındaki fark
+   // Dokunulan yerin merkeze olan uzaklığı
    let dx = cx - centerX;
    let dy = cy - centerY;
   
    const d = Math.sqrt(dx * dx + dy * dy);
 
+   // maxR (40px) dışına çıkmasını engelle
    if (d > maxR) {
-    dx = (dx / d) * maxR;
-    dy = (dy / d) * maxR;
+     dx = (dx / d) * maxR;
+     dy = (dy / d) * maxR;
    }
 
-   // GÖRSEL DÜZELTME: Calc ve margin karmaşasını bitiriyoruz
+   // GÖRSEL: Topu hareket ettir (Burada calc ve -24px karmaşasını sildik)
    knob.style.left = '50%';
-    knob.style.top = '50%';
-    knob.style.transition = 'none';
-    knob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
-
-    state.joystickDir = { x: dx / maxR, y: dy / maxR };
+   knob.style.top = '50%';
+   knob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+  
+   // HAREKET: Karakterin yönünü belirle
+   // Sadece dx veya dy gönderirsen karakter tek yöne gider.
+   // İkisini birden gönderdiğimiz için artık her yöne (çapraz dahil) gidecek.
+   state.joystickDir = { 
+    x: dx / maxR, 
+    y: dy / maxR 
+   };
   }
   function end() {
     active = false;
