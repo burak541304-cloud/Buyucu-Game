@@ -54,9 +54,21 @@ canvas{display:block;position:absolute;top:0;left:0}
 .potion-btn.disabled{opacity:.3;cursor:not-allowed}
 .potion-icon{font-size:18px}.potion-count{font-size:7px;color:var(--muted-fg)}
 @keyframes pulse{0%,100%{box-shadow:0 0 5px rgba(245,158,11,.3)}50%{box-shadow:0 0 15px rgba(245,158,11,.6)}}
-.joystick-area{position:absolute;width:100px;height:100px;z-index:100;pointer-events: none;display: none}
-.joystick-base{position:absolute;inset:0;border-radius:50%;background:rgba(255, 255, 255, 0.1);border:2px solid rgba(255, 255, 255, 0.2);border: 2px solid rgba(255, 255, 255, 0.2);backdrop-filter: blur(4px);}
-.joystick-knob{position:absolute;top: 50%;left: 50%;width:40px;height:40px;margin: -20px 0 0 -20px;border-radius:50%;background: var(--primary);box-shadow: 0 0 15px var(--primary);transition:none}
+.joystick-area{position:absolute;bottom:32px;left:32px;width:112px;height:112px;z-index:20}
+.joystick-base{position:absolute;inset:0;border-radius:50%;background:rgba(26,34,51,.4);border:2px solid rgba(30,42,58,.5)}
+.joystick-knob {
+  position: absolute;
+  width: 48px; /* Boyutu koru */
+  height: 48px;
+  background: var(--primary);
+  border-radius: 50%;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%); /* Bu satır başlangıçta tam merkezde tutar */
+  pointer-events: none;
+  z-index: 1001;
+  margin: 0 !important; /* Varsa marginleri sıfırla */
+}
 .panel-overlay{position:absolute;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;background:rgba(13,20,32,.8);backdrop-filter:blur(4px)}
 .panel{background:var(--card-solid);border:1px solid var(--border);border-radius:8px;padding:16px;width:90vw;max-width:480px;max-height:80vh;overflow-y:auto}
 .panel h2{font-family:'Cinzel',serif;color:var(--primary);font-size:18px;font-weight:700}
@@ -1192,52 +1204,57 @@ function respawn(){
 }
 
 // ==================== JOYSTICK ====================
-function setupDynamicJoystick() {
-  const area = document.getElementById('joystickArea');
-  const knob = document.getElementById('joystickKnob');
-  if (!area || !knob) return;
+function setupJoystick(){
+  const area=document.getElementById('joystickArea');
+  const knob=document.getElementById('joystickKnob');
+  if(!area||!knob)return;
+  let active=false;const maxR=40;
+  function update(cx, cy) {
+   const rect = area.getBoundingClientRect();
+   // Merkezin tam koordinatları
+   const centerX = rect.left + rect.width / 2;
+   const centerY = rect.top + rect.height / 2;
+  
+   // Dokunulan yer ile merkez arasındaki fark
+   let dx = cx - centerX;
+   let dy = cy - centerY;
+  
+   const d = Math.sqrt(dx * dx + dy * dy);
 
-  const maxR = 40; // Hareket yarıçapı
+   if (d > maxR) {
+    dx = (dx / d) * maxR;
+    dy = (dy / d) * maxR;
+   }
 
-  window.addEventListener('touchstart', (e) => {
-    const touch = e.touches[0];
-    // Ekranın sadece sol yarısında çalışsın
-    if (touch.clientX < window.innerWidth / 2) {
-      area.style.display = 'block';
-      area.style.left = (touch.clientX - 50) + 'px';
-      area.style.top = (touch.clientY - 50) + 'px';
-      
-      // Başlangıç noktasını state'e kaydet
-      state.joyStart = { x: touch.clientX, y: touch.clientY };
-    }
-  }, { passive: false });
+   // GÖRSEL DÜZELTME: Calc ve margin karmaşasını bitiriyoruz
+   knob.style.left = '50%';
+    knob.style.top = '50%';
+    knob.style.transition = 'none';
+    knob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
 
-  window.addEventListener('touchmove', (e) => {
-    if (!state.joyStart) return;
-    e.preventDefault();
-
-    const touch = e.touches[0];
-    let dx = touch.clientX - state.joyStart.x;
-    let dy = touch.clientY - state.joyStart.y;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-
-    if (dist > maxR) {
-      dx = (dx / dist) * maxR;
-      dy = (dy / dist) * maxR;
-    }
-
-    knob.style.transform = `translate(${dx}px, ${dy}px)`;
-    // Karakter hareketini güncelle
     state.joystickDir = { x: dx / maxR, y: dy / maxR };
-  }, { passive: false });
-
-  window.addEventListener('touchend', () => {
-    area.style.display = 'none';
+  }
+  function end() {
+    active = false;
+    knob.style.transition = 'all .2s'; // Bırakınca merkeze yumuşak dönsün
+    knob.style.transform = 'translate(-50%, -50%)'; // Tam merkeze oturt
     state.joystickDir = { x: 0, y: 0 };
-    state.joyStart = null;
-  });
+  }
+  area.addEventListener('touchstart', e => {
+    e.preventDefault();
+    active = true;
+    update(e.touches[0].clientX, e.touches[0].clientY);
+  }, {passive: false});
+  area.addEventListener('touchmove',e=>{e.preventDefault();if(active){knob.style.transition='none';update(e.touches[0].clientX,e.touches[0].clientY)}},{passive:false});
+  area.addEventListener('touchmove', e => {
+    e.preventDefault();
+    if(active) update(e.touches[0].clientX, e.touches[0].clientY);
+  }, {passive: false});
+  area.addEventListener('touchend', end);
+  area.addEventListener('mousedown', e => { active = true; update(e.clientX, e.clientY); });
+  window.addEventListener('mousemove', e => { if(active) update(e.clientX, e.clientY); });
+  window.addEventListener('mouseup', end);
 }
-
 // ==================== KEYBOARD ====================
 if(!isMobile){
   window.addEventListener('keydown',e=>{
@@ -1265,7 +1282,6 @@ function gameLoop(time){
   const delta=Math.min((time-lastTime)/1000,.1);
   lastTime=time;
 
-  // Movement
   if(!isMobile){
     let dx=0,dy=0;
     if(keys.has('w')||keys.has('arrowup'))dy=-1;
