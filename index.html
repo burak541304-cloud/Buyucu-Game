@@ -126,8 +126,13 @@ canvas{display:block;position:absolute;top:0;left:0}
 <script>
 const RARITY_COLORS={common:'#9ca3af',uncommon:'#22c55e',rare:'#3b82f6',epic:'#a855f7',legendary:'#f59e0b'};
 const SAFE_ZONE={x:0,y:0,radius:30};
-const WORM_ZONE={x:50,y:50};
+const WORM_ZONE={x:60,y:60};
+const FOREST_ZONE={x:-70,y:60};
+const CAVE_ZONE={x:-80,y:-80};
+const VOLCANO_ZONE={x:90,y:-70};
+const ICE_ZONE={x:0,y:-120};
 const INVENTORY_SIZE=20;
+const MAP_LIMIT=250;
 const BASE_STATS={maxHp:150,hp:150,maxMp:50,mp:50,attack:15,defense:10,speed:3};
 const STATS_PER_LEVEL={maxHp:20,maxMp:8,attack:3,defense:2,speed:0.1};
 const EXP_BASE=100,EXP_GROWTH=1.5;
@@ -152,10 +157,20 @@ const SHOP_ITEMS=[
 const QUEST_TEMPLATES=[
   {name:'Solucan Avı',description:'3 solucan öldür.',target:'worm',targetCount:3,rewardExp:150,rewardGold:80,
    rewardItem:{id:'qs1',name:'Solucan Kırıcı',type:'sword',rarity:'rare',value:200,attackBonus:18,defenseBonus:0,healAmount:0,manaAmount:0,locked:true,equipped:false,icon:'🔥'}},
-  {name:'Büyük Tehdit',description:'Boss Solucanı yenilgiye uğrat!',target:'boss',targetCount:1,rewardExp:500,rewardGold:300,
-   rewardItem:{id:'qa1',name:'Ejderha Zırhı',type:'armor',rarity:'epic',value:500,attackBonus:5,defenseBonus:25,healAmount:0,manaAmount:0,locked:true,equipped:false,icon:'🐲'}},
+  {name:'Kurt Avcısı',description:'4 kurt öldür.',target:'wolf',targetCount:4,rewardExp:250,rewardGold:150,
+   rewardItem:{id:'qw1',name:'Kurt Pençesi',type:'sword',rarity:'rare',value:350,attackBonus:22,defenseBonus:3,healAmount:0,manaAmount:0,locked:true,equipped:false,icon:'🐺'}},
+  {name:'İskelet Savaşçı',description:'5 iskelet öldür.',target:'skeleton',targetCount:5,rewardExp:350,rewardGold:200,
+   rewardItem:{id:'qk1',name:'Kemik Zırh',type:'armor',rarity:'epic',value:450,attackBonus:0,defenseBonus:35,healAmount:0,manaAmount:0,locked:true,equipped:false,icon:'💀'}},
+  {name:'Ork Katliamı',description:'4 ork öldür.',target:'orc',targetCount:4,rewardExp:500,rewardGold:300,
+   rewardItem:{id:'qo1',name:'Ork Balta',type:'sword',rarity:'epic',value:700,attackBonus:40,defenseBonus:5,healAmount:0,manaAmount:0,locked:true,equipped:false,icon:'🪓'}},
+  {name:'Ejderha Avcısı',description:'Ejderhayı yenilgiye uğrat!',target:'dragon',targetCount:1,rewardExp:1000,rewardGold:800,
+   rewardItem:{id:'qd1',name:'Ejderha Katili',type:'sword',rarity:'legendary',value:2000,attackBonus:80,defenseBonus:10,healAmount:0,manaAmount:0,locked:true,equipped:false,icon:'🐉'}},
+  {name:'Büyük Tehdit',description:'Herhangi bir Boss yenilgiye uğrat!',target:'boss',targetCount:1,rewardExp:600,rewardGold:400,
+   rewardItem:{id:'qa1',name:'Şampiyon Zırhı',type:'armor',rarity:'epic',value:800,attackBonus:8,defenseBonus:40,healAmount:0,manaAmount:0,locked:true,equipped:false,icon:'👑'}},
+  {name:'Efsanevi Av',description:'Toplam 20 düşman öldür.',target:'any',targetCount:20,rewardExp:800,rewardGold:500,
+   rewardItem:{id:'qe1',name:'Efsanevi Kılıç',type:'sword',rarity:'legendary',value:1500,attackBonus:65,defenseBonus:8,healAmount:0,manaAmount:0,locked:true,equipped:false,icon:'⚡'}},
   {name:'Solucan Katliamı',description:'7 solucan öldür.',target:'worm',targetCount:7,rewardExp:400,rewardGold:200,
-   rewardItem:{id:'qs2',name:'Kaos Kılıcı',type:'sword',rarity:'epic',value:600,attackBonus:30,defenseBonus:0,healAmount:0,manaAmount:0,locked:true,equipped:false,icon:'⚡'}},
+   rewardItem:{id:'qs2',name:'Zehir Kılıcı',type:'sword',rarity:'epic',value:500,attackBonus:28,defenseBonus:0,healAmount:0,manaAmount:0,locked:true,equipped:false,icon:'☠️'}},
 ];
 
 let nextId=1;
@@ -173,7 +188,7 @@ function createPlayer(){
     inventory:new Array(INVENTORY_SIZE).fill(null),
     equippedSword:null,equippedArmor:null,
     skills:WARRIOR_SKILLS.map(s=>({...s})),
-    activeQuest:null,killCount:{worm:0,boss:0},
+    activeQuest:null,killCount:{worm:0,wolf:0,skeleton:0,orc:0,dragon:0,boss:0,any:0},
     isAlive:true,attackRange:60,facingRight:true,isAttacking:false,attackAnimTimer:0
   };
 }
@@ -209,36 +224,67 @@ function addToInventory(p,item){
   p.inventory[slot]={...item,id:uid()};return true;
 }
 
-function createWorm(level,isBoss=false){
+function createEnemyBase(type,level,isBoss,zone,config){
   const m=1+(level-1)*.2,bm=isBoss?5:1;
-  const hp=Math.floor(60*m*bm),atk=Math.floor(8*m*bm),def=Math.floor(3*m*bm);
-  const angle=Math.random()*Math.PI*2,d=10+Math.random()*30;
+  const hp=Math.floor(config.baseHp*m*bm),atk=Math.floor(config.baseAtk*m*bm),def=Math.floor(config.baseDef*m*bm);
+  const angle=Math.random()*Math.PI*2,d=10+Math.random()*35;
   const items=[];
   const roll=Math.random();
-  if(isBoss||roll<.4){
+  if(isBoss||roll<.45){
     const rarities=isBoss?['rare','epic','legendary']:['common','uncommon','rare'];
     const rarity=rarities[Math.floor(Math.random()*rarities.length)];
     const isW=Math.random()>.5;
-    items.push({id:uid(),name:isW?(rarity==='legendary'?'Efsane':'Savaş')+' Kılıcı':(rarity==='legendary'?'Efsane':'Savaş')+' Zırhı',
-      type:isW?'sword':'armor',rarity,value:Math.floor(30*(1+level*.5)*(isBoss?3:1)),
-      attackBonus:isW?Math.floor(5+level*3*(isBoss?2:1)):0,
-      defenseBonus:!isW?Math.floor(4+level*2*(isBoss?2:1)):0,
-      healAmount:0,manaAmount:0,locked:false,equipped:false,icon:isW?'⚔️':'🛡️'});
+    const names={common:['Eski','Yıpranmış'],uncommon:['Sağlam','Sağlıklı'],rare:['Güçlü','Usta'],epic:['Efsanevi','Destansı'],legendary:['Tanrısal','Ebedi']};
+    const prefix=names[rarity][Math.floor(Math.random()*names[rarity].length)];
+    items.push({id:uid(),name:prefix+' '+(isW?'Kılıç':'Zırhı'),
+      type:isW?'sword':'armor',rarity,value:Math.floor(40*(1+level*.5)*(isBoss?3:1)*(rarity==='legendary'?5:rarity==='epic'?3:rarity==='rare'?2:1)),
+      attackBonus:isW?Math.floor(config.lootAtk+level*2*(isBoss?2:1)):Math.floor(config.lootAtk*0.3),
+      defenseBonus:!isW?Math.floor(config.lootDef+level*1.5*(isBoss?2:1)):Math.floor(config.lootDef*0.3),
+      healAmount:0,manaAmount:0,locked:false,equipped:false,icon:isW?config.weaponIcon:config.armorIcon});
   }
-  if(Math.random()<.6){
-    items.push({id:uid(),name:'Solucan Derisi',type:'trash',rarity:'common',value:Math.floor(5+level*2),
-      attackBonus:0,defenseBonus:0,healAmount:0,manaAmount:0,locked:false,equipped:false,icon:'🪱'});
+  if(Math.random()<.5){
+    items.push({id:uid(),name:config.trashName,type:'trash',rarity:'common',value:Math.floor(config.trashValue+level*3),
+      attackBonus:0,defenseBonus:0,healAmount:0,manaAmount:0,locked:false,equipped:false,icon:config.trashIcon});
   }
-  return{id:uid(),name:isBoss?'Büyük Solucan':'Solucan Lv.'+level,level,
-    stats:{maxHp:hp,hp,maxMp:0,mp:0,attack:atk,defense:def,speed:1.5},
-    position:{x:WORM_ZONE.x+Math.cos(angle)*d,y:WORM_ZONE.y+Math.sin(angle)*d},
-    isBoss,reward:{exp:Math.floor((isBoss?200:30)*m),gold:Math.floor((isBoss?100:15)*m),items},
-    attackCooldown:isBoss?2:1.5,currentAttackCooldown:0};
+  return{id:uid(),type:type,name:isBoss?config.bossName:config.normalName+' Lv.'+level,level,
+    stats:{maxHp:hp,hp,maxMp:0,mp:0,attack:atk,defense:def,speed:config.speed},
+    position:{x:zone.x+Math.cos(angle)*d,y:zone.y+Math.sin(angle)*d},
+    isBoss,color:config.color,bossColor:config.bossColor,
+    reward:{exp:Math.floor((isBoss?250:35)*m*config.expMult),gold:Math.floor((isBoss?120:18)*m*config.expMult),items},
+    attackCooldown:isBoss?2.2:1.6,currentAttackCooldown:0,attackRange:config.attackRange||35};
 }
 
+const ENEMY_TYPES={
+  worm:{baseHp:60,baseAtk:8,baseDef:3,speed:1.5,expMult:1,lootAtk:5,lootDef:4,trashName:'Solucan Derisi',trashValue:5,trashIcon:'🪱',
+    normalName:'Solucan',bossName:'Dev Solucan',color:'#a855f7',bossColor:'#dc2626',weaponIcon:'🗡️',armorIcon:'🛡️',attackRange:35},
+  wolf:{baseHp:75,baseAtk:12,baseDef:5,speed:2.8,expMult:1.3,lootAtk:8,lootDef:6,trashName:'Kurt Kürkü',trashValue:8,trashIcon:'🐺',
+    normalName:'Kurt',bossName:'Alfa Kurt',color:'#6b7280',bossColor:'#f59e0b',weaponIcon:'🐾',armorIcon:'🧥',attackRange:40},
+  skeleton:{baseHp:90,baseAtk:15,baseDef:8,speed:1.6,expMult:1.5,lootAtk:12,lootDef:10,trashName:'Kemik Parçası',trashValue:10,trashIcon:'🦴',
+    normalName:'İskelet',bossName:'İskelet Lord',color:'#d1d5db',bossColor:'#a855f7',weaponIcon:'💀',armorIcon:'👻',attackRange:38},
+  orc:{baseHp:120,baseAtk:20,baseDef:12,speed:1.4,expMult:1.8,lootAtk:18,lootDef:15,trashName:'Ork Dişi',trashValue:15,trashIcon:'🦷',
+    normalName:'Ork',bossName:'Ork Şefi',color:'#16a34a',bossColor:'#dc2626',weaponIcon:'🪓',armorIcon:'🛡️',attackRange:42},
+  dragon:{baseHp:200,baseAtk:30,baseDef:20,speed:1.2,expMult:3,lootAtk:35,lootDef:30,trashName:'Ejderha Pulu',trashValue:50,trashIcon:'🐉',
+    normalName:'Ejderha',bossName:'Antik Ejderha',color:'#06b6d4',bossColor:'#f59e0b',weaponIcon:'🔥',armorIcon:'💎',attackRange:55}
+};
+
+function createWorm(level,isBoss){return createEnemyBase('worm',level,isBoss,WORM_ZONE,ENEMY_TYPES.worm);}
+function createWolf(level,isBoss){return createEnemyBase('wolf',level,isBoss,FOREST_ZONE,ENEMY_TYPES.wolf);}
+function createSkeleton(level,isBoss){return createEnemyBase('skeleton',level,isBoss,CAVE_ZONE,ENEMY_TYPES.skeleton);}
+function createOrc(level,isBoss){return createEnemyBase('orc',level,isBoss,VOLCANO_ZONE,ENEMY_TYPES.orc);}
+function createDragon(level,isBoss){return createEnemyBase('dragon',level,isBoss,ICE_ZONE,ENEMY_TYPES.dragon);}
+
 function spawnEnemies(){
-  const e=[];for(let i=0;i<5;i++)e.push(createWorm(Math.floor(Math.random()*5)+1));
-  e.push(createWorm(5,true));return e;
+  const e=[];
+  for(let i=0;i<4;i++)e.push(createWorm(Math.floor(Math.random()*5)+1));
+  e.push(createWorm(5,true));
+  for(let i=0;i<4;i++)e.push(createWolf(Math.floor(Math.random()*5)+2));
+  e.push(createWolf(7,true));
+  for(let i=0;i<3;i++)e.push(createSkeleton(Math.floor(Math.random()*5)+3));
+  e.push(createSkeleton(8,true));
+  for(let i=0;i<3;i++)e.push(createOrc(Math.floor(Math.random()*5)+4));
+  e.push(createOrc(9,true));
+  e.push(createDragon(10,true));
+  return e;
 }
 
 function generateQuest(){
@@ -288,7 +334,18 @@ function drawGame(){
   const cx=W/2,cy=H/2;
   const ox=cx-p.position.x*SCALE,oy=cy-p.position.y*SCALE;
 
-  ctx.fillStyle='#0d1117';ctx.fillRect(0,0,W,H);
+  // Dynamic background based on player position
+  const distToVolcano=dist(p.position,VOLCANO_ZONE);
+  const distToIce=dist(p.position,ICE_ZONE);
+  const distToCave=dist(p.position,CAVE_ZONE);
+  const distToForest=dist(p.position,FOREST_ZONE);
+  
+  if(distToVolcano<80)ctx.fillStyle='#1a0a0a';
+  else if(distToIce<80)ctx.fillStyle='#0a1a2a';
+  else if(distToCave<80)ctx.fillStyle='#0d1117';
+  else if(distToForest<80)ctx.fillStyle='#0d1f0d';
+  else ctx.fillStyle='#0d1117';
+  ctx.fillRect(0,0,W,H);
 
   ctx.strokeStyle='#1a2233';ctx.lineWidth=1;
   const gs=40;
@@ -296,6 +353,7 @@ function drawGame(){
   for(let gx=sx;gx<W-ox;gx+=gs){ctx.beginPath();ctx.moveTo(gx+ox,0);ctx.lineTo(gx+ox,H);ctx.stroke()}
   for(let gy=sy;gy<H-oy;gy+=gs){ctx.beginPath();ctx.moveTo(0,gy+oy);ctx.lineTo(W,gy+oy);ctx.stroke()}
 
+  // Safe zone
   ctx.fillStyle='rgba(34,197,94,.08)';ctx.beginPath();
   ctx.arc(SAFE_ZONE.x*SCALE+ox,SAFE_ZONE.y*SCALE+oy,SAFE_ZONE.radius*SCALE,0,Math.PI*2);ctx.fill();
   ctx.strokeStyle='rgba(34,197,94,.3)';ctx.lineWidth=2;ctx.stroke();
@@ -305,32 +363,132 @@ function drawGame(){
   drawNPC(-15*SCALE+ox,-5*SCALE+oy,'🏪','Market');
   drawNPC(15*SCALE+ox,-5*SCALE+oy,'📜','Görevler');
 
-  ctx.fillStyle='rgba(239,68,68,.06)';ctx.beginPath();
-  ctx.arc(WORM_ZONE.x*SCALE+ox,WORM_ZONE.y*SCALE+oy,40*SCALE,0,Math.PI*2);ctx.fill();
-  ctx.strokeStyle='rgba(239,68,68,.2)';ctx.lineWidth=1;ctx.stroke();
-  ctx.fillStyle='#ef4444';ctx.font='bold 12px Inter';
-  ctx.fillText('☠️ Solucan Bölgesi',WORM_ZONE.x*SCALE+ox,WORM_ZONE.y*SCALE+oy-42*SCALE);
+  // WORM ZONE - Purple wasteland
+  ctx.fillStyle='rgba(168,85,247,.08)';ctx.beginPath();
+  ctx.arc(WORM_ZONE.x*SCALE+ox,WORM_ZONE.y*SCALE+oy,45*SCALE,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='rgba(168,85,247,.3)';ctx.lineWidth=2;ctx.stroke();
+  ctx.fillStyle='#a855f7';ctx.font='bold 12px Inter';
+  ctx.fillText('🪱 Solucan Bölgesi',WORM_ZONE.x*SCALE+ox,WORM_ZONE.y*SCALE+oy-48*SCALE);
 
+  // FOREST ZONE - Green woods
+  ctx.fillStyle='rgba(34,197,94,.1)';ctx.beginPath();
+  ctx.arc(FOREST_ZONE.x*SCALE+ox,FOREST_ZONE.y*SCALE+oy,45*SCALE,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='rgba(34,197,94,.4)';ctx.lineWidth=2;ctx.setLineDash([5,5]);ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle='#22c55e';ctx.font='bold 12px Inter';
+  ctx.fillText('🌲 Orman Bölgesi',FOREST_ZONE.x*SCALE+ox,FOREST_ZONE.y*SCALE+oy-48*SCALE);
+
+  // CAVE ZONE - Gray/blue dungeon
+  ctx.fillStyle='rgba(100,116,139,.1)';ctx.beginPath();
+  ctx.arc(CAVE_ZONE.x*SCALE+ox,CAVE_ZONE.y*SCALE+oy,45*SCALE,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='rgba(100,116,139,.4)';ctx.lineWidth=2;ctx.setLineDash([8,4]);ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle='#64748b';ctx.font='bold 12px Inter';
+  ctx.fillText('💀 Mağara Bölgesi',CAVE_ZONE.x*SCALE+ox,CAVE_ZONE.y*SCALE+oy-48*SCALE);
+
+  // VOLCANO ZONE - Red/orange lava
+  ctx.fillStyle='rgba(239,68,68,.12)';ctx.beginPath();
+  ctx.arc(VOLCANO_ZONE.x*SCALE+ox,VOLCANO_ZONE.y*SCALE+oy,50*SCALE,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='rgba(239,68,68,.5)';ctx.lineWidth=3;ctx.stroke();
+  ctx.fillStyle='#ef4444';ctx.font='bold 12px Inter';
+  ctx.fillText('🌋 Volkan Bölgesi',VOLCANO_ZONE.x*SCALE+ox,VOLCANO_ZONE.y*SCALE+oy-53*SCALE);
+
+  // ICE ZONE - Cyan/white frozen
+  ctx.fillStyle='rgba(6,182,212,.1)';ctx.beginPath();
+  ctx.arc(ICE_ZONE.x*SCALE+ox,ICE_ZONE.y*SCALE+oy,55*SCALE,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='rgba(6,182,212,.4)';ctx.lineWidth=2;ctx.setLineDash([10,5]);ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle='#06b6d4';ctx.font='bold 12px Inter';
+  ctx.fillText('❄️ Buzul Bölgesi',ICE_ZONE.x*SCALE+ox,ICE_ZONE.y*SCALE+oy-58*SCALE);
+
+  // Draw enemies with type-specific rendering
   state.enemies.forEach(e=>{
     if(e.stats.hp<=0)return;
     const ex=e.position.x*SCALE+ox,ey=e.position.y*SCALE+oy;
+    const sz=e.isBoss?24:14;
+    
+    // Shadow
     ctx.fillStyle='rgba(0,0,0,.3)';ctx.beginPath();
-    ctx.ellipse(ex,ey+(e.isBoss?24:16),e.isBoss?20:12,5,0,0,Math.PI*2);ctx.fill();
-    const sz=e.isBoss?20:12;
-    ctx.fillStyle=e.isBoss?'#dc2626':'#a855f7';
-    for(let i=0;i<4;i++){const sx2=ex+Math.sin(Date.now()/300+i)*3,sy2=ey-i*(sz/3);
-      ctx.beginPath();ctx.arc(sx2,sy2,sz/2-i,0,Math.PI*2);ctx.fill()}
-    ctx.fillStyle='#fff';ctx.beginPath();
-    ctx.arc(ex-3,ey-sz+2,2,0,Math.PI*2);ctx.arc(ex+3,ey-sz+2,2,0,Math.PI*2);ctx.fill();
-    const bw=e.isBoss?60:40,bh=6,by=ey-sz-20;
+    ctx.ellipse(ex,ey+sz-2,e.isBoss?22:14,5,0,0,Math.PI*2);ctx.fill();
+    
+    // Type-specific drawing
+    if(e.type==='worm'){
+      ctx.fillStyle=e.isBoss?ENEMY_TYPES.worm.bossColor:ENEMY_TYPES.worm.color;
+      for(let i=0;i<4;i++){const sx2=ex+Math.sin(Date.now()/300+i)*3,sy2=ey-i*(sz/3);
+        ctx.beginPath();ctx.arc(sx2,sy2,sz/2-i,0,Math.PI*2);ctx.fill()}
+      ctx.fillStyle='#fff';ctx.beginPath();
+      ctx.arc(ex-3,ey-sz+2,2,0,Math.PI*2);ctx.arc(ex+3,ey-sz+2,2,0,Math.PI*2);ctx.fill();
+    }else if(e.type==='wolf'){
+      // Wolf body
+      ctx.fillStyle=e.isBoss?ENEMY_TYPES.wolf.bossColor:ENEMY_TYPES.wolf.color;
+      ctx.beginPath();ctx.ellipse(ex,ey+2,sz*0.9,sz*0.5,0,0,Math.PI*2);ctx.fill();
+      // Head
+      ctx.beginPath();ctx.arc(ex+(e.isBoss?6:4),ey-sz*0.3,sz*0.4,0,Math.PI*2);ctx.fill();
+      // Ears
+      ctx.beginPath();ctx.moveTo(ex+sz*0.4,ey-sz*0.5);ctx.lineTo(ex+sz*0.2,ey-sz*0.9);ctx.lineTo(ex+sz*0.6,ey-sz*0.4);ctx.fill();
+      ctx.beginPath();ctx.moveTo(ex,ey-sz*0.5);ctx.lineTo(ex-sz*0.2,ey-sz*0.9);ctx.lineTo(ex+sz*0.2,ey-sz*0.4);ctx.fill();
+      // Eyes
+      ctx.fillStyle=e.isBoss?'#fbbf24':'#ef4444';
+      ctx.beginPath();ctx.arc(ex+sz*0.3,ey-sz*0.35,2,0,Math.PI*2);ctx.fill();
+      // Tail
+      ctx.strokeStyle=e.isBoss?ENEMY_TYPES.wolf.bossColor:ENEMY_TYPES.wolf.color;ctx.lineWidth=2;
+      ctx.beginPath();ctx.moveTo(ex-sz*0.7,ey);ctx.quadraticCurveTo(ex-sz*0.9,ey-sz*0.4,ex-sz*0.6,ey-sz*0.2);ctx.stroke();
+    }else if(e.type==='skeleton'){
+      ctx.fillStyle=e.isBoss?ENEMY_TYPES.skeleton.bossColor:ENEMY_TYPES.skeleton.color;
+      // Skull
+      ctx.beginPath();ctx.arc(ex,ey-sz*0.6,sz*0.35,0,Math.PI*2);ctx.fill();
+      // Body
+      ctx.strokeStyle=e.isBoss?ENEMY_TYPES.skeleton.bossColor:ENEMY_TYPES.skeleton.color;ctx.lineWidth=2;
+      ctx.beginPath();ctx.moveTo(ex,ey-sz*0.25);ctx.lineTo(ex,ey+sz*0.25);ctx.stroke();
+      // Arms
+      ctx.beginPath();ctx.moveTo(ex-sz*0.4,ey);ctx.lineTo(ex+sz*0.4,ey);ctx.stroke();
+      // Legs
+      ctx.beginPath();ctx.moveTo(ex,ey+sz*0.25);ctx.lineTo(ex-sz*0.25,ey+sz*0.6);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(ex,ey+sz*0.25);ctx.lineTo(ex+sz*0.25,ey+sz*0.6);ctx.stroke();
+      // Eyes
+      ctx.fillStyle='#000';ctx.beginPath();ctx.arc(ex-2,ey-sz*0.65,1.5,0,Math.PI*2);ctx.arc(ex+2,ey-sz*0.65,1.5,0,Math.PI*2);ctx.fill();
+      // Boss weapon
+      if(e.isBoss){ctx.fillStyle='#a855f7';ctx.fillRect(ex+sz*0.4,ey-sz*0.4,2,sz*0.8);}
+    }else if(e.type==='orc'){
+      ctx.fillStyle=e.isBoss?ENEMY_TYPES.orc.bossColor:ENEMY_TYPES.orc.color;
+      // Body (bulkier)
+      ctx.beginPath();ctx.ellipse(ex,ey+3,sz*0.9,sz*0.6,0,0,Math.PI*2);ctx.fill();
+      // Head
+      ctx.beginPath();ctx.arc(ex,ey-sz*0.4,sz*0.4,0,Math.PI*2);ctx.fill();
+      // Tusks
+      ctx.fillStyle='#fff';ctx.beginPath();
+      ctx.moveTo(ex-4,ey-sz*0.2);ctx.lineTo(ex-6,ey-sz*0.4);ctx.lineTo(ex-2,ey-sz*0.3);ctx.fill();
+      ctx.beginPath();ctx.moveTo(ex+4,ey-sz*0.2);ctx.lineTo(ex+6,ey-sz*0.4);ctx.lineTo(ex+2,ey-sz*0.3);ctx.fill();
+      // Eyes (angry)
+      ctx.fillStyle='#ef4444';ctx.beginPath();ctx.arc(ex-3,ey-sz*0.5,2,0,Math.PI*2);ctx.arc(ex+3,ey-sz*0.5,2,0,Math.PI*2);ctx.fill();
+      // Axe
+      ctx.fillStyle='#6b7280';ctx.fillRect(ex+sz*0.5,ey-sz*0.3,3,sz*0.6);
+      ctx.fillStyle='#9ca3af';ctx.beginPath();ctx.moveTo(ex+sz*0.5+1,ey-sz*0.8);ctx.lineTo(ex+sz*0.8,ey-sz*0.3);ctx.lineTo(ex+sz*0.2,ey-sz*0.3);ctx.fill();
+    }else if(e.type==='dragon'){
+      const dragonSz=sz*1.3;
+      // Body
+      ctx.fillStyle=e.isBoss?ENEMY_TYPES.dragon.bossColor:ENEMY_TYPES.dragon.color;
+      ctx.beginPath();ctx.ellipse(ex,ey,dragonSz,dragonSz*0.5,0,0,Math.PI*2);ctx.fill();
+      // Wings
+      ctx.fillStyle=e.isBoss?'#f59e0b':'#0891b2';
+      ctx.beginPath();ctx.moveTo(ex-dragonSz*0.5,ey-dragonSz*0.3);ctx.lineTo(ex-dragonSz*1.5,ey-dragonSz*0.8);ctx.lineTo(ex-dragonSz*0.8,ey);ctx.fill();
+      ctx.beginPath();ctx.moveTo(ex+dragonSz*0.5,ey-dragonSz*0.3);ctx.lineTo(ex+dragonSz*1.5,ey-dragonSz*0.8);ctx.lineTo(ex+dragonSz*0.8,ey);ctx.fill();
+      // Head
+      ctx.fillStyle=e.isBoss?ENEMY_TYPES.dragon.bossColor:ENEMY_TYPES.dragon.color;
+      ctx.beginPath();ctx.arc(ex,ey-dragonSz*0.4,dragonSz*0.4,0,Math.PI*2);ctx.fill();
+      // Eyes (glowing)
+      ctx.fillStyle='#fbbf24';ctx.beginPath();ctx.arc(ex-3,ey-dragonSz*0.5,2,0,Math.PI*2);ctx.arc(ex+3,ey-dragonSz*0.5,2,0,Math.PI*2);ctx.fill();
+      // Fire breath effect (boss only)
+      if(e.isBoss){ctx.fillStyle='rgba(239,68,68,0.3)';ctx.beginPath();ctx.arc(ex,ey-dragonSz,15,0,Math.PI*2);ctx.fill();}
+    }
+    
+    // HP bar
+    const bw=e.isBoss?70:50,bh=7,by=ey-sz-25;
     ctx.fillStyle='#1f2937';ctx.fillRect(ex-bw/2,by,bw,bh);
     const hr=e.stats.hp/e.stats.maxHp;
     ctx.fillStyle=hr>.5?'#22c55e':hr>.25?'#f59e0b':'#ef4444';
     ctx.fillRect(ex-bw/2,by,bw*hr,bh);
-    ctx.fillStyle='#fff';ctx.font='bold 9px Inter';ctx.textAlign='center';
-    ctx.fillText(e.stats.hp+'/'+e.stats.maxHp,ex,by-3);
-    ctx.fillStyle=e.isBoss?'#f59e0b':'#d1d5db';
-    ctx.font='bold '+(e.isBoss?11:9)+'px Inter';ctx.fillText(e.name,ex,by-14);
+    ctx.fillStyle='#fff';ctx.font='bold 10px Inter';ctx.textAlign='center';
+    ctx.fillText(e.stats.hp+'/'+e.stats.maxHp,ex,by-4);
+    ctx.fillStyle=e.isBoss?'#f59e0b':'#e2e8f0';
+    ctx.font='bold '+(e.isBoss?13:11)+'px Inter';ctx.fillText(e.name,ex,by-16);
   });
 
   const px=cx,py=cy;
@@ -363,13 +521,22 @@ function drawGame(){
   ctx.fillStyle='rgba(34,197,94,.3)';ctx.beginPath();
   ctx.arc(szMx,szMy,SAFE_ZONE.radius*msc2,0,Math.PI*2);ctx.fill();
   ctx.strokeStyle='rgba(34,197,94,.5)';ctx.lineWidth=1;ctx.stroke();
-  // Worm zone on minimap
+  // All zones on minimap
   var wzMx=mmCx+(WORM_ZONE.x-ppx)*msc2,wzMy=mmCy+(WORM_ZONE.y-ppy)*msc2;
-  ctx.fillStyle='rgba(239,68,68,.15)';ctx.beginPath();
-  ctx.arc(wzMx,wzMy,40*msc2,0,Math.PI*2);ctx.fill();
-  // Enemies on minimap
-  state.enemies.forEach(function(e){if(e.stats.hp<=0)return;ctx.fillStyle=e.isBoss?'#f59e0b':'#ef4444';
-    ctx.beginPath();ctx.arc(mmCx+(e.position.x-ppx)*msc2,mmCy+(e.position.y-ppy)*msc2,e.isBoss?4:2,0,Math.PI*2);ctx.fill()});
+  ctx.fillStyle='rgba(168,85,247,.15)';ctx.beginPath();ctx.arc(wzMx,wzMy,45*msc2,0,Math.PI*2);ctx.fill();
+  var fzMx=mmCx+(FOREST_ZONE.x-ppx)*msc2,fzMy=mmCy+(FOREST_ZONE.y-ppy)*msc2;
+  ctx.fillStyle='rgba(34,197,94,.15)';ctx.beginPath();ctx.arc(fzMx,fzMy,45*msc2,0,Math.PI*2);ctx.fill();
+  var czMx=mmCx+(CAVE_ZONE.x-ppx)*msc2,czMy=mmCy+(CAVE_ZONE.y-ppy)*msc2;
+  ctx.fillStyle='rgba(100,116,139,.15)';ctx.beginPath();ctx.arc(czMx,czMy,45*msc2,0,Math.PI*2);ctx.fill();
+  var vzMx=mmCx+(VOLCANO_ZONE.x-ppx)*msc2,vzMy=mmCy+(VOLCANO_ZONE.y-ppy)*msc2;
+  ctx.fillStyle='rgba(239,68,68,.15)';ctx.beginPath();ctx.arc(vzMx,vzMy,50*msc2,0,Math.PI*2);ctx.fill();
+  var izMx=mmCx+(ICE_ZONE.x-ppx)*msc2,izMy=mmCy+(ICE_ZONE.y-ppy)*msc2;
+  ctx.fillStyle='rgba(6,182,212,.15)';ctx.beginPath();ctx.arc(izMx,izMy,55*msc2,0,Math.PI*2);ctx.fill();
+  // Enemies on minimap with type colors
+  state.enemies.forEach(function(e){if(e.stats.hp<=0)return;
+    const typeColors={worm:'#a855f7',wolf:'#6b7280',skeleton:'#94a3b8',orc:'#16a34a',dragon:'#06b6d4'};
+    ctx.fillStyle=e.isBoss?'#f59e0b':(typeColors[e.type]||'#ef4444');
+    ctx.beginPath();ctx.arc(mmCx+(e.position.x-ppx)*msc2,mmCy+(e.position.y-ppy)*msc2,e.isBoss?4:2,0,Math.PI*2);ctx.fill();});
   // Player dot (always center)
   ctx.fillStyle='#3b82f6';ctx.beginPath();ctx.arc(mmCx,mmCy,4,0,Math.PI*2);ctx.fill();
   ctx.strokeStyle='#93c5fd';ctx.lineWidth=1;ctx.stroke();
@@ -420,22 +587,46 @@ function useSkill(skillId){
     if(e.stats.hp<=0){
       log.push('💀 '+e.name+' yenildi! +'+e.reward.exp+'EXP +'+e.reward.gold+'G');
       p.exp+=e.reward.exp;p.gold+=e.reward.gold;
-      p.killCount[e.isBoss?'boss':'worm']++;
+      // Track kills by type
+      if(!p.killCount)p.killCount={};
+      p.killCount[e.type]=(p.killCount[e.type]||0)+1;
+      if(e.isBoss)p.killCount.boss=(p.killCount.boss||0)+1;
+      p.killCount.any=(p.killCount.any||0)+1;
       e.reward.items.forEach(item=>{if(addToInventory(p,item))log.push('📦 '+item.name+' bulundu!');else log.push('⚠️ Envanter dolu!')});
       if(p.activeQuest&&!p.activeQuest.turnedIn){
         const q=p.activeQuest;
-        if((q.target==='worm'&&!e.isBoss)||(q.target==='boss'&&e.isBoss)){
-          q.currentCount++;if(q.currentCount>=q.targetCount){q.completed=true;log.push('🎯 Görev tamamlandı! NPC\'ye git.')}
-        }
+        const match=(q.target==='any')||(q.target===e.type)||(q.target==='boss'&&e.isBoss);
+        if(match){q.currentCount++;if(q.currentCount>=q.targetCount){q.completed=true;log.push('🎯 Görev tamamlandı! NPC\'ye git.')}}
       }
       checkLevelUp(p,log);
     }
   });
   if(hitCount===0)log.push('💨 Hedef menzil dışında!');
 
-  const alive=state.enemies.filter(e=>e.stats.hp>0&&!e.isBoss).length;
-  if(alive<3)state.enemies.push(createWorm(Math.floor(Math.random()*5)+1));
-  if(!state.enemies.some(e=>e.isBoss&&e.stats.hp>0))state.enemies.push(createWorm(5,true));
+  // Respawn system for all enemy types
+  ['worm','wolf','skeleton','orc'].forEach(type=>{
+    const alive=state.enemies.filter(e=>e.stats.hp>0&&e.type===type&&!e.isBoss).length;
+    const minCount=type==='orc'?2:(type==='skeleton'?2:3);
+    if(alive<minCount){
+      const lvl=type==='orc'?Math.floor(Math.random()*5)+4:type==='skeleton'?Math.floor(Math.random()*5)+3:type==='wolf'?Math.floor(Math.random()*5)+2:Math.floor(Math.random()*5)+1;
+      if(type==='worm')state.enemies.push(createWorm(lvl));
+      else if(type==='wolf')state.enemies.push(createWolf(lvl));
+      else if(type==='skeleton')state.enemies.push(createSkeleton(lvl));
+      else if(type==='orc')state.enemies.push(createOrc(lvl));
+    }
+    // Boss respawn
+    if(!state.enemies.some(e=>e.isBoss&&e.type===type&&e.stats.hp>0)){
+      const bossLvl=type==='orc'?9:type==='skeleton'?8:type==='wolf'?7:5;
+      if(type==='worm')state.enemies.push(createWorm(bossLvl,true));
+      else if(type==='wolf')state.enemies.push(createWolf(bossLvl,true));
+      else if(type==='skeleton')state.enemies.push(createSkeleton(bossLvl,true));
+      else if(type==='orc')state.enemies.push(createOrc(bossLvl,true));
+    }
+  });
+  // Dragon boss always respawns (only boss version)
+  if(!state.enemies.some(e=>e.type==='dragon'&&e.stats.hp>0)){
+    state.enemies.push(createDragon(10,true));
+  }
   trimLog();renderUI();
 }
 
@@ -494,7 +685,8 @@ function renderUI(){
   html+=bar(p.stats.mp,p.stats.maxMp,'bar-mp','MP','💎');
   html+=bar(p.powerBar,p.maxPowerBar,'bar-pwr','PWR','⚡');
   html+=bar(p.exp,p.expToNext,'bar-xp','EXP','✨');
-  html+='<div class="hud-stats"><span>⚔️ ATK: '+p.stats.attack+'</span><span>🛡️ DEF: '+p.stats.defense+'</span><span>💰 '+p.gold+'G</span></div>';
+  const kc=p.killCount||{};
+  html+='<div class="hud-stats"><span>⚔️ '+p.stats.attack+'</span><span>🛡️ '+p.stats.defense+'</span><span>💰'+p.gold+'G</span><span>💀'+(kc.any||0)+'</span></div>';
   html+='</div></div>';
 
   html+='<div class="combat-log"><div class="log-card">';
