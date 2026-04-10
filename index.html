@@ -57,7 +57,7 @@ canvas{display:block;position:absolute;top:0;left:0}
 .joystick-area{position:absolute;bottom:32px;left:32px;width:112px;height:112px;z-index:20}
 .joystick-base{position:absolute;inset:0;border-radius:50%;background:rgba(26,34,51,.4);border:2px solid rgba(30,42,58,.5)}
 .joystick-knob {
-  position: absolute;
+    position: absolute;
   width: 48px; 
   height: 48px;
   background: var(--primary);
@@ -1204,62 +1204,76 @@ function respawn(){
 
 // ==================== JOYSTICK ====================
 function setupJoystick(){
-  const area=document.getElementById('joystickArea');
-  const knob=document.getElementById('joystickKnob');
-  if(!area||!knob)return;
-  let active=false;const maxR=40;
-  function update(cx, cy) {
-    const rect = area.getBoundingClientRect();
-  
-   // Joystick'in tam orta noktasının EKRANDAKİ koordinatları
-   const centerX = rect.left + rect.width / 2;
-   const centerY = rect.top + rect.height / 2;
-  
-   // Dokunulan yerin merkeze olan uzaklığı
-   let dx = cx - centerX;
-   let dy = cy - centerY;
-  
-   const d = Math.sqrt(dx * dx + dy * dy);
+  const area = document.getElementById('joystickArea');
+  const knob = document.getElementById('joystickKnob');
+  if(!area || !knob) return;
 
-   // maxR (40px) dışına çıkmasını engelle
-   if (d > maxR) {
-     dx = (dx / d) * maxR;
-     dy = (dy / d) * maxR;
-   }
+  let active = false;
+  const maxR = 40;
 
-   // GÖRSEL: Topu hareket ettir (Burada calc ve -24px karmaşasını sildik)
-   knob.style.left = '50%';
-   knob.style.top = '50%';
-   knob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
-  
-   // HAREKET: Karakterin yönünü belirle
-   // Sadece dx veya dy gönderirsen karakter tek yöne gider.
-   // İkisini birden gönderdiğimiz için artık her yöne (çapraz dahil) gidecek.
-   state.joystickDir = { 
-    x: dx / maxR, 
-    y: dy / maxR 
-   };
-  }
-  function end() {
+  // Merkeze sıfırla
+  function resetJoy() {
     active = false;
-    knob.style.transition = 'all .2s'; // Bırakınca merkeze yumuşak dönsün
-    knob.style.transform = 'translate(-50%, -50%)'; // Tam merkeze oturt
+    knob.style.transition = 'all .2s';
+    knob.style.transform = 'translate(-50%, -50%)';
     state.joystickDir = { x: 0, y: 0 };
   }
+
+  function update(cx, cy) {
+    const rect = area.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    
+    let dx = cx - centerX;
+    let dy = cy - centerY;
+    const d = Math.sqrt(dx * dx + dy * dy);
+
+    if (d > maxR) {
+      dx = (dx / d) * maxR;
+      dy = (dy / d) * maxR;
+    }
+
+    knob.style.transition = 'none';
+    knob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+    state.joystickDir = { x: dx / maxR, y: dy / maxR };
+  }
+
+  // --- MOUSE OLAYLARI ---
+  area.addEventListener('mousedown', e => {
+    if (e.button !== 0) return; // Sadece sol tık
+    active = true;
+    update(e.clientX, e.clientY);
+  });
+
+  // Pencere genelinde takip (Alan dışına çıksan da bırakmaz)
+  window.addEventListener('mousemove', e => {
+    if (active) {
+      update(e.clientX, e.clientY);
+    }
+  });
+
+  window.addEventListener('mouseup', resetJoy);
+
+  // --- MOBİL OLAYLARI ---
   area.addEventListener('touchstart', e => {
     e.preventDefault();
     active = true;
     update(e.touches[0].clientX, e.touches[0].clientY);
   }, {passive: false});
-  area.addEventListener('touchmove',e=>{e.preventDefault();if(active){knob.style.transition='none';update(e.touches[0].clientX,e.touches[0].clientY)}},{passive:false});
+
   area.addEventListener('touchmove', e => {
     e.preventDefault();
-    if(active) update(e.touches[0].clientX, e.touches[0].clientY);
+    if (active) update(e.touches[0].clientX, e.touches[0].clientY);
   }, {passive: false});
-  area.addEventListener('touchend', end);
-  area.addEventListener('mousedown', e => { active = true; update(e.clientX, e.clientY); });
-  window.addEventListener('mousemove', e => { if(active) update(e.clientX, e.clientY); });
-  window.addEventListener('mouseup', end);
+
+  area.addEventListener('touchend', e => {
+    e.preventDefault();
+    resetJoy();
+  }, {passive: false});
+
+  // --- KRİTİK: TARAYICI SÜRÜKLEMESİNİ ENGELLE ---
+  area.addEventListener('dragstart', e => e.preventDefault());
+  area.addEventListener('selectstart', e => e.preventDefault());
 }
 // ==================== KEYBOARD ====================
 if(!isMobile){
