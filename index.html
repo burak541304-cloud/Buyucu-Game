@@ -115,6 +115,13 @@ canvas{display:block;position:absolute;top:0;left:0}
 .rarity-common{color:#9ca3af}.rarity-uncommon{color:#22c55e}.rarity-rare{color:#3b82f6}.rarity-epic{color:#a855f7}.rarity-legendary{color:#f59e0b}
 .shop-category{font-size:11px;font-weight:700;color:var(--primary);margin:12px 0 8px 0;padding-bottom:4px;border-bottom:1px solid var(--border);position:sticky;top:38px;background:var(--card-solid);z-index:4}
 .auto-sell-panel{background:rgba(0,0,0,0.2);border-radius:6px;padding:8px;margin-bottom:10px;font-size:11px}
+.coord-panel{position:absolute;bottom:8px;right:8px;background:rgba(20,28,40,.8);backdrop-filter:blur(4px);border-radius:6px;padding:6px 10px;border:1px solid var(--border);font-size:10px;font-family:'Inter',monospace;z-index:15;pointer-events:auto;cursor:pointer}
+.coord-panel:hover{background:rgba(20,28,40,.95)}
+.coord-title{color:var(--muted-fg);font-size:8px;margin-bottom:2px}
+.coord-values{color:var(--primary);font-weight:700}
+.teleport-input{display:flex;gap:6px;margin-top:6px;padding-top:6px;border-top:1px solid var(--border)}
+.teleport-input input{background:var(--muted);border:1px solid var(--border);color:var(--fg);padding:4px 6px;border-radius:4px;font-size:10px;width:70px}
+.teleport-input button{background:var(--primary);color:var(--primary-fg);border:none;padding:4px 8px;border-radius:4px;cursor:pointer;font-size:10px}
 </style>
 </head>
 <body>
@@ -427,6 +434,7 @@ migrateOldSave();
 let currentSlot=0;
 let gameStarted=false;
 let state=null;
+let showTeleport=false;
 
 function initGame(slotIndex){
   currentSlot=slotIndex;
@@ -501,6 +509,38 @@ function backToCharacterSelect(){
     document.getElementById('joystickTouchZone').style.display='none';
     selectCharacterSlot();
   }
+}
+
+function teleportTo(x,y){
+  if(!state || !state.player) return;
+  state.player.position.x = Math.max(-200, Math.min(MAP_LIMIT, x));
+  state.player.position.y = Math.max(-200, Math.min(200, y));
+  state.combatLog.push(`✨ Işınlandın! Yeni konum: (${Math.round(state.player.position.x)}, ${Math.round(state.player.position.y)})`);
+  trimLog();
+  renderUI();
+}
+
+function toggleTeleport(){
+  showTeleport = !showTeleport;
+  renderUI();
+}
+
+function teleportToZone(zoneName){
+  const zones = {
+    'safe': {x:0, y:0, name:'Güvenli Bölge'},
+    'worm': {x:WORM_ZONE.x, y:WORM_ZONE.y, name:'Solucan Bölgesi'},
+    'forest': {x:FOREST_ZONE.x, y:FOREST_ZONE.y, name:'Orman Bölgesi'},
+    'cave': {x:CAVE_ZONE.x, y:CAVE_ZONE.y, name:'Mağara Bölgesi'},
+    'volcano': {x:VOLCANO_ZONE.x, y:VOLCANO_ZONE.y, name:'Volkan Bölgesi'},
+    'ice': {x:ICE_ZONE.x, y:ICE_ZONE.y, name:'Buzul Bölgesi'}
+  };
+  const zone = zones[zoneName];
+  if(zone){
+    teleportTo(zone.x, zone.y);
+    state.combatLog.push(`📍 ${zone.name} ışınlandı!`);
+  }
+  showTeleport = false;
+  renderUI();
 }
 
 const keys=new Set();
@@ -605,6 +645,7 @@ function drawGame(){
   ctx.fillStyle='#f59e0b';ctx.font='bold 10px Inter';
   ctx.fillText('Lv. 10 BOSS ⭐⭐⭐⭐⭐',ICE_ZONE.x*SCALE+ox,ICE_ZONE.y*SCALE+oy-57*SCALE);
 
+  // Düşmanları çiz (Gereksiz tıklama işaretleri yok)
   state.enemies.forEach(e=>{
     if(e.stats.hp<=0)return;
     const ex=e.position.x*SCALE+ox,ey=e.position.y*SCALE+oy;
@@ -692,9 +733,6 @@ function drawGame(){
   ctx.fillStyle='#fbbf24';ctx.fillRect(-4,0,8,4);ctx.restore();
   ctx.fillStyle='#fbbf24';ctx.font='bold 11px Cinzel';ctx.textAlign='center';
   ctx.fillText(state.player.name+' Lv.'+state.player.level,px,py-30);
-
-  ctx.fillStyle='#6b7280';ctx.font='10px Inter';ctx.textAlign='left';
-  ctx.fillText('X:'+Math.round(state.player.position.x)+' Y:'+Math.round(state.player.position.y),10,H-10);
 
   const ms=120,mx=W-ms-10,my=10;
   var mmRange=80;
@@ -939,6 +977,27 @@ function renderUI(){
   });
   html+='</div></div>';
 
+  // KOORDİNAT PANELİ (Teleport özellikli)
+  html+=`<div class="coord-panel" onclick="toggleTeleport()">
+    <div class="coord-title">📍 KONUM | 🚀 IŞINLAN (Tıkla)</div>
+    <div class="coord-values">X: ${Math.round(p.position.x)} | Y: ${Math.round(p.position.y)}</div>`;
+  if(showTeleport){
+    html+=`<div class="teleport-input">
+      <input type="number" id="tpX" placeholder="X" value="${Math.round(p.position.x)}" style="width:70px">
+      <input type="number" id="tpY" placeholder="Y" value="${Math.round(p.position.y)}" style="width:70px">
+      <button onclick="event.stopPropagation();teleportTo(parseInt(document.getElementById('tpX').value), parseInt(document.getElementById('tpY').value));">Git</button>
+    </div>
+    <div style="display:flex;gap:4px;margin-top:6px;flex-wrap:wrap">
+      <button onclick="event.stopPropagation();teleportToZone('safe')" style="font-size:9px;padding:2px 5px">🏠 Güvenli</button>
+      <button onclick="event.stopPropagation();teleportToZone('worm')" style="font-size:9px;padding:2px 5px">🪱 Solucan</button>
+      <button onclick="event.stopPropagation();teleportToZone('forest')" style="font-size:9px;padding:2px 5px">🌲 Orman</button>
+      <button onclick="event.stopPropagation();teleportToZone('cave')" style="font-size:9px;padding:2px 5px">💀 Mağara</button>
+      <button onclick="event.stopPropagation();teleportToZone('volcano')" style="font-size:9px;padding:2px 5px">🌋 Volkan</button>
+      <button onclick="event.stopPropagation();teleportToZone('ice')" style="font-size:9px;padding:2px 5px">❄️ Buzul</button>
+    </div>`;
+  }
+  html+=`</div>`;
+
   html+='<div class="menu-btns" style="'+(isMobile?'top:8px;right:8px;flex-direction:column':'top:8px;right:120px;flex-direction:row')+'">';
   html+='<button class="menu-btn" onclick="toggleInventory()">🎒 <span class="menu-shortcut">[I]</span></button>';
   if(inSafe){
@@ -988,7 +1047,7 @@ function renderUI(){
   }
 
   if(!isMobile){
-    html+='<div class="kb-hints"><div class="kb-card"><div>WASD: Hareket | 1-4: Yetenekler</div><div>Q: Can Potu | E: Mana Potu</div><div>I: Envanter | B: Market | J: Görev | ESC: Menü</div></div></div>';
+    html+='<div class="kb-hints"><div class="kb-card"><div>WASD: Hareket | 1-4: Yetenekler</div><div>Q: Can Potu | E: Mana Potu</div><div>I: Envanter | B: Market | J: Görev | ESC: Menü</div><div>📍 Koordinat paneline tıkla: Işınlan</div></div></div>';
   }
 
   uiRoot.innerHTML=html;
