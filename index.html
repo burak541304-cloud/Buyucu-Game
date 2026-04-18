@@ -176,6 +176,7 @@ const C = {
   LOOT_LIFETIME: 15,
   PLANT_DENSITY: 0.12,
   BOSS_INTERVAL: 50,
+  CREATURE_DENSITY: 0.03,
 };
 
 // --- BIOMES ---
@@ -225,6 +226,34 @@ const BOSSES = [
   {name:'Volkan Tanrısı',  hp:1500,xp:800, color:'#c0392b', size:60, biome:'volcano', drop:'phoenix_core'},
 ];
 
+// --- CREATURE DEFINITIONS ---
+const CREATURES = {
+  // Meadow (level 0+)
+  caterpillar: {name:'Tırtıl',       hp:30,  xp:12,  color:'#7dce82', size:10, speed:40,  dmg:3,  biome:'meadow',   icon:'🐛', ability:'melee',     aggroRange:80},
+  bee:         {name:'Arı',          hp:20,  xp:15,  color:'#f1c40f', size:8,  speed:120, dmg:5,  biome:'meadow',   icon:'🐝', ability:'ranged',   aggroRange:150, projSpeed:200, projColor:'#f1c40f'},
+  hedgehog:    {name:'Kirpi',        hp:50,  xp:18,  color:'#a0522d', size:12, speed:30,  dmg:2,  biome:'meadow',   icon:'🦔', ability:'thorns',   aggroRange:60, thornsDmg:4},
+  // Mushroom Forest (level 5+)
+  mush_sprite: {name:'Mantar Perisi',hp:40,  xp:22,  color:'#9b59b6', size:10, speed:50,  dmg:4,  biome:'mushroom', icon:'🍄', ability:'aoe_poison',aggroRange:100, aoeRadius:50, poisonDmg:3, poisonDur:3},
+  bat:         {name:'Yarasa',       hp:25,  xp:20,  color:'#5d4e6d', size:8,  speed:150, dmg:6,  biome:'mushroom', icon:'🦇', ability:'swoop',    aggroRange:160},
+  snail:       {name:'Salyangoz',    hp:80,  xp:30,  color:'#7f8c8d', size:14, speed:20,  dmg:3,  biome:'mushroom', icon:'🐌', ability:'trail_poison',aggroRange:70, poisonDmg:2, poisonDur:4},
+  // Thorn Wasteland (level 10+)
+  scorpion:    {name:'Akrep',        hp:55,  xp:35,  color:'#d4a017', size:12, speed:70,  dmg:8,  biome:'thorn',    icon:'🦂', ability:'melee_poison',aggroRange:90, poisonDmg:4, poisonDur:3},
+  lizard:      {name:'Kertenkele',   hp:35,  xp:28,  color:'#27ae60', size:10, speed:180, dmg:7,  biome:'thorn',    icon:'🦎', ability:'dash',     aggroRange:120, dashSpeed:350, dashDur:0.3},
+  snake:       {name:'Yılan',        hp:30,  xp:32,  color:'#2ecc71', size:9,  speed:60,  dmg:5,  biome:'thorn',    icon:'🐍', ability:'ranged_poison',aggroRange:140, projSpeed:180, projColor:'#2ecc71', poisonDmg:3, poisonDur:3},
+  // Swamp (level 15+)
+  frog:        {name:'Kurbağa',      hp:45,  xp:38,  color:'#27ae60', size:12, speed:90,  dmg:5,  biome:'swamp',    icon:'🐸', ability:'pull',     aggroRange:130, pullRange:100},
+  crocodile:   {name:'Timsah',       hp:120, xp:55,  color:'#6b8e23', size:18, speed:50,  dmg:15, biome:'swamp',    icon:'🐊', ability:'ambush',   aggroRange:70, ambushDmg:25},
+  mosquito:    {name:'Sivrisinek',   hp:15,  xp:20,  color:'#e74c3c', size:6,  speed:160, dmg:3,  biome:'swamp',    icon:'🦟', ability:'lifedrain',aggroRange:120, drainPct:0.3},
+  // Ice (level 20+)
+  ice_wolf:    {name:'Buz Kurdu',    hp:70,  xp:50,  color:'#85c1e9', size:14, speed:130, dmg:10, biome:'ice',      icon:'🐺', ability:'howl',     aggroRange:110, howlRadius:80, howlBuff:0.3},
+  ice_element: {name:'Buz Elementali',hp:90,xp:60,  color:'#5dade2', size:16, speed:50,  dmg:8,  biome:'ice',      icon:'❄️', ability:'ranged_frost',aggroRange:160, projSpeed:160, projColor:'#5dade2', slowPct:0.4, slowDur:2},
+  polar_bear:  {name:'Kutup Ayısı',  hp:150, xp:70,  color:'#ecf0f1', size:20, speed:80,  dmg:18, biome:'ice',      icon:'🐻', ability:'charge',   aggroRange:100, chargeSpeed:300, chargeDur:0.5},
+  // Volcano (level 25+)
+  fire_elem:   {name:'Ateş Elementali',hp:100,xp:75, color:'#e74c3c', size:16, speed:60, dmg:12, biome:'volcano',  icon:'🔥', ability:'ranged_fire',aggroRange:160, projSpeed:200, projColor:'#e74c3c', fireDmg:5, fireDur:2},
+  magma_bat:   {name:'Magma Yarasası',hp:50, xp:55,  color:'#c0392b', size:10, speed:170, dmg:10, biome:'volcano',  icon:'🦇', ability:'divebomb', aggroRange:180, diveDmg:20, aoeRadius:40},
+  dragon_whelp:{name:'Ejderha Yavrusu',hp:180,xp:100,color:'#d35400', size:22, speed:90,  dmg:14, biome:'volcano',  icon:'🐉', ability:'breath',    aggroRange:140, breathAngle:0.5, breathRange:80, breathDmg:8},
+};
+
 // --- RARITY ---
 const RARITY = [
   {id:'common',   name:'Sıradan',  color:'#aaaaaa', mult:1},
@@ -260,6 +289,10 @@ const ITEMS = {
   fire_blade: {name:'Ateş Bıçağı',   type:'material', rarity:2, icon:'🔥'},
   endurance_stone:{name:'Dayanıklılık Taşı',type:'material',rarity:2,icon:'🪨'},
   phoenix_feather:{name:'Phoenix Tüyü',type:'material',rarity:3,icon:'🪶'},
+  creature_essence:{name:'Yaratık Özü',type:'material',rarity:2,icon:'👁️'},
+  venom_sac:  {name:'Zehir Kesesi',  type:'material', rarity:2, icon:'🧪'},
+  ice_shard:  {name:'Buz Kırığı',    type:'material', rarity:2, icon:'🧊'},
+  magma_core: {name:'Magma Çekirdeği',type:'material',rarity:3,icon:'🔥'},
   // Saw Equipment
   gear:       {name:'Basit Dişli',   type:'saw_motor', rarity:0, icon:'⚙️', stats:{speed:5}},
   turbo_motor:{name:'Turbo Motor',   type:'saw_motor', rarity:2, icon:'🏎️', stats:{speed:15,fuel_eff:10}},
@@ -363,6 +396,9 @@ const player = {
   fuelEff: 0, aoe: 0, minionChance: 0,
   mudImmune: false,
   poisonDmg: 0, poisonTimer: 0,
+  // Status effects
+  slowTimer: 0, slowPct: 0,
+  fireTimer: 0, fireDmg: 0,
 };
 
 let plants = [];     // {x,y,type,hp,maxHp,isBoss,bossData,lootDropped}
@@ -370,6 +406,8 @@ let loots = [];      // {x,y,itemId,count,rarity,lifetime,vy}
 let particles = [];  // {x,y,vx,vy,life,maxLife,color,size}
 let dmgNums = [];    // {x,y,text,color,life}
 let minions = [];    // {x,y,target,hp,attackCd}
+let creatures = [];  // {x,y,type,hp,maxHp,attackCd,abilityCd,angle,state,stateTimer,aggro}
+let projectiles = []; // {x,y,vx,vy,dmg,color,life,fromCreature,type,poisonDmg,poisonDur,slowPct,slowDur,fireDmg,fireDur}
 let notifications = [];
 let quests = {bushCut:0, mushCut:0, totalCut:0, targetBush:3, targetMush:2, targetTotal:10};
 
@@ -439,6 +477,12 @@ function playSound(type, vol=0.3) {
     case 'equip':
       osc.type='triangle'; osc.frequency.setValueAtTime(500,t); osc.frequency.exponentialRampToValueAtTime(700,t+0.15);
       gain.gain.exponentialRampToValueAtTime(0.01,t+0.2); osc.start(t); osc.stop(t+0.2); break;
+    case 'creature_hit':
+      osc.type='sawtooth'; osc.frequency.setValueAtTime(150,t); osc.frequency.exponentialRampToValueAtTime(80,t+0.1);
+      gain.gain.exponentialRampToValueAtTime(0.01,t+0.12); osc.start(t); osc.stop(t+0.12); break;
+    case 'creature_die':
+      osc.type='sine'; osc.frequency.setValueAtTime(300,t); osc.frequency.exponentialRampToValueAtTime(100,t+0.25);
+      gain.gain.exponentialRampToValueAtTime(0.01,t+0.3); osc.start(t); osc.stop(t+0.3); break;
     default:
       osc.type='sine'; osc.frequency.setValueAtTime(300,t);
       gain.gain.exponentialRampToValueAtTime(0.01,t+0.1); osc.start(t); osc.stop(t+0.1);
@@ -481,9 +525,9 @@ function generatePlants() {
         const plantTypes = biome.plants;
         const pType = plantTypes[h % plantTypes.length];
         const pDef = PLANTS[pType];
+        const diffMult = biome.difficulty;
         const px = tx * C.TILE + (h % 20) - 10;
         const py = ty * C.TILE + ((h >> 4) % 20) - 10;
-        const diffMult = biome.difficulty;
         plants.push({
           x: px, y: py, type: pType,
           hp: pDef.hp * diffMult, maxHp: pDef.hp * diffMult,
@@ -529,6 +573,54 @@ function spawnPlantNear(px, py, radius) {
   });
 }
 
+// --- CREATURE SPAWNING ---
+function generateCreatures() {
+  creatures = [];
+  const seed = Date.now() + 1;
+  for (let ty = 0; ty < C.WORLD_H; ty += 2) {
+    for (let tx = 0; tx < C.WORLD_W; tx += 2) {
+      const h = simpleHash(tx * 7919 + ty * 1337 + seed);
+      if (h % 100 < C.CREATURE_DENSITY * 100) {
+        const biome = getBiome(tx, ty);
+        if (player.level < biome.req) continue;
+        const biomeCreatures = Object.entries(CREATURES).filter(([k,v]) => v.biome === biome.id);
+        if (biomeCreatures.length === 0) continue;
+        const [cType, cDef] = biomeCreatures[h % biomeCreatures.length];
+        const cx = tx * C.TILE + (h % 40) - 20;
+        const cy = ty * C.TILE + ((h >> 4) % 40) - 20;
+        spawnCreature(cType, cx, cy);
+      }
+    }
+  }
+}
+
+function spawnCreature(type, x, y) {
+  const def = CREATURES[type];
+  if (!def) return;
+  creatures.push({
+    x: x, y: y, type: type,
+    hp: def.hp, maxHp: def.hp,
+    attackCd: 0, abilityCd: 0,
+    angle: 0, state: 'idle', stateTimer: 0,
+    aggro: false, lootDropped: false,
+    dashX: 0, dashY: 0, dashTimer: 0,
+    ambushTimer: 0, trailTimer: 0,
+    howlCd: 0, diveStartY: 0, diving: false,
+  });
+}
+
+function spawnCreatureNear(px, py, radius) {
+  const biome = getBiome(Math.floor(px/C.TILE), Math.floor(py/C.TILE));
+  if (player.level < biome.req) return;
+  const h = simpleHash(Math.floor(px*17) + Math.floor(py*11) + Date.now());
+  const biomeCreatures = Object.entries(CREATURES).filter(([k,v]) => v.biome === biome.id);
+  if (biomeCreatures.length === 0) return;
+  const [cType, cDef] = biomeCreatures[h % biomeCreatures.length];
+  const angle = Math.random() * Math.PI * 2;
+  const r = 100 + Math.random() * radius;
+  spawnCreature(cType, px + Math.cos(angle) * r, py + Math.sin(angle) * r);
+}
+
 // ============================================================
 // STATS CALCULATION
 // ============================================================
@@ -543,7 +635,6 @@ function recalcStats() {
   let poisonRes = 0, fireRes = 0, frostRes = 0;
   let mudImmune = false;
 
-  // Equipment stats
   for (const slot of [...SAW_SLOTS, ...CHAR_SLOTS]) {
     const eq = player.equipment[slot.id];
     if (eq && ITEMS[eq]) {
@@ -563,16 +654,13 @@ function recalcStats() {
       fireRes += s.fire_res || 0;
       frostRes += s.frost || 0;
       if (s.mud_imm) mudImmune = true;
-      if (s.slow) aoe += 0; // slow on hit
     }
   }
 
-  // Skill stats
   for (const [sid, lvl] of Object.entries(player.skills)) {
     const sk = SKILLS.find(s => s.id === sid);
     if (sk && lvl > 0) {
       const e = sk.effect;
-      if (e.doubleChance) { /* handled in combat */ }
       if (e.magnet) magnetRange += e.magnet * lvl;
       if (e.luck) luck += e.luck * lvl;
       if (e.fuel_eff) fuelEff += e.fuel_eff * lvl;
@@ -631,15 +719,25 @@ function itemCount(itemId) {
 // ============================================================
 // LOOT DROP
 // ============================================================
-function dropLoot(x, y, plantType, isBoss, bossData) {
+function dropLoot(x, y, plantType, isBoss, bossData, isCreature, creatureType) {
   const biome = getBiome(Math.floor(x/C.TILE), Math.floor(y/C.TILE));
   const luckBonus = player.luck / 100;
 
+  if (isCreature && creatureType) {
+    const cDef = CREATURES[creatureType];
+    // Creature drops based on ability
+    if (cDef.ability.includes('poison')) spawnLoot(x, y, 'venom_sac', 1 + Math.floor(Math.random()*2), 2);
+    if (cDef.ability.includes('frost')) spawnLoot(x, y, 'ice_shard', 1, 2);
+    if (cDef.ability.includes('fire')) spawnLoot(x, y, 'magma_core', 1, 3);
+    spawnLoot(x, y, 'creature_essence', 1 + Math.floor(Math.random()*2), 1);
+    // Gold
+    player.gold += Math.floor(2 + Math.random() * cDef.xp / 5);
+    return;
+  }
+
   if (isBoss && bossData) {
-    // Boss always drops legendary
     const dropId = bossData.drop;
     spawnLoot(x, y, dropId, 1, 4);
-    // Plus materials
     for (let i = 0; i < 5; i++) {
       const mats = ['wood','fiber','sap','crystal','essence'];
       spawnLoot(x + (Math.random()-0.5)*40, y + (Math.random()-0.5)*40, mats[i%5], 3+i, Math.min(i,4));
@@ -648,19 +746,16 @@ function dropLoot(x, y, plantType, isBoss, bossData) {
     return;
   }
 
-  // 100% material
   const mats = ['wood','fiber','sap'];
   const matRarity = Math.random() < 0.1 + luckBonus ? 1 : 0;
   const mat = mats[Math.floor(Math.random()*mats.length)];
   spawnLoot(x, y, mat, 1 + Math.floor(Math.random()*3), matRarity);
 
-  // 70% extra material
   if (Math.random() < 0.7 + luckBonus * 0.1) {
     const biomeMat = biome.drops[Math.floor(Math.random()*biome.drops.length)];
     if (ITEMS[biomeMat]) spawnLoot(x+(Math.random()-0.5)*20, y+(Math.random()-0.5)*20, biomeMat, 1, ITEMS[biomeMat].rarity);
   }
 
-  // 25% equipment part
   if (Math.random() < 0.25 + luckBonus * 0.05) {
     const eqTypes = ['saw_blade','saw_motor','saw_hose','saw_body','char_suit','char_mask','char_boot','char_glove'];
     const eqItems = Object.entries(ITEMS).filter(([k,v]) => eqTypes.includes(v.type) && v.rarity <= Math.min(Math.floor(Math.random()*3)+Math.floor(luckBonus*2),4));
@@ -670,7 +765,6 @@ function dropLoot(x, y, plantType, isBoss, bossData) {
     }
   }
 
-  // 4% wearable
   if (Math.random() < 0.04 + luckBonus * 0.02) {
     const wearables = Object.entries(ITEMS).filter(([k,v]) => v.type.startsWith('char_') && v.rarity >= 1);
     if (wearables.length > 0) {
@@ -679,7 +773,6 @@ function dropLoot(x, y, plantType, isBoss, bossData) {
     }
   }
 
-  // 1% legendary
   if (Math.random() < 0.01 + luckBonus * 0.01) {
     const legendaries = Object.entries(ITEMS).filter(([k,v]) => v.rarity === 4);
     if (legendaries.length > 0) {
@@ -688,9 +781,7 @@ function dropLoot(x, y, plantType, isBoss, bossData) {
     }
   }
 
-  // Gold
-  const goldAmt = Math.floor(1 + Math.random() * biome.difficulty * 3);
-  player.gold += goldAmt;
+  player.gold += Math.floor(1 + Math.random() * biome.difficulty * 3);
 }
 
 function spawnLoot(x, y, itemId, count, rarity) {
@@ -706,7 +797,6 @@ function attackPlantDirect(plant) {
   let isCrit = Math.random() * 100 < player.crit;
   if (isCrit) dmg = Math.floor(dmg * 1.5);
 
-  // Double strike
   player.hitCount++;
   const doubleLvl = player.skills.double_strike || 0;
   if (doubleLvl > 0 && player.hitCount % 3 === 0) {
@@ -719,25 +809,52 @@ function attackPlantDirect(plant) {
 
   plant.hp -= dmg;
 
-  // Damage number
   const color = isCrit ? '#f1c40f' : '#fff';
   spawnDmgNum(plant.x + (Math.random()-0.5)*20, plant.y - 10, (isCrit?'⚡':'') + dmg, color);
 
-  // Lifesteal
   if (player.lifesteal > 0) {
     const heal = Math.floor(dmg * player.lifesteal / 100);
     if (heal > 0) player.hp = Math.min(player.maxHp, player.hp + heal);
   }
 
-  // Minion chance
   if (player.minionChance > 0 && Math.random() < player.minionChance) {
     minions.push({x: plant.x, y: plant.y, hp: 30, attackCd: 0, life: 20});
     spawnDmgNum(plant.x, plant.y + 10, '🐾 Minyon!', '#2ecc71');
   }
 
-  // Plant killed
   if (plant.hp <= 0) {
     killPlant(plant);
+  }
+}
+
+function attackCreatureDirect(creature) {
+  let dmg = player.power;
+  let isCrit = Math.random() * 100 < player.crit;
+  if (isCrit) dmg = Math.floor(dmg * 1.5);
+
+  player.hitCount++;
+  const doubleLvl = player.skills.double_strike || 0;
+  if (doubleLvl > 0 && player.hitCount % 3 === 0) {
+    const chance = SKILLS.find(s=>s.id==='double_strike').effect.doubleChance * doubleLvl;
+    if (Math.random() < chance) {
+      dmg *= 2;
+      spawnDmgNum(creature.x, creature.y - 20, 'ÇİFT!', '#f1c40f');
+    }
+  }
+
+  creature.hp -= dmg;
+
+  const color = isCrit ? '#f1c40f' : '#fff';
+  spawnDmgNum(creature.x + (Math.random()-0.5)*20, creature.y - 10, (isCrit?'⚡':'') + dmg, color);
+  playSound('creature_hit', 0.2);
+
+  if (player.lifesteal > 0) {
+    const heal = Math.floor(dmg * player.lifesteal / 100);
+    if (heal > 0) player.hp = Math.min(player.maxHp, player.hp + heal);
+  }
+
+  if (creature.hp <= 0) {
+    killCreature(creature);
   }
 }
 
@@ -756,11 +873,9 @@ function killPlant(plant) {
   player.kills++;
   quests.totalCut++;
 
-  // Sound
   if (!plant.isBoss && pDef.sound) playSound(pDef.sound, 0.25);
   else playSound('levelup', 0.3);
 
-  // Particles
   const color = plant.isBoss ? plant.bossData.color : pDef.color;
   for (let i = 0; i < (plant.isBoss ? 30 : 12); i++) {
     particles.push({
@@ -771,14 +886,11 @@ function killPlant(plant) {
     });
   }
 
-  // Drop loot
-  dropLoot(plant.x, plant.y, plant.type, plant.isBoss, plant.bossData);
+  dropLoot(plant.x, plant.y, plant.type, plant.isBoss, plant.bossData, false, null);
 
-  // Quest tracking
   if (plant.type === 'dry_bush' || plant.type === 'snow_bush') quests.bushCut++;
   if (pDef.shape === 'mushroom') quests.mushCut++;
 
-  // Level up check
   while (player.xp >= player.xpNext) {
     player.xp -= player.xpNext;
     player.level++;
@@ -789,14 +901,34 @@ function killPlant(plant) {
     recalcStats();
     playSound('levelup', 0.4);
     showNotification(`🎉 Seviye ${player.level}! Yetenek puanı kazandın!`);
-    // Spawn new plants for new biome access
     if (BIOMES.some(b => b.req === player.level)) {
       showNotification(`🗺️ Yeni biyom açıldı!`);
       generatePlants();
+      generateCreatures();
     }
   }
 
   plant.lootDropped = true;
+}
+
+function killCreature(creature) {
+  const cDef = CREATURES[creature.type];
+  player.xp += cDef.xp;
+  player.kills++;
+
+  playSound('creature_die', 0.3);
+
+  for (let i = 0; i < 8; i++) {
+    particles.push({
+      x: creature.x, y: creature.y,
+      vx: (Math.random()-0.5)*150, vy: (Math.random()-0.5)*150,
+      life: 0.4 + Math.random()*0.4, maxLife: 1,
+      color: cDef.color, size: 2 + Math.random()*3,
+    });
+  }
+
+  dropLoot(creature.x, creature.y, null, false, null, true, creature.type);
+  creature.lootDropped = true;
 }
 
 // ============================================================
@@ -817,9 +949,526 @@ function showNotification(text) {
 }
 
 // ============================================================
+// PROJECTILE SYSTEM
+// ============================================================
+function spawnProjectile(x, y, angle, speed, dmg, color, type, extra={}) {
+  projectiles.push({
+    x, y,
+    vx: Math.cos(angle) * speed,
+    vy: Math.sin(angle) * speed,
+    dmg, color, life: 3, fromCreature: true, type,
+    poisonDmg: extra.poisonDmg || 0, poisonDur: extra.poisonDur || 0,
+    slowPct: extra.slowPct || 0, slowDur: extra.slowDur || 0,
+    fireDmg: extra.fireDmg || 0, fireDur: extra.fireDur || 0,
+  });
+}
+
+function updateProjectiles(dt) {
+  for (let i = projectiles.length - 1; i >= 0; i--) {
+    const p = projectiles[i];
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.life -= dt;
+
+    if (p.life <= 0) {
+      projectiles.splice(i, 1);
+      continue;
+    }
+
+    const d = dist(p.x, p.y, player.x, player.y);
+    if (d < 25) {
+      // Hit player
+      let dmg = p.dmg;
+      if (player.armor > 0) dmg = Math.max(1, dmg - player.armor);
+      player.hp -= dmg;
+      spawnDmgNum(player.x, player.y - 20, '-' + dmg, '#e74c3c');
+      playSound('hit', 0.2);
+
+      // Apply status effects
+      if (p.poisonDmg > 0 && Math.random() * 100 > player.poisonRes) {
+        player.poisonDmg = p.poisonDmg;
+        player.poisonTimer = p.poisonDur;
+        showNotification('☠️ Zehirlendin!');
+      }
+      if (p.slowPct > 0) {
+        player.slowPct = p.slowPct;
+        player.slowTimer = p.slowDur;
+        showNotification('❄️ Yavaşladın!');
+      }
+      if (p.fireDmg > 0 && Math.random() * 100 > player.fireRes) {
+        player.fireDmg = p.fireDmg;
+        player.fireTimer = p.fireDur;
+        showNotification('🔥 Yanıyorsun!');
+      }
+
+      projectiles.splice(i, 1);
+    }
+  }
+}
+
+function renderProjectiles() {
+  for (const p of projectiles) {
+    const sx = p.x - camera.x, sy = p.y - camera.y;
+    ctx.beginPath();
+    ctx.arc(sx, sy, 4, 0, Math.PI*2);
+    ctx.fillStyle = p.color;
+    ctx.fill();
+    // Trail
+    ctx.beginPath();
+    ctx.moveTo(sx, sy);
+    ctx.lineTo(sx - p.vx * 0.05, sy - p.vy * 0.05);
+    ctx.strokeStyle = p.color;
+    ctx.globalAlpha = 0.5;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+}
+
+// ============================================================
+// CREATURE AI
+// ============================================================
+function updateCreatures(dt) {
+  // Spawn creatures near player if too few
+  const nearCreatures = creatures.filter(c => dist(c.x, c.y, player.x, player.y) < 500 && c.hp > 0).length;
+  if (nearCreatures < 5) {
+    for (let i = 0; i < 2; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const r = 250 + Math.random() * 300;
+      spawnCreatureNear(player.x + Math.cos(angle)*r, player.y + Math.sin(angle)*r, r);
+    }
+  }
+
+  for (let i = creatures.length - 1; i >= 0; i--) {
+    const c = creatures[i];
+    if (c.hp <= 0) {
+      if (c.lootDropped) creatures.splice(i, 1);
+      continue;
+    }
+
+    const cDef = CREATURES[c.type];
+    const d = dist(c.x, c.y, player.x, player.y);
+
+    // Check aggro
+    if (!c.aggro && d < cDef.aggroRange) {
+      c.aggro = true;
+    }
+
+    // Cooldowns
+    if (c.attackCd > 0) c.attackCd -= dt;
+    if (c.abilityCd > 0) c.abilityCd -= dt;
+    if (c.howlCd > 0) c.howlCd -= dt;
+    if (c.trailTimer > 0) c.trailTimer -= dt;
+
+    // Status timers
+    if (c.stateTimer > 0) c.stateTimer -= dt;
+    if (c.dashTimer > 0) c.dashTimer -= dt;
+    if (c.ambushTimer > 0) c.ambushTimer -= dt;
+
+    // Movement & AI based on ability
+    let moveSpeed = cDef.speed;
+    let angle = Math.atan2(player.y - c.y, player.x - c.x);
+
+    switch(cDef.ability) {
+      case 'melee':
+      case 'melee_poison':
+      case 'thorns':
+        if (c.aggro) {
+          c.x += Math.cos(angle) * moveSpeed * dt;
+          c.y += Math.sin(angle) * moveSpeed * dt;
+          if (d < 30 && c.attackCd <= 0) {
+            let dmg = cDef.dmg;
+            if (player.armor > 0) dmg = Math.max(1, dmg - player.armor);
+            if (cDef.ability === 'thorns' && player.thorns > 0) {
+              c.hp -= player.thorns;
+              spawnDmgNum(c.x, c.y - 10, player.thorns, '#e74c3c');
+            }
+            player.hp -= dmg;
+            spawnDmgNum(player.x, player.y - 20, '-' + dmg, '#e74c3c');
+            c.attackCd = 1;
+            playSound('creature_hit', 0.2);
+            if (cDef.ability === 'melee_poison' && Math.random() * 100 > player.poisonRes) {
+              player.poisonDmg = cDef.poisonDmg;
+              player.poisonTimer = cDef.poisonDur;
+            }
+          }
+        }
+        break;
+
+      case 'ranged':
+      case 'ranged_poison':
+      case 'ranged_frost':
+      case 'ranged_fire':
+        if (c.aggro && c.abilityCd <= 0 && d < cDef.aggroRange) {
+          const extra = {};
+          if (cDef.ability === 'ranged_poison') {
+            extra.poisonDmg = cDef.poisonDmg;
+            extra.poisonDur = cDef.poisonDur;
+          } else if (cDef.ability === 'ranged_frost') {
+            extra.slowPct = cDef.slowPct;
+            extra.slowDur = cDef.slowDur;
+          } else if (cDef.ability === 'ranged_fire') {
+            extra.fireDmg = cDef.fireDmg;
+            extra.fireDur = cDef.fireDur;
+          }
+          spawnProjectile(c.x, c.y, angle, cDef.projSpeed, cDef.dmg, cDef.projColor, cDef.ability, extra);
+          c.abilityCd = 2;
+        }
+        // Kite - keep distance
+        if (c.aggro && d < 100) {
+          c.x -= Math.cos(angle) * moveSpeed * 0.5 * dt;
+          c.y -= Math.sin(angle) * moveSpeed * 0.5 * dt;
+        } else if (c.aggro && d > 150) {
+          c.x += Math.cos(angle) * moveSpeed * 0.5 * dt;
+          c.y += Math.sin(angle) * moveSpeed * 0.5 * dt;
+        }
+        break;
+
+      case 'dash':
+        if (c.aggro) {
+          if (c.dashTimer <= 0 && d < cDef.aggroRange && d > 50) {
+            // Start dash
+            c.dashTimer = cDef.dashDur;
+            c.dashX = Math.cos(angle);
+            c.dashY = Math.sin(angle);
+          }
+          if (c.dashTimer > 0) {
+            c.x += c.dashX * cDef.dashSpeed * dt;
+            c.y += c.dashY * cDef.dashSpeed * dt;
+            // Trail effect
+            if (Math.random() < 0.3) {
+              particles.push({
+                x: c.x, y: c.y,
+                vx: (Math.random()-0.5)*50, vy: (Math.random()-0.5)*50,
+                life: 0.3, maxLife: 0.3,
+                color: cDef.color, size: 3,
+              });
+            }
+          } else {
+            c.x += Math.cos(angle) * moveSpeed * dt;
+            c.y += Math.sin(angle) * moveSpeed * dt;
+          }
+          if (d < 30 && c.attackCd <= 0) {
+            let dmg = cDef.dmg;
+            if (player.armor > 0) dmg = Math.max(1, dmg - player.armor);
+            player.hp -= dmg;
+            spawnDmgNum(player.x, player.y - 20, '-' + dmg, '#e74c3c');
+            c.attackCd = 0.8;
+            playSound('creature_hit', 0.2);
+          }
+        }
+        break;
+
+      case 'charge':
+        if (c.aggro) {
+          if (c.dashTimer <= 0 && d < cDef.aggroRange) {
+            c.dashTimer = cDef.chargeDur;
+            c.dashX = Math.cos(angle);
+            c.dashY = Math.sin(angle);
+          }
+          if (c.dashTimer > 0) {
+            c.x += c.dashX * cDef.chargeSpeed * dt;
+            c.y += c.dashY * cDef.chargeSpeed * dt;
+          } else {
+            c.x += Math.cos(angle) * moveSpeed * 0.5 * dt;
+            c.y += Math.sin(angle) * moveSpeed * 0.5 * dt;
+          }
+          if (d < 35 && c.attackCd <= 0) {
+            let dmg = cDef.dmg;
+            if (c.dashTimer > 0) dmg *= 1.5;
+            if (player.armor > 0) dmg = Math.max(1, dmg - player.armor);
+            player.hp -= dmg;
+            spawnDmgNum(player.x, player.y - 20, '-' + dmg, '#e74c3c');
+            c.attackCd = 1.2;
+            playSound('creature_hit', 0.25);
+          }
+        }
+        break;
+
+      case 'swoop':
+      case 'divebomb':
+        if (c.aggro) {
+          if (!c.diving && d < cDef.aggroRange && d > 100 && c.abilityCd <= 0) {
+            c.diving = true;
+            c.diveStartY = c.y;
+            c.abilityCd = 4;
+          }
+          if (c.diving) {
+            // Dive down
+            c.x += Math.cos(angle) * cDef.speed * 2 * dt;
+            c.y += Math.sin(angle) * cDef.speed * 2 * dt;
+            if (d < 30) {
+              let dmg = cDef.ability === 'divebomb' ? cDef.diveDmg : cDef.dmg;
+              if (player.armor > 0) dmg = Math.max(1, dmg - player.armor);
+              player.hp -= dmg;
+              spawnDmgNum(player.x, player.y - 20, '-' + dmg, '#e74c3c');
+              playSound('creature_hit', 0.25);
+              // AOE for divebomb
+              if (cDef.ability === 'divebomb' && cDef.aoeRadius) {
+                for (const other of creatures) {
+                  if (other !== c && other.hp > 0 && dist(c.x, c.y, other.x, other.y) < cDef.aoeRadius) {
+                    other.hp -= cDef.diveDmg * 0.5;
+                    spawnDmgNum(other.x, other.y - 10, Math.floor(cDef.diveDmg * 0.5), '#e67e22');
+                  }
+                }
+              }
+              c.diving = false;
+            }
+          } else {
+            // Circle above
+            const circleAngle = angle + Math.sin(Date.now() / 500) * 0.5;
+            c.x += Math.cos(circleAngle) * moveSpeed * dt;
+            c.y += Math.sin(circleAngle) * moveSpeed * dt;
+          }
+        }
+        break;
+
+      case 'pull':
+        if (c.aggro) {
+          c.x += Math.cos(angle) * moveSpeed * dt;
+          c.y += Math.sin(angle) * moveSpeed * dt;
+          if (d < cDef.pullRange && c.abilityCd <= 0) {
+            // Pull player
+            const pullAngle = Math.atan2(c.y - player.y, c.x - player.x);
+            player.x += Math.cos(pullAngle) * 50;
+            player.y += Math.sin(pullAngle) * 50;
+            spawnDmgNum(player.x, player.y - 30, '🌀 Çekildi!', '#9b59b6');
+            c.abilityCd = 3;
+          }
+          if (d < 30 && c.attackCd <= 0) {
+            let dmg = cDef.dmg;
+            if (player.armor > 0) dmg = Math.max(1, dmg - player.armor);
+            player.hp -= dmg;
+            spawnDmgNum(player.x, player.y - 20, '-' + dmg, '#e74c3c');
+            c.attackCd = 1;
+            playSound('creature_hit', 0.2);
+          }
+        }
+        break;
+
+      case 'ambush':
+        if (c.aggro) {
+          if (c.ambushTimer <= 0 && d > 100) {
+            c.ambushTimer = 2;
+          }
+          if (c.ambushTimer > 0) {
+            // Hidden, move faster
+            moveSpeed *= 1.5;
+            c.x += Math.cos(angle) * moveSpeed * dt;
+            c.y += Math.sin(angle) * moveSpeed * dt;
+          }
+          if (d < 40 && c.attackCd <= 0) {
+            let dmg = c.ambushTimer > 0 ? cDef.ambushDmg : cDef.dmg;
+            if (player.armor > 0) dmg = Math.max(1, dmg - player.armor);
+            player.hp -= dmg;
+            spawnDmgNum(player.x, player.y - 20, (c.ambushTimer > 0 ? '💀 ' : '-') + dmg, '#c0392b');
+            c.attackCd = 1.5;
+            c.ambushTimer = 0;
+            playSound('creature_hit', 0.3);
+          }
+        }
+        break;
+
+      case 'lifedrain':
+        if (c.aggro) {
+          c.x += Math.cos(angle) * moveSpeed * dt;
+          c.y += Math.sin(angle) * moveSpeed * dt;
+          if (d < 40 && c.attackCd <= 0) {
+            let dmg = cDef.dmg;
+            if (player.armor > 0) dmg = Math.max(1, dmg - player.armor);
+            player.hp -= dmg;
+            c.hp = Math.min(c.maxHp, c.hp + dmg * cDef.drainPct);
+            spawnDmgNum(player.x, player.y - 20, '-' + dmg, '#e74c3c');
+            spawnDmgNum(c.x, c.y - 10, '+' + Math.floor(dmg * cDef.drainPct), '#2ecc71');
+            c.attackCd = 0.6;
+            playSound('creature_hit', 0.2);
+          }
+        }
+        break;
+
+      case 'aoe_poison':
+        if (c.aggro) {
+          c.x += Math.cos(angle) * moveSpeed * 0.7 * dt;
+          c.y += Math.sin(angle) * moveSpeed * 0.7 * dt;
+          if (d < cDef.aoeRadius && c.abilityCd <= 0) {
+            // AOE poison cloud
+            for (let i = 0; i < 8; i++) {
+              particles.push({
+                x: c.x + (Math.random()-0.5)*cDef.aoeRadius,
+                y: c.y + (Math.random()-0.5)*cDef.aoeRadius,
+                vx: (Math.random()-0.5)*20, vy: (Math.random()-0.5)*20,
+                life: 2, maxLife: 2,
+                color: '#9b59b6', size: 5,
+              });
+            }
+            if (d < cDef.aoeRadius && Math.random() * 100 > player.poisonRes) {
+              player.poisonDmg = cDef.poisonDmg;
+              player.poisonTimer = cDef.poisonDur;
+              showNotification('☠️ Zehir bulutu!');
+            }
+            c.abilityCd = 4;
+          }
+          if (d < 30 && c.attackCd <= 0) {
+            let dmg = cDef.dmg;
+            if (player.armor > 0) dmg = Math.max(1, dmg - player.armor);
+            player.hp -= dmg;
+            spawnDmgNum(player.x, player.y - 20, '-' + dmg, '#e74c3c');
+            c.attackCd = 1;
+            playSound('creature_hit', 0.2);
+          }
+        }
+        break;
+
+      case 'trail_poison':
+        if (c.aggro) {
+          c.x += Math.cos(angle) * moveSpeed * dt;
+          c.y += Math.sin(angle) * moveSpeed * dt;
+          // Leave poison trail
+          if (c.trailTimer <= 0) {
+            c.trailTimer = 0.5;
+            particles.push({
+              x: c.x, y: c.y,
+              vx: 0, vy: 0,
+              life: 3, maxLife: 3,
+              color: '#2ecc71', size: 6,
+            });
+          }
+          if (d < 25 && c.attackCd <= 0) {
+            let dmg = cDef.dmg;
+            if (player.armor > 0) dmg = Math.max(1, dmg - player.armor);
+            player.hp -= dmg;
+            if (Math.random() * 100 > player.poisonRes) {
+              player.poisonDmg = cDef.poisonDmg;
+              player.poisonTimer = cDef.poisonDur;
+            }
+            spawnDmgNum(player.x, player.y - 20, '-' + dmg, '#e74c3c');
+            c.attackCd = 1;
+            playSound('creature_hit', 0.2);
+          }
+        }
+        break;
+
+      case 'howl':
+        if (c.aggro) {
+          c.x += Math.cos(angle) * moveSpeed * dt;
+          c.y += Math.sin(angle) * moveSpeed * dt;
+          if (c.howlCd <= 0 && d < cDef.howlRadius) {
+            // Buff nearby creatures
+            let buffed = 0;
+            for (const other of creatures) {
+              if (other !== c && other.hp > 0 && dist(c.x, c.y, other.x, other.y) < cDef.howlRadius) {
+                other.state = 'buffed';
+                other.stateTimer = 5;
+                buffed++;
+              }
+            }
+            spawnDmgNum(c.x, c.y - 20, '🐺 AUUU!', '#85c1e9');
+            c.howlCd = 8;
+          }
+          if (c.state === 'buffed' && c.stateTimer > 0) {
+            moveSpeed *= (1 + cDef.howlBuff);
+          }
+          if (d < 30 && c.attackCd <= 0) {
+            let dmg = cDef.dmg;
+            if (player.armor > 0) dmg = Math.max(1, dmg - player.armor);
+            player.hp -= dmg;
+            spawnDmgNum(player.x, player.y - 20, '-' + dmg, '#e74c3c');
+            c.attackCd = 1;
+            playSound('creature_hit', 0.2);
+          }
+        }
+        break;
+
+      case 'breath':
+        if (c.aggro && c.abilityCd <= 0 && d < cDef.breathRange) {
+          // Cone attack
+          const coneAngle = cDef.breathAngle;
+          const dirAngle = angle;
+          for (let i = 0; i < 15; i++) {
+            const spread = (Math.random() - 0.5) * coneAngle * 2;
+            const projAngle = dirAngle + spread;
+            spawnProjectile(c.x, c.y, projAngle, 150, cDef.breathDmg, '#e74c3c', 'breath', {fireDmg: 2, fireDur: 2});
+          }
+          c.abilityCd = 3;
+        }
+        if (c.aggro) {
+          c.x += Math.cos(angle) * moveSpeed * 0.6 * dt;
+          c.y += Math.sin(angle) * moveSpeed * 0.6 * dt;
+        }
+        break;
+    }
+
+    // Clamp to world
+    c.x = Math.max(20, Math.min(C.WORLD_W * C.TILE - 20, c.x));
+    c.y = Math.max(20, Math.min(C.WORLD_H * C.TILE - 20, c.y));
+  }
+}
+
+function renderCreatures() {
+  for (const c of creatures) {
+    if (c.hp <= 0) continue;
+    const sx = c.x - camera.x, sy = c.y - camera.y;
+    if (sx < -60 || sx > C.W+60 || sy < -60 || sy > C.H+60) continue;
+    const cDef = CREATURES[c.type];
+
+    // Draw creature emoji
+    ctx.font = `${cDef.size}px serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Flip if moving left
+    ctx.save();
+    if (player.x < c.x) {
+      ctx.scale(-1, 1);
+      ctx.fillText(cDef.icon, -sx, sy);
+    } else {
+      ctx.fillText(cDef.icon, sx, sy);
+    }
+    ctx.restore();
+
+    // HP bar
+    if (c.hp < c.maxHp || c.aggro) {
+      const barW = Math.max(cDef.size, 30);
+      const barH = 4;
+      const bx = sx - barW/2, by = sy - cDef.size/2 - 10;
+      ctx.fillStyle = '#333';
+      ctx.fillRect(bx, by, barW, barH);
+      ctx.fillStyle = c.hp > c.maxHp * 0.3 ? '#2ecc71' : '#e74c3c';
+      ctx.fillRect(bx, by, barW * (c.hp / c.maxHp), barH);
+    }
+
+    // Buff indicator
+    if (c.state === 'buffed' && c.stateTimer > 0) {
+      ctx.font = '10px sans-serif';
+      ctx.fillStyle = '#f1c40f';
+      ctx.fillText('⚡', sx, sy - cDef.size/2 - 18);
+    }
+
+    // Name
+    if (c.aggro) {
+      ctx.font = '9px sans-serif';
+      ctx.fillStyle = '#aaa';
+      ctx.textAlign = 'center';
+      ctx.fillText(cDef.name, sx, sy + cDef.size/2 + 8);
+    }
+  }
+}
+
+// ============================================================
 // UPDATE LOOP
 // ============================================================
 function update(dt) {
+  // Player slow effect
+  let speedMult = 1;
+  if (player.slowTimer > 0) {
+    player.slowTimer -= dt;
+    speedMult = 1 - player.slowPct;
+  }
+  // Player fire damage
+  if (player.fireTimer > 0) {
+    player.fireTimer -= dt;
+    player.hp -= player.fireDmg * dt;
+  }
+
   // Player movement (keyboard + joystick)
   let dx = 0, dy = 0;
   if (keys['KeyW'] || keys['ArrowUp']) dy = -1;
@@ -834,7 +1483,7 @@ function update(dt) {
   if (dx || dy) {
     const len = Math.sqrt(dx*dx+dy*dy);
     dx /= len; dy /= len;
-    let spd = C.PLAYER_SPEED * player.speed;
+    let spd = C.PLAYER_SPEED * player.speed * speedMult;
     // Mud slowdown
     const biome = getBiome(Math.floor(player.x/C.TILE), Math.floor(player.y/C.TILE));
     if (biome.id === 'swamp' && !player.mudImmune) spd *= 0.7;
@@ -845,10 +1494,18 @@ function update(dt) {
     player.y = Math.max(20, Math.min(C.WORLD_H * C.TILE - 20, player.y));
   }
 
-  // Player angle: toward nearest plant if in range, else toward mouse
+  // Player angle: toward nearest enemy if in range, else toward nearest plant, else mouse
   const sx = player.x - camera.x, sy = player.y - camera.y;
-  let nearestPlantAngle = null;
-  let nearestPlantDist = Infinity;
+  let nearestCreature = null, nearestCreatureDist = Infinity;
+  for (const c of creatures) {
+    if (c.hp <= 0) continue;
+    const d = dist(player.x, player.y, c.x, c.y);
+    if (d < player.atkRange + 30 && d < nearestCreatureDist) {
+      nearestCreatureDist = d;
+      nearestCreature = c;
+    }
+  }
+  let nearestPlantAngle = null, nearestPlantDist = Infinity;
   for (const p of plants) {
     if (p.hp <= 0) continue;
     const d = dist(player.x, player.y, p.x, p.y);
@@ -857,7 +1514,13 @@ function update(dt) {
       nearestPlantAngle = Math.atan2(p.y - player.y, p.x - player.x);
     }
   }
-  player.angle = nearestPlantAngle !== null ? nearestPlantAngle : Math.atan2(mouse.y - sy, mouse.x - sx);
+  if (nearestCreature) {
+    player.angle = Math.atan2(nearestCreature.y - player.y, nearestCreature.x - player.x);
+  } else if (nearestPlantAngle !== null) {
+    player.angle = nearestPlantAngle;
+  } else {
+    player.angle = Math.atan2(mouse.y - sy, mouse.x - sx);
+  }
 
   // Attack cooldown
   if (player.attackCd > 0) player.attackCd -= dt;
@@ -872,25 +1535,47 @@ function update(dt) {
     player.hp -= player.poisonDmg * dt;
   }
 
-  // Auto-attack: ALL plants within range (multi-hit)
+  // Auto-attack: creatures AND plants within range (multi-hit)
   if (player.attackCd <= 0) {
-    const targets = [];
-    for (const p of plants) {
-      if (p.hp <= 0) continue;
-      const d = dist(player.x, player.y, p.x, p.y);
-      if (d < player.atkRange + 20) targets.push(p);
+    let attacked = false;
+    // Attack creatures first
+    for (const c of creatures) {
+      if (c.hp <= 0) continue;
+      const d = dist(player.x, player.y, c.x, c.y);
+      if (d < player.atkRange + 30) {
+        player.angle = Math.atan2(c.y - player.y, c.x - player.x);
+        player.attackCd = C.ATK_CD / player.speed;
+        player.attackAnim = 0.2;
+        attackCreatureDirect(c);
+        attacked = true;
+        break; // Attack one creature at a time
+      }
     }
-    if (targets.length > 0) {
-      // Face nearest target
-      targets.sort((a, b) => dist(player.x, player.y, a.x, a.y) - dist(player.x, player.y, b.x, b.y));
-      player.angle = Math.atan2(targets[0].y - player.y, targets[0].x - player.x);
-      player.attackCd = C.ATK_CD / player.speed;
-      player.attackAnim = 0.2;
-      for (const t of targets) {
-        attackPlantDirect(t);
+    // Then attack plants
+    if (!attacked) {
+      const targets = [];
+      for (const p of plants) {
+        if (p.hp <= 0) continue;
+        const d = dist(player.x, player.y, p.x, p.y);
+        if (d < player.atkRange + 20) targets.push(p);
+      }
+      if (targets.length > 0) {
+        targets.sort((a, b) => dist(player.x, player.y, a.x, a.y) - dist(player.x, player.y, b.x, b.y));
+        player.angle = Math.atan2(targets[0].y - player.y, targets[0].x - player.x);
+        player.attackCd = C.ATK_CD / player.speed;
+        player.attackAnim = 0.2;
+        for (const t of targets) {
+          attackPlantDirect(t);
+        }
       }
     }
   }
+
+  // Update creatures
+  updateCreatures(dt);
+
+  // Update projectiles
+  updateProjectiles(dt);
 
   // Loot magnet & pickup
   for (let i = loots.length - 1; i >= 0; i--) {
@@ -943,12 +1628,17 @@ function update(dt) {
     m.life -= dt;
     if (m.life <= 0 || m.hp <= 0) { minions.splice(i, 1); continue; }
     m.attackCd -= dt;
-    // Find nearest plant
+    // Find nearest plant or creature
     let nearest = null, nd = Infinity;
     for (const p of plants) {
       if (p.hp <= 0) continue;
       const d = dist(m.x, m.y, p.x, p.y);
       if (d < nd) { nearest = p; nd = d; }
+    }
+    for (const c of creatures) {
+      if (c.hp <= 0) continue;
+      const d = dist(m.x, m.y, c.x, c.y);
+      if (d < nd) { nearest = c; nd = d; }
     }
     if (nearest) {
       const angle = Math.atan2(nearest.y - m.y, nearest.x - m.x);
@@ -958,15 +1648,20 @@ function update(dt) {
         nearest.hp -= 5;
         m.attackCd = 0.8;
         spawnDmgNum(nearest.x, nearest.y - 5, 5, '#2ecc71');
-        if (nearest.hp <= 0) killPlant(nearest);
+        if (nearest.hp <= 0) {
+          if (nearest.type && CREATURES[nearest.type]) killCreature(nearest);
+          else killPlant(nearest);
+        }
       }
     }
   }
 
-  // Remove dead plants (keep some for visual)
+  // Remove dead plants
   plants = plants.filter(p => p.hp > 0 || !p.lootDropped);
-  // Actually remove fully dead
   plants = plants.filter(p => p.hp > 0);
+
+  // Remove dead creatures
+  creatures = creatures.filter(c => c.hp > 0 || !c.lootDropped);
 
   // Respawn plants near player if too few
   const nearPlants = plants.filter(p => dist(p.x, p.y, player.x, player.y) < 500).length;
@@ -986,6 +1681,14 @@ function update(dt) {
 
   // Update HUD
   updateHUD();
+
+  // Check player death
+  if (player.hp <= 0) {
+    player.hp = player.maxHp;
+    player.x = C.WORLD_W * C.TILE / 2;
+    player.y = C.WORLD_H * C.TILE / 2;
+    showNotification('💀 Öldün! Başlangıç noktasına ışınlandın.');
+  }
 }
 
 // ============================================================
@@ -1065,7 +1768,6 @@ function render() {
     const color = p.isBoss ? p.bossData.color : def.color;
     const size = p.isBoss ? p.bossData.size : def.size;
 
-    // Plant shape
     ctx.save();
     ctx.translate(sx, sy);
     drawPlant(p.type, color, size, p.isBoss);
@@ -1090,6 +1792,12 @@ function render() {
       ctx.fillText('👑 ' + p.bossData.name, sx, sy - size - 14);
     }
   }
+
+  // Draw creatures (behind player)
+  renderCreatures();
+
+  // Draw projectiles
+  renderProjectiles();
 
   // Draw minions
   for (const m of minions) {
@@ -1430,6 +2138,17 @@ function renderMinimap() {
     mc.fillRect(p.x * scale - 1, p.y * scale - 1, 2, 2);
   }
 
+  // Creatures as red dots
+  for (const c of creatures) {
+    if (c.hp <= 0) continue;
+    const d = dist(c.x, c.y, player.x, player.y);
+    if (d > 800) continue;
+    mc.fillStyle = c.aggro ? '#e74c3c' : '#95a5a6';
+    mc.beginPath();
+    mc.arc(c.x * scale, c.y * scale, 2, 0, Math.PI*2);
+    mc.fill();
+  }
+
   // Player
   mc.fillStyle = '#f1c40f';
   mc.beginPath();
@@ -1447,7 +2166,7 @@ function renderMinimap() {
 // ============================================================
 function updateHUD() {
   document.getElementById('hud-level').textContent = player.level;
-  document.getElementById('hud-xp-text').textContent = `${player.xp}/${player.xpNext} XP`;
+  document.getElementById('hud-xp-text').textContent = `${Math.floor(player.xp)}/${player.xpNext} XP`;
   document.getElementById('hud-xp-bar').style.width = (player.xp / player.xpNext * 100) + '%';
   document.getElementById('hud-hp-text').textContent = `${Math.floor(player.hp)}/${player.maxHp}`;
   document.getElementById('hud-hp-bar').style.width = (player.hp / player.maxHp * 100) + '%';
@@ -1497,7 +2216,6 @@ function renderInventory() {
       div.style.borderColor = RARITY[item.rarity]?.color || '#444';
       div.title = item.name;
       div.onclick = () => {
-        // Unequip
         addItem(eq, 1);
         player.equipment[slot.id] = null;
         recalcStats();
@@ -1572,7 +2290,6 @@ function handleInvClick(itemId) {
   // Equipment
   if (item.type.startsWith('saw_') || item.type.startsWith('char_')) {
     const slotId = item.type;
-    // Unequip current
     if (player.equipment[slotId]) {
       addItem(player.equipment[slotId], 1);
     }
@@ -1705,7 +2422,6 @@ function setupInput() {
     joystick.stickY = t.clientY;
     joystick.dx = 0;
     joystick.dy = 0;
-    // Show joystick visuals
     jBase.style.display = 'block';
     jStick.style.display = 'block';
     jBase.style.left = (joystick.baseX - 50) + 'px';
@@ -1720,7 +2436,6 @@ function setupInput() {
       if (t.identifier === joystick.touchId) {
         joystick.stickX = t.clientX;
         joystick.stickY = t.clientY;
-        // Calculate direction
         let jx = joystick.stickX - joystick.baseX;
         let jy = joystick.stickY - joystick.baseY;
         const maxDist = 50;
@@ -1728,7 +2443,6 @@ function setupInput() {
         if (d > maxDist) { jx = jx/d*maxDist; jy = jy/d*maxDist; }
         joystick.dx = jx / maxDist;
         joystick.dy = jy / maxDist;
-        // Update stick visual
         jStick.style.left = (joystick.baseX + jx - 22) + 'px';
         jStick.style.top = (joystick.baseY + jy - 22) + 'px';
       }
@@ -1750,10 +2464,9 @@ function setupInput() {
   jZone.addEventListener('touchend', joystickEnd);
   jZone.addEventListener('touchcancel', joystickEnd);
 
-  // Right side touch for mouse direction (non-joystick area)
+  // Right side touch for mouse direction
   canvas.addEventListener('touchstart', e => {
     e.preventDefault();
-    // Only handle touches on the right half (non-joystick area)
     for (const t of e.changedTouches) {
       if (t.clientX > window.innerWidth * 0.5) {
         const rect = canvas.getBoundingClientRect();
@@ -1819,9 +2532,9 @@ function startGame() {
   ctx = canvas.getContext('2d');
   canvas.width = C.W;
   canvas.height = C.H;
-  // Fullscreen responsive - fill entire screen
+
+  // Fullscreen responsive
   function resize() {
-    // Canvas internal resolution stays fixed, CSS stretches to fill viewport
     canvas.style.width = '100vw';
     canvas.style.height = '100vh';
     canvas.style.position = 'fixed';
@@ -1838,15 +2551,13 @@ function startGame() {
     if (el.requestFullscreen) el.requestFullscreen();
     else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
     else if (el.msRequestFullscreen) el.msRequestFullscreen();
-    // Try to lock landscape on mobile
     if (screen.orientation && screen.orientation.lock) {
       screen.orientation.lock('landscape').catch(() => {});
     }
     setTimeout(resize, 200);
   }
-  // Detect mobile early for fullscreen
+
   isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-  // Auto fullscreen on mobile when starting
   if (isMobile) {
     document.getElementById('start-btn').addEventListener('click', () => {
       goFullscreen();
@@ -1860,6 +2571,7 @@ function startGame() {
   initAudio();
   recalcStats();
   generatePlants();
+  generateCreatures();
 
   // Give starter items
   addItem('steel_blade', 1);
