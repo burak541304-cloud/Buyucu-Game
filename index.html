@@ -6,42 +6,76 @@
 <title>CHOP & GROW - Bicki Bahcesi</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-html,body{width:100%;height:100%;overflow:hidden;background:#0b1010;color:#fff;font-family:Segoe UI,sans-serif;touch-action:none}
-body{position:fixed;inset:0;user-select:none;-webkit-user-select:none}
+html{
+  width:100%;height:100%;overflow:hidden;
+  /* safe area support for notch/punch-hole phones */
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+body{
+  position:fixed;inset:0;
+  background:#0b1010;color:#fff;
+  font-family:'Segoe UI',system-ui,sans-serif;
+  user-select:none;-webkit-user-select:none;
+  /* allow panel scroll but block page scroll */
+  touch-action:none;
+  overflow:hidden;
+}
 canvas{display:block}
-#game{position:fixed;inset:0;width:100vw;height:100vh}
+#game{position:fixed;inset:0;width:100%;height:100%}
 #ui{position:fixed;inset:0;pointer-events:none;z-index:20}
 #ui>*{pointer-events:auto}
-.hud{position:absolute;top:8px;left:8px;display:flex;flex-direction:column;gap:4px}
-.hud-card{background:rgba(0,0,0,.58);border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(6px);border-radius:10px;padding:6px 10px;font-size:12px;min-width:220px}
-.bar{margin-top:4px;height:10px;background:#1f2426;border-radius:999px;overflow:hidden}
+
+/* ── HUD ── */
+.hud{position:absolute;top:8px;left:8px;display:flex;flex-direction:column;gap:4px;max-width:240px}
+.hud-card{background:rgba(0,0,0,.62);border:1px solid rgba(255,255,255,.13);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-radius:10px;padding:6px 10px;font-size:12px}
+.bar{margin-top:4px;height:9px;background:#1a2025;border-radius:999px;overflow:hidden}
 .fill{height:100%;border-radius:999px;transition:width .15s linear}
-.xp{background:linear-gradient(90deg,#3498db,#6dd5fa)}
+.xp{background:linear-gradient(90deg,#2980b9,#6dd5fa)}
 .hp{background:linear-gradient(90deg,#c0392b,#ff6b6b)}
-.mana{background:linear-gradient(90deg,#8e44ad,#c471ed)}
-#biome{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.58);border:1px solid rgba(255,255,255,.14);border-radius:10px;padding:8px 12px;font-weight:700}
-#quest{position:absolute;top:8px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.58);border:1px solid rgba(255,255,255,.14);border-radius:10px;padding:8px 12px;font-size:12px}
-#actions{position:absolute;right:12px;bottom:12px;display:flex;gap:8px}
-button{border:none;border-radius:12px;padding:10px 14px;background:rgba(17,17,17,.88);color:#fff;border:1px solid rgba(255,255,255,.18);cursor:pointer}
-button:hover{border-color:#f1c40f}
-#minimapWrap{position:absolute;right:8px;bottom:86px;width:140px;height:140px;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.18);background:rgba(0,0,0,.45)}
+.mana{background:linear-gradient(90deg,#7d3c98,#c471ed)}
+
+/* ── top labels ── */
+#biome{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.62);border:1px solid rgba(255,255,255,.13);border-radius:10px;padding:6px 11px;font-weight:700;font-size:12px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+#quest{position:absolute;top:8px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.62);border:1px solid rgba(255,255,255,.13);border-radius:10px;padding:6px 11px;font-size:11px;white-space:nowrap;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+
+/* ── action buttons ── */
+#actions{position:absolute;right:8px;bottom:80px;display:flex;flex-direction:column;gap:6px;align-items:flex-end}
+button{border:none;border-radius:11px;padding:9px 13px;background:rgba(10,14,18,.88);color:#fff;border:1px solid rgba(255,255,255,.18);cursor:pointer;font-size:13px;-webkit-tap-highlight-color:transparent}
+button:hover,button:active{border-color:#f1c40f}
+
+/* ── minimap ── */
+#minimapWrap{position:absolute;right:8px;bottom:8px;width:130px;height:130px;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.16);background:rgba(0,0,0,.45)}
 #minimap{width:100%;height:100%}
-#skills{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);display:flex;gap:8px}
-.skill{width:56px;height:56px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(135deg,#243b55,#141e30);border:2px solid rgba(255,255,255,.18);font-size:22px;position:relative}
-.skill small{font-size:9px;color:#cfd9df}
-.skill.ready{box-shadow:0 0 18px rgba(46,204,113,.35);border-color:#2ecc71}
-.skill.locked{opacity:.32;filter:grayscale(1)}
-.skill .cd{position:absolute;inset:0;background:rgba(0,0,0,.48);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700}
-.skill .cost{position:absolute;top:-2px;right:-2px;width:18px;height:18px;border-radius:50%;background:#3498db;font-size:9px;display:flex;align-items:center;justify-content:center}
-#panel{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(920px,92vw);max-height:82vh;overflow:auto;display:none;z-index:30;background:rgba(14,17,20,.96);border:1px solid rgba(255,255,255,.16);border-radius:16px;padding:18px;box-shadow:0 22px 90px rgba(0,0,0,.45)}
+
+/* ── active skill buttons ── */
+#skills{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);display:flex;gap:8px;z-index:21}
+.skill{width:54px;height:54px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(135deg,#1c2e42,#111e2c);border:2px solid rgba(255,255,255,.18);font-size:21px;position:relative;-webkit-tap-highlight-color:transparent;cursor:pointer}
+.skill small{font-size:9px;color:#cfd9df;line-height:1}
+.skill.ready{box-shadow:0 0 16px rgba(46,204,113,.32);border-color:#2ecc71}
+.skill.locked{opacity:.3;filter:grayscale(1)}
+.skill .cd{position:absolute;inset:0;background:rgba(0,0,0,.5);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700}
+.skill .cost{position:absolute;top:-3px;right:-3px;width:18px;height:18px;border-radius:50%;background:#2471a3;font-size:9px;display:flex;align-items:center;justify-content:center}
+
+/* ── panel ── */
+#panel{
+  position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:min(920px,94vw);max-height:84vh;
+  overflow-y:auto;overflow-x:hidden;
+  -webkit-overflow-scrolling:touch; /* iOS momentum scroll */
+  touch-action:pan-y;               /* allow vertical scroll inside panel */
+  display:none;z-index:30;
+  background:rgba(11,15,20,.97);
+  border:1px solid rgba(255,255,255,.15);border-radius:16px;
+  padding:18px;box-shadow:0 20px 80px rgba(0,0,0,.55);
+}
 #panel h2{margin-bottom:12px;color:#f1c40f}
-.close{position:absolute;top:10px;right:12px;font-size:24px;cursor:pointer}
-.tabs{display:flex;gap:8px;margin-bottom:12px}
-.tab{padding:8px 12px;border-radius:10px;background:#20262b}
+.close{position:absolute;top:8px;right:10px;font-size:26px;cursor:pointer;padding:6px;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent}
+.tabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.tab{padding:7px 12px;border-radius:10px;background:#161e25;min-height:40px}
 .grid{display:grid;gap:10px}
 .inv{grid-template-columns:repeat(auto-fill,minmax(82px,1fr))}
-.slot,.craft,.tree{background:#182025;border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:10px;min-height:82px}
-.slot{display:flex;align-items:center;justify-content:center;text-align:center;cursor:pointer;position:relative}
+.slot,.craft,.tree{background:#182025;border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:10px}
+.slot{display:flex;align-items:center;justify-content:center;text-align:center;cursor:pointer;position:relative;min-height:70px}
 .slot:hover,.craft:hover,.tree:hover{border-color:#f1c40f}
 .rarity{position:absolute;inset:0;border-radius:12px;border:2px solid transparent;pointer-events:none}
 .common{border-color:#9aa2a9}.uncommon{border-color:#2ecc71}.rare{border-color:#3498db}.epic{border-color:#9b59b6}.legendary{border-color:#e67e22}
@@ -49,21 +83,118 @@ button:hover{border-color:#f1c40f}
 .craft{display:flex;justify-content:space-between;align-items:center;gap:14px}
 .craft strong,.tree strong{display:block}
 .tree{cursor:pointer}
-#toast{position:fixed;top:62px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.78);color:#f1c40f;border:1px solid rgba(241,196,15,.45);padding:10px 16px;border-radius:999px;display:none;z-index:40}
-#start{position:fixed;inset:0;z-index:50;background:radial-gradient(circle at 50% 35%,#244b3a 0%,#101717 55%,#050708 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px}
-#start h1{font-size:clamp(32px,6vw,64px);letter-spacing:1px;color:#7dff9f;text-shadow:0 0 22px rgba(125,255,159,.35)}
-#start p{max-width:720px;margin:18px auto;color:#d6e6dd;line-height:1.6}
-#start .cta{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
-#joystickZone{position:fixed;left:0;bottom:0;width:46vw;height:40vh;display:none;z-index:25}
+
+/* ── toast ── */
+#toast{position:fixed;top:56px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.82);color:#f1c40f;border:1px solid rgba(241,196,15,.4);padding:9px 16px;border-radius:999px;display:none;z-index:100;white-space:nowrap;font-size:13px}
+
+/* ── start screen ── */
+#start{position:fixed;inset:0;z-index:50;background:radial-gradient(circle at 50% 35%,#244b3a 0%,#101717 55%,#050708 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y}
+#start h1{font-size:clamp(26px,6vw,58px);letter-spacing:1px;color:#7dff9f;text-shadow:0 0 22px rgba(125,255,159,.35)}
+#start p{max-width:680px;margin:14px auto;color:#d6e6dd;line-height:1.6;font-size:clamp(12px,2.5vw,15px)}
+#start .cta{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:8px}
+#start button{min-height:48px;min-width:120px;font-size:16px;padding:12px 22px}
+
+/* ── joystick ── */
+#joystickZone{position:fixed;left:0;bottom:0;width:48vw;height:52vh;display:none;z-index:25;touch-action:none}
 #joyBase,#joyStick{position:absolute;border-radius:50%;pointer-events:none;display:none}
-#joyBase{width:100px;height:100px;background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.12)}
-#joyStick{width:44px;height:44px;background:rgba(46,204,113,.35);border:2px solid rgba(46,204,113,.75)}
+#joyBase{width:96px;height:96px;background:rgba(255,255,255,.07);border:2px solid rgba(255,255,255,.14)}
+#joyStick{width:42px;height:42px;background:rgba(46,204,113,.32);border:2px solid rgba(46,204,113,.7)}
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE — tablet portrait / small desktop
+   ═══════════════════════════════════════════ */
 @media (max-width:700px){
-  .hud-card{min-width:170px;font-size:10px}
-  #biome,#quest{font-size:10px}
-  #actions{right:8px;bottom:78px;flex-direction:column}
-  #minimapWrap{width:110px;height:110px;bottom:8px}
+  .hud-card{font-size:10px}
+  #biome,#quest{font-size:10px;padding:4px 8px}
+  #minimapWrap{width:100px;height:100px}
+  #actions{bottom:72px;gap:5px}
+  #actions button{padding:8px 11px;font-size:12px}
   .skill{width:48px;height:48px;font-size:18px}
+  #skills{gap:6px;bottom:8px}
+}
+
+/* ═══════════════════════════════════════════
+   LANDSCAPE PHONE  (height < 500px)
+   Yatay Android telefon için kritik düzeltmeler
+   ═══════════════════════════════════════════ */
+@media (orientation:landscape) and (max-height:500px){
+  /* Compact HUD — yan yana */
+  .hud{
+    flex-direction:row;flex-wrap:wrap;
+    max-width:54vw;gap:3px;top:4px;left:4px;
+  }
+  .hud-card{font-size:9px;padding:3px 7px;min-width:0;flex:1 1 130px}
+  .bar{height:6px;margin-top:2px}
+
+  /* Biyom & quest */
+  #biome{font-size:9px;padding:3px 7px;top:4px;right:4px}
+  #quest{display:none} /* yatayda yer yok */
+
+  /* Minimap küçük, sağ alt */
+  #minimapWrap{width:82px;height:82px;bottom:4px;right:4px}
+
+  /* Aksiyon butonları: minimap'in üstüne, sağ tarafa */
+  #actions{
+    right:4px;
+    bottom:94px;      /* minimap yüksekliği + boşluk */
+    flex-direction:column;
+    gap:3px;
+  }
+  #actions button{padding:6px 10px;font-size:10px;min-height:34px;border-radius:8px}
+
+  /* Yetenek butonları: alt merkez, sola biraz kaydır */
+  #skills{
+    left:55%;          /* joystick alanından uzak */
+    bottom:6px;
+    gap:5px;
+    transform:translateX(-50%);
+  }
+  .skill{width:44px;height:44px;font-size:16px}
+  .skill small{font-size:8px}
+
+  /* Panel: tüm ekranı doldurmak yerine uyumlu */
+  #panel{
+    width:min(860px,96vw);
+    max-height:92vh;
+    padding:10px 12px;
+    border-radius:10px;
+  }
+  #panel h2{font-size:15px;margin-bottom:8px}
+  .tabs{gap:4px;margin-bottom:8px}
+  .tab{padding:5px 9px;font-size:11px;min-height:34px}
+  .close{font-size:20px;top:6px;right:8px}
+  .inv-grid{max-height:180px}
+  .inv-layout{grid-template-columns:150px 1fr;gap:10px}
+  .eq-slot{padding:6px 8px;min-height:44px}
+  .eq-slot .eq-thumb{width:28px;height:28px;font-size:14px}
+  .eq-slot .eq-name{font-size:10px}
+  .eq-slot .eq-stat{font-size:9px}
+
+  /* Joystick: sol alt, geniş alan */
+  #joystickZone{width:46vw;height:55vh}
+
+  /* Toast */
+  #toast{top:36px;font-size:11px;padding:6px 12px}
+
+  /* Start ekranı yatayda */
+  #start h1{font-size:clamp(20px,5vw,36px)}
+  #start p{margin:8px auto;font-size:11px}
+  #start button{min-height:40px;font-size:14px;padding:8px 18px}
+}
+
+/* ═══════════════════════════════════════════
+   LANDSCAPE — biraz daha büyük ekranlar (500-640px yükseklik)
+   ═══════════════════════════════════════════ */
+@media (orientation:landscape) and (min-height:501px) and (max-height:640px){
+  .hud{max-width:260px}
+  .hud-card{font-size:10px;padding:4px 8px}
+  #minimapWrap{width:100px;height:100px;bottom:4px;right:4px}
+  #actions{bottom:112px;right:4px;flex-direction:column;gap:4px}
+  #actions button{padding:7px 11px;font-size:11px}
+  #skills{bottom:8px;gap:6px}
+  .skill{width:48px;height:48px;font-size:18px}
+  #panel{max-height:90vh}
+  .inv-grid{max-height:220px}
 }
 
 /* ─── Inventory Redesign ─── */
@@ -1308,15 +1439,20 @@ function setupInput(){
   zone.addEventListener('touchend',endJoy,{passive:true});
   zone.addEventListener('touchcancel',endJoy,{passive:true});
 
-  canvas.addEventListener('touchstart',e=>{
+  // Sağ yarı dokunuşu → oyuncu nişan yönü
+  // Joystick zone ile aynı dokunuş olmaması için identifier kontrolü
+  function updateAimFromTouch(e){
+    const r=canvas.getBoundingClientRect();
     for(const t of e.changedTouches){
-      if(t.clientX > innerWidth*0.45){
-        const r=canvas.getBoundingClientRect();
+      if(t.identifier === state.joy.id) continue; // joystick'e ait
+      if(t.clientX > innerWidth * 0.44){
         state.mouse.x=(t.clientX-r.left)*(C.W/r.width);
         state.mouse.y=(t.clientY-r.top)*(C.H/r.height);
       }
     }
-  },{passive:true});
+  }
+  canvas.addEventListener('touchstart', updateAimFromTouch, {passive:true});
+  canvas.addEventListener('touchmove',  updateAimFromTouch, {passive:true});
 
   document.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>openPanel(b.dataset.open));
   document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>openPanel(b.dataset.tab));
@@ -1326,8 +1462,12 @@ function setupInput(){
 }
 
 function resize(){
-  canvas.style.width='100vw';
-  canvas.style.height='100vh';
+  // Canvas sabit 960x640 iç çözünürlükte kalır, CSS ile ekrana sığdırılır.
+  // letterbox/pillarbox olmadan tam kaplar; aspect ratio oyun görünümü için yeterli.
+  canvas.style.position='fixed';
+  canvas.style.inset='0';
+  canvas.style.width='100%';
+  canvas.style.height='100%';
 }
 
 function start(){
@@ -1349,10 +1489,23 @@ function start(){
 }
 
 document.getElementById('startBtn').onclick=start;
-document.getElementById('fsBtn').onclick=()=>{
+
+function goFullscreen(){
   const el=document.documentElement;
-  if(el.requestFullscreen) el.requestFullscreen();
-};
+  const p=el.requestFullscreen||el.webkitRequestFullscreen||el.mozRequestFullScreen||el.msRequestFullscreen;
+  if(p) p.call(el).then(()=>{
+    // Kilitle yatay moda (Android Chrome destekler)
+    if(screen.orientation?.lock){
+      screen.orientation.lock('landscape').catch(()=>{});
+    }
+  }).catch(()=>{});
+}
+document.getElementById('fsBtn').onclick=goFullscreen;
+
+// Orientasyon değişince canvas boyutunu güncelle
+window.addEventListener('orientationchange',()=>{
+  setTimeout(resize, 150); // iOS/Android için kısa gecikme
+});
 </script>
 </body>
 </html>
