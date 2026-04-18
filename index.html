@@ -6,9 +6,10 @@
 <title>🔪 CHOP & GROW - Bıçkı Bahçesi</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{background:#111;overflow:hidden;font-family:'Segoe UI',sans-serif;color:#fff;user-select:none;-webkit-user-select:none;touch-action:none}
-canvas{display:block;margin:0 auto;image-rendering:pixelated;touch-action:none}
-html{touch-action:none;overflow:hidden}
+body{background:#111;overflow:hidden;font-family:'Segoe UI',sans-serif;color:#fff;user-select:none;-webkit-user-select:none;touch-action:none;position:fixed;inset:0;width:100vw;height:100vh}
+canvas{display:block;image-rendering:pixelated;touch-action:none}
+#game{position:fixed;top:0;left:0;width:100vw!important;height:100vh!important}
+html{touch-action:none;overflow:hidden;height:100%}
 #ui-overlay{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:30}
 #ui-overlay>*{pointer-events:auto}
 .hud-bar{position:absolute;top:6px;left:6px;display:flex;flex-direction:column;gap:3px}
@@ -74,6 +75,8 @@ html{touch-action:none;overflow:hidden}
 #start-screen h2{font-size:20px;color:#888;margin-bottom:30px}
 #start-btn{background:linear-gradient(135deg,#27ae60,#2ecc71);border:none;border-radius:12px;padding:16px 48px;font-size:22px;color:#fff;cursor:pointer;font-weight:bold;letter-spacing:1px}
 #start-btn:hover{transform:scale(1.05);box-shadow:0 0 30px rgba(46,204,113,.5)}
+#fullscreen-btn{background:rgba(255,255,255,0.1);border:1px solid #555;border-radius:8px;padding:8px 20px;font-size:14px;color:#aaa;cursor:pointer;margin-top:12px}
+#fullscreen-btn:active{background:rgba(255,255,255,0.2);color:#fff}
 #start-screen .controls-info{margin-top:20px;color:#666;font-size:12px;text-align:center;line-height:1.8}
 @media(max-width:600px){#start-screen h1{font-size:32px}#start-screen h2{font-size:16px;margin-bottom:20px}#start-btn{padding:12px 36px;font-size:18px}#start-screen .controls-info{font-size:10px}}
 #notification{position:fixed;top:60px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.85);border:1px solid #f1c40f;border-radius:8px;padding:8px 20px;font-size:14px;color:#f1c40f;z-index:200;display:none;white-space:nowrap}
@@ -90,6 +93,7 @@ html{touch-action:none;overflow:hidden}
 <h1>🔪 CHOP & GROW</h1>
 <h2>Bıçkı Bahçesi</h2>
 <button id="start-btn">BAŞLA</button>
+<button id="fullscreen-btn">⛶ Tam Ekran</button>
 <div class="controls-info">
 💻 PC: WASD / Ok Tuşları → Hareket<br>
 📱 Mobil: Sol taraf joystick → Hareket<br>
@@ -1815,17 +1819,40 @@ function startGame() {
   ctx = canvas.getContext('2d');
   canvas.width = C.W;
   canvas.height = C.H;
-  // Responsive
+  // Fullscreen responsive - fill entire screen
   function resize() {
-    const ratio = C.W / C.H;
-    let w = window.innerWidth, h = window.innerHeight;
-    if (w / h > ratio) w = h * ratio;
-    else h = w / ratio;
-    canvas.style.width = w + 'px';
-    canvas.style.height = h + 'px';
+    // Canvas internal resolution stays fixed, CSS stretches to fill viewport
+    canvas.style.width = '100vw';
+    canvas.style.height = '100vh';
+    canvas.style.position = 'fixed';
+    canvas.style.top = '0';
+    canvas.style.left = '0';
   }
   resize();
   window.addEventListener('resize', resize);
+  window.addEventListener('orientationchange', () => setTimeout(resize, 100));
+
+  // Fullscreen API
+  function goFullscreen() {
+    const el = document.documentElement;
+    if (el.requestFullscreen) el.requestFullscreen();
+    else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+    else if (el.msRequestFullscreen) el.msRequestFullscreen();
+    // Try to lock landscape on mobile
+    if (screen.orientation && screen.orientation.lock) {
+      screen.orientation.lock('landscape').catch(() => {});
+    }
+    setTimeout(resize, 200);
+  }
+  // Detect mobile early for fullscreen
+  isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  // Auto fullscreen on mobile when starting
+  if (isMobile) {
+    document.getElementById('start-btn').addEventListener('click', () => {
+      goFullscreen();
+    });
+  }
+  document.getElementById('fullscreen-btn').onclick = goFullscreen;
 
   minimapCanvas = document.getElementById('minimap');
   minimapCtx = minimapCanvas.getContext('2d');
