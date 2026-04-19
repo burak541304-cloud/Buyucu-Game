@@ -85,16 +85,38 @@ function updateTouchLayout() {
   touchState.joyCy = ch - r - 22;
 }
 
+/** Mobil modal pencereler i\u00e7in g\u00fcvenli alan (\u00fcstte \u00d7 \u00e7ipi i\u00e7in bo\u015fluk). */
+function uiModalBounds(cw, ch) {
+  const mob = touchState.mobileUI;
+  const top = mob ? 56 : 28;
+  const bottom = mob ? 16 : 22;
+  const side = mob ? 8 : 20;
+  return {
+    top,
+    bottom,
+    side,
+    maxW: Math.max(160, cw - side * 2),
+    maxH: Math.max(160, ch - top - bottom),
+  };
+}
+
+/** Sa\u011f alttaki sald\u0131r\u0131 butonu dikd\u00f6rtgeni (mobil iksir yerle\u015fimi ile payla\u015f\u0131l\u0131r). */
+function mobileAttackButtonRect(cw, ch) {
+  const pad = 8, w = 52, h = 44;
+  return { x: cw - w - pad, y: ch - pad - 46, w, h };
+}
+
 function inJoyZone(mx, my) {
   return Math.hypot(mx - touchState.joyCx, my - touchState.joyCy) <= touchState.joyR * 1.55;
 }
 
 function mobileButtonsLayout(cw, ch) {
-  const pad = 8, w = 52, gap = 5;
-  const x = cw - w - pad;
+  const atk = mobileAttackButtonRect(cw, ch);
+  const gap = 5;
+  const x = atk.x, w = atk.w;
   const out = [];
-  let y = ch - pad - 46;
-  out.push({ key: "attack", label: "\u2694", x, y, w, h: 44 });
+  let y = atk.y;
+  out.push({ key: "attack", label: "\u2694", x, y, w, h: atk.h });
   y -= gap + 34;
   const row = [
     { key: "KeyE", label: "E" },
@@ -499,8 +521,21 @@ const PLAYER_SKILL_DEFS = [
 const charPanel = {
   open: false,
   _layout(cw, ch) {
-    const pw = 420, ph = 380;
-    return { px: Math.floor((cw - pw) / 2), py: Math.floor((ch - ph) / 2), pw, ph };
+    const b = uiModalBounds(cw, ch);
+    const n = PLAYER_SKILL_DEFS.length;
+    let rowStep = 54;
+    const headerH = 130;
+    let needH = headerH + n * rowStep + 24;
+    while (needH > b.maxH && rowStep > 40) {
+      rowStep -= 2;
+      needH = headerH + n * rowStep + 24;
+    }
+    let pw = Math.min(420, b.maxW);
+    let ph = Math.min(Math.max(needH, 240), b.maxH);
+    const px = Math.floor((cw - pw) / 2);
+    const py = Math.max(b.top, Math.min(ch - ph - b.bottom, Math.floor((ch - ph) / 2)));
+    const boxH = Math.max(40, rowStep - 6);
+    return { px, py, pw, ph, rowStep, boxH };
   },
   _in(mx, my, r) {
     return mx >= r.x && mx < r.x + r.w && my >= r.y && my < r.y + r.h;
@@ -549,7 +584,7 @@ const charPanel = {
     }
 
     const btnY = L.py + 86;
-    const bw = 104, gap = 10, x0 = L.px + 20;
+    const bw = Math.min(104, Math.floor((L.pw - 50) / 3)), gap = Math.min(10, Math.max(4, Math.floor(L.pw * 0.02))), x0 = L.px + 20;
     if (player.statPoints > 0) {
       if (this._in(mx, my, { x: x0, y: btnY, w: bw, h: 30 })) {
         const err = this.tryAllocStat(player, "str");
@@ -569,8 +604,9 @@ const charPanel = {
     }
 
     let sy = L.py + 138;
+    const unlockW = Math.min(108, L.pw - 130);
     for (const sk of PLAYER_SKILL_DEFS) {
-      const unlockR = { x: L.px + L.pw - 118, y: sy + 2, w: 108, h: 28 };
+      const unlockR = { x: L.px + L.pw - unlockW - 10, y: sy + 2, w: unlockW, h: 28 };
       if (!player.skills[sk.id] && this._in(mx, my, unlockR)) {
         const err = this.tryUnlockSkill(player, inventory, sk.id);
         if (err) {
@@ -582,7 +618,7 @@ const charPanel = {
         }
         return true;
       }
-      sy += 54;
+      sy += L.rowStep;
     }
     return true;
   },
@@ -608,7 +644,7 @@ const charPanel = {
     ctx.fillText("STR:" + player.str + "  AGI:" + player.agi + "  WIS:" + player.wis, L.px + 14, L.py + 68);
 
     const btnY = L.py + 86;
-    const bw = 104, gap = 10, x0 = L.px + 20;
+    const bw = Math.min(104, Math.floor((L.pw - 50) / 3)), gap = Math.min(10, Math.max(4, Math.floor(L.pw * 0.02))), x0 = L.px + 20;
     const drawMiniBtn = (x, y, label, active) => {
       ctx.fillStyle = active ? "#2a5080" : "#303048";
       roundRect(ctx, x, y, bw, 30, 5);
@@ -629,12 +665,13 @@ const charPanel = {
 
     let sy = L.py + 138;
     const gold = inventory.countItem("coin");
+    const unlockW = Math.min(108, L.pw - 130);
     for (const sk of PLAYER_SKILL_DEFS) {
       ctx.fillStyle = "#2a2840";
-      roundRect(ctx, L.px + 14, sy, L.pw - 28, 48, 6);
+      roundRect(ctx, L.px + 14, sy, L.pw - 28, L.boxH, 6);
       ctx.fill();
       ctx.strokeStyle = "#505070";
-      roundRect(ctx, L.px + 14, sy, L.pw - 28, 48, 6);
+      roundRect(ctx, L.px + 14, sy, L.pw - 28, L.boxH, 6);
       ctx.stroke();
       ctx.fillStyle = player.skills[sk.id] ? "#70ffa0" : "#e0e0f0";
       ctx.font = "bold 11px monospace";
@@ -643,7 +680,7 @@ const charPanel = {
       ctx.font = "9px monospace";
       ctx.fillText(sk.desc + "  |  Lv" + sk.minLevel + "  |  " + sk.gold + " alt\u0131n", L.px + 22, sy + 32);
 
-      const unlockR = { x: L.px + L.pw - 118, y: sy + 2, w: 108, h: 28 };
+      const unlockR = { x: L.px + L.pw - unlockW - 10, y: sy + 2, w: unlockW, h: 28 };
       if (!player.skills[sk.id]) {
         const can = player.level >= sk.minLevel && gold >= sk.gold;
         ctx.fillStyle = can ? "#2a6040" : "#303030";
@@ -656,7 +693,7 @@ const charPanel = {
         const t = "A\u00e7 " + sk.gold + "G";
         ctx.fillText(t, unlockR.x + (unlockR.w - ctx.measureText(t).width) / 2, unlockR.y + 19);
       }
-      sy += 54;
+      sy += L.rowStep;
     }
 
     ctx.fillStyle = "#707890";
@@ -867,11 +904,11 @@ class Inventory {
   _hitSamePressSlot(mx, my, canvasW, canvasH, p) {
     const layout = this._invLayout(canvasW, canvasH);
     if (p.container === this.slots) {
-      const invIdx = this._hitTestSlots(mx, my, layout.slotsX, layout.slotsY, INV_SLOTS, INV_COLS);
+      const invIdx = this._hitTestSlots(mx, my, layout.slotsX, layout.slotsY, INV_SLOTS, INV_COLS, layout.slotSize, layout.slotGap);
       return invIdx === p.idx;
     }
     if (p.container === this.hotbar) {
-      const hbIdx = this._hitTestSlots(mx, my, layout.hbX, layout.hbY, HOTBAR_SLOTS, HOTBAR_SLOTS);
+      const hbIdx = this._hitTestSlots(mx, my, layout.hbX, layout.hbY, HOTBAR_SLOTS, HOTBAR_SLOTS, layout.slotSize, layout.slotGap);
       return hbIdx === p.idx;
     }
     return false;
@@ -880,7 +917,7 @@ class Inventory {
   tryBeginEquipLongPress(mx, my, canvasW, canvasH, touchId) {
     if (this.heldItem) return false;
     const layout = this._invLayout(canvasW, canvasH);
-    const invIdx = this._hitTestSlots(mx, my, layout.slotsX, layout.slotsY, INV_SLOTS, INV_COLS);
+    const invIdx = this._hitTestSlots(mx, my, layout.slotsX, layout.slotsY, INV_SLOTS, INV_COLS, layout.slotSize, layout.slotGap);
     if (invIdx >= 0 && this.slots[invIdx]) {
       const def = ITEMS[this.slots[invIdx].id];
       if (def && def.equipSlot && !this.equipped[def.equipSlot]) {
@@ -891,7 +928,7 @@ class Inventory {
         return true;
       }
     }
-    const hbIdx = this._hitTestSlots(mx, my, layout.hbX, layout.hbY, HOTBAR_SLOTS, HOTBAR_SLOTS);
+    const hbIdx = this._hitTestSlots(mx, my, layout.hbX, layout.hbY, HOTBAR_SLOTS, HOTBAR_SLOTS, layout.slotSize, layout.slotGap);
     if (hbIdx >= 0 && this.hotbar[hbIdx]) {
       const def = ITEMS[this.hotbar[hbIdx].id];
       if (def && def.equipSlot && !this.equipped[def.equipSlot]) {
@@ -958,10 +995,10 @@ class Inventory {
     const eqIdx = this._hitTestEquip(mx, my, layout);
     if (eqIdx >= 0) { this._equipSlotClick(EQ_SLOTS[eqIdx], rightClick); return true; }
 
-    const invIdx = this._hitTestSlots(mx, my, layout.slotsX, layout.slotsY, INV_SLOTS, INV_COLS);
+    const invIdx = this._hitTestSlots(mx, my, layout.slotsX, layout.slotsY, INV_SLOTS, INV_COLS, layout.slotSize, layout.slotGap);
     if (invIdx >= 0) { this._slotClick(this.slots, invIdx, rightClick); return true; }
 
-    const hbIdx = this._hitTestSlots(mx, my, layout.hbX, layout.hbY, HOTBAR_SLOTS, HOTBAR_SLOTS);
+    const hbIdx = this._hitTestSlots(mx, my, layout.hbX, layout.hbY, HOTBAR_SLOTS, HOTBAR_SLOTS, layout.slotSize, layout.slotGap);
     if (hbIdx >= 0) { this._slotClick(this.hotbar, hbIdx, rightClick); return true; }
 
     return false;
@@ -1063,41 +1100,62 @@ class Inventory {
     this.tooltipEquipKey = null;
     if (!this.open) return;
     const layout = this._invLayout(canvasW, canvasH);
+    const ss = layout.slotSize, sg = layout.slotGap;
     const eqIdx = this._hitTestEquip(mx, my, layout);
     if (eqIdx >= 0) {
       const sk = EQ_SLOTS[eqIdx];
       const es = this.equipped[sk];
       if (es) { this.tooltipSlot = es; this.tooltipSource = "eq"; this.tooltipEquipKey = sk; return; }
     }
-    let idx = this._hitTestSlots(mx, my, layout.slotsX, layout.slotsY, INV_SLOTS, INV_COLS);
+    let idx = this._hitTestSlots(mx, my, layout.slotsX, layout.slotsY, INV_SLOTS, INV_COLS, ss, sg);
     if (idx >= 0 && this.slots[idx]) { this.tooltipSlot = this.slots[idx]; this.tooltipSource = "inv"; return; }
-    idx = this._hitTestSlots(mx, my, layout.hbX, layout.hbY, HOTBAR_SLOTS, HOTBAR_SLOTS);
+    idx = this._hitTestSlots(mx, my, layout.hbX, layout.hbY, HOTBAR_SLOTS, HOTBAR_SLOTS, ss, sg);
     if (idx >= 0 && this.hotbar[idx]) { this.tooltipSlot = this.hotbar[idx]; this.tooltipSource = "hb"; }
   }
 
-  _hitTestSlots(mx, my, startX, startY, count, cols) {
+  _hitTestSlots(mx, my, startX, startY, count, cols, slotSz = SLOT_SIZE, slotGap = SLOT_GAP) {
     for (let i = 0; i < count; i++) {
       const col = i % cols, row = Math.floor(i / cols);
-      const sx = startX + col * (SLOT_SIZE + SLOT_GAP);
-      const sy = startY + row * (SLOT_SIZE + SLOT_GAP);
-      if (mx >= sx && mx < sx + SLOT_SIZE && my >= sy && my < sy + SLOT_SIZE) return i;
+      const sx = startX + col * (slotSz + slotGap);
+      const sy = startY + row * (slotSz + slotGap);
+      if (mx >= sx && mx < sx + slotSz && my >= sy && my < sy + slotSz) return i;
     }
     return -1;
   }
 
   _invLayout(canvasW, canvasH) {
-    const eqSlotSize = 44;
-    const eqColW = eqSlotSize + 56;
-    const panelW = eqColW + INV_COLS * (SLOT_SIZE + SLOT_GAP) - SLOT_GAP + 32;
-    const eqPanelH = EQ_SLOTS.length * (eqSlotSize + 2);
-    const gridH = (INV_ROWS + 1) * (SLOT_SIZE + SLOT_GAP) - SLOT_GAP + 80;
-    const panelH = Math.max(gridH, eqPanelH + 88);
+    const b = uiModalBounds(canvasW, canvasH);
+    const labelCol = touchState.mobileUI ? 48 : 56;
+    let ss = SLOT_SIZE;
+    let sg = SLOT_GAP;
+    let eqSlotSize = 44;
+
+    const compute = () => {
+      const eqColW = eqSlotSize + labelCol;
+      const panelW = eqColW + INV_COLS * (ss + sg) - sg + 32;
+      const eqPanelH = EQ_SLOTS.length * (eqSlotSize + 2);
+      const gridH = (INV_ROWS + 1) * (ss + sg) - sg + (touchState.mobileUI ? 64 : 80);
+      const panelH = Math.max(gridH, eqPanelH + (touchState.mobileUI ? 72 : 88));
+      return { eqColW, panelW, panelH, eqPanelH, gridH };
+    };
+
+    let { eqColW, panelW, panelH } = compute();
+    while ((panelH > b.maxH || panelW > b.maxW) && ss > 28) {
+      ss -= 2;
+      sg = Math.max(2, sg - 1);
+      eqSlotSize = Math.min(eqSlotSize, ss + 4);
+      ({ eqColW, panelW, panelH } = compute());
+    }
+
     const px = Math.floor((canvasW - panelW) / 2);
-    const py = Math.floor((canvasH - panelH) / 2);
+    const py = Math.max(b.top, Math.min(canvasH - panelH - b.bottom, Math.floor((canvasH - panelH) / 2)));
     const eqX = px + 12, eqY = py + 48;
     const slotsX = px + eqColW + 8, slotsY = py + 40;
-    const hbX = px + eqColW + 8, hbY = slotsY + INV_ROWS * (SLOT_SIZE + SLOT_GAP) + 16;
-    return { px, py, panelW, panelH, slotsX, slotsY, hbX, hbY, eqX, eqY, eqSlotSize, eqColW };
+    const hbX = px + eqColW + 8, hbY = slotsY + INV_ROWS * (ss + sg) + 16;
+    return {
+      px, py, panelW, panelH, slotsX, slotsY, hbX, hbY, eqX, eqY, eqSlotSize, eqColW,
+      slotSize: ss, slotGap: sg,
+    };
   }
 
   _hotbarLayout(canvasW, canvasH) {
@@ -1132,6 +1190,7 @@ class Inventory {
 
   _renderFullInventory(ctx, canvasW, canvasH, mouseX, mouseY) {
     const layout = this._invLayout(canvasW, canvasH);
+    const ss = layout.slotSize, sg = layout.slotGap;
 
     ctx.fillStyle = "rgba(0,0,0,0.5)"; ctx.fillRect(0, 0, canvasW, canvasH);
 
@@ -1145,9 +1204,13 @@ class Inventory {
 
     ctx.fillStyle = "#888"; ctx.font = "11px monospace";
     ctx.fillText("[I] Kapat", layout.px + layout.panelW - 80, layout.py + 26);
-    ctx.fillStyle = "#6a6a88"; ctx.font = "9px monospace";
-    ctx.fillText("Bo\u015f ekipmana uygun toplanan e\u015fya otomatik giyilir.", layout.px + layout.eqColW + 4, layout.py + 40);
-    ctx.fillText("Giyilebilir e\u015fyaya bas\u0131l\u0131 tut: bo\u015f slota an\u0131nda giydir.", layout.px + layout.eqColW + 4, layout.py + 52);
+    ctx.fillStyle = "#6a6a88"; ctx.font = touchState.mobileUI ? "8px monospace" : "9px monospace";
+    if (touchState.mobileUI) {
+      ctx.fillText("Uygun e\u015fya otomatik giyilir. Uzun bas: bo\u015f slota giy.", layout.px + layout.eqColW + 4, layout.py + 44);
+    } else {
+      ctx.fillText("Bo\u015f ekipmana uygun toplanan e\u015fya otomatik giyilir.", layout.px + layout.eqColW + 4, layout.py + 40);
+      ctx.fillText("Giyilebilir e\u015fyaya bas\u0131l\u0131 tut: bo\u015f slota an\u0131nda giydir.", layout.px + layout.eqColW + 4, layout.py + 52);
+    }
 
     ctx.fillStyle = "#a0c0ff"; ctx.font = "bold 11px monospace";
     ctx.fillText("Ekipman", layout.eqX, layout.eqY - 6);
@@ -1172,25 +1235,25 @@ class Inventory {
 
     for (let i = 0; i < INV_SLOTS; i++) {
       const col = i % INV_COLS, row = Math.floor(i / INV_COLS);
-      const sx = layout.slotsX + col * (SLOT_SIZE + SLOT_GAP);
-      const sy = layout.slotsY + row * (SLOT_SIZE + SLOT_GAP);
+      const sx = layout.slotsX + col * (ss + sg);
+      const sy = layout.slotsY + row * (ss + sg);
       ctx.fillStyle = "rgba(40,40,60,0.6)"; ctx.strokeStyle = "#505070"; ctx.lineWidth = 1;
-      roundRect(ctx, sx, sy, SLOT_SIZE, SLOT_SIZE, 4); ctx.fill(); ctx.stroke();
-      if (this.slots[i]) this._renderSlotContent(ctx, this.slots[i], sx, sy);
+      roundRect(ctx, sx, sy, ss, ss, 4); ctx.fill(); ctx.stroke();
+      if (this.slots[i]) this._renderSlotContent(ctx, this.slots[i], sx, sy, ss);
     }
 
     ctx.fillStyle = "#a0a0c0"; ctx.font = "11px monospace";
     ctx.fillText("H\u0131zl\u0131 Eri\u015fim", layout.hbX, layout.hbY - 4);
     for (let i = 0; i < HOTBAR_SLOTS; i++) {
-      const sx = layout.hbX + i * (SLOT_SIZE + SLOT_GAP);
+      const sx = layout.hbX + i * (ss + sg);
       const selected = i === this.selectedHotbar;
       ctx.fillStyle = selected ? "rgba(255,255,200,0.25)" : "rgba(40,40,60,0.6)";
       ctx.strokeStyle = selected ? "#f0d050" : "#505070";
       ctx.lineWidth = selected ? 2 : 1;
-      roundRect(ctx, sx, layout.hbY, SLOT_SIZE, SLOT_SIZE, 4); ctx.fill(); ctx.stroke();
-      if (this.hotbar[i]) this._renderSlotContent(ctx, this.hotbar[i], sx, layout.hbY);
+      roundRect(ctx, sx, layout.hbY, ss, ss, 4); ctx.fill(); ctx.stroke();
+      if (this.hotbar[i]) this._renderSlotContent(ctx, this.hotbar[i], sx, layout.hbY, ss);
       ctx.fillStyle = "#888"; ctx.font = "10px monospace";
-      ctx.fillText(String(i + 1), sx + 3, layout.hbY + 12);
+      ctx.fillText(String(i + 1), sx + 3, layout.hbY + Math.min(12, ss * 0.28));
     }
 
     if (this.tooltipSlot) {
@@ -1239,30 +1302,31 @@ class Inventory {
     }
 
     if (this.heldItem) {
-      const ix = mouseX - SLOT_SIZE / 2, iy = mouseY - SLOT_SIZE / 2;
+      const ix = mouseX - ss / 2, iy = mouseY - ss / 2;
       ctx.globalAlpha = 0.85;
-      drawItemIcon(ctx, this.heldItem.id, ix + 6, iy + 6, SLOT_SIZE - 12);
+      drawItemIcon(ctx, this.heldItem.id, ix + 6, iy + 6, ss - 12);
       ctx.globalAlpha = 1;
       if (this.heldItem.count > 1) {
         ctx.fillStyle = "#fff"; ctx.font = "bold 11px monospace";
-        ctx.fillText(String(this.heldItem.count), ix + SLOT_SIZE - 16, iy + SLOT_SIZE - 4);
+        ctx.fillText(String(this.heldItem.count), ix + ss - 16, iy + ss - 4);
       }
     }
   }
 
-  _renderSlotContent(ctx, slot, sx, sy) {
-    drawItemIcon(ctx, slot.id, sx + 6, sy + 6, SLOT_SIZE - 12);
+  _renderSlotContent(ctx, slot, sx, sy, slotSz = SLOT_SIZE) {
+    const pad = Math.max(4, Math.floor(slotSz * 0.14));
+    drawItemIcon(ctx, slot.id, sx + pad, sy + pad, slotSz - pad * 2);
     const idf = ITEMS[slot.id];
     if (idf && idf.rarity && idf.rarity !== "common") {
       ctx.strokeStyle = getItemRarityColor(slot.id); ctx.lineWidth = 2;
-      roundRect(ctx, sx + 1, sy + 1, SLOT_SIZE - 2, SLOT_SIZE - 2, 3);
+      roundRect(ctx, sx + 1, sy + 1, slotSz - 2, slotSz - 2, 3);
       ctx.stroke();
     }
     if (slot.count > 1) {
       ctx.fillStyle = "#000"; ctx.font = "bold 11px monospace";
-      ctx.fillText(String(slot.count), sx + SLOT_SIZE - 15, sy + SLOT_SIZE - 5);
+      ctx.fillText(String(slot.count), sx + slotSz - 15, sy + slotSz - 5);
       ctx.fillStyle = "#fff";
-      ctx.fillText(String(slot.count), sx + SLOT_SIZE - 16, sy + SLOT_SIZE - 6);
+      ctx.fillText(String(slot.count), sx + slotSz - 16, sy + slotSz - 6);
     }
   }
 }
@@ -1358,8 +1422,9 @@ class TileMap {
   isSolid(col, row, boatMode) {
     const tile = this.getTile(col, row);
     if (boatMode) {
-      if (tile === TileType.WATER || tile === TileType.SAND || tile === TileType.BRIDGE) return false;
-      return true;
+      /** K\u0131y\u0131da kum-\u00e7imen s\u0131n\u0131r\u0131nda tekne hitbox'u \u00e7imene de\u011fince tak\u0131lmamas\u0131 i\u00e7in k\u0131y\u0131 zeminleri ge\u00e7ilebilir. */
+      if (tile === TileType.WALL || tile === TileType.TREE) return true;
+      return false;
     }
     if (SOLID_TILES.has(tile)) return true;
     const detail = this.getDetail(col, row);
@@ -1384,6 +1449,21 @@ class TileMap {
       }
     }
     return false;
+  }
+
+  /** Oyuncu ayaklar\u0131n\u0131n alt\u0131ndaki ana zemin karesini d\u00f6nd\u00fcr\u00fcr. */
+  getGroundTileAtPx(px, py) {
+    return this.getTile(Math.floor(px / TILE_SIZE), Math.floor(py / TILE_SIZE));
+  }
+
+  /**
+   * Tekneye binme (B veya otomatik): ayaklar kum / su / k\u00f6pr\u00fcde olmal\u0131 ve yak\u0131nda su olmal\u0131.
+   * \u00c7imen \u00fczerindeyken sadece suya yak\u0131n olmak yetmez; k\u0131y\u0131ya \u00e7\u0131k\u0131nca yanl\u0131\u015f tetiklenmez.
+   */
+  canBoardBoatAtPx(px, py) {
+    const t = this.getGroundTileAtPx(px, py);
+    if (t !== TileType.WATER && t !== TileType.SAND && t !== TileType.BRIDGE) return false;
+    return this.isNearWater(px, py, 2);
   }
 
   render(ctx, camX, camY, camW, camH) {
@@ -1703,6 +1783,10 @@ class Player {
 
     if (this.powerCharging) {
       this.powerCharge = Math.min(1, this.powerCharge + dt * 0.8);
+    }
+
+    if (!this.inBoat && this.boatAutoBoardCooldown > 0) {
+      this.boatAutoBoardCooldown -= dt;
     }
 
     const agiBonus = 1 + (this.agi + this._eqAgi) * 0.008;
@@ -2193,6 +2277,9 @@ class Player {
 
   get centerX() { return this.x + this.w / 2; }
   get centerY() { return this.y + this.h / 2; }
+  /** Tekne binme / zemin kontrol\u00fc i\u00e7in ayaklar\u0131n yakla\u015f\u0131k pikseli. */
+  get feetX() { return this.centerX; }
+  get feetY() { return this.y + this.h - 4; }
 }
 
 /* ── Arrow Projectile ────────────────────────────────────── */
@@ -3288,12 +3375,21 @@ class PetPanel {
   toggle() { this.open = !this.open; }
   close() { this.open = false; }
 
+  getPanelBounds(cw, ch) {
+    const b = uiModalBounds(cw, ch);
+    let pw = Math.min(260, b.maxW);
+    let ph = Math.min(200, b.maxH);
+    pw = Math.max(200, pw);
+    ph = Math.max(148, ph);
+    const px = Math.floor((cw - pw) / 2);
+    const py = Math.max(b.top, Math.min(ch - ph - b.bottom, Math.floor((ch - ph) / 2)));
+    return { px, py, pw, ph };
+  }
+
   render(ctx, canvasW, canvasH, pet) {
     if (!this.open || !pet) return;
 
-    const pw = 240, ph = 180;
-    const px = Math.floor((canvasW - pw) / 2);
-    const py = Math.floor((canvasH - ph) / 2);
+    const { px, py, pw, ph } = this.getPanelBounds(canvasW, canvasH);
 
     ctx.fillStyle = "rgba(0,0,0,0.5)"; ctx.fillRect(0, 0, canvasW, canvasH);
 
@@ -3306,18 +3402,19 @@ class PetPanel {
     ctx.fillStyle = "#888"; ctx.font = "11px monospace";
     ctx.fillText("[P] Kapat", px + pw - 80, py + 26);
 
-    const previewX = px + 20, previewY = py + 50;
+    const previewX = px + 20, previewY = py + 48, prevS = Math.min(48, ph - 72);
     ctx.fillStyle = "rgba(40,40,60,0.6)"; ctx.strokeStyle = "#505070"; ctx.lineWidth = 1;
-    roundRect(ctx, previewX, previewY, 48, 48, 6); ctx.fill(); ctx.stroke();
-    drawPetSprite(ctx, pet.type, previewX + 16, previewY + 14, DIR.DOWN, 0, false);
+    roundRect(ctx, previewX, previewY, prevS, prevS, 6); ctx.fill(); ctx.stroke();
+    drawPetSprite(ctx, pet.type, previewX + Math.floor(prevS / 2) - 8, previewY + Math.floor(prevS / 2) - 10, DIR.DOWN, 0, false);
 
+    const textX = px + 20 + prevS + 12;
     ctx.fillStyle = "#e8e8f0"; ctx.font = "bold 14px monospace";
-    ctx.fillText(pet.name, px + 80, py + 66);
+    ctx.fillText(pet.name, textX, py + 62);
 
     ctx.fillStyle = "#a0a0c0"; ctx.font = "12px monospace";
-    ctx.fillText("T\u00fcr: " + PET_TYPES[pet.type].name, px + 80, py + 84);
+    ctx.fillText("T\u00fcr: " + PET_TYPES[pet.type].name, textX, py + 80);
 
-    const barX = px + 20, barY = py + 115, barW = pw - 40, barH = 14;
+    const barX = px + 20, barY = py + ph - 62, barW = pw - 40, barH = 12;
     ctx.fillStyle = "#a0a0c0"; ctx.font = "11px monospace";
     ctx.fillText("Mutluluk", barX, barY - 4);
     ctx.fillStyle = "rgba(40,40,60,0.8)";
@@ -3326,13 +3423,13 @@ class PetPanel {
     ctx.fillStyle = hpColor;
     roundRect(ctx, barX, barY, barW * pet.happiness / 100, barH, 4); ctx.fill();
     ctx.fillStyle = "#fff"; ctx.font = "bold 10px monospace";
-    ctx.fillText(Math.round(pet.happiness) + "%", barX + barW / 2 - 10, barY + 11);
+    ctx.fillText(Math.round(pet.happiness) + "%", barX + barW / 2 - 10, barY + 10);
 
     const favFood = PET_TYPES[pet.type].tameFood;
     const favName = ITEMS[favFood] ? ITEMS[favFood].name : favFood;
-    ctx.fillStyle = "#a0a0c0"; ctx.font = "11px monospace";
-    ctx.fillText("Favori yiyecek: " + favName, barX, barY + 34);
-    ctx.fillText("Beslemek i\u00e7in: [F]", barX, barY + 50);
+    ctx.fillStyle = "#a0a0c0"; ctx.font = touchState.mobileUI ? "10px monospace" : "11px monospace";
+    ctx.fillText("Favori: " + favName, barX, barY + 22);
+    ctx.fillText("Beslemek: [F]", barX, barY + 38);
   }
 }
 
@@ -3435,10 +3532,23 @@ class Shop {
   }
 
   _layout(cw, ch) {
-    const pw = 448, ph = 400;
+    const b = uiModalBounds(cw, ch);
+    let pw = Math.min(448, b.maxW);
+    let ph = Math.min(400, b.maxH);
+    pw = Math.max(260, pw);
+    ph = Math.max(200, ph);
+    const innerGridW = pw - 32;
+    let shopSlot = SHOP_SLOT;
+    let shopGap = SHOP_GAP;
+    while (SHOP_COLS * (shopSlot + shopGap) - shopGap > innerGridW && shopSlot > 30) shopSlot -= 2;
+    const shopPriceBand = ph < 280 ? 11 : 14;
     const px = Math.floor((cw - pw) / 2);
-    const py = Math.floor((ch - ph) / 2);
-    return { px, py, pw, ph };
+    const py = Math.max(b.top, Math.min(ch - ph - b.bottom, Math.floor((ch - ph) / 2)));
+    return { px, py, pw, ph, shopSlot, shopGap, shopPriceBand };
+  }
+
+  _shopRowStride(L) {
+    return L.shopSlot + L.shopGap + L.shopPriceBand;
   }
 
   _buyGridY(L) {
@@ -3468,11 +3578,13 @@ class Shop {
   }
 
   _sellPickerLayout(L) {
-    const d = { x: Math.floor(L.px + (L.pw - 300) / 2), y: L.py + 102, w: 300, h: 188 };
-    const track = { x: d.x + 48, y: d.y + 102, w: d.w - 96, h: 12 };
-    const btnY = d.y + 132;
-    const btnSell = { x: d.x + 18, y: btnY, w: 108, h: 30 };
-    const btnAll = { x: d.x + 132, y: btnY, w: 150, h: 30 };
+    const dw = Math.min(300, L.pw - 20);
+    const dh = Math.min(188, L.ph - 88);
+    const d = { x: Math.floor(L.px + (L.pw - dw) / 2), y: L.py + Math.min(102, Math.max(72, Math.floor(L.ph * 0.22))), w: Math.max(220, dw), h: Math.max(158, dh) };
+    const track = { x: d.x + 48, y: d.y + Math.min(102, d.h - 86), w: d.w - 96, h: 12 };
+    const btnY = d.y + Math.min(132, d.h - 56);
+    const btnSell = { x: d.x + 18, y: btnY, w: Math.min(108, Math.floor((d.w - 48) * 0.42)), h: 30 };
+    const btnAll = { x: d.x + 18 + btnSell.w + 6, y: btnY, w: Math.min(150, d.w - 36 - btnSell.w), h: 30 };
     const btnCancel = { x: Math.floor(d.x + (d.w - 104) / 2), y: d.y + d.h - 38, w: 104, h: 26 };
     const btnMinus = { x: track.x - 38, y: track.y - 5, w: 32, h: 22 };
     const btnPlus = { x: track.x + track.w + 6, y: track.y - 5, w: 32, h: 22 };
@@ -3521,15 +3633,17 @@ class Shop {
 
     const gridX = L.px + 16, gridY = this._buyGridY(L);
     const gold = inventory.countItem("coin");
+    const rowStride = this._shopRowStride(L);
+    const sSlot = L.shopSlot;
 
     if (this.tab === 0) {
       if (button !== 0) return true;
       for (let i = 0; i < this.stock.length; i++) {
         const row = Math.floor(i / SHOP_COLS), col = i % SHOP_COLS;
-        const sx = gridX + col * (SHOP_SLOT + SHOP_GAP);
-        const sy = gridY + row * (SHOP_SLOT + SHOP_GAP + 14) - this.scrollBuy;
-        if (sy < gridY - SHOP_SLOT || sy > L.py + L.ph) continue;
-        if (mx >= sx && mx < sx + SHOP_SLOT && my >= sy && my < sy + SHOP_SLOT + 14) {
+        const sx = gridX + col * (L.shopSlot + L.shopGap);
+        const sy = gridY + row * rowStride - this.scrollBuy;
+        if (sy < gridY - sSlot || sy > L.py + L.ph) continue;
+        if (mx >= sx && mx < sx + sSlot && my >= sy && my < sy + sSlot + L.shopPriceBand) {
           const si = this.stock[i];
           const def = ITEMS[si.id];
           if (!def) return true;
@@ -3588,10 +3702,10 @@ class Shop {
       const sellable = this._getSellableEntries(inventory);
       for (let i = 0; i < sellable.length; i++) {
         const row = Math.floor(i / SHOP_COLS), col = i % SHOP_COLS;
-        const sx = gridX + col * (SHOP_SLOT + SHOP_GAP);
-        const sy = gridY + row * (SHOP_SLOT + SHOP_GAP + 14) - this.scrollSell;
-        if (sy < gridY - SHOP_SLOT || sy > L.py + L.ph) continue;
-        if (mx >= sx && mx < sx + SHOP_SLOT && my >= sy && my < sy + SHOP_SLOT + 14) {
+        const sx = gridX + col * (L.shopSlot + L.shopGap);
+        const sy = gridY + row * rowStride - this.scrollSell;
+        if (sy < gridY - sSlot || sy > L.py + L.ph) continue;
+        if (mx >= sx && mx < sx + sSlot && my >= sy && my < sy + sSlot + L.shopPriceBand) {
           const s = sellable[i];
           this.sellPicker = {
             containerRef: s.containerRef,
@@ -3635,12 +3749,14 @@ class Shop {
       }
     }
 
+    const rowStride = this._shopRowStride(L);
+    const sSlot = L.shopSlot;
     if (this.tab === 0) {
       for (let i = 0; i < this.stock.length; i++) {
         const row = Math.floor(i / SHOP_COLS), col = i % SHOP_COLS;
-        const sx = gridX + col * (SHOP_SLOT + SHOP_GAP);
-        const sy = gridY + row * (SHOP_SLOT + SHOP_GAP + 14) - this.scrollBuy;
-        if (mx >= sx && mx < sx + SHOP_SLOT && my >= sy && my < sy + SHOP_SLOT) {
+        const sx = gridX + col * (L.shopSlot + L.shopGap);
+        const sy = gridY + row * rowStride - this.scrollBuy;
+        if (mx >= sx && mx < sx + sSlot && my >= sy && my < sy + sSlot) {
           const si = this.stock[i];
           this.tooltipItem = si.id;
           this.tooltipBuyPrice = si.price != null && si.price > 0 ? si.price : null;
@@ -3657,9 +3773,9 @@ class Shop {
       const sellable = this._getSellableEntries(inventory);
       for (let i = 0; i < sellable.length; i++) {
         const row = Math.floor(i / SHOP_COLS), col = i % SHOP_COLS;
-        const sx = gridX + col * (SHOP_SLOT + SHOP_GAP);
-        const sy = gridY + row * (SHOP_SLOT + SHOP_GAP + 14) - this.scrollSell;
-        if (mx >= sx && mx < sx + SHOP_SLOT && my >= sy && my < sy + SHOP_SLOT) {
+        const sx = gridX + col * (L.shopSlot + L.shopGap);
+        const sy = gridY + row * rowStride - this.scrollSell;
+        if (mx >= sx && mx < sx + sSlot && my >= sy && my < sy + sSlot) {
           this.tooltipItem = sellable[i].slot.id;
           this.tooltipX = mx; this.tooltipY = my;
           return;
@@ -3720,9 +3836,9 @@ class Shop {
     ctx.clip();
 
     if (this.tab === 0) {
-      this._renderBuyTab(ctx, gridX, gridY, gold);
+      this._renderBuyTab(ctx, gridX, gridY, gold, L);
     } else {
-      this._renderSellTab(ctx, gridX, gridY, inventory);
+      this._renderSellTab(ctx, gridX, gridY, inventory, L);
     }
 
     ctx.restore();
@@ -3830,32 +3946,34 @@ class Shop {
     }
   }
 
-  _renderBuyTab(ctx, gridX, gridY, gold) {
+  _renderBuyTab(ctx, gridX, gridY, gold, L) {
+    const rowStride = this._shopRowStride(L);
+    const s = L.shopSlot;
     for (let i = 0; i < this.stock.length; i++) {
       const si = this.stock[i];
       const def = ITEMS[si.id];
       if (!def) continue;
       const row = Math.floor(i / SHOP_COLS), col = i % SHOP_COLS;
-      const sx = gridX + col * (SHOP_SLOT + SHOP_GAP);
-      const sy = gridY + row * (SHOP_SLOT + SHOP_GAP + 14) - this.scrollBuy;
+      const sx = gridX + col * (L.shopSlot + L.shopGap);
+      const sy = gridY + row * rowStride - this.scrollBuy;
 
       const price = si.price != null && si.price > 0 ? si.price : (def.buyPrice > 0 ? def.buyPrice : getShopBuyPriceForItem(si.id));
       const canBuy = gold >= price && (si.unlimited || si.qty > 0);
 
       ctx.fillStyle = canBuy ? "rgba(50,70,50,0.6)" : "rgba(40,40,60,0.4)";
       ctx.strokeStyle = canBuy ? "#60a060" : "#404060"; ctx.lineWidth = 1;
-      roundRect(ctx, sx, sy, SHOP_SLOT, SHOP_SLOT, 4); ctx.fill(); ctx.stroke();
+      roundRect(ctx, sx, sy, s, s, 4); ctx.fill(); ctx.stroke();
       if (si.specialOffer) {
         ctx.strokeStyle = "rgba(255,200,80,0.85)"; ctx.lineWidth = 2;
-        roundRect(ctx, sx + 1, sy + 1, SHOP_SLOT - 2, SHOP_SLOT - 2, 4); ctx.stroke();
+        roundRect(ctx, sx + 1, sy + 1, s - 2, s - 2, 4); ctx.stroke();
       }
 
-      drawItemIcon(ctx, si.id, sx + 6, sy + 4, SHOP_SLOT - 12);
+      drawItemIcon(ctx, si.id, sx + 6, sy + 4, s - 12);
 
       if (def.rarity && def.rarity !== "common") {
         ctx.strokeStyle = getItemRarityColor(si.id);
         ctx.lineWidth = si.specialOffer ? 1.5 : 2;
-        roundRect(ctx, sx + 2, sy + 2, SHOP_SLOT - 4, SHOP_SLOT - 4, 3);
+        roundRect(ctx, sx + 2, sy + 2, s - 4, s - 4, 3);
         ctx.stroke();
       }
 
@@ -3866,19 +3984,19 @@ class Shop {
 
       if (si.unlimited) {
         ctx.fillStyle = "#9cf"; ctx.font = "bold 11px monospace";
-        ctx.fillText("\u221e", sx + SHOP_SLOT - 16, sy + SHOP_SLOT - 3);
+        ctx.fillText("\u221e", sx + s - 16, sy + s - 3);
       } else if (si.qty > 0) {
         ctx.fillStyle = "#aaa"; ctx.font = "9px monospace";
-        ctx.fillText("x" + si.qty, sx + SHOP_SLOT - 18, sy + SHOP_SLOT - 3);
+        ctx.fillText("x" + si.qty, sx + s - 18, sy + s - 3);
       } else {
-        ctx.fillStyle = "rgba(0,0,0,0.5)"; ctx.fillRect(sx, sy, SHOP_SLOT, SHOP_SLOT);
+        ctx.fillStyle = "rgba(0,0,0,0.5)"; ctx.fillRect(sx, sy, s, s);
         ctx.fillStyle = "#d04040"; ctx.font = "bold 8px monospace";
-        ctx.fillText("T\u00dcKEND\u0130", sx + 2, sy + SHOP_SLOT / 2 + 3);
+        ctx.fillText("T\u00dcKEND\u0130", sx + 2, sy + s / 2 + 3);
       }
 
       ctx.fillStyle = canBuy ? "#80d080" : "#806060"; ctx.font = "bold 10px monospace";
       const priceText = price + "g";
-      ctx.fillText(priceText, sx + (SHOP_SLOT - ctx.measureText(priceText).width) / 2, sy + SHOP_SLOT + 11);
+      ctx.fillText(priceText, sx + (s - ctx.measureText(priceText).width) / 2, sy + s + Math.min(11, L.shopPriceBand + 1));
     }
   }
 
@@ -3984,8 +4102,10 @@ class Shop {
     drawItemIcon(ctx, slot.id, ix + 5, iy + 4, 30);
   }
 
-  _renderSellTab(ctx, gridX, gridY, inventory) {
+  _renderSellTab(ctx, gridX, gridY, inventory, L) {
     const sellable = this._getSellableEntries(inventory);
+    const rowStride = this._shopRowStride(L);
+    const s = L.shopSlot;
 
     if (sellable.length === 0) {
       ctx.fillStyle = "#666"; ctx.font = "12px monospace";
@@ -3997,30 +4117,30 @@ class Shop {
       const slot = sellable[i].slot;
       const def = ITEMS[slot.id];
       const row = Math.floor(i / SHOP_COLS), col = i % SHOP_COLS;
-      const sx = gridX + col * (SHOP_SLOT + SHOP_GAP);
-      const sy = gridY + row * (SHOP_SLOT + SHOP_GAP + 14) - this.scrollSell;
+      const sx = gridX + col * (L.shopSlot + L.shopGap);
+      const sy = gridY + row * rowStride - this.scrollSell;
 
       ctx.fillStyle = "rgba(60,50,30,0.6)";
       ctx.strokeStyle = "#a08040"; ctx.lineWidth = 1;
-      roundRect(ctx, sx, sy, SHOP_SLOT, SHOP_SLOT, 4); ctx.fill(); ctx.stroke();
+      roundRect(ctx, sx, sy, s, s, 4); ctx.fill(); ctx.stroke();
 
-      drawItemIcon(ctx, slot.id, sx + 6, sy + 4, SHOP_SLOT - 12);
+      drawItemIcon(ctx, slot.id, sx + 6, sy + 4, s - 12);
 
       if (def.rarity && def.rarity !== "common") {
         ctx.strokeStyle = getItemRarityColor(slot.id);
         ctx.lineWidth = 2;
-        roundRect(ctx, sx + 2, sy + 2, SHOP_SLOT - 4, SHOP_SLOT - 4, 3);
+        roundRect(ctx, sx + 2, sy + 2, s - 4, s - 4, 3);
         ctx.stroke();
       }
 
       if (slot.count > 1) {
         ctx.fillStyle = "#fff"; ctx.font = "bold 10px monospace";
-        ctx.fillText(String(slot.count), sx + SHOP_SLOT - 14, sy + SHOP_SLOT - 3);
+        ctx.fillText(String(slot.count), sx + s - 14, sy + s - 3);
       }
 
       ctx.fillStyle = "#f0d050"; ctx.font = "bold 10px monospace";
       const priceText = "+" + def.sellPrice + "g";
-      ctx.fillText(priceText, sx + (SHOP_SLOT - ctx.measureText(priceText).width) / 2, sy + SHOP_SLOT + 11);
+      ctx.fillText(priceText, sx + (s - ctx.measureText(priceText).width) / 2, sy + s + Math.min(11, L.shopPriceBand + 1));
     }
   }
 }
@@ -4115,7 +4235,7 @@ class HUD {
     ctx.fillStyle = "#f0f0f0"; ctx.font = "11px monospace";
     if (touchState.mobileUI) {
       ctx.fillText(
-        "Mobil: joystick | ortada iksir (Q/R) | sa\u011f: E/I/P/M/B/F | \u2694 sald\u0131r\u0131 | \u00d7 kapat",
+        "Mobil: joystick | \u2694 yan\u0131nda Q/R iksir | sa\u011f: E/I/P/M/B/F | \u00d7 kapat",
         10,
         canvasH - 10
       );
@@ -4136,21 +4256,30 @@ function layoutCombatPotions(cw, ch) {
 
   if (touchState.mobileUI) {
     const J = touchState;
-    const btnLeft = cw - 8 - 52;
+    const atk = mobileAttackButtonRect(cw, ch);
     const joyRight = J.joyCx + J.joyR * 1.55;
-    const need = w * 2 + gap + 8;
-    const midGap = btnLeft - joyRight - 12;
-    if (midGap >= need) {
-      const x0 = joyRight + (midGap - need) / 2;
-      x1 = x0;
-      x2 = x0 + w + gap;
-    } else {
-      x1 = Math.max(8, J.joyCx - J.joyR - need - 6);
-      x2 = x1 + w + gap;
+    let potW = 44, potH = 44, g = 5;
+    let manaX = atk.x - g - potW;
+    let hpX = manaX - g - potW;
+    while (hpX < joyRight + 10 && potW >= 30) {
+      potW -= 2;
+      potH -= 2;
+      g = 4;
+      manaX = atk.x - g - potW;
+      hpX = manaX - g - potW;
     }
-    const yClearJoy = J.joyCy - J.joyR * 0.95 - h - 6;
-    y = Math.min(ch - h - bottomPad, yClearJoy);
-    y = Math.max(72, y);
+    if (hpX < joyRight + 8) {
+      hpX = joyRight + 8;
+      manaX = Math.min(atk.x - g - potW, hpX + potW + g);
+      if (manaX + potW > atk.x - 2) manaX = atk.x - g - potW;
+    }
+    y = atk.y + (atk.h - potH) / 2;
+    y = Math.max(56, Math.min(ch - potH - bottomPad, y));
+    combatPotionRects = [
+      { kind: "hp", x: hpX, y, w: potW, h: potH, key: "Q" },
+      { kind: "mana", x: manaX, y, w: potW, h: potH, key: "R" },
+    ];
+    return combatPotionRects;
   } else {
     const pad = 12;
     x2 = cw - pad - w;
@@ -4573,10 +4702,18 @@ class CraftPanel {
     this._showFeedback("Tekne in\u015fa edildi!", "#50e050");
   }
 
+  _panelLayout(cw, ch) {
+    const b = uiModalBounds(cw, ch);
+    const panW = Math.min(280, b.maxW);
+    const panH = Math.min(220, b.maxH);
+    const px = Math.floor((cw - panW) / 2);
+    const py = Math.max(b.top, Math.min(ch - panH - b.bottom, Math.floor((ch - panH) / 2)));
+    return { panW, panH, px, py };
+  }
+
   handleClick(mx, my, canvasW, canvasH, inv, player) {
     if (!this.open) return;
-    const panW = 280, panH = 220;
-    const px = (canvasW - panW) / 2, py = (canvasH - panH) / 2;
+    const { panW, panH, px, py } = this._panelLayout(canvasW, canvasH);
 
     const btnW = 120, btnH = 30;
     const btnX = px + (panW - btnW) / 2, btnY = py + panH - 50;
@@ -4587,8 +4724,7 @@ class CraftPanel {
 
   render(ctx, canvasW, canvasH, inv, player) {
     if (!this.open) return;
-    const panW = 280, panH = 220;
-    const px = (canvasW - panW) / 2, py = (canvasH - panH) / 2;
+    const { panW, panH, px, py } = this._panelLayout(canvasW, canvasH);
 
     ctx.fillStyle = "rgba(10,10,30,0.92)";
     ctx.strokeStyle = "#6080c0"; ctx.lineWidth = 2;
@@ -4596,7 +4732,8 @@ class CraftPanel {
     ctx.fill(); ctx.stroke();
 
     ctx.fillStyle = "#80c0ff"; ctx.font = "bold 16px monospace";
-    ctx.fillText("\u2693 Tekne Yap\u0131m\u0131", px + 70, py + 28);
+    const title = "\u2693 Tekne Yap\u0131m\u0131";
+    ctx.fillText(title, px + (panW - ctx.measureText(title).width) / 2, py + 28);
 
     let iy = py + 50;
     ctx.font = "13px monospace";
@@ -4611,7 +4748,7 @@ class CraftPanel {
       ctx.font = "13px monospace";
       ctx.fillText(ITEMS[item].name + ": " + have + " / " + need, px + 46, iy + 2);
       ctx.fillStyle = enough ? "#50e050" : "#d04040";
-      ctx.fillText(enough ? " \u2714" : " \u2718", px + 220, iy + 2);
+      ctx.fillText(enough ? " \u2714" : " \u2718", px + panW - 28, iy + 2);
       iy += 26;
     }
 
@@ -4619,7 +4756,7 @@ class CraftPanel {
       ctx.fillStyle = "#50e050"; ctx.font = "bold 13px monospace";
       ctx.fillText("\u2713 Teknen haz\u0131r! Su k\u0131y\u0131s\u0131nda B bas.", px + 30, iy + 14);
     } else {
-      const btnW = 120, btnH = 30;
+      const btnW = Math.min(120, panW - 24), btnH = 30;
       const btnX = px + (panW - btnW) / 2, btnY = py + panH - 50;
       const canBuild = this.canCraft(inv);
       ctx.fillStyle = canBuild ? "rgba(50,120,50,0.9)" : "rgba(60,60,60,0.8)";
@@ -5220,8 +5357,7 @@ function handleCanvasTouchStart(e) {
     }
 
     if (petPanel.open && activePet) {
-      const pw = 240, ph = 180;
-      const px = Math.floor((canvasW - pw) / 2), py = Math.floor((canvasH - ph) / 2);
+      const { px, py, pw, ph } = petPanel.getPanelBounds(canvasW, canvasH);
       if (mx < px || mx > px + pw || my < py || my > py + ph) petPanel.close();
       continue;
     }
@@ -5581,14 +5717,19 @@ function gameLoop(now) {
       if (player.inBoat) {
         if (!map.isWaterPx(player.centerX, player.centerY)) {
           player.inBoat = false;
-          player.boatAutoBoardCooldown = 2.2;
+          const ft = map.getGroundTileAtPx(player.feetX, player.feetY);
+          if (ft === TileType.SAND || ft === TileType.BRIDGE || ft === TileType.WATER) {
+            player.boatAutoBoardCooldown = 0.4;
+          } else {
+            player.boatAutoBoardCooldown = 0;
+          }
           pickupMsgText = "Tekneden indin!";
           pickupMsgTimer = 1.5;
         } else {
           pickupMsgText = "Kar\u0131ya yakla\u015f\u0131p in!";
           pickupMsgTimer = 1.5;
         }
-      } else if (player.hasBoat && map.isNearWater(player.centerX, player.centerY, 2)) {
+      } else if (player.hasBoat && map.canBoardBoatAtPx(player.feetX, player.feetY)) {
         player.inBoat = true;
         pickupMsgText = "Tekneye bindin! \u2693";
         pickupMsgTimer = 1.5;
@@ -5654,7 +5795,7 @@ function gameLoop(now) {
     }
     player.update(dt, map);
     if (player.hasBoat && !player.inBoat && player.boatAutoBoardCooldown <= 0 &&
-        map.isNearWater(player.centerX, player.centerY, 2)) {
+        map.canBoardBoatAtPx(player.feetX, player.feetY)) {
       player.inBoat = true;
       pickupMsgText = "Tekneye bindin! \u2693";
       pickupMsgTimer = 1.2;
@@ -5754,8 +5895,10 @@ function gameLoop(now) {
     }
   }
   if (!nearNPC && !nearItem && !nearWild && !nearMonster && !nearTreeChop) {
-    if (!uiOpen && player.hasBoat && !player.inBoat && map.isNearWater(player.centerX, player.centerY, 2)) {
-      hud.showInteractPrompt("Su k\u0131y\u0131s\u0131na yakla\u015f: tekne otomatik");
+    if (!uiOpen && player.hasBoat && !player.inBoat &&
+        map.isNearWater(player.feetX, player.feetY, 2) &&
+        !map.canBoardBoatAtPx(player.feetX, player.feetY)) {
+      hud.showInteractPrompt("Kum veya su kenar\u0131na yakla\u015f: tekne otomatik");
     } else if (!uiOpen && player.inBoat) {
       if (!map.isWaterPx(player.centerX, player.centerY)) {
         hud.showInteractPrompt("[B] Tekneden in");
