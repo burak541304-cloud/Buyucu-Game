@@ -810,6 +810,38 @@ class Inventory {
     return count;
   }
 
+  /**
+   * Bu e\u015fya i\u00e7in en fazla ka\u00e7 adet daha eklenebilece\u011fini tahmin eder (bo\u015f / y\u0131\u011f\u0131n alan\u0131).
+   * Marketten \u00e7oklu al\u0131m \u00fcst s\u0131n\u0131r\u0131 i\u00e7in kullan\u0131l\u0131r.
+   */
+  countAddable(itemId, maxWant = 99999) {
+    const def = ITEMS[itemId];
+    if (!def || maxWant <= 0) return 0;
+    if (itemId === "coin") return maxWant;
+    let room = 0;
+    const cap = Math.min(maxWant, 99999);
+    if (def.stackable) {
+      for (const container of [this.hotbar, this.slots]) {
+        for (let i = 0; i < container.length; i++) {
+          const s = container[i];
+          if (!s) room += def.maxStack;
+          else if (s.id === itemId && s.count < def.maxStack) room += def.maxStack - s.count;
+          if (room >= cap) return cap;
+        }
+      }
+    } else {
+      for (const container of [this.hotbar, this.slots]) {
+        for (let i = 0; i < container.length; i++) {
+          if (!container[i]) {
+            room += 1;
+            if (room >= cap) return cap;
+          }
+        }
+      }
+    }
+    return Math.min(room, cap);
+  }
+
   countItem(itemId) {
     if (itemId === "coin") {
       this._mergeSlotCoinsIntoGold();
@@ -3458,6 +3490,8 @@ class Shop {
     this.feedbackTimer = 0;
     this.feedbackColor = "#50e050";
     this.sellPicker = null;
+    /** Sat\u0131n al onay diyalo\u011fu: { stockIndex, itemId } */
+    this.buyPicker = null;
   }
 
   openShop(name, template, poolKey) {
@@ -3474,6 +3508,7 @@ class Shop {
     this.tooltipBuyPrice = null;
     this.tooltipSpecial = false;
     this.sellPicker = null;
+    this.buyPicker = null;
   }
 
   rebuildStockFromTemplate() {
@@ -3512,6 +3547,7 @@ class Shop {
     this.tooltipBuyPrice = null;
     this.tooltipSpecial = false;
     this.sellPicker = null;
+    this.buyPicker = null;
   }
   toggle() { if (this.open) this.close(); }
 
@@ -3577,6 +3613,216 @@ class Shop {
     return slot;
   }
 
+  _buyPickerLayout(L) {
+    const dw = Math.min(320, L.pw - 20);
+    const dh = Math.min(236, L.ph - 52);
+    const d = {
+      x: Math.floor(L.px + (L.pw - dw) / 2),
+      y: Math.floor(L.py + (L.ph - dh) / 2),
+      w: Math.max(236, dw),
+      h: Math.max(198, dh),
+    };
+    const track = { x: d.x + 42, y: d.y + 124, w: d.w - 42 - 84, h: 12 };
+    const btnMinus = { x: track.x - 36, y: track.y - 5, w: 30, h: 22 };
+    const btnPlus = { x: track.x + track.w + 6, y: track.y - 5, w: 30, h: 22 };
+    const btnMax = { x: d.x + d.w - 76, y: track.y - 8, w: 66, h: 28 };
+    const btnH = 32;
+    const btnY = d.y + d.h - btnH - 12;
+    const gapB = 10;
+    const btnW = Math.floor((d.w - 40 - gapB) / 2);
+    const btnBuy = { x: d.x + 20, y: btnY, w: btnW, h: btnH };
+    const btnCancel = { x: d.x + 20 + btnW + gapB, y: btnY, w: btnW, h: btnH };
+    return { dialog: d, track, btnMinus, btnPlus, btnMax, btnBuy, btnCancel };
+  }
+
+  _getBuyPickerStockEntry(picker) {
+    if (!picker || picker.stockIndex == null) return null;
+    const si = this.stock[picker.stockIndex];
+    if (!si || si.id !== picker.itemId) return null;
+    return si;
+  }
+
+  _shopUnitPrice(si) {
+    const def = ITEMS[si.id];
+    if (!def) return 0;
+    return si.price != null && si.price > 0 ? si.price : (def.buyPrice > 0 ? def.buyPrice : getShopBuyPriceForItem(si.id));
+  }
+
+  /** Ayn\u0131 anda al\u0131nabilecek \u00fcst s\u0131n\u0131r: stok, alt\u0131n, envanter bo\u015flu\u011fu. */
+  _shopMaxBuyable(inventory, si) {
+    const def = ITEMS[si.id];
+    if (!def) return 0;
+    const price = this._shopUnitPrice(si);
+    const byInv = inventory.countAddable(si.id, 9999);
+    const byStock = si.unlimited ? 999 : si.qty;
+    if (price <= 0) return Math.max(0, Math.min(byStock, byInv));
+    const gold = inventory.countItem("coin");
+    const byGold = Math.floor(gold / price);
+    return Math.max(0, Math.min(byStock, byGold, byInv));
+  }
+
+  _executeBuyOne(inventory, picker) {
+    const si = this._getBuyPickerStockEntry(picker);
+    if (!si) return false;
+    const def = ITEMS[si.id];
+    if (!def) return false;
+    const price = this._shopUnitPrice(si);
+    const maxB = this._shopMaxBuyable(inventory, si);
+    if (maxB <= 0) {
+      this._showFeedback(!si.unlimited && si.qty <= 0 ? "Stok t\u00fckendi!" : "Envantere s\u0131\u011fm\u0131yor!", "#d04040");
+      return false;
+    }
+    const n = Math.max(1, Math.min(picker.amount != null ? picker.amount : 1, maxB));
+    const total = price * n;
+    const gold = inventory.countItem("coin");
+    if (gold < total) {
+      this._showFeedback("Yeterli alt\u0131n yok!", "#d04040");
+      return false;
+    }
+    if (!si.unlimited && si.qty < n) {
+      this._showFeedback("Stok yetersiz!", "#d04040");
+      return false;
+    }
+    inventory.removeItem("coin", total);
+    const left = inventory.addItem(si.id, n);
+    const added = n - left;
+    if (left > 0) inventory.addItem("coin", price * left);
+    if (!si.unlimited) si.qty -= added;
+    if (added <= 0) {
+      this._showFeedback("Envantere s\u0131\u011fm\u0131yor!", "#d04040");
+      return false;
+    }
+    if (left > 0) {
+      this._showFeedback(added + "x " + def.name + " al\u0131nd\u0131 (-" + (price * added) + "g). " + left + " adet i\u00e7in yer yoktu.", "#d0a030");
+    } else if (added > 1) {
+      this._showFeedback(added + "x " + def.name + " sat\u0131n al\u0131nd\u0131! -" + total + " alt\u0131n");
+    } else {
+      this._showFeedback(def.name + " sat\u0131n al\u0131nd\u0131! -" + total + " alt\u0131n");
+    }
+    return true;
+  }
+
+  _renderBuyPicker(ctx, L, inventory) {
+    const picker = this.buyPicker;
+    if (!picker) return;
+    const si = this._getBuyPickerStockEntry(picker);
+    if (!si) {
+      this.buyPicker = null;
+      return;
+    }
+    const def = ITEMS[si.id];
+    if (!def) {
+      this.buyPicker = null;
+      return;
+    }
+    const gold = inventory.countItem("coin");
+    const price = this._shopUnitPrice(si);
+    const maxB = this._shopMaxBuyable(inventory, si);
+    let amt = picker.amount != null ? picker.amount : 1;
+    amt = Math.max(1, Math.min(amt, maxB));
+    picker.amount = amt;
+    const total = price * amt;
+    const canBuy = maxB > 0 && gold >= total;
+    const B = this._buyPickerLayout(L);
+    const d = B.dialog;
+
+    ctx.fillStyle = "rgba(0,0,0,0.45)";
+    ctx.fillRect(L.px, L.py, L.pw, L.ph);
+
+    ctx.fillStyle = "rgba(18,22,42,0.98)";
+    ctx.strokeStyle = "#60a070";
+    ctx.lineWidth = 2;
+    roundRect(ctx, d.x, d.y, d.w, d.h, 10);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = "#f0d050";
+    ctx.font = "bold 14px monospace";
+    ctx.fillText("Sat\u0131n al", d.x + 16, d.y + 26);
+
+    const ix = d.x + 18, iy = d.y + 44, isz = 40;
+    ctx.fillStyle = "rgba(40,45,65,0.95)";
+    roundRect(ctx, ix, iy, isz, isz, 6);
+    ctx.strokeStyle = "#606080";
+    ctx.stroke();
+    drawItemIcon(ctx, si.id, ix + 5, iy + 4, isz - 10);
+
+    ctx.fillStyle = "#e8e8f0";
+    ctx.font = "bold 13px monospace";
+    ctx.fillText(def.name, ix + isz + 12, iy + 12);
+    ctx.fillStyle = "#a0a8c8";
+    ctx.font = "11px monospace";
+    ctx.fillText("Birim: " + price + "g  |  En fazla: " + maxB, ix + isz + 12, iy + 30);
+    ctx.fillText("Paran: " + gold + "g", ix + isz + 12, iy + 46);
+
+    ctx.fillStyle = "#c8d0e8";
+    ctx.font = "11px monospace";
+    ctx.fillText("Adet: " + amt + "   \u2192  Toplam: " + total + "g", d.x + 16, d.y + 100);
+
+    const tr = B.track;
+    ctx.fillStyle = "rgba(0,0,0,0.45)";
+    roundRect(ctx, tr.x, tr.y, tr.w, tr.h, 4);
+    ctx.fill();
+    ctx.strokeStyle = "#606080";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(tr.x, tr.y, tr.w, tr.h);
+    const tThumb = maxB <= 1 ? 0.5 : (amt - 1) / (maxB - 1);
+    const cx = tr.x + tThumb * tr.w;
+    ctx.fillStyle = "#f0e8c0";
+    ctx.beginPath();
+    ctx.arc(cx, tr.y + tr.h / 2, 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#c0a050";
+    ctx.stroke();
+
+    ctx.fillStyle = "#c8c8e8";
+    ctx.font = "bold 14px monospace";
+    ctx.fillText("\u2212", B.btnMinus.x + 9, B.btnMinus.y + 16);
+    ctx.fillText("+", B.btnPlus.x + 10, B.btnPlus.y + 16);
+    ctx.strokeStyle = "#707090";
+    roundRect(ctx, B.btnMinus.x, B.btnMinus.y, B.btnMinus.w, B.btnMinus.h, 3);
+    ctx.stroke();
+    roundRect(ctx, B.btnPlus.x, B.btnPlus.y, B.btnPlus.w, B.btnPlus.h, 3);
+    ctx.stroke();
+
+    ctx.fillStyle = "rgba(70,90,130,0.9)";
+    ctx.strokeStyle = "#8090c0";
+    roundRect(ctx, B.btnMax.x, B.btnMax.y, B.btnMax.w, B.btnMax.h, 5);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#e8ecff";
+    ctx.font = "bold 9px monospace";
+    const mxL = "En fazla";
+    ctx.fillText(mxL, B.btnMax.x + (B.btnMax.w - ctx.measureText(mxL).width) / 2, B.btnMax.y + 18);
+
+    if (!canBuy && maxB > 0) {
+      ctx.fillStyle = "#c07070";
+      ctx.font = "10px monospace";
+      const warn = gold < total ? "Yeterli alt\u0131n yok." : "";
+      if (warn) ctx.fillText(warn, d.x + 16, d.y + d.h - 58);
+    }
+
+    ctx.fillStyle = canBuy ? "rgba(40,110,55,0.95)" : "rgba(45,45,55,0.85)";
+    ctx.strokeStyle = canBuy ? "#70d080" : "#505058";
+    roundRect(ctx, B.btnBuy.x, B.btnBuy.y, B.btnBuy.w, B.btnBuy.h, 6);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = canBuy ? "#f0fff0" : "#707070";
+    ctx.font = "bold 12px monospace";
+    const buyLabel = "Sat\u0131n Al";
+    ctx.fillText(buyLabel, B.btnBuy.x + (B.btnBuy.w - ctx.measureText(buyLabel).width) / 2, B.btnBuy.y + 21);
+
+    ctx.fillStyle = "rgba(55,55,75,0.95)";
+    ctx.strokeStyle = "#707090";
+    roundRect(ctx, B.btnCancel.x, B.btnCancel.y, B.btnCancel.w, B.btnCancel.h, 6);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#d0d0e8";
+    ctx.font = "bold 12px monospace";
+    const canLabel = "\u0130ptal";
+    ctx.fillText(canLabel, B.btnCancel.x + (B.btnCancel.w - ctx.measureText(canLabel).width) / 2, B.btnCancel.y + 21);
+  }
+
   _sellPickerLayout(L) {
     const dw = Math.min(300, L.pw - 20);
     const dh = Math.min(188, L.ph - 88);
@@ -3628,8 +3874,17 @@ class Shop {
     const L = this._layout(cw, ch);
 
     const tabBuyX = L.px + 16, tabSellX = L.px + 16 + 100, tabY = L.py + 38, tabW = 90, tabH = 24;
-    if (mx >= tabBuyX && mx < tabBuyX + tabW && my >= tabY && my < tabY + tabH) { this.tab = 0; this.sellPicker = null; return true; }
-    if (mx >= tabSellX && mx < tabSellX + tabW && my >= tabY && my < tabY + tabH) { this.tab = 1; return true; }
+    if (mx >= tabBuyX && mx < tabBuyX + tabW && my >= tabY && my < tabY + tabH) {
+      this.tab = 0;
+      this.sellPicker = null;
+      this.buyPicker = null;
+      return true;
+    }
+    if (mx >= tabSellX && mx < tabSellX + tabW && my >= tabY && my < tabY + tabH) {
+      this.tab = 1;
+      this.buyPicker = null;
+      return true;
+    }
 
     const gridX = L.px + 16, gridY = this._buyGridY(L);
     const gold = inventory.countItem("coin");
@@ -3638,6 +3893,54 @@ class Shop {
 
     if (this.tab === 0) {
       if (button !== 0) return true;
+      if (this.buyPicker) {
+        const B = this._buyPickerLayout(L);
+        const si0 = this._getBuyPickerStockEntry(this.buyPicker);
+        if (!si0) {
+          this.buyPicker = null;
+          return true;
+        }
+        if (this._pointInRect(mx, my, B.dialog)) {
+          const siD = this._getBuyPickerStockEntry(this.buyPicker);
+          if (!siD) {
+            this.buyPicker = null;
+            return true;
+          }
+          const maxB = this._shopMaxBuyable(inventory, siD);
+          if (maxB <= 0) {
+            this.buyPicker = null;
+            return true;
+          }
+          const a0 = this.buyPicker.amount != null ? this.buyPicker.amount : 1;
+          if (this._pointInRect(mx, my, B.btnMinus)) {
+            this.buyPicker.amount = Math.max(1, a0 - 1);
+            return true;
+          }
+          if (this._pointInRect(mx, my, B.btnPlus)) {
+            this.buyPicker.amount = Math.min(maxB, a0 + 1);
+            return true;
+          }
+          if (this._pointInRect(mx, my, B.btnMax)) {
+            this.buyPicker.amount = maxB;
+            return true;
+          }
+          const trackHit = { x: B.track.x - 2, y: B.track.y - 8, w: B.track.w + 4, h: B.track.h + 16 };
+          if (this._pointInRect(mx, my, trackHit)) {
+            this.buyPicker.amount = this._sellAmountFromTrackMx(mx, B.track, maxB);
+            return true;
+          }
+          if (this._pointInRect(mx, my, B.btnBuy)) {
+            if (this._executeBuyOne(inventory, this.buyPicker)) this.buyPicker = null;
+            return true;
+          }
+          if (this._pointInRect(mx, my, B.btnCancel)) {
+            this.buyPicker = null;
+            return true;
+          }
+          return true;
+        }
+        this.buyPicker = null;
+      }
       for (let i = 0; i < this.stock.length; i++) {
         const row = Math.floor(i / SHOP_COLS), col = i % SHOP_COLS;
         const sx = gridX + col * (L.shopSlot + L.shopGap);
@@ -3647,13 +3950,16 @@ class Shop {
           const si = this.stock[i];
           const def = ITEMS[si.id];
           if (!def) return true;
-          const price = si.price != null && si.price > 0 ? si.price : (def.buyPrice > 0 ? def.buyPrice : getShopBuyPriceForItem(si.id));
-          if (!si.unlimited && si.qty <= 0) { this._showFeedback("Stok t\u00fckendi!", "#d04040"); return true; }
-          if (gold < price) { this._showFeedback("Yeterli alt\u0131n yok!", "#d04040"); return true; }
-          inventory.removeItem("coin", price);
-          inventory.addItem(si.id, 1);
-          if (!si.unlimited) si.qty--;
-          this._showFeedback(def.name + " sat\u0131n al\u0131nd\u0131! -" + price + " alt\u0131n");
+          if (!si.unlimited && si.qty <= 0) {
+            this._showFeedback("Stok t\u00fckendi!", "#d04040");
+            return true;
+          }
+          const maxB = this._shopMaxBuyable(inventory, si);
+          if (maxB <= 0) {
+            this._showFeedback("Envantere s\u0131\u011fm\u0131yor!", "#d04040");
+            return true;
+          }
+          this.buyPicker = { stockIndex: i, itemId: si.id, amount: 1 };
           return true;
         }
       }
@@ -3725,6 +4031,7 @@ class Shop {
     const L = this._layout(cw, ch);
     if (mx >= L.px && mx < L.px + L.pw && my >= L.py && my < L.py + L.ph) {
       if (this.tab === 1 && this.sellPicker) this.sellPicker = null;
+      if (this.tab === 0 && this.buyPicker) this.buyPicker = null;
       if (this.tab === 0) this.scrollBuy = Math.max(0, this.scrollBuy + dy * 20);
       else this.scrollSell = Math.max(0, this.scrollSell + dy * 20);
     }
@@ -3749,9 +4056,27 @@ class Shop {
       }
     }
 
+    if (this.tab === 0 && this.buyPicker && canvasMouse0Down) {
+      const si = this._getBuyPickerStockEntry(this.buyPicker);
+      if (si) {
+        const maxB = this._shopMaxBuyable(inventory, si);
+        if (maxB > 0) {
+          const B = this._buyPickerLayout(L);
+          const trackHit = { x: B.track.x - 2, y: B.track.y - 8, w: B.track.w + 4, h: B.track.h + 16 };
+          if (this._pointInRect(mx, my, trackHit)) {
+            this.buyPicker.amount = this._sellAmountFromTrackMx(mx, B.track, maxB);
+          }
+        }
+      }
+    }
+
     const rowStride = this._shopRowStride(L);
     const sSlot = L.shopSlot;
     if (this.tab === 0) {
+      if (this.buyPicker) {
+        const B = this._buyPickerLayout(L);
+        if (this._pointInRect(mx, my, B.dialog)) return;
+      }
       for (let i = 0; i < this.stock.length; i++) {
         const row = Math.floor(i / SHOP_COLS), col = i % SHOP_COLS;
         const sx = gridX + col * (L.shopSlot + L.shopGap);
@@ -3849,6 +4174,7 @@ class Shop {
     }
 
     if (this.tab === 1 && this.sellPicker) this._renderSellPicker(ctx, L, inventory);
+    if (this.tab === 0 && this.buyPicker) this._renderBuyPicker(ctx, L, inventory);
 
     if (this.tooltipItem) {
       const def = ITEMS[this.tooltipItem];
