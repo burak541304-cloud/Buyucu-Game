@@ -98,8 +98,6 @@ function mobileButtonsLayout(cw, ch) {
   y -= gap + 34;
   const row = [
     { key: "KeyE", label: "E" },
-    { key: "KeyQ", label: "Q" },
-    { key: "KeyR", label: "R" },
     { key: "KeyI", label: "I" },
     { key: "KeyP", label: "P" },
     { key: "KeyM", label: "M" },
@@ -4117,7 +4115,7 @@ class HUD {
     ctx.fillStyle = "#f0f0f0"; ctx.font = "11px monospace";
     if (touchState.mobileUI) {
       ctx.fillText(
-        "Mobil: sol joystick | sa\u011f: E/Q/R/I/P/M/B/F | \u2694 k\u0131sa: sald\u0131r\u0131, uzun: g\u00fc\u00e7l\u00fc ok | altta iksir kutular\u0131 | \u00d7 kapat",
+        "Mobil: joystick | ortada iksir (Q/R) | sa\u011f: E/I/P/M/B/F | \u2694 sald\u0131r\u0131 | \u00d7 kapat",
         10,
         canvasH - 10
       );
@@ -4131,10 +4129,35 @@ class HUD {
 let combatPotionRects = null;
 
 function layoutCombatPotions(cw, ch) {
-  const w = 50, h = 50, gap = 8, pad = 10;
-  const y = ch - h - pad - 24;
-  const x1 = cw - pad - w * 2 - gap;
-  const x2 = cw - pad - w;
+  const w = 46, h = 46, gap = 6;
+  const bottomPad = touchState.mobileUI ? 38 : 24;
+  let x1, x2;
+  let y = ch - h - bottomPad;
+
+  if (touchState.mobileUI) {
+    const J = touchState;
+    const btnLeft = cw - 8 - 52;
+    const joyRight = J.joyCx + J.joyR * 1.55;
+    const need = w * 2 + gap + 8;
+    const midGap = btnLeft - joyRight - 12;
+    if (midGap >= need) {
+      const x0 = joyRight + (midGap - need) / 2;
+      x1 = x0;
+      x2 = x0 + w + gap;
+    } else {
+      x1 = Math.max(8, J.joyCx - J.joyR - need - 6);
+      x2 = x1 + w + gap;
+    }
+    const yClearJoy = J.joyCy - J.joyR * 0.95 - h - 6;
+    y = Math.min(ch - h - bottomPad, yClearJoy);
+    y = Math.max(72, y);
+  } else {
+    const pad = 12;
+    x2 = cw - pad - w;
+    x1 = x2 - w - gap;
+    y = ch - h - bottomPad;
+  }
+
   combatPotionRects = [
     { kind: "hp", x: x1, y, w, h, key: "Q" },
     { kind: "mana", x: x2, y, w, h, key: "R" },
@@ -4202,6 +4225,36 @@ function tryCombatPotionClick(mx, my) {
     }
   }
   return false;
+}
+
+const WORLD_ITEM_AUTO_PICKUP_RANGE = TILE_SIZE * 1.2;
+
+function tryAutoPickupNearbyWorldItems() {
+  if (player.inBoat) return;
+  let best = null;
+  let bestD2 = 1e15;
+  const r2 = WORLD_ITEM_AUTO_PICKUP_RANGE * WORLD_ITEM_AUTO_PICKUP_RANGE;
+  for (const wi of worldItems) {
+    if (!wi.alive || wi.count <= 0) continue;
+    const dx = wi.x - player.centerX;
+    const dy = wi.y - player.centerY;
+    const d2 = dx * dx + dy * dy;
+    if (d2 > r2) continue;
+    if (d2 < bestD2) {
+      bestD2 = d2;
+      best = wi;
+    }
+  }
+  if (!best) return;
+  const before = best.count;
+  if (!best.tryPickup(inventory)) return;
+  const picked = before - best.count;
+  const def = ITEMS[best.itemId];
+  if (picked > 0 && def) {
+    pickupMsgText = "+" + picked + " " + def.name;
+    pickupMsgTimer = 1.1;
+    actionCooldown = Math.max(actionCooldown, 0.06);
+  }
 }
 
 /* ── Procedural World Generation ─────────────────────────── */
@@ -5423,7 +5476,7 @@ function tryChopTree(player, map, inventory) {
 function handleInteraction() {
   if (actionCooldown > 0) return;
 
-  if (inventory.open || petPanel.open || shop.open || charPanel.open) return;
+  if (inventory.open || petPanel.open || shop.open || craftPanel.open || charPanel.open) return;
 
   if (dialog.active) { dialog.advance(); actionCooldown = 0.2; return; }
 
@@ -5610,6 +5663,7 @@ function gameLoop(now) {
   }
 
   for (const wi of worldItems) wi.update(dt);
+  if (!uiOpen && !player.inBoat) tryAutoPickupNearbyWorldItems();
   for (const wp of wildPets) if (wp.alive) wp.update(dt, map);
   if (activePet) activePet.update(dt, player, map, worldItems, inventory);
 
@@ -5660,7 +5714,7 @@ function gameLoop(now) {
     for (const wi of worldItems) {
       if (wi.alive && wi.isNear(player)) {
         const def = ITEMS[wi.itemId];
-        hud.showInteractPrompt("[E] " + def.name + " topla (x" + wi.count + ")");
+        hud.showInteractPrompt(def.name + " x" + wi.count + " (yak\u0131n: otomatik)");
         nearItem = true; break;
       }
     }
