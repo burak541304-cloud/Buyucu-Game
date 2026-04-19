@@ -38,6 +38,7 @@ function roundRect(ctx, x, y, w, h, r) {
 const keys = {};
 const justPressed = {};
 let mouseX = 0, mouseY = 0;
+let canvasMouse0Down = false;
 
 window.addEventListener("keydown", (e) => {
   if (!keys[e.code]) justPressed[e.code] = true;
@@ -67,6 +68,7 @@ const touchState = {
   attackId: -1,
   attackT0: 0,
   btnDown: new Map(),
+  invSlotPressId: -1,
 };
 
 function refreshMobileUI() {
@@ -97,6 +99,7 @@ function mobileButtonsLayout(cw, ch) {
   const row = [
     { key: "KeyE", label: "E" },
     { key: "KeyQ", label: "Q" },
+    { key: "KeyR", label: "R" },
     { key: "KeyI", label: "I" },
     { key: "KeyP", label: "P" },
     { key: "KeyM", label: "M" },
@@ -150,6 +153,7 @@ const TILE_SIZE = 32;
 const TileType = {
   GRASS: 0, DIRT: 1, WATER: 2, SAND: 3, STONE_FLOOR: 4,
   WALL: 5, TREE: 6, FLOWER: 7, BRIDGE: 8, TALL_GRASS: 9,
+  SNOW: 10,
 };
 
 const TILE_COLORS = {
@@ -163,6 +167,7 @@ const TILE_COLORS = {
   [TileType.FLOWER]:      "#4a8c3f",
   [TileType.BRIDGE]:      "#7a5c30",
   [TileType.TALL_GRASS]:  "#3d7a33",
+  [TileType.SNOW]:        "#d8e8f0",
 };
 
 const SOLID_TILES = new Set([TileType.WATER, TileType.WALL, TileType.TREE]);
@@ -175,46 +180,50 @@ const ITEMS = {
   flower: { id: "flower", name: "\u00c7i\u00e7ek",      stackable: true, maxStack: 32, desc: "G\u00fczel kokulu k\u0131r \u00e7i\u00e7e\u011fi.", buyPrice: 4,  sellPrice: 1  },
   apple:  { id: "apple",  name: "Elma",      stackable: true, maxStack: 16, desc: "Canl\u0131 k\u0131rm\u0131z\u0131 bir elma.",   buyPrice: 6,  sellPrice: 2  },
   fish:   { id: "fish",   name: "Bal\u0131k",     stackable: true, maxStack: 16, desc: "Taze tutulmu\u015f bal\u0131k.",      buyPrice: 10, sellPrice: 4  },
-  axe:    { id: "axe",    name: "Balta",     stackable: false, maxStack: 1, desc: "A\u011fa\u00e7 kesmek i\u00e7in.",       buyPrice: 30, sellPrice: 12 },
-  sword:  { id: "sword",  name: "Demir K\u0131l\u0131\u00e7", stackable: false, maxStack: 1, rarity: "common", equipSlot: "blade",
+  axe:    { id: "axe",    name: "Balta",     stackable: true, maxStack: 32, desc: "A\u011fa\u00e7 kesmek i\u00e7in.",       buyPrice: 30, sellPrice: 12 },
+  sword:  { id: "sword",  name: "Demir K\u0131l\u0131\u00e7", stackable: true, maxStack: 32, rarity: "common", equipSlot: "blade",
     stats: { str: 3, agi: 1, wis: 0, maxHp: 0, maxMana: 0, meleeDmg: 2, rangedDmg: 0 },
     desc: "D\u00fczg\u00fcn demir k\u0131l\u0131\u00e7.", buyPrice: 50, sellPrice: 20 },
-  sword_rusty: { id: "sword_rusty", name: "Pasli K\u0131l\u0131\u00e7", stackable: false, maxStack: 1, rarity: "common", equipSlot: "blade",
+  sword_rusty: { id: "sword_rusty", name: "Pasli K\u0131l\u0131\u00e7", stackable: true, maxStack: 32, rarity: "common", equipSlot: "blade",
     stats: { str: 2, agi: 0, wis: 0, meleeDmg: 1, rangedDmg: 0 },
     desc: "Eski ama i\u015e g\u00f6r\u00fcr.", buyPrice: 0, sellPrice: 8 },
-  sword_steel: { id: "sword_steel", name: "\u00c7elik K\u0131l\u0131\u00e7", stackable: false, maxStack: 1, rarity: "rare", equipSlot: "blade",
+  sword_steel: { id: "sword_steel", name: "\u00c7elik K\u0131l\u0131\u00e7", stackable: true, maxStack: 32, rarity: "rare", equipSlot: "blade",
     stats: { str: 5, agi: 2, wis: 0, maxHp: 0, maxMana: 0, meleeDmg: 5, rangedDmg: 0 },
     desc: "Keskin \u00e7elik u\u00e7.", buyPrice: 0, sellPrice: 45 },
-  sword_elven: { id: "sword_elven", name: "Elf K\u0131l\u0131c\u0131", stackable: false, maxStack: 1, rarity: "epic", equipSlot: "blade",
+  sword_elven: { id: "sword_elven", name: "Elf K\u0131l\u0131c\u0131", stackable: true, maxStack: 32, rarity: "epic", equipSlot: "blade",
     stats: { str: 3, agi: 4, wis: 2, maxHp: 10, maxMana: 5, meleeDmg: 8, rangedDmg: 0 },
     desc: "Hafif ve \u00e7ok keskin.", buyPrice: 0, sellPrice: 110 },
-  potion: { id: "potion", name: "\u0130ksir",     stackable: true, maxStack: 8,  desc: "Can yeniler.",             buyPrice: 20, sellPrice: 8  },
+  potion:      { id: "potion",      name: "Can \u0130ksiri",  stackable: true, maxStack: 16, desc: "Anında can verir. [Q] veya HUD.", buyPrice: 20,  sellPrice: 8  },
+  potion_mana: { id: "potion_mana", name: "Mana \u0130ksiri", stackable: true, maxStack: 16, desc: "Anında mana verir. [R] veya HUD.", buyPrice: 26, sellPrice: 10 },
   seed:   { id: "seed",   name: "Tohum",     stackable: true, maxStack: 64, desc: "Ekilmeyi bekliyor.",        buyPrice: 3,  sellPrice: 1  },
   coin:   { id: "coin",   name: "Alt\u0131n",     stackable: true, maxStack: 999,desc: "P\u0131r\u0131l p\u0131r\u0131l alt\u0131n.",      buyPrice: 0,  sellPrice: 0  },
   arrow:  { id: "arrow",  name: "Ok",       stackable: true, maxStack: 99, desc: "Keskin u\u00e7lu ok.",           buyPrice: 2,  sellPrice: 1  },
-  bow:    { id: "bow",    name: "Tahta Yay", stackable: false, maxStack: 1, rarity: "common", equipSlot: "bow",
+  bow:    { id: "bow",    name: "Tahta Yay", stackable: true, maxStack: 32, rarity: "common", equipSlot: "bow",
     stats: { str: 0, agi: 2, wis: 0, maxHp: 0, maxMana: 0, meleeDmg: 0, rangedDmg: 3 },
     desc: "Sa\u011flam ah\u015fap yay.", buyPrice: 25, sellPrice: 10 },
-  bow_hunter: { id: "bow_hunter", name: "Avc\u0131 Yay\u0131", stackable: false, maxStack: 1, rarity: "rare", equipSlot: "bow",
+  bow_hunter: { id: "bow_hunter", name: "Avc\u0131 Yay\u0131", stackable: true, maxStack: 32, rarity: "rare", equipSlot: "bow",
     stats: { str: 1, agi: 4, wis: 0, maxHp: 0, maxMana: 5, meleeDmg: 0, rangedDmg: 7 },
     desc: "G\u00fc\u00e7l\u00fc gerilim.", buyPrice: 0, sellPrice: 35 },
-  bow_long: { id: "bow_long", name: "Uzun Yay", stackable: false, maxStack: 1, rarity: "epic", equipSlot: "bow",
+  bow_long: { id: "bow_long", name: "Uzun Yay", stackable: true, maxStack: 32, rarity: "epic", equipSlot: "bow",
     stats: { str: 0, agi: 3, wis: 2, maxHp: 0, maxMana: 10, meleeDmg: 0, rangedDmg: 12 },
     desc: "Menzil ve isabet.", buyPrice: 0, sellPrice: 85 },
   rope:   { id: "rope",   name: "Halat",    stackable: true, maxStack: 32, desc: "Sa\u011flam kenevir halat.",     buyPrice: 6,  sellPrice: 2  },
-  helm_leather:   { id: "helm_leather",   name: "Deri Mi\u011fer",       stackable: false, maxStack: 1, rarity: "common",    equipSlot: "head",   stats: { str: 1, agi: 0, wis: 0, maxHp: 8, maxMana: 0 }, desc: "Basit koruma.", buyPrice: 0, sellPrice: 15 },
-  helm_iron:      { id: "helm_iron",      name: "Demir Mi\u011fer",      stackable: false, maxStack: 1, rarity: "rare",      equipSlot: "head",   stats: { str: 2, agi: 1, wis: 0, maxHp: 15, maxMana: 0 }, desc: "Sa\u011flam ba\u015f koruma.", buyPrice: 0, sellPrice: 45 },
-  helm_epic:      { id: "helm_epic",      name: "G\u00f6kku\u015fa\u011f\u0131 Tac\u0131", stackable: false, maxStack: 1, rarity: "epic",      equipSlot: "head",   stats: { str: 4, agi: 2, wis: 2, maxHp: 25, maxMana: 10 }, desc: "Nadir b\u00fcy\u00fc ile i\u015flenmi\u015f.", buyPrice: 0, sellPrice: 120 },
-  helm_legendary: { id: "helm_legendary", name: "Ejderha Kafas\u0131",   stackable: false, maxStack: 1, rarity: "legendary", equipSlot: "head",   stats: { str: 7, agi: 3, wis: 2, maxHp: 40, maxMana: 15 }, desc: "Efsanevi ejderha pullar\u0131ndan.", buyPrice: 0, sellPrice: 400 },
-  chest_leather:  { id: "chest_leather",  name: "Deri Z\u0131rh",        stackable: false, maxStack: 1, rarity: "common",    equipSlot: "chest",  stats: { str: 1, agi: 1, wis: 0, maxHp: 12, maxMana: 0 }, desc: "Hafif g\u00f6vde korumas\u0131.", buyPrice: 0, sellPrice: 20 },
-  chest_steel:    { id: "chest_steel",    name: "\u00c7elik Z\u0131rh",      stackable: false, maxStack: 1, rarity: "rare",      equipSlot: "chest",  stats: { str: 3, agi: 1, wis: 0, maxHp: 28, maxMana: 0 }, desc: "Kal\u0131n \u00e7elik plakalar.", buyPrice: 0, sellPrice: 55 },
-  chest_epic:     { id: "chest_epic",     name: "Orman Kalbi",        stackable: false, maxStack: 1, rarity: "epic",      equipSlot: "chest",  stats: { str: 5, agi: 3, wis: 2, maxHp: 40, maxMana: 15 }, desc: "Eski a\u011fa\u00e7 ruhunun g\u00fcc\u00fc.", buyPrice: 0, sellPrice: 150 },
-  chest_legendary:{ id: "chest_legendary",name: "G\u00f6lge Pelerini",   stackable: false, maxStack: 1, rarity: "legendary", equipSlot: "chest",  stats: { str: 8, agi: 5, wis: 4, maxHp: 60, maxMana: 25 }, desc: "Karanl\u0131\u011f\u0131n efsanevi k\u0131yafeti.", buyPrice: 0, sellPrice: 500 },
-  boots_swift:    { id: "boots_swift",    name: "H\u0131zl\u0131 Botlar",      stackable: false, maxStack: 1, rarity: "rare",      equipSlot: "feet",   stats: { str: 0, agi: 4, wis: 0, maxHp: 0, maxMana: 0 }, desc: "Hareket h\u0131z\u0131n\u0131 art\u0131r\u0131r.", buyPrice: 0, sellPrice: 40 },
-  boots_epic:     { id: "boots_epic",     name: "R\u00fczgar Ad\u0131mlar\u0131",  stackable: false, maxStack: 1, rarity: "epic",      equipSlot: "feet",   stats: { str: 1, agi: 6, wis: 1, maxHp: 10, maxMana: 8 }, desc: "Hafif ve b\u00fcy\u00fcl\u00fc.", buyPrice: 0, sellPrice: 110 },
-  ring_power:     { id: "ring_power",     name: "G\u00fc\u00e7 Y\u00fcz\u00fc\u011f\u00fc",      stackable: false, maxStack: 1, rarity: "epic",      equipSlot: "ring",   stats: { str: 5, agi: 0, wis: 2, maxHp: 0, maxMana: 20 }, desc: "Saf g\u00fc\u00e7 kristali.", buyPrice: 0, sellPrice: 90 },
-  amulet_wisdom:  { id: "amulet_wisdom",  name: "Bilgelik T\u0131ls\u0131m\u0131",  stackable: false, maxStack: 1, rarity: "legendary", equipSlot: "amulet", stats: { str: 2, agi: 2, wis: 8, maxHp: 20, maxMana: 40 }, desc: "Kadim bilgelik sembol\u00fc.", buyPrice: 0, sellPrice: 350 },
-  gloves_archer:  { id: "gloves_archer",  name: "Ok\u00e7u Eldivenleri", stackable: false, maxStack: 1, rarity: "rare",      equipSlot: "hands",  stats: { str: 2, agi: 3, wis: 0, maxHp: 0, maxMana: 5 }, desc: "Yay \u00e7eki\u015fini kolayla\u015ft\u0131r\u0131r.", buyPrice: 0, sellPrice: 35 },
+  helm_leather:   { id: "helm_leather",   name: "Deri Mi\u011fer",       stackable: true, maxStack: 32, rarity: "common",    equipSlot: "head",   stats: { str: 1, agi: 0, wis: 0, maxHp: 8, maxMana: 0 }, desc: "Basit koruma.", buyPrice: 0, sellPrice: 15 },
+  helm_iron:      { id: "helm_iron",      name: "Demir Mi\u011fer",      stackable: true, maxStack: 32, rarity: "rare",      equipSlot: "head",   stats: { str: 2, agi: 1, wis: 0, maxHp: 15, maxMana: 0 }, desc: "Sa\u011flam ba\u015f koruma.", buyPrice: 0, sellPrice: 45 },
+  helm_epic:      { id: "helm_epic",      name: "G\u00f6kku\u015fa\u011f\u0131 Tac\u0131", stackable: true, maxStack: 32, rarity: "epic",      equipSlot: "head",   stats: { str: 4, agi: 2, wis: 2, maxHp: 25, maxMana: 10 }, desc: "Nadir b\u00fcy\u00fc ile i\u015flenmi\u015f.", buyPrice: 0, sellPrice: 120 },
+  helm_legendary: { id: "helm_legendary", name: "Ejderha Kafas\u0131",   stackable: true, maxStack: 32, rarity: "legendary", equipSlot: "head",   stats: { str: 7, agi: 3, wis: 2, maxHp: 40, maxMana: 15 }, desc: "Efsanevi ejderha pullar\u0131ndan.", buyPrice: 0, sellPrice: 400 },
+  chest_leather:  { id: "chest_leather",  name: "Deri Z\u0131rh",        stackable: true, maxStack: 32, rarity: "common",    equipSlot: "chest",  stats: { str: 1, agi: 1, wis: 0, maxHp: 12, maxMana: 0 }, desc: "Hafif g\u00f6vde korumas\u0131.", buyPrice: 0, sellPrice: 20 },
+  chest_steel:    { id: "chest_steel",    name: "\u00c7elik Z\u0131rh",      stackable: true, maxStack: 32, rarity: "rare",      equipSlot: "chest",  stats: { str: 3, agi: 1, wis: 0, maxHp: 28, maxMana: 0 }, desc: "Kal\u0131n \u00e7elik plakalar.", buyPrice: 0, sellPrice: 55 },
+  chest_epic:     { id: "chest_epic",     name: "Orman Kalbi",        stackable: true, maxStack: 32, rarity: "epic",      equipSlot: "chest",  stats: { str: 5, agi: 3, wis: 2, maxHp: 40, maxMana: 15 }, desc: "Eski a\u011fa\u00e7 ruhunun g\u00fcc\u00fc.", buyPrice: 0, sellPrice: 150 },
+  chest_legendary:{ id: "chest_legendary",name: "G\u00f6lge Pelerini",   stackable: true, maxStack: 32, rarity: "legendary", equipSlot: "chest",  stats: { str: 8, agi: 5, wis: 4, maxHp: 60, maxMana: 25 }, desc: "Karanl\u0131\u011f\u0131n efsanevi k\u0131yafeti.", buyPrice: 0, sellPrice: 500 },
+  boots_swift:    { id: "boots_swift",    name: "H\u0131zl\u0131 Botlar",      stackable: true, maxStack: 32, rarity: "rare",      equipSlot: "feet",   stats: { str: 0, agi: 4, wis: 0, maxHp: 0, maxMana: 0 }, desc: "Hareket h\u0131z\u0131n\u0131 art\u0131r\u0131r.", buyPrice: 0, sellPrice: 40 },
+  boots_epic:     { id: "boots_epic",     name: "R\u00fczgar Ad\u0131mlar\u0131",  stackable: true, maxStack: 32, rarity: "epic",      equipSlot: "feet",   stats: { str: 1, agi: 6, wis: 1, maxHp: 10, maxMana: 8 }, desc: "Hafif ve b\u00fcy\u00fcl\u00fc.", buyPrice: 0, sellPrice: 110 },
+  ring_power:     { id: "ring_power",     name: "G\u00fc\u00e7 Y\u00fcz\u00fc\u011f\u00fc",      stackable: true, maxStack: 32, rarity: "epic",      equipSlot: "ring",   stats: { str: 5, agi: 0, wis: 2, maxHp: 0, maxMana: 20 }, desc: "Saf g\u00fc\u00e7 kristali.", buyPrice: 0, sellPrice: 90 },
+  amulet_wisdom:  { id: "amulet_wisdom",  name: "Bilgelik T\u0131ls\u0131m\u0131",  stackable: true, maxStack: 32, rarity: "legendary", equipSlot: "amulet", stats: { str: 2, agi: 2, wis: 8, maxHp: 20, maxMana: 40 }, desc: "Kadim bilgelik sembol\u00fc.", buyPrice: 0, sellPrice: 350 },
+  gloves_archer:  { id: "gloves_archer",  name: "Ok\u00e7u Eldivenleri", stackable: true, maxStack: 32, rarity: "rare",      equipSlot: "hands",  stats: { str: 2, agi: 3, wis: 0, maxHp: 0, maxMana: 5 }, desc: "Yay \u00e7eki\u015fini kolayla\u015ft\u0131r\u0131r.", buyPrice: 0, sellPrice: 35 },
+  lucky_charm:    { id: "lucky_charm",    name: "\u015eans T\u0131ls\u0131m\u0131",      stackable: true, maxStack: 32, rarity: "rare",      equipSlot: "amulet", stats: { str: 0, agi: 1, wis: 2, maxHp: 6, maxMana: 12 }, desc: "Eski kervan yollar\u0131ndan.", buyPrice: 175, sellPrice: 42 },
+  merchants_ring: { id: "merchants_ring", name: "Lonca Y\u00fcz\u00fc\u011f\u00fc",      stackable: true, maxStack: 32, rarity: "epic",      equipSlot: "ring",   stats: { str: 2, agi: 2, wis: 2, maxHp: 10, maxMana: 14 }, desc: "T\u00fcccar loncas\u0131n\u0131n m\u00fchr\u00fc.", buyPrice: 310, sellPrice: 88 },
+  explorer_band:  { id: "explorer_band",  name: "Ka\u015fif Bilezi\u011fi",      stackable: true, maxStack: 32, rarity: "rare",      equipSlot: "hands",  stats: { str: 1, agi: 3, wis: 0, maxHp: 8, maxMana: 0 }, desc: "Harita ve pusula dostu.", buyPrice: 135, sellPrice: 38 },
   boss_chest:     { id: "boss_chest",     name: "Boss Sand\u0131\u011f\u0131",       stackable: true, maxStack: 99, rarity: "legendary", desc: "A\u00e7\u0131nca nadir ganimet verir.", buyPrice: 0, sellPrice: 0 },
 };
 
@@ -287,12 +296,20 @@ function drawItemIcon(ctx, itemId, x, y, size) {
       break;
     }
     case "potion":
-      ctx.fillStyle = "#d040d0"; ctx.beginPath();
+      ctx.fillStyle = "#d04040"; ctx.beginPath();
       ctx.arc(cx, cy+s*0.1, s*0.22, 0, Math.PI*2); ctx.fill();
-      ctx.fillStyle = "#e070e0"; ctx.beginPath();
+      ctx.fillStyle = "#ff7070"; ctx.beginPath();
       ctx.arc(cx-s*0.05, cy+s*0.03, s*0.1, 0, Math.PI*2); ctx.fill();
       ctx.fillStyle = "#a0a0a0"; ctx.fillRect(cx-s*0.06, y+s*0.12, s*0.12, s*0.2);
       ctx.fillStyle = "#808080"; ctx.fillRect(cx-s*0.1, y+s*0.1, s*0.2, s*0.06);
+      break;
+    case "potion_mana":
+      ctx.fillStyle = "#3060d0"; ctx.beginPath();
+      ctx.arc(cx, cy+s*0.1, s*0.22, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = "#60a0ff"; ctx.beginPath();
+      ctx.arc(cx+s*0.05, cy+s*0.03, s*0.1, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = "#a0a0a0"; ctx.fillRect(cx-s*0.06, y+s*0.12, s*0.12, s*0.2);
+      ctx.fillStyle = "#5080c0"; ctx.fillRect(cx-s*0.1, y+s*0.1, s*0.2, s*0.06);
       break;
     case "seed":
       ctx.fillStyle = "#8a6a30";
@@ -372,9 +389,26 @@ function drawItemIcon(ctx, itemId, x, y, size) {
       ctx.beginPath(); ctx.arc(cx, cy + s*0.15, s*0.2, 0, Math.PI * 2); ctx.fill();
       break;
     case "gloves_archer":
-      ctx.fillStyle = "#8B5E3C";
+    case "explorer_band":
+      ctx.fillStyle = itemId === "explorer_band" ? "#508878" : "#8B5E3C";
       ctx.fillRect(x + s*0.2, y + s*0.3, s*0.25, s*0.35);
       ctx.fillRect(x + s*0.55, y + s*0.3, s*0.25, s*0.35);
+      if (itemId === "explorer_band") {
+        ctx.fillStyle = "#c0e8e0"; ctx.font = (s*0.22)+"px monospace";
+        ctx.fillText("\u273f", cx - s*0.08, cy + s*0.08);
+      }
+      break;
+    case "lucky_charm":
+      ctx.fillStyle = "#4080a0"; ctx.beginPath(); ctx.arc(cx, cy + s*0.05, s*0.22, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#f0e8a0"; ctx.beginPath(); ctx.arc(cx - s*0.06, cy - s*0.02, s*0.08, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = "#ffd060"; ctx.lineWidth = 1; ctx.stroke();
+      break;
+    case "merchants_ring":
+      ctx.strokeStyle = "#ffd080"; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(cx, cy, s*0.24, 0, Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = "#d0a040"; ctx.beginPath(); ctx.arc(cx, cy, s*0.1, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#fff"; ctx.font = "bold " + (s*0.28) + "px serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillText("\u2726", cx, cy + 1); ctx.textAlign = "start"; ctx.textBaseline = "alphabetic";
       break;
     case "boss_chest":
       ctx.fillStyle = "#8B6914"; ctx.fillRect(x + s*0.15, y + s*0.35, s*0.7, s*0.45);
@@ -386,6 +420,222 @@ function drawItemIcon(ctx, itemId, x, y, size) {
   }
 }
 
+/* ── Shop catalog (sınırsız malzeme + dönen özel teklifler) ─ */
+
+const SHOP_SPECIAL_ROTATE_SEC = 120;
+const SHOP_UNLIMITED_IDS = new Set([
+  "arrow", "potion", "potion_mana", "seed", "wood", "stone", "fish", "flower", "apple", "rope",
+]);
+
+const SHOP_SPECIAL_POOLS = {
+  village: [
+    "lucky_charm", "merchants_ring", "explorer_band", "sword_steel", "bow_hunter",
+    "helm_iron", "chest_steel", "boots_swift", "gloves_archer", "ring_power",
+  ],
+  desert: [
+    "sword_steel", "bow_hunter", "helm_epic", "chest_epic", "boots_epic",
+    "merchants_ring", "amulet_wisdom", "sword_elven", "lucky_charm", "ring_power",
+  ],
+  island: [
+    "bow_long", "helm_epic", "chest_epic", "gloves_archer", "explorer_band",
+    "boots_epic", "sword_steel", "lucky_charm", "merchants_ring",
+  ],
+  dock: [
+    "helm_iron", "chest_steel", "gloves_archer", "explorer_band", "bow_hunter",
+    "lucky_charm", "merchants_ring", "ring_power", "boots_swift", "helm_epic",
+  ],
+};
+
+function getShopBuyPriceForItem(itemId) {
+  const d = ITEMS[itemId];
+  if (!d) return 0;
+  if (d.buyPrice > 0) return d.buyPrice;
+  const sp = d.sellPrice || 12;
+  let mult = 3.2;
+  if (d.rarity === "legendary") mult = 5.2;
+  else if (d.rarity === "epic") mult = 4.3;
+  else if (d.rarity === "rare") mult = 3.6;
+  return Math.max(35, Math.floor(sp * mult));
+}
+
+/** Seviye + alt\u0131n ile a\u00e7\u0131lan kal\u0131c\u0131 yetenekler */
+const PLAYER_SKILL_DEFS = [
+  { id: "vitality", name: "Can Ustal\u0131\u011f\u0131", minLevel: 3, gold: 45, desc: "Kal\u0131c\u0131 +25 Max HP." },
+  { id: "arcane", name: "Mana Ustal\u0131\u011f\u0131", minLevel: 4, gold: 55, desc: "Kal\u0131c\u0131 +22 Max MP." },
+  { id: "marksman", name: "Ni\u015fanc\u0131", minLevel: 6, gold: 100, desc: "Uzak menzil hasar\u0131 +%10." },
+  { id: "brawler", name: "D\u00f6v\u00fc\u015f\u00e7\u00fc", minLevel: 8, gold: 140, desc: "Yak\u0131n d\u00f6v\u00fc\u015f hasar\u0131 +4." },
+  { id: "ward", name: "Ta\u015f Ten", minLevel: 10, gold: 180, desc: "Gelen hasar %8 azal\u0131r." },
+];
+
+const charPanel = {
+  open: false,
+  _layout(cw, ch) {
+    const pw = 420, ph = 380;
+    return { px: Math.floor((cw - pw) / 2), py: Math.floor((ch - ph) / 2), pw, ph };
+  },
+  _in(mx, my, r) {
+    return mx >= r.x && mx < r.x + r.w && my >= r.y && my < r.y + r.h;
+  },
+  toggle() {
+    this.open = !this.open;
+    if (this.open) {
+      if (typeof inventory !== "undefined") inventory.close();
+      if (typeof petPanel !== "undefined") petPanel.open = false;
+      if (typeof shop !== "undefined") shop.close();
+      if (typeof craftPanel !== "undefined") craftPanel.close();
+    }
+  },
+  close() { this.open = false; },
+  tryAllocStat(player, stat) {
+    if (player.statPoints <= 0) return "Stat puan\u0131n yok.";
+    if (stat === "str") player.str++;
+    else if (stat === "agi") player.agi++;
+    else if (stat === "wis") player.wis++;
+    else return "";
+    player.statPoints--;
+    return null;
+  },
+  tryUnlockSkill(player, inventory, sid) {
+    const def = PLAYER_SKILL_DEFS.find((d) => d.id === sid);
+    if (!def) return "Ge\u00e7ersiz.";
+    if (player.skills[sid]) return "Zaten a\u00e7\u0131k.";
+    if (player.level < def.minLevel) return "Seviye " + def.minLevel + "+ gerekli.";
+    if (inventory.countItem("coin") < def.gold) return def.gold + " alt\u0131n gerekli.";
+    inventory.removeItem("coin", def.gold);
+    player.skills[sid] = true;
+    player._pendingFullHeal = true;
+    return null;
+  },
+  handleClick(mx, my, cw, ch, player, inventory) {
+    if (!this.open) return false;
+    const L = this._layout(cw, ch);
+    if (mx < L.px || mx >= L.px + L.pw || my < L.py || my >= L.py + L.ph) {
+      this.close();
+      return true;
+    }
+    const closeR = { x: L.px + L.pw - 30, y: L.py + 8, w: 24, h: 24 };
+    if (this._in(mx, my, closeR)) {
+      this.close();
+      return true;
+    }
+
+    const btnY = L.py + 86;
+    const bw = 104, gap = 10, x0 = L.px + 20;
+    if (player.statPoints > 0) {
+      if (this._in(mx, my, { x: x0, y: btnY, w: bw, h: 30 })) {
+        const err = this.tryAllocStat(player, "str");
+        if (err) { pickupMsgText = err; pickupMsgTimer = 1.4; }
+        return true;
+      }
+      if (this._in(mx, my, { x: x0 + bw + gap, y: btnY, w: bw, h: 30 })) {
+        const err = this.tryAllocStat(player, "agi");
+        if (err) { pickupMsgText = err; pickupMsgTimer = 1.4; }
+        return true;
+      }
+      if (this._in(mx, my, { x: x0 + 2 * (bw + gap), y: btnY, w: bw, h: 30 })) {
+        const err = this.tryAllocStat(player, "wis");
+        if (err) { pickupMsgText = err; pickupMsgTimer = 1.4; }
+        return true;
+      }
+    }
+
+    let sy = L.py + 138;
+    for (const sk of PLAYER_SKILL_DEFS) {
+      const unlockR = { x: L.px + L.pw - 118, y: sy + 2, w: 108, h: 28 };
+      if (!player.skills[sk.id] && this._in(mx, my, unlockR)) {
+        const err = this.tryUnlockSkill(player, inventory, sk.id);
+        if (err) {
+          pickupMsgText = err;
+          pickupMsgTimer = 1.6;
+        } else {
+          pickupMsgText = sk.name + " a\u00e7\u0131ld\u0131! (-" + sk.gold + " alt\u0131n)";
+          pickupMsgTimer = 2;
+        }
+        return true;
+      }
+      sy += 54;
+    }
+    return true;
+  },
+  render(ctx, cw, ch, player, inventory) {
+    if (!this.open) return;
+    const L = this._layout(cw, ch);
+    ctx.fillStyle = "rgba(8,8,24,0.92)";
+    roundRect(ctx, L.px, L.py, L.pw, L.ph, 10);
+    ctx.fill();
+    ctx.strokeStyle = "#7080b0";
+    ctx.lineWidth = 1.5;
+    roundRect(ctx, L.px, L.py, L.pw, L.ph, 10);
+    ctx.stroke();
+
+    ctx.fillStyle = "#e8e8f0";
+    ctx.font = "bold 14px monospace";
+    ctx.fillText("Karakter  [C] kapat", L.px + 14, L.py + 26);
+    ctx.fillStyle = "#f0d050";
+    ctx.font = "bold 12px monospace";
+    ctx.fillText("Stat puan\u0131: " + player.statPoints + "   (Lv." + player.level + ")", L.px + 14, L.py + 50);
+    ctx.fillStyle = "#a0a0c0";
+    ctx.font = "10px monospace";
+    ctx.fillText("STR:" + player.str + "  AGI:" + player.agi + "  WIS:" + player.wis, L.px + 14, L.py + 68);
+
+    const btnY = L.py + 86;
+    const bw = 104, gap = 10, x0 = L.px + 20;
+    const drawMiniBtn = (x, y, label, active) => {
+      ctx.fillStyle = active ? "#2a5080" : "#303048";
+      roundRect(ctx, x, y, bw, 30, 5);
+      ctx.fill();
+      ctx.strokeStyle = active ? "#80b0ff" : "#505070";
+      ctx.stroke();
+      ctx.fillStyle = active ? "#fff" : "#707090";
+      ctx.font = "bold 11px monospace";
+      ctx.fillText(label, x + (bw - ctx.measureText(label).width) / 2, y + 20);
+    };
+    drawMiniBtn(x0, btnY, "+ STR", player.statPoints > 0);
+    drawMiniBtn(x0 + bw + gap, btnY, "+ AGI", player.statPoints > 0);
+    drawMiniBtn(x0 + 2 * (bw + gap), btnY, "+ WIS", player.statPoints > 0);
+
+    ctx.fillStyle = "#c0c8e0";
+    ctx.font = "bold 11px monospace";
+    ctx.fillText("Yetenekler (seviye + alt\u0131n)", L.px + 14, L.py + 128);
+
+    let sy = L.py + 138;
+    const gold = inventory.countItem("coin");
+    for (const sk of PLAYER_SKILL_DEFS) {
+      ctx.fillStyle = "#2a2840";
+      roundRect(ctx, L.px + 14, sy, L.pw - 28, 48, 6);
+      ctx.fill();
+      ctx.strokeStyle = "#505070";
+      roundRect(ctx, L.px + 14, sy, L.pw - 28, 48, 6);
+      ctx.stroke();
+      ctx.fillStyle = player.skills[sk.id] ? "#70ffa0" : "#e0e0f0";
+      ctx.font = "bold 11px monospace";
+      ctx.fillText(sk.name + (player.skills[sk.id] ? "  \u2713" : ""), L.px + 22, sy + 16);
+      ctx.fillStyle = "#9090b0";
+      ctx.font = "9px monospace";
+      ctx.fillText(sk.desc + "  |  Lv" + sk.minLevel + "  |  " + sk.gold + " alt\u0131n", L.px + 22, sy + 32);
+
+      const unlockR = { x: L.px + L.pw - 118, y: sy + 2, w: 108, h: 28 };
+      if (!player.skills[sk.id]) {
+        const can = player.level >= sk.minLevel && gold >= sk.gold;
+        ctx.fillStyle = can ? "#2a6040" : "#303030";
+        roundRect(ctx, unlockR.x, unlockR.y, unlockR.w, unlockR.h, 5);
+        ctx.fill();
+        ctx.strokeStyle = can ? "#60c080" : "#505050";
+        ctx.stroke();
+        ctx.fillStyle = can ? "#fff" : "#606060";
+        ctx.font = "bold 10px monospace";
+        const t = "A\u00e7 " + sk.gold + "G";
+        ctx.fillText(t, unlockR.x + (unlockR.w - ctx.measureText(t).width) / 2, unlockR.y + 19);
+      }
+      sy += 54;
+    }
+
+    ctx.fillStyle = "#707890";
+    ctx.font = "9px monospace";
+    ctx.fillText("ESC ile kapat", L.px + 14, L.py + L.ph - 12);
+  },
+};
+
 /* ── Inventory ───────────────────────────────────────────── */
 
 const EQ_SLOTS = ["blade", "bow", "head", "chest", "hands", "feet", "ring", "amulet"];
@@ -394,6 +644,8 @@ const EQ_LABELS = { blade: "K\u0131l\u0131\u00e7", bow: "Yay", head: "Kafa", che
 const INV_COLS = 5, INV_ROWS = 4, INV_SLOTS = INV_COLS * INV_ROWS;
 const HOTBAR_SLOTS = 5;
 const SLOT_SIZE = 48, SLOT_GAP = 4;
+const INV_LONG_PRESS_EQUIP_MS = 450;
+const INV_PRESS_MOVE_CANCEL = 16;
 
 class Inventory {
   constructor() {
@@ -407,6 +659,7 @@ class Inventory {
     this.tooltipSlot = null;
     this.tooltipSource = null;
     this.tooltipEquipKey = null;
+    this._slotPress = null;
   }
 
   _mergeSlotCoinsIntoGold() {
@@ -420,12 +673,40 @@ class Inventory {
     }
   }
 
+  /** Ayn\u0131 id\u2019li y\u0131\u011f\u0131nlanabilir e\u015fyalar\u0131 tek slotta birle\u015ftirir. */
+  _consolidateItemStacks() {
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const container of [this.hotbar, this.slots]) {
+        for (let i = 0; i < container.length; i++) {
+          const a = container[i];
+          if (!a) continue;
+          const def = ITEMS[a.id];
+          if (!def || !def.stackable) continue;
+          for (let j = i + 1; j < container.length; j++) {
+            const b = container[j];
+            if (!b || b.id !== a.id) continue;
+            const space = def.maxStack - a.count;
+            if (space <= 0) break;
+            const mv = Math.min(space, b.count);
+            a.count += mv;
+            b.count -= mv;
+            if (b.count <= 0) container[j] = null;
+            changed = true;
+          }
+        }
+      }
+    }
+  }
+
   addItem(itemId, count = 1) {
     const def = ITEMS[itemId];
     if (!def) return count;
 
     if (itemId === "coin") {
       this.gold += count;
+      this._scanAutoEquipAllEmpty();
       return 0;
     }
 
@@ -437,7 +718,10 @@ class Inventory {
             const add = Math.min(count, space);
             container[i].count += add;
             count -= add;
-            if (count <= 0) return 0;
+            if (count <= 0) {
+              this._scanAutoEquipAllEmpty();
+              return 0;
+            }
           }
         }
       }
@@ -449,10 +733,14 @@ class Inventory {
           const add = Math.min(count, def.maxStack);
           container[i] = { id: itemId, count: add };
           count -= add;
-          if (count <= 0) return 0;
+          if (count <= 0) {
+            this._scanAutoEquipAllEmpty();
+            return 0;
+          }
         }
       }
     }
+    this._scanAutoEquipAllEmpty();
     return count;
   }
 
@@ -491,14 +779,18 @@ class Inventory {
   toggle() {
     if (!this.open) this._mergeSlotCoinsIntoGold();
     this.open = !this.open;
+    if (this.open) this._consolidateItemStacks();
     if (!this.open && this.heldItem) this._dropHeld();
+    if (!this.open) this._clearSlotPress();
   }
 
   close() {
     if (!this.open) return;
     this._mergeSlotCoinsIntoGold();
+    this._consolidateItemStacks();
     this.open = false;
     if (this.heldItem) this._dropHeld();
+    this._clearSlotPress();
   }
 
   _dropHeld() {
@@ -506,6 +798,123 @@ class Inventory {
     const left = this.addItem(this.heldItem.id, this.heldItem.count);
     this.heldItem = null;
     return left;
+  }
+
+  _clearSlotPress() {
+    this._slotPress = null;
+    touchState.invSlotPressId = -1;
+  }
+
+  _equipFromContainerSlot(container, idx) {
+    const slot = container[idx];
+    if (!slot || slot.count < 1) return;
+    const def = ITEMS[slot.id];
+    if (!def || !def.equipSlot) return;
+    const sk = def.equipSlot;
+    if (this.equipped[sk]) return;
+    const id = slot.id;
+    slot.count--;
+    if (slot.count <= 0) container[idx] = null;
+    this.equipped[sk] = { id, count: 1 };
+  }
+
+  _scanAutoEquipAllEmpty() {
+    for (const sk of EQ_SLOTS) {
+      if (this.equipped[sk]) continue;
+      for (const container of [this.hotbar, this.slots]) {
+        for (let i = 0; i < container.length; i++) {
+          const s = container[i];
+          if (!s) continue;
+          const d = ITEMS[s.id];
+          if (d && d.equipSlot === sk) {
+            this._equipFromContainerSlot(container, i);
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  _hitSamePressSlot(mx, my, canvasW, canvasH, p) {
+    const layout = this._invLayout(canvasW, canvasH);
+    if (p.container === this.slots) {
+      const invIdx = this._hitTestSlots(mx, my, layout.slotsX, layout.slotsY, INV_SLOTS, INV_COLS);
+      return invIdx === p.idx;
+    }
+    if (p.container === this.hotbar) {
+      const hbIdx = this._hitTestSlots(mx, my, layout.hbX, layout.hbY, HOTBAR_SLOTS, HOTBAR_SLOTS);
+      return hbIdx === p.idx;
+    }
+    return false;
+  }
+
+  tryBeginEquipLongPress(mx, my, canvasW, canvasH, touchId) {
+    if (this.heldItem) return false;
+    const layout = this._invLayout(canvasW, canvasH);
+    const invIdx = this._hitTestSlots(mx, my, layout.slotsX, layout.slotsY, INV_SLOTS, INV_COLS);
+    if (invIdx >= 0 && this.slots[invIdx]) {
+      const def = ITEMS[this.slots[invIdx].id];
+      if (def && def.equipSlot && !this.equipped[def.equipSlot]) {
+        this._slotPress = {
+          container: this.slots, idx: invIdx, t0: performance.now(), ox: mx, oy: my,
+          touchId: touchId !== undefined ? touchId : null,
+        };
+        return true;
+      }
+    }
+    const hbIdx = this._hitTestSlots(mx, my, layout.hbX, layout.hbY, HOTBAR_SLOTS, HOTBAR_SLOTS);
+    if (hbIdx >= 0 && this.hotbar[hbIdx]) {
+      const def = ITEMS[this.hotbar[hbIdx].id];
+      if (def && def.equipSlot && !this.equipped[def.equipSlot]) {
+        this._slotPress = {
+          container: this.hotbar, idx: hbIdx, t0: performance.now(), ox: mx, oy: my,
+          touchId: touchId !== undefined ? touchId : null,
+        };
+        return true;
+      }
+    }
+    return false;
+  }
+
+  updateSlotLongPress(dt, mx, my, canvasW, canvasH) {
+    if (!this._slotPress || !this.open) return;
+    const p = this._slotPress;
+    if (this.heldItem) { this._clearSlotPress(); return; }
+    const slot = p.container[p.idx];
+    if (!slot) { this._clearSlotPress(); return; }
+    const def = ITEMS[slot.id];
+    if (!def || !def.equipSlot || this.equipped[def.equipSlot]) { this._clearSlotPress(); return; }
+
+    const down = (p.touchId === null || p.touchId === undefined)
+      ? canvasMouse0Down
+      : (touchState.invSlotPressId === p.touchId);
+    if (!down) return;
+
+    if (Math.hypot(mx - p.ox, my - p.oy) > INV_PRESS_MOVE_CANCEL) {
+      this._clearSlotPress();
+      return;
+    }
+    if (performance.now() - p.t0 >= INV_LONG_PRESS_EQUIP_MS) {
+      this._equipFromContainerSlot(p.container, p.idx);
+      this._clearSlotPress();
+    }
+  }
+
+  finishSlotPress(mx, my, canvasW, canvasH, rightClick) {
+    if (!this._slotPress) return;
+    const p = this._slotPress;
+    const shortClick = performance.now() - p.t0 < INV_LONG_PRESS_EQUIP_MS;
+    this._clearSlotPress();
+    if (shortClick && this._hitSamePressSlot(mx, my, canvasW, canvasH, p)) {
+      this._slotClick(p.container, p.idx, rightClick);
+    }
+  }
+
+  cancelSlotPressIfMovedOff(mx, my, canvasW, canvasH) {
+    if (!this._slotPress || !this.open) return;
+    if (!this._hitSamePressSlot(mx, my, canvasW, canvasH, this._slotPress)) {
+      this._clearSlotPress();
+    }
   }
 
   handleClick(mx, my, canvasW, canvasH, rightClick = false) {
@@ -573,7 +982,7 @@ class Inventory {
     if (rightClick && slot && slot.id === "boss_chest" && slot.count > 0) {
       slot.count--;
       if (slot.count <= 0) container[idx] = null;
-      const pool = ["helm_epic", "chest_epic", "boots_epic", "ring_power", "helm_legendary", "chest_legendary", "amulet_wisdom", "helm_iron", "chest_steel", "sword_elven", "bow_long", "sword_steel", "bow_hunter"];
+      const pool = ["helm_epic", "chest_epic", "boots_epic", "ring_power", "helm_legendary", "chest_legendary", "amulet_wisdom", "helm_iron", "chest_steel", "sword_elven", "bow_long", "sword_steel", "bow_hunter", "potion_mana", "potion"];
       this.addItem(pool[Math.floor(Math.random() * pool.length)], 1);
       return;
     }
@@ -707,6 +1116,9 @@ class Inventory {
 
     ctx.fillStyle = "#888"; ctx.font = "11px monospace";
     ctx.fillText("[I] Kapat", layout.px + layout.panelW - 80, layout.py + 26);
+    ctx.fillStyle = "#6a6a88"; ctx.font = "9px monospace";
+    ctx.fillText("Bo\u015f ekipmana uygun toplanan e\u015fya otomatik giyilir.", layout.px + layout.eqColW + 4, layout.py + 40);
+    ctx.fillText("Giyilebilir e\u015fyaya bas\u0131l\u0131 tut: bo\u015f slota an\u0131nda giydir.", layout.px + layout.eqColW + 4, layout.py + 52);
 
     ctx.fillStyle = "#a0c0ff"; ctx.font = "bold 11px monospace";
     ctx.fillText("Ekipman", layout.eqX, layout.eqY - 6);
@@ -1009,6 +1421,12 @@ class TileMap {
         ctx.fillRect(x, y, 2, TILE_SIZE);
         ctx.fillRect(x + TILE_SIZE - 2, y, 2, TILE_SIZE);
         break;
+      case TileType.SNOW:
+        ctx.fillStyle = "#b8d0e0";
+        ctx.fillRect(x + 4, y + 6, 3, 2);
+        ctx.fillRect(x + 18, y + 20, 4, 2);
+        ctx.fillRect(x + 12, y + 14, 2, 3);
+        break;
     }
   }
 
@@ -1081,6 +1499,14 @@ class Camera {
 
 const DIR = { DOWN: 0, LEFT: 1, RIGHT: 2, UP: 3 };
 
+function rarityRank(r) {
+  if (r === "legendary") return 4;
+  if (r === "epic") return 3;
+  if (r === "rare") return 2;
+  if (r === "common") return 1;
+  return 0;
+}
+
 class Player {
   constructor(col, row) {
     this.x = col * TILE_SIZE;
@@ -1129,6 +1555,9 @@ class Player {
     this.levelUpTimer = 0;
     this.powerCharging = false;
     this.powerCharge = 0;
+
+    this.statPoints = 0;
+    this.skills = Object.create(null);
   }
 
   gainXP(amount) {
@@ -1137,13 +1566,11 @@ class Player {
       this.xp -= this.xpToNext;
       this.level++;
       this.xpToNext = Math.floor(30 * Math.pow(1.4, this.level - 1));
-      this.baseMaxHp += 12;
-      this.baseMaxMana += 8;
-      this.str += 2;
-      this.agi += 1;
-      this.wis += 1;
-      this.manaRegen += 0.3;
-      this.hpRegen += 0.15;
+      this.baseMaxHp += 8;
+      this.baseMaxMana += 5;
+      this.manaRegen += 0.12;
+      this.hpRegen += 0.08;
+      this.statPoints += 3;
       this.levelUpTimer = 2.5;
       this._pendingFullHeal = true;
     }
@@ -1172,8 +1599,11 @@ class Player {
     this._eqWis = eqWis;
     this._eqMeleeDmg = eqMeleeDmg;
     this._eqRangedDmg = eqRangedDmg;
-    this.maxHp = this.baseMaxHp + eqHp;
-    this.maxMana = this.baseMaxMana + eqMana;
+    let skHp = 0, skMana = 0;
+    if (this.skills.vitality) skHp += 25;
+    if (this.skills.arcane) skMana += 22;
+    this.maxHp = this.baseMaxHp + eqHp + skHp;
+    this.maxMana = this.baseMaxMana + eqMana + skMana;
     if (this._pendingFullHeal) {
       this.hp = this.maxHp;
       this.mana = this.maxMana;
@@ -1185,7 +1615,9 @@ class Player {
   }
 
   takeDamage(amount) {
-    this.hp = Math.max(0, this.hp - amount);
+    let a = amount;
+    if (this.skills.ward) a *= 0.92;
+    this.hp = Math.max(0, this.hp - a);
     this.dmgFlashTimer = 0.3;
   }
 
@@ -1204,7 +1636,9 @@ class Player {
   }
 
   getRangedDamage() {
-    return this.getDamage() + this._eqRangedDmg;
+    let d = this.getDamage() + this._eqRangedDmg;
+    if (this.skills.marksman) d *= 1.1;
+    return d;
   }
 
   getPowerDamage() {
@@ -1213,7 +1647,9 @@ class Player {
   }
 
   getMeleeDamage() {
-    return Math.floor(this.getDamage() * 1.2) + this._eqMeleeDmg;
+    let d = Math.floor(this.getDamage() * 1.2) + this._eqMeleeDmg;
+    if (this.skills.brawler) d += 4;
+    return d;
   }
 
   aimAt(worldX, worldY) {
@@ -1274,11 +1710,155 @@ class Player {
     return { col: Math.floor(tx / TILE_SIZE), row: Math.floor(ty / TILE_SIZE) };
   }
 
-  render(ctx, inventory) {
+  /** tryPlayerMeleeAttack ile aynı mesafe / ön konu (MELEE_RANGE / MELEE_CONE_HALF). */
+  _anyMonsterInMeleeReach(monsters) {
+    if (!monsters || !monsters.length) return false;
+    const RANGE = 46;
+    const CONE_HALF = Math.PI * 0.42;
+    const px = this.centerX, py = this.centerY, pa = this.angle;
+    for (const m of monsters) {
+      if (!m.alive || m.state === "dying") continue;
+      const dx = m.cx - px, dy = m.cy - py;
+      const dist = Math.hypot(dx, dy);
+      if (dist > RANGE) continue;
+      const ta = Math.atan2(dy, dx);
+      let ad = pa - ta;
+      while (ad > Math.PI) ad -= Math.PI * 2;
+      while (ad < -Math.PI) ad += Math.PI * 2;
+      if (Math.abs(ad) <= CONE_HALF) return true;
+    }
+    return false;
+  }
+
+  _appearanceFromEquipment(inv) {
+    const shirt = { main: "#2a6030", dark: "#1e4d26", trim: "#c0a060", pants: "#3a3a2a", skin: "#e0c060" };
+    let mx = 0;
+    const bump = (d) => {
+      if (d && d.rarity) mx = Math.max(mx, rarityRank(d.rarity));
+    };
+    if (inv && inv.equipped) {
+      for (const sk of EQ_SLOTS) {
+        const es = inv.equipped[sk];
+        if (es && ITEMS[es.id]) bump(ITEMS[es.id]);
+      }
+    }
+    let aura = null;
+    if (mx >= 4) {
+      Object.assign(shirt, { main: "#2a2838", dark: "#14101c", trim: "#ffd080", pants: "#222030", skin: "#f0d8a8" });
+      aura = "gold";
+    } else if (mx >= 3) {
+      Object.assign(shirt, { main: "#4a2068", dark: "#280838", trim: "#e8a8ff", pants: "#301848", skin: "#e8c8e8" });
+      aura = "violet";
+    } else if (mx >= 2) {
+      Object.assign(shirt, { main: "#2e5880", dark: "#183858", trim: "#a0d8ff", pants: "#243848", skin: "#d8e8f0" });
+      aura = "blue";
+    }
+    const chest = inv?.equipped?.chest && ITEMS[inv.equipped.chest.id];
+    if (chest) {
+      if (chest.id === "chest_leather") Object.assign(shirt, { main: "#5a5038", dark: "#3a3828", trim: "#c8a878" });
+      else if (chest.id === "chest_steel") Object.assign(shirt, { main: "#3a4a60", dark: "#283040", trim: "#c0d0e8" });
+      else if (chest.id === "chest_epic") Object.assign(shirt, { main: "#1a5028", dark: "#0e3018", trim: "#70ffa8" });
+      else if (chest.id === "chest_legendary") Object.assign(shirt, { main: "#1a1830", dark: "#0a0818", trim: "#b8a0ff" });
+    }
+    const feet = inv?.equipped?.feet && ITEMS[inv.equipped.feet.id];
+    if (feet) {
+      if (feet.id === "boots_swift") shirt.pants = "#284858";
+      else if (feet.id === "boots_epic") shirt.pants = "#203848";
+    }
+    const helmId = inv?.equipped?.head ? inv.equipped.head.id : null;
+    const handsId = inv?.equipped?.hands ? inv.equipped.hands.id : null;
+    const hasJewelry = !!(inv?.equipped?.ring || inv?.equipped?.amulet);
+    return { shirt, mx, aura, helmId, handsId, hasJewelry };
+  }
+
+  _drawHelmDecoration(ctx, helmId, d, bounce) {
+    if (!helmId) return;
+    if (helmId === "helm_leather") {
+      ctx.fillStyle = "#6a4830";
+      if (d === DIR.LEFT || d === DIR.RIGHT) {
+        ctx.fillRect(-7, -15 - bounce, 14, 5);
+      } else {
+        ctx.fillRect(-9, -16 - bounce, 18, 5);
+      }
+      return;
+    }
+    if (helmId === "helm_iron") {
+      ctx.fillStyle = "#8898a8";
+      if (d === DIR.LEFT || d === DIR.RIGHT) {
+        ctx.fillRect(-8, -16 - bounce, 16, 9);
+        ctx.fillStyle = "#586878";
+        ctx.fillRect(-6, -14 - bounce, 12, 3);
+      } else {
+        ctx.fillRect(-9, -17 - bounce, 18, 10);
+        ctx.fillStyle = "#586878";
+        ctx.fillRect(-7, -15 - bounce, 14, 4);
+      }
+      return;
+    }
+    if (helmId === "helm_epic") {
+      ctx.fillStyle = "#6040a0";
+      if (d === DIR.LEFT || d === DIR.RIGHT) {
+        ctx.fillRect(-8, -16 - bounce, 16, 8);
+      } else {
+        ctx.fillRect(-9, -17 - bounce, 18, 9);
+      }
+      ctx.strokeStyle = "#ffd060";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(-8, -16 - bounce, d === DIR.LEFT || d === DIR.RIGHT ? 16 : 18, d === DIR.LEFT || d === DIR.RIGHT ? 8 : 9);
+      return;
+    }
+    if (helmId === "helm_legendary") {
+      ctx.fillStyle = "#2a2010";
+      if (d === DIR.LEFT || d === DIR.RIGHT) {
+        ctx.fillRect(-8, -17 - bounce, 16, 10);
+      } else {
+        ctx.fillRect(-9, -18 - bounce, 18, 11);
+      }
+      ctx.fillStyle = "#ffd060";
+      ctx.fillRect(-3, -20 - bounce, 2, 5);
+      ctx.fillRect(1, -20 - bounce, 2, 5);
+      ctx.strokeStyle = "#ffd080";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(0, -12 - bounce, 7, Math.PI * 1.1, Math.PI * 1.9);
+      ctx.stroke();
+    }
+  }
+
+  _drawEquipmentAura(ctx, cx, cy, vis) {
+    if (!vis.aura && vis.mx < 2 && !vis.hasJewelry) return;
+    const t = Date.now() / 700;
+    let col = "#90b8e0";
+    if (vis.aura === "gold") col = "#ffd060";
+    else if (vis.aura === "violet") col = "#c080ff";
+    else if (vis.aura === "blue") col = "#80c0ff";
+    else if (vis.hasJewelry) col = "#a8c8f0";
+    ctx.save();
+    ctx.globalAlpha = 0.22 + Math.sin(t) * 0.08;
+    ctx.strokeStyle = col;
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([3, 4]);
+    ctx.beginPath();
+    ctx.arc(cx, cy - 4, 16 + Math.sin(t * 2) * 1.5, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.globalAlpha = 0.14;
+    ctx.beginPath();
+    ctx.arc(cx, cy - 2, 22, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  render(ctx, inventory, monsters) {
     const inv = inventory || null;
+    const vis = this._appearanceFromEquipment(inv);
     const bladeId = inv && inv.equipped && inv.equipped.blade ? inv.equipped.blade.id : null;
     const bowId = inv && inv.equipped && inv.equipped.bow ? inv.equipped.bow.id : null;
-    const showBow = !!(bowId && ITEMS[bowId] && ITEMS[bowId].equipSlot === "bow" && this.swingAnim <= 0);
+    const hasBladeEquipped = !!(bladeId && ITEMS[bladeId] && ITEMS[bladeId].equipSlot === "blade");
+    const hasBowEquipped = !!(bowId && ITEMS[bowId] && ITEMS[bowId].equipSlot === "bow");
+    const meleeThreat = !this.inBoat && hasBladeEquipped && hasBowEquipped && this._anyMonsterInMeleeReach(monsters);
+    const showBow = hasBowEquipped && this.swingAnim <= 0 && (!meleeThreat || this.shootAnim > 0);
+    const showBladeVisual = hasBladeEquipped && this.swingAnim <= 0 && (!hasBowEquipped || meleeThreat) && this.shootAnim <= 0;
 
     const cx = Math.round(this.x + this.w / 2);
     const cy = Math.round(this.y + this.h / 2);
@@ -1287,16 +1867,17 @@ class Player {
     const pull = this.shootAnim > 0 ? Math.sin(this.shootAnim * Math.PI / 0.25) * 3 : 0;
     const d = this.direction;
     const a = this.angle;
-    const cosA = Math.cos(a), sinA = Math.sin(a);
-
     const bowInFront = this._isBowInFront(d, a);
+    const S = vis.shirt;
 
-    if (showBow && !bowInFront) this._drawBowAndArms(ctx, cx, cy, bounce, pull);
+    this._drawEquipmentAura(ctx, cx, cy, vis);
+
+    if (showBow && !bowInFront) this._drawBowAndArms(ctx, cx, cy, bounce, pull, bowId);
 
     ctx.save();
     ctx.translate(cx, cy);
 
-    ctx.fillStyle = "#3a3a2a";
+    ctx.fillStyle = S.pants;
     if (this.moving) {
       if (d === DIR.LEFT || d === DIR.RIGHT) {
         ctx.fillRect(-3 + legOff, 4 - bounce, 3, 6);
@@ -1316,38 +1897,48 @@ class Player {
     }
 
     if (d === DIR.LEFT || d === DIR.RIGHT) {
-      ctx.fillStyle = "#2a6030";
+      ctx.fillStyle = S.main;
       ctx.fillRect(-6, -7 - bounce, 12, 11);
-      ctx.fillStyle = "#1e4d26";
+      ctx.fillStyle = S.dark;
       ctx.fillRect(-6, -7 - bounce, 12, 3);
-      ctx.fillStyle = "#4a3a2a";
+      ctx.fillStyle = S.dark;
       ctx.fillRect(-5, 2 - bounce, 10, 5);
 
       const qSide = d === DIR.LEFT ? 1 : -1;
       ctx.fillStyle = "#6b4226";
       ctx.fillRect(qSide * 2, -5 - bounce, 3, 7);
-      ctx.fillStyle = "#c0a060";
+      ctx.fillStyle = S.trim;
       ctx.fillRect(qSide * 2 + 1, -7 - bounce, 2, 3);
       ctx.fillRect(qSide * 2 + 1, 2 - bounce, 2, 2);
+      if (vis.handsId) {
+        ctx.fillStyle = "#d0dce8";
+        ctx.fillRect(qSide * 2 - 1, -6 - bounce, 5, 3);
+        ctx.fillRect(qSide * 2 - 1, 0 - bounce, 5, 3);
+      }
     } else {
-      ctx.fillStyle = "#4a3a2a";
+      ctx.fillStyle = S.dark;
       ctx.fillRect(-7, 2 - bounce, 6, 5);
       ctx.fillRect(1, 2 - bounce, 6, 5);
-      ctx.fillStyle = "#2a6030";
+      ctx.fillStyle = S.main;
       ctx.fillRect(-8, -7 - bounce, 16, 11);
-      ctx.fillStyle = "#1e4d26";
+      ctx.fillStyle = S.dark;
       ctx.fillRect(-8, -7 - bounce, 16, 3);
 
       if (d === DIR.DOWN) {
         ctx.fillStyle = "#6b4226";
         ctx.fillRect(-8, -6 - bounce, 3, 8);
-        ctx.fillStyle = "#c0a060";
+        ctx.fillStyle = S.trim;
         ctx.fillRect(-8, -8 - bounce, 2, 3);
         ctx.fillRect(-8, 2 - bounce, 2, 3);
+        if (vis.handsId) {
+          ctx.fillStyle = "#d0dce8";
+          ctx.fillRect(-10, -5 - bounce, 3, 4);
+          ctx.fillRect(-10, 1 - bounce, 3, 4);
+        }
       }
     }
 
-    ctx.fillStyle = "#e0c060";
+    ctx.fillStyle = S.skin;
     ctx.beginPath(); ctx.arc(0, -8 - bounce, 6, 0, Math.PI * 2); ctx.fill();
 
     if (d === DIR.DOWN) {
@@ -1362,21 +1953,32 @@ class Player {
       ctx.fillRect(1, -9 - bounce, 2, 2);
     }
 
-    ctx.fillStyle = "#2a6030";
-    ctx.beginPath();
-    ctx.moveTo(-5, -11 - bounce);
-    ctx.lineTo(0, -16 - bounce);
-    ctx.lineTo(5, -11 - bounce);
-    ctx.lineTo(5, -8 - bounce);
-    ctx.lineTo(-5, -8 - bounce);
-    ctx.fill();
-    ctx.fillStyle = "#1e4d26";
-    ctx.fillRect(-4, -14 - bounce, 8, 2);
+    if (vis.helmId) {
+      this._drawHelmDecoration(ctx, vis.helmId, d, bounce);
+    } else {
+      ctx.fillStyle = S.main;
+      ctx.beginPath();
+      ctx.moveTo(-5, -11 - bounce);
+      ctx.lineTo(0, -16 - bounce);
+      ctx.lineTo(5, -11 - bounce);
+      ctx.lineTo(5, -8 - bounce);
+      ctx.lineTo(-5, -8 - bounce);
+      ctx.fill();
+      ctx.fillStyle = S.dark;
+      ctx.fillRect(-4, -14 - bounce, 8, 2);
+    }
+
+    if (inv && inv.equipped && inv.equipped.amulet) {
+      ctx.fillStyle = vis.mx >= 3 ? "#ffd0e8" : "#b89870";
+      ctx.beginPath();
+      ctx.arc(0, -2 - bounce, 2.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
 
     ctx.restore();
 
-    if (showBow && bowInFront) this._drawBowAndArms(ctx, cx, cy, bounce, pull);
-    if (bladeId && ITEMS[bladeId] && ITEMS[bladeId].equipSlot === "blade" && this.swingAnim <= 0) {
+    if (showBow && bowInFront) this._drawBowAndArms(ctx, cx, cy, bounce, pull, bowId);
+    if (showBladeVisual) {
       this._drawEquippedBlade(ctx, cx, cy, bounce, a, bladeId);
     }
     if (this.swingAnim > 0) this._drawMeleeSwing(ctx, cx, cy, bounce);
@@ -1386,11 +1988,18 @@ class Player {
     ctx.save();
     ctx.translate(cx, cy + bounce * 0.35);
     ctx.rotate(aimAngle + Math.PI * 0.12);
-    const tint = bladeId.includes("elven") ? "#b0e8ff" : bladeId.includes("steel") ? "#d0dce8" : bladeId.includes("rusty") ? "#8a7a6a" : "#c8c8d8";
+    const bd = bladeId && ITEMS[bladeId];
+    const rk = bd && bd.rarity ? rarityRank(bd.rarity) : 1;
+    if (rk >= 4) { ctx.shadowColor = "#ffd060"; ctx.shadowBlur = 12; }
+    else if (rk >= 3) { ctx.shadowColor = "#c080ff"; ctx.shadowBlur = 9; }
+    else if (rk >= 2) { ctx.shadowColor = "#80c0ff"; ctx.shadowBlur = 6; }
+    const bid = bladeId || "";
+    const tint = bid.includes("elven") ? "#b0e8ff" : bid.includes("steel") ? "#d0dce8" : bid.includes("rusty") ? "#8a7a6a" : "#c8c8d8";
     ctx.fillStyle = tint;
     ctx.fillRect(-2, -20, 4, 24);
     ctx.fillStyle = "#e8e8f0";
     ctx.fillRect(-2.5, -21, 5, 5);
+    ctx.shadowBlur = 0;
     ctx.fillStyle = "#6B4226";
     ctx.fillRect(-4, 6, 8, 3);
     ctx.fillRect(-1.5, 4, 3, 5);
@@ -1404,10 +2013,12 @@ class Player {
     return a > Math.PI * 0.5 || a < -Math.PI * 0.5;
   }
 
-  _drawBowAndArms(ctx, cx, cy, bounce, pull) {
+  _drawBowAndArms(ctx, cx, cy, bounce, pull, bowId) {
     const a = this.angle;
-    const cosA = Math.cos(a), sinA = Math.sin(a);
     const shoulderX = cx, shoulderY = cy - 2 - bounce;
+    let wood = "#7a5030", stringCol = "#c8c8c8", limb = "#8B6B3D";
+    if (bowId === "bow_hunter") { wood = "#5a6048"; stringCol = "#a0c890"; limb = "#4a5038"; }
+    if (bowId === "bow_long") { wood = "#504060"; stringCol = "#d0b0ff"; limb = "#403050"; }
 
     ctx.save();
     ctx.translate(shoulderX, shoulderY);
@@ -1418,10 +2029,10 @@ class Player {
     ctx.fillStyle = "#d4b050";
     ctx.beginPath(); ctx.arc(11, 0, 2, 0, Math.PI * 2); ctx.fill();
 
-    ctx.strokeStyle = "#7a5030"; ctx.lineWidth = 2.5;
+    ctx.strokeStyle = wood; ctx.lineWidth = 2.5;
     ctx.beginPath(); ctx.arc(13, 0, 8, -Math.PI * 0.6, Math.PI * 0.6); ctx.stroke();
 
-    ctx.strokeStyle = "#c8c8c8"; ctx.lineWidth = 1;
+    ctx.strokeStyle = stringCol; ctx.lineWidth = 1;
     const topX = 13 + Math.cos(-Math.PI * 0.6) * 8;
     const topY = Math.sin(-Math.PI * 0.6) * 8;
     const botX = 13 + Math.cos(Math.PI * 0.6) * 8;
@@ -1438,7 +2049,7 @@ class Player {
     ctx.beginPath(); ctx.arc(7 - pull * 0.6, 1.5, 2, 0, Math.PI * 2); ctx.fill();
 
     if (pull > 0) {
-      ctx.fillStyle = "#8B6B3D";
+      ctx.fillStyle = limb;
       ctx.fillRect(9 - pull, -1, 14, 2);
       ctx.fillStyle = "#c0c0c0";
       ctx.beginPath();
@@ -1630,13 +2241,13 @@ const MONSTER_TYPES = {
   slime:    { name: "Balçık",   hp: 30,  dmg: 5,  speed: 35,  xp: 8,  aggroRange: TILE_SIZE*5,  atkRange: TILE_SIZE*0.8, atkCd: 1.2,
               loot: [{id:"coin",c:3,ch:0.8},{id:"seed",c:2,ch:0.3},{id:"sword_rusty",c:1,ch:0.06}] },
   wolf:     { name: "Kurt",     hp: 55,  dmg: 10, speed: 70,  xp: 15, aggroRange: TILE_SIZE*6,  atkRange: TILE_SIZE*0.9, atkCd: 0.8,
-              loot: [{id:"coin",c:5,ch:0.7},{id:"potion",c:1,ch:0.2},{id:"sword_rusty",c:1,ch:0.1},{id:"bow",c:1,ch:0.06}] },
+              loot: [{id:"coin",c:5,ch:0.7},{id:"potion",c:1,ch:0.2},{id:"potion_mana",c:1,ch:0.12},{id:"sword_rusty",c:1,ch:0.1},{id:"bow",c:1,ch:0.06}] },
   skeleton: { name: "İskelet",  hp: 80,  dmg: 14, speed: 50,  xp: 22, aggroRange: TILE_SIZE*7,  atkRange: TILE_SIZE*0.9, atkCd: 1.0,
               loot: [{id:"coin",c:8,ch:0.9},{id:"arrow",c:5,ch:0.4},{id:"bow",c:1,ch:0.08},{id:"sword",c:1,ch:0.05}] },
   orc:      { name: "Ork",      hp: 120, dmg: 20, speed: 55,  xp: 35, aggroRange: TILE_SIZE*7,  atkRange: TILE_SIZE,     atkCd: 1.3,
-              loot: [{id:"coin",c:12,ch:1},{id:"potion",c:1,ch:0.35},{id:"sword",c:1,ch:0.08},{id:"sword_steel",c:1,ch:0.04},{id:"bow_hunter",c:1,ch:0.05}] },
+              loot: [{id:"coin",c:12,ch:1},{id:"potion",c:1,ch:0.35},{id:"potion_mana",c:1,ch:0.14},{id:"sword",c:1,ch:0.08},{id:"sword_steel",c:1,ch:0.04},{id:"bow_hunter",c:1,ch:0.05}] },
   golem:    { name: "Golem",    hp: 200, dmg: 30, speed: 30,  xp: 60, aggroRange: TILE_SIZE*8,  atkRange: TILE_SIZE*1.1, atkCd: 2.0,
-              loot: [{id:"coin",c:20,ch:1},{id:"stone",c:10,ch:0.6},{id:"potion",c:2,ch:0.4},{id:"sword_steel",c:1,ch:0.1},{id:"bow_long",c:1,ch:0.04}] },
+              loot: [{id:"coin",c:20,ch:1},{id:"stone",c:10,ch:0.6},{id:"potion",c:2,ch:0.4},{id:"potion_mana",c:1,ch:0.2},{id:"sword_steel",c:1,ch:0.1},{id:"bow_long",c:1,ch:0.04}] },
   forest_treant: { name: "Kadim K\u00f6k", hp: 900, dmg: 38, speed: 22, xp: 280, aggroRange: TILE_SIZE*10, atkRange: TILE_SIZE*1.3, atkCd: 1.5,
               boss: true, loot: [{id:"boss_chest",c:1,ch:1},{id:"coin",c:90,ch:1},{id:"wood",c:25,ch:0.7},{id:"helm_epic",c:1,ch:0.15},{id:"sword_elven",c:1,ch:0.12},{id:"bow_long",c:1,ch:0.1}] },
   desert_titan: { name: "Kum Titan\u0131", hp: 1100, dmg: 42, speed: 28, xp: 320, aggroRange: TILE_SIZE*10, atkRange: TILE_SIZE*1.2, atkCd: 1.4,
@@ -1649,6 +2260,34 @@ const MONSTER_TYPES = {
               boss: true, loot: [{id:"boss_chest",c:1,ch:1},{id:"coin",c:110,ch:1},{id:"potion",c:5,ch:0.9},{id:"helm_legendary",c:1,ch:0.08},{id:"sword_elven",c:1,ch:0.1}] },
   south_shadow: { name: "G\u00f6lge Lord", hp: 950, dmg: 41, speed: 55, xp: 300, aggroRange: TILE_SIZE*11, atkRange: TILE_SIZE*1.0, atkCd: 1.1,
               boss: true, loot: [{id:"boss_chest",c:1,ch:1},{id:"coin",c:95,ch:1},{id:"chest_legendary",c:1,ch:0.06},{id:"amulet_wisdom",c:1,ch:0.05},{id:"sword_elven",c:1,ch:0.08},{id:"bow_long",c:1,ch:0.09}] },
+  dark_knight: { name: "Karanl\u0131k \u015e\u00f6valye", hp: 520, dmg: 44, speed: 48, xp: 95, aggroRange: TILE_SIZE*8, atkRange: TILE_SIZE, atkCd: 1.0,
+              loot: [{id:"coin",c:25,ch:1},{id:"potion",c:2,ch:0.5},{id:"sword_steel",c:1,ch:0.12},{id:"helm_iron",c:1,ch:0.08}] },
+  frost_spirit: { name: "Buz Ruhu", hp: 260, dmg: 26, speed: 62, xp: 55, aggroRange: TILE_SIZE*7, atkRange: TILE_SIZE*0.85, atkCd: 0.9,
+              loot: [{id:"coin",c:14,ch:1},{id:"potion",c:1,ch:0.35},{id:"arrow",c:8,ch:0.4}] },
+  dune_raider: { name: "Kum Ak\u0131nc\u0131s\u0131", hp: 300, dmg: 30, speed: 75, xp: 62, aggroRange: TILE_SIZE*8, atkRange: TILE_SIZE*0.9, atkCd: 0.85,
+              loot: [{id:"coin",c:18,ch:1},{id:"stone",c:6,ch:0.5},{id:"bow_hunter",c:1,ch:0.05}] },
+  vine_horror: { name: "Asma Dehset", hp: 340, dmg: 28, speed: 40, xp: 70, aggroRange: TILE_SIZE*7, atkRange: TILE_SIZE*1.1, atkCd: 1.15,
+              loot: [{id:"coin",c:16,ch:1},{id:"flower",c:8,ch:0.6},{id:"potion",c:2,ch:0.4}] },
+  crystalline: { name: "Kristal Canavar", hp: 420, dmg: 34, speed: 38, xp: 88, aggroRange: TILE_SIZE*8, atkRange: TILE_SIZE, atkCd: 1.25,
+              loot: [{id:"coin",c:22,ch:1},{id:"stone",c:12,ch:0.7},{id:"sword_steel",c:1,ch:0.1}] },
+  void_hound: { name: "Bo\u015fluk Taz\u0131s\u0131", hp: 380, dmg: 36, speed: 88, xp: 80, aggroRange: TILE_SIZE*9, atkRange: TILE_SIZE*0.95, atkCd: 0.75,
+              loot: [{id:"coin",c:20,ch:1},{id:"potion",c:2,ch:0.45},{id:"bow_hunter",c:1,ch:0.07}] },
+  iron_behemoth: { name: "Demir Kolos", hp: 720, dmg: 52, speed: 32, xp: 140, aggroRange: TILE_SIZE*9, atkRange: TILE_SIZE*1.2, atkCd: 1.6,
+              loot: [{id:"coin",c:35,ch:1},{id:"stone",c:20,ch:0.8},{id:"sword_steel",c:1,ch:0.15},{id:"chest_steel",c:1,ch:0.04}] },
+  storm_wraith: { name: "F\u0131rt\u0131na Hortla\u011f\u0131", hp: 480, dmg: 40, speed: 95, xp: 110, aggroRange: TILE_SIZE*10, atkRange: TILE_SIZE*0.9, atkCd: 0.7,
+              loot: [{id:"coin",c:28,ch:1},{id:"arrow",c:12,ch:0.55},{id:"potion",c:2,ch:0.5}] },
+  ice_queen: { name: "Buz Krali\u00e7e", hp: 2400, dmg: 58, speed: 42, xp: 520, aggroRange: TILE_SIZE*12, atkRange: TILE_SIZE*1.25, atkCd: 1.2,
+              boss: true, loot: [{id:"boss_chest",c:1,ch:1},{id:"coin",c:140,ch:1},{id:"potion",c:6,ch:0.95},{id:"helm_legendary",c:1,ch:0.1},{id:"sword_elven",c:1,ch:0.12},{id:"amulet_wisdom",c:1,ch:0.04}] },
+  dune_king: { name: "Kum Kral\u0131", hp: 2800, dmg: 62, speed: 36, xp: 600, aggroRange: TILE_SIZE*12, atkRange: TILE_SIZE*1.3, atkCd: 1.15,
+              boss: true, loot: [{id:"boss_chest",c:1,ch:1},{id:"coin",c:160,ch:1},{id:"stone",c:40,ch:1},{id:"chest_legendary",c:1,ch:0.08},{id:"bow_long",c:1,ch:0.1},{id:"ring_power",c:1,ch:0.06}] },
+  jungle_behemoth: { name: "Muson Dev", hp: 2200, dmg: 54, speed: 48, xp: 560, aggroRange: TILE_SIZE*11, atkRange: TILE_SIZE*1.2, atkCd: 1.05,
+              boss: true, loot: [{id:"boss_chest",c:1,ch:1},{id:"coin",c:130,ch:1},{id:"wood",c:40,ch:0.9},{id:"chest_epic",c:1,ch:0.14},{id:"boots_epic",c:1,ch:0.1},{id:"gloves_archer",c:1,ch:0.1}] },
+  thunder_lord: { name: "G\u00f6k G\u00fcc\u00fc", hp: 3200, dmg: 68, speed: 52, xp: 720, aggroRange: TILE_SIZE*13, atkRange: TILE_SIZE*1.15, atkCd: 0.95,
+              boss: true, loot: [{id:"boss_chest",c:2,ch:1},{id:"coin",c:200,ch:1},{id:"potion",c:8,ch:1},{id:"helm_epic",c:1,ch:0.12},{id:"sword_elven",c:1,ch:0.12},{id:"amulet_wisdom",c:1,ch:0.06}] },
+  abyss_crab: { name: "U\u00e7urum Yengeci", hp: 3600, dmg: 56, speed: 28, xp: 680, aggroRange: TILE_SIZE*10, atkRange: TILE_SIZE*1.35, atkCd: 1.4,
+              boss: true, loot: [{id:"boss_chest",c:2,ch:1},{id:"coin",c:180,ch:1},{id:"fish",c:30,ch:0.8},{id:"chest_legendary",c:1,ch:0.07},{id:"ring_power",c:1,ch:0.08},{id:"bow_long",c:1,ch:0.1}] },
+  volcanic_titan: { name: "Lav Titan\u0131", hp: 4000, dmg: 72, speed: 30, xp: 800, aggroRange: TILE_SIZE*12, atkRange: TILE_SIZE*1.4, atkCd: 1.35,
+              boss: true, loot: [{id:"boss_chest",c:2,ch:1},{id:"coin",c:220,ch:1},{id:"stone",c:50,ch:1},{id:"helm_legendary",c:1,ch:0.09},{id:"chest_legendary",c:1,ch:0.07},{id:"sword_elven",c:1,ch:0.1}] },
 };
 
 function drawMonsterSprite(ctx, type, x, y, dir, frame, hitFlash, atkAnim) {
@@ -1808,6 +2447,145 @@ function drawMonsterSprite(ctx, type, x, y, dir, frame, hitFlash, atkAnim) {
       ctx.fillStyle = "#000";
       ctx.fillRect(cx - 12, cy - 14, 24, 28);
       ctx.globalAlpha = 1;
+      break;
+    }
+    case "dark_knight": {
+      ctx.fillStyle = hitFlash > 0 ? "#ff6060" : "#303040";
+      ctx.fillRect(cx - 9, cy - 10, 18, 22);
+      ctx.fillStyle = "#606070";
+      ctx.fillRect(cx - 11, cy - 14, 22, 8);
+      ctx.fillStyle = "#c04040";
+      ctx.fillRect(cx - 2, cy - 6, 4, 10);
+      ctx.fillStyle = "#ffd040";
+      ctx.fillRect(cx - 4, cy - 12, 3, 2); ctx.fillRect(cx + 1, cy - 12, 3, 2);
+      break;
+    }
+    case "frost_spirit": {
+      ctx.fillStyle = hitFlash > 0 ? "#ff6060" : "#a0d8ff";
+      ctx.beginPath(); ctx.arc(cx, cy + 2, 11, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#e8f8ff";
+      ctx.beginPath(); ctx.arc(cx, cy, 6, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#4080c0";
+      ctx.fillRect(cx - 2, cy - 2, 2, 2); ctx.fillRect(cx + 0, cy - 2, 2, 2);
+      break;
+    }
+    case "dune_raider": {
+      ctx.fillStyle = hitFlash > 0 ? "#ff6060" : "#c09050";
+      ctx.fillRect(cx - 10, cy - 6, 20, 16);
+      ctx.fillStyle = "#705020";
+      ctx.fillRect(cx - 6, cy - 12, 12, 8);
+      ctx.fillStyle = "#222";
+      ctx.fillRect(cx - 3, cy - 10, 2, 2); ctx.fillRect(cx + 1, cy - 10, 2, 2);
+      break;
+    }
+    case "vine_horror": {
+      ctx.fillStyle = hitFlash > 0 ? "#ff6060" : "#2a5020";
+      ctx.fillRect(cx - 8, cy - 4, 16, 18);
+      for (let i = 0; i < 5; i++) {
+        ctx.fillStyle = "#408030";
+        ctx.fillRect(cx - 10 + i * 4, cy - 12 - i, 3, 12 + i * 2);
+      }
+      ctx.fillStyle = "#d04060";
+      ctx.fillRect(cx - 2, cy + 2, 4, 3);
+      break;
+    }
+    case "crystalline": {
+      ctx.fillStyle = hitFlash > 0 ? "#ff6060" : "#80a0e0";
+      ctx.beginPath(); ctx.moveTo(cx, cy - 14); ctx.lineTo(cx + 10, cy + 8); ctx.lineTo(cx - 10, cy + 8); ctx.fill();
+      ctx.fillStyle = "#c0e0ff";
+      ctx.beginPath(); ctx.moveTo(cx, cy - 8); ctx.lineTo(cx + 6, cy + 4); ctx.lineTo(cx - 6, cy + 4); ctx.fill();
+      break;
+    }
+    case "void_hound": {
+      ctx.fillStyle = hitFlash > 0 ? "#ff6060" : "#402060";
+      ctx.fillRect(cx - 12, cy - 4, 22, 12);
+      ctx.fillRect(cx + 8, cy - 2, 8, 6);
+      ctx.fillStyle = "#ff3080";
+      ctx.fillRect(cx - 6, cy - 6, 3, 3); ctx.fillRect(cx + 2, cy - 6, 3, 3);
+      break;
+    }
+    case "iron_behemoth": {
+      ctx.fillStyle = hitFlash > 0 ? "#ff6060" : "#5a5a62";
+      ctx.fillRect(cx - 12, cy - 10, 24, 24);
+      ctx.fillStyle = "#909098";
+      ctx.fillRect(cx - 8, cy - 6, 16, 10);
+      ctx.fillStyle = "#f06030";
+      ctx.fillRect(cx - 4, cy - 2, 8, 4);
+      break;
+    }
+    case "storm_wraith": {
+      ctx.fillStyle = hitFlash > 0 ? "#ff6060" : "#5060a0";
+      ctx.beginPath(); ctx.ellipse(cx, cy + 2, 14, 10, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#ffd040";
+      for (let i = 0; i < 4; i++) {
+        const ang = i * Math.PI / 2 + frame * 0.5;
+        ctx.fillRect(cx + Math.cos(ang) * 12 - 1, cy + Math.sin(ang) * 8 - 1, 3, 3);
+      }
+      break;
+    }
+    case "ice_queen": {
+      ctx.fillStyle = hitFlash > 0 ? "#ff6060" : "#c0e8ff";
+      ctx.fillRect(cx - 14, cy - 18, 28, 32);
+      ctx.fillStyle = "#80c0f0";
+      ctx.beginPath(); ctx.arc(cx, cy - 16, 10, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(cx - 8, cy - 4, 16, 14);
+      ctx.fillStyle = "#4080c0";
+      ctx.fillRect(cx - 4, cy - 20, 8, 6);
+      break;
+    }
+    case "dune_king": {
+      ctx.fillStyle = hitFlash > 0 ? "#ff6060" : "#d8b060";
+      ctx.fillRect(cx - 14, cy - 14, 28, 28);
+      ctx.fillStyle = "#705010";
+      ctx.beginPath(); ctx.arc(cx, cy - 16, 11, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#ffd000";
+      ctx.fillRect(cx - 6, cy - 8, 12, 4);
+      ctx.fillStyle = "#a02020";
+      ctx.fillRect(cx - 4, cy - 18, 3, 3); ctx.fillRect(cx + 1, cy - 18, 3, 3);
+      break;
+    }
+    case "jungle_behemoth": {
+      ctx.fillStyle = hitFlash > 0 ? "#ff6060" : "#1a5020";
+      ctx.fillRect(cx - 13, cy - 12, 26, 26);
+      ctx.fillStyle = "#3a8040";
+      ctx.beginPath(); ctx.arc(cx, cy - 14, 11, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#60c070";
+      for (let i = -2; i <= 2; i++) ctx.fillRect(cx + i * 5 - 2, cy - 22, 4, 10);
+      break;
+    }
+    case "thunder_lord": {
+      ctx.fillStyle = hitFlash > 0 ? "#ff6060" : "#5040a0";
+      ctx.fillRect(cx - 12, cy - 16, 24, 30);
+      ctx.fillStyle = "#ffd040";
+      ctx.beginPath(); ctx.moveTo(cx - 4, cy - 20); ctx.lineTo(cx, cy - 28); ctx.lineTo(cx + 4, cy - 20); ctx.fill();
+      ctx.fillStyle = "#e0e0ff";
+      ctx.fillRect(cx - 6, cy - 8, 12, 8);
+      break;
+    }
+    case "abyss_crab": {
+      ctx.fillStyle = hitFlash > 0 ? "#ff6060" : "#403850";
+      ctx.fillRect(cx - 14, cy - 6, 28, 14);
+      ctx.fillStyle = "#602040";
+      ctx.fillRect(cx - 16, cy + 2, 6, 4); ctx.fillRect(cx + 10, cy + 2, 6, 4);
+      ctx.fillStyle = "#ff4060";
+      ctx.fillRect(cx - 4, cy - 4, 3, 3); ctx.fillRect(cx + 1, cy - 4, 3, 3);
+      break;
+    }
+    case "volcanic_titan": {
+      ctx.fillStyle = hitFlash > 0 ? "#ff6060" : "#4a3020";
+      ctx.fillRect(cx - 13, cy - 12, 26, 28);
+      ctx.fillStyle = "#ff6020";
+      ctx.beginPath(); ctx.arc(cx, cy + 6, 8, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#ff9040";
+      ctx.fillRect(cx - 4, cy - 14, 8, 6);
+      break;
+    }
+    default: {
+      ctx.fillStyle = hitFlash > 0 ? "#ff6060" : "#804080";
+      ctx.beginPath(); ctx.arc(cx, cy + 2, 10, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(cx - 2, cy, 2, 2); ctx.fillRect(cx + 0, cy, 2, 2);
       break;
     }
   }
@@ -2017,13 +2795,14 @@ class Monster {
 /* ── NPC ─────────────────────────────────────────────────── */
 
 class NPC {
-  constructor({ col, row, name, color, dialog, wanderRadius = 0, merchant = false, stock = null }) {
+  constructor({ col, row, name, color, dialog, wanderRadius = 0, merchant = false, stock = null, shopPool = null }) {
     this.x = col * TILE_SIZE; this.y = row * TILE_SIZE;
     this.w = 20; this.h = 20;
     this.name = name; this.color = color || "#c06030";
     this.dialog = dialog || ["..."];
     this.merchant = merchant;
     this.stock = stock;
+    this.shopPool = shopPool;
     this.direction = DIR.DOWN;
     this.homeX = this.x; this.homeY = this.y;
     this.wanderRadius = wanderRadius * TILE_SIZE;
@@ -2192,6 +2971,13 @@ function drawPetSprite(ctx, type, x, y, dir, animFrame, moving) {
   }
 }
 
+/** Evcil hayvan loot üzerindeyken toplama mesafesi (px). */
+const PET_LOOT_PICKUP_RANGE = TILE_SIZE * 1.35;
+/** Pet bu yarıçap içinde bir loot görür ve yürüyerek gider. */
+const PET_LOOT_SENSE_RANGE = TILE_SIZE * 11;
+/** Oyuncudan daha uzaktaki lootlar için pet hedef almaz (tüm haritaya koşmasın). */
+const PET_LOOT_MAX_CHASE_FROM_PLAYER = TILE_SIZE * 13;
+
 class Pet {
   constructor(type, name) {
     this.type = type;
@@ -2205,6 +2991,8 @@ class Pet {
     this.heartTimer = 0;
     this.posHistory = [];
     this.followDist = 28;
+    /** @type {WorldItem | null} */
+    this.lootTarget = null;
   }
 
   feed(itemId) {
@@ -2218,7 +3006,7 @@ class Pet {
     return gain;
   }
 
-  update(dt, player, map) {
+  update(dt, player, map, worldItems, inventory) {
     this.lastFedTimer += dt;
     if (this.lastFedTimer > 60) this.happiness = Math.max(0, this.happiness - dt * 0.5);
     if (this.heartTimer > 0) this.heartTimer -= dt;
@@ -2226,40 +3014,122 @@ class Pet {
     this.posHistory.push({ x: player.centerX, y: player.centerY });
     if (this.posHistory.length > 30) this.posHistory.shift();
 
-    const targetIdx = Math.max(0, this.posHistory.length - 15);
-    const target = this.posHistory[targetIdx];
-    const dx = target.x - (this.x + this.w / 2);
-    const dy = target.y - (this.y + this.h / 2);
-    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (player.inBoat) this.lootTarget = null;
 
-    if (dist > this.followDist) {
-      const speed = PET_TYPES[this.type].speed;
-      const moveSpeed = dist > 120 ? speed * 2 : speed;
-      const nx = dx / dist, ny = dy / dist;
-
-      const newX = this.x + nx * moveSpeed * dt;
-      const newY = this.y + ny * moveSpeed * dt;
-
-      const m = 2;
-      if (!map.isSolidPx(newX + m, this.y + m) && !map.isSolidPx(newX + this.w - m, this.y + this.h - m))
-        this.x = newX;
-      if (!map.isSolidPx(this.x + m, newY + m) && !map.isSolidPx(this.x + this.w - m, newY + this.h - m))
-        this.y = newY;
-
-      this.moving = true;
-      if (Math.abs(dx) > Math.abs(dy)) this.direction = dx > 0 ? DIR.RIGHT : DIR.LEFT;
-      else this.direction = dy > 0 ? DIR.DOWN : DIR.UP;
-
-      this.animTimer += dt;
-      if (this.animTimer >= 0.12) { this.animTimer = 0; this.animFrame = (this.animFrame + 1) % 4; }
-    } else {
-      this.moving = false; this.animFrame = 0;
-      this.direction = player.direction;
+    const maxCh2 = PET_LOOT_MAX_CHASE_FROM_PLAYER * PET_LOOT_MAX_CHASE_FROM_PLAYER;
+    if (this.lootTarget) {
+      if (!this.lootTarget.alive) {
+        this.lootTarget = null;
+      } else {
+        const qdx = this.lootTarget.x - player.centerX, qdy = this.lootTarget.y - player.centerY;
+        if (qdx * qdx + qdy * qdy > maxCh2) this.lootTarget = null;
+      }
     }
 
-    if (dist > 300) {
-      this.x = player.x - 20; this.y = player.y + 10;
+    const canHunt = !player.inBoat && worldItems && inventory;
+    if (canHunt && !this.lootTarget) {
+      let best = null, bestD2 = Infinity;
+      const sense2 = PET_LOOT_SENSE_RANGE * PET_LOOT_SENSE_RANGE;
+      for (const wi of worldItems) {
+        if (!wi.alive) continue;
+        const wpx = wi.x - player.centerX, wpy = wi.y - player.centerY;
+        if (wpx * wpx + wpy * wpy > maxCh2) continue;
+        const vx = wi.x - this.centerX, vy = wi.y - this.centerY;
+        const d2 = vx * vx + vy * vy;
+        if (d2 > sense2) continue;
+        if (d2 < bestD2) {
+          bestD2 = d2;
+          best = wi;
+        }
+      }
+      this.lootTarget = best;
+    }
+
+    let didLootChase = false;
+    if (canHunt && this.lootTarget && this.lootTarget.alive) {
+      const lx = this.lootTarget.x, ly = this.lootTarget.y;
+      let ldx = lx - this.centerX, ldy = ly - this.centerY;
+      let ld = Math.sqrt(ldx * ldx + ldy * ldy);
+      if (ld <= PET_LOOT_PICKUP_RANGE) {
+        const before = this.lootTarget.count;
+        const ok = this.lootTarget.tryPickup(inventory);
+        if (ok) {
+          const picked = before - this.lootTarget.count;
+          const def = ITEMS[this.lootTarget.itemId];
+          if (def && picked > 0) {
+            pickupMsgText = this.name + " toplad\u0131: +" + picked + " " + def.name;
+            pickupMsgTimer = 1.2;
+          }
+        } else {
+          this.lootTarget = null;
+        }
+        if (this.lootTarget && !this.lootTarget.alive) this.lootTarget = null;
+      } else {
+        didLootChase = true;
+        const speed = PET_TYPES[this.type].speed;
+        const ldSafe = Math.max(ld, 4);
+        const moveSpeed = ldSafe > 110 ? speed * 2 : speed * 1.2;
+        const nx = ldx / ldSafe, ny = ldy / ldSafe;
+        const newX = this.x + nx * moveSpeed * dt;
+        const newY = this.y + ny * moveSpeed * dt;
+        const m = 2;
+        if (!map.isSolidPx(newX + m, this.y + m) && !map.isSolidPx(newX + this.w - m, this.y + this.h - m))
+          this.x = newX;
+        if (!map.isSolidPx(this.x + m, newY + m) && !map.isSolidPx(this.x + this.w - m, newY + this.h - m))
+          this.y = newY;
+        this.moving = true;
+        if (Math.abs(ldx) > Math.abs(ldy)) this.direction = ldx > 0 ? DIR.RIGHT : DIR.LEFT;
+        else this.direction = ldy > 0 ? DIR.DOWN : DIR.UP;
+        this.animTimer += dt;
+        if (this.animTimer >= 0.12) {
+          this.animTimer = 0;
+          this.animFrame = (this.animFrame + 1) % 4;
+        }
+      }
+    }
+
+    const targetIdx = Math.max(0, this.posHistory.length - 15);
+    const target = this.posHistory[targetIdx];
+    const tdx = target.x - (this.x + this.w / 2);
+    const tdy = target.y - (this.y + this.h / 2);
+    const tdist = Math.sqrt(tdx * tdx + tdy * tdy);
+
+    if (!didLootChase) {
+      if (tdist > this.followDist) {
+        const speed = PET_TYPES[this.type].speed;
+        const moveSpeed = tdist > 120 ? speed * 2 : speed;
+        const nx = tdx / tdist, ny = tdy / tdist;
+
+        const newX = this.x + nx * moveSpeed * dt;
+        const newY = this.y + ny * moveSpeed * dt;
+
+        const m = 2;
+        if (!map.isSolidPx(newX + m, this.y + m) && !map.isSolidPx(newX + this.w - m, this.y + this.h - m))
+          this.x = newX;
+        if (!map.isSolidPx(this.x + m, newY + m) && !map.isSolidPx(this.x + this.w - m, newY + this.h - m))
+          this.y = newY;
+
+        this.moving = true;
+        if (Math.abs(tdx) > Math.abs(tdy)) this.direction = tdx > 0 ? DIR.RIGHT : DIR.LEFT;
+        else this.direction = tdy > 0 ? DIR.DOWN : DIR.UP;
+
+        this.animTimer += dt;
+        if (this.animTimer >= 0.12) {
+          this.animTimer = 0;
+          this.animFrame = (this.animFrame + 1) % 4;
+        }
+      } else {
+        this.moving = false;
+        this.animFrame = 0;
+        this.direction = player.direction;
+      }
+    }
+
+    if (tdist > 300) {
+      this.x = player.x - 20;
+      this.y = player.y + 10;
       this.posHistory = [];
+      this.lootTarget = null;
     }
   }
 
@@ -2444,32 +3314,87 @@ class Shop {
     this.open = false;
     this.shopName = "";
     this.stock = [];
-    this.tab = 0; // 0=buy, 1=sell
+    this._template = null;
+    this.shopPoolKey = "village";
+    this.specialPhase = 0;
+    this.specialT = 0;
+    this.tab = 0;
     this.scrollBuy = 0;
     this.scrollSell = 0;
     this.tooltipItem = null;
+    this.tooltipBuyPrice = null;
+    this.tooltipSpecial = false;
     this.tooltipX = 0;
     this.tooltipY = 0;
     this.feedbackText = "";
     this.feedbackTimer = 0;
     this.feedbackColor = "#50e050";
+    this.sellPicker = null;
   }
 
-  openShop(name, stock) {
+  openShop(name, template, poolKey) {
+    charPanel.close();
     this.shopName = name;
-    this.stock = stock;
+    this._template = template;
+    this.shopPoolKey = poolKey || "village";
+    this.rebuildStockFromTemplate();
     this.open = true;
     this.tab = 0;
     this.scrollBuy = 0;
     this.scrollSell = 0;
     this.tooltipItem = null;
+    this.tooltipBuyPrice = null;
+    this.tooltipSpecial = false;
+    this.sellPicker = null;
   }
 
-  close() { this.open = false; this.tooltipItem = null; }
+  rebuildStockFromTemplate() {
+    if (!this._template) return;
+    const pool = SHOP_SPECIAL_POOLS[this.shopPoolKey] || SHOP_SPECIAL_POOLS.village;
+    const n = pool.length;
+    let specialIdx = 0;
+    this.stock = this._template.map((entry) => {
+      if (entry.special) {
+        const id = pool[(this.specialPhase + specialIdx++) % n];
+        return {
+          id,
+          qty: 1,
+          unlimited: false,
+          specialOffer: true,
+          price: getShopBuyPriceForItem(id),
+        };
+      }
+      const id = entry.id;
+      const unlimited = entry.unlimited === true || SHOP_UNLIMITED_IDS.has(id);
+      const qty = unlimited ? 999999 : (entry.qty != null ? entry.qty : 0);
+      const price = entry.price != null && entry.price > 0 ? entry.price : getShopBuyPriceForItem(id);
+      return {
+        id,
+        qty,
+        unlimited,
+        specialOffer: false,
+        price,
+      };
+    });
+  }
+
+  close() {
+    this.open = false;
+    this.tooltipItem = null;
+    this.tooltipBuyPrice = null;
+    this.tooltipSpecial = false;
+    this.sellPicker = null;
+  }
   toggle() { if (this.open) this.close(); }
 
   update(dt) {
     if (this.feedbackTimer > 0) this.feedbackTimer -= dt;
+    this.specialT += dt;
+    while (this.specialT >= SHOP_SPECIAL_ROTATE_SEC) {
+      this.specialT -= SHOP_SPECIAL_ROTATE_SEC;
+      this.specialPhase++;
+      if (this.open) this.rebuildStockFromTemplate();
+    }
   }
 
   _showFeedback(text, color) {
@@ -2479,36 +3404,78 @@ class Shop {
   }
 
   _layout(cw, ch) {
-    const pw = 380, ph = 360;
+    const pw = 448, ph = 400;
     const px = Math.floor((cw - pw) / 2);
     const py = Math.floor((ch - ph) / 2);
     return { px, py, pw, ph };
   }
 
-  _bulkSellButtonRect(L) {
-    return { x: L.px + 16, y: L.py + L.ph - 38, w: L.pw - 32, h: 24 };
+  _buyGridY(L) {
+    return L.py + 96;
   }
 
-  _sellBulkAll(inventory) {
-    let totalGold = 0;
-    let stacks = 0;
+  _getSellableEntries(inventory) {
+    const sellable = [];
     for (const container of [inventory.hotbar, inventory.slots]) {
       for (let i = 0; i < container.length; i++) {
         const slot = container[i];
-        if (!slot || slot.id === "coin") continue;
-        const def = ITEMS[slot.id];
-        if (!def || def.sellPrice <= 0) continue;
-        totalGold += def.sellPrice * slot.count;
-        stacks++;
-        container[i] = null;
+        if (slot && slot.id !== "coin" && ITEMS[slot.id] && ITEMS[slot.id].sellPrice > 0) {
+          sellable.push({ containerRef: container, slotIdx: i, slot });
+        }
       }
     }
-    if (totalGold > 0) {
-      inventory.addItem("coin", totalGold);
-      this._showFeedback("Toplu sat\u0131\u015f: +" + totalGold + " alt\u0131n (" + stacks + " y\u0131\u011f\u0131n)", "#f0d050");
+    return sellable;
+  }
+
+  _sellPickerLiveSlot(picker, inventory) {
+    if (!picker) return null;
+    const slot = picker.containerRef[picker.slotIdx];
+    if (!slot || slot.id !== picker.itemId) return null;
+    const def = ITEMS[slot.id];
+    if (!def || def.sellPrice <= 0) return null;
+    return slot;
+  }
+
+  _sellPickerLayout(L) {
+    const d = { x: Math.floor(L.px + (L.pw - 300) / 2), y: L.py + 102, w: 300, h: 188 };
+    const track = { x: d.x + 48, y: d.y + 102, w: d.w - 96, h: 12 };
+    const btnY = d.y + 132;
+    const btnSell = { x: d.x + 18, y: btnY, w: 108, h: 30 };
+    const btnAll = { x: d.x + 132, y: btnY, w: 150, h: 30 };
+    const btnCancel = { x: Math.floor(d.x + (d.w - 104) / 2), y: d.y + d.h - 38, w: 104, h: 26 };
+    const btnMinus = { x: track.x - 38, y: track.y - 5, w: 32, h: 22 };
+    const btnPlus = { x: track.x + track.w + 6, y: track.y - 5, w: 32, h: 22 };
+    return { dialog: d, track, btnSell, btnAll, btnCancel, btnMinus, btnPlus };
+  }
+
+  _sellAmountFromTrackMx(mx, track, maxCount) {
+    if (maxCount <= 1) return 1;
+    const t = Math.max(0, Math.min(1, (mx - track.x) / track.w));
+    return Math.max(1, Math.min(maxCount, Math.round(t * (maxCount - 1)) + 1));
+  }
+
+  _pointInRect(mx, my, r) {
+    return mx >= r.x && mx < r.x + r.w && my >= r.y && my < r.y + r.h;
+  }
+
+  _executeSellSlot(inventory, picker, count) {
+    const slot = this._sellPickerLiveSlot(picker, inventory);
+    if (!slot || count <= 0) return;
+    const def = ITEMS[slot.id];
+    const sellN = Math.min(count, slot.count);
+    if (sellN <= 0) return;
+    const goldGain = def.sellPrice * sellN;
+    inventory.addItem("coin", goldGain);
+    slot.count -= sellN;
+    if (slot.count <= 0) picker.containerRef[picker.slotIdx] = null;
+    if (sellN > 1) {
+      this._showFeedback(sellN + "x " + def.name + " sat\u0131ld\u0131! +" + goldGain + " alt\u0131n", "#f0d050");
     } else {
-      this._showFeedback("Sat\u0131lacak e\u015fya yok!", "#888");
+      this._showFeedback(def.name + " sat\u0131ld\u0131! +" + goldGain + " alt\u0131n", "#f0d050");
     }
+    const still = this._sellPickerLiveSlot(picker, inventory);
+    if (!still) this.sellPicker = null;
+    else picker.amount = Math.min(picker.amount, still.count);
   }
 
   handleClick(mx, my, cw, ch, inventory, shiftKey, button) {
@@ -2518,10 +3485,10 @@ class Shop {
     const L = this._layout(cw, ch);
 
     const tabBuyX = L.px + 16, tabSellX = L.px + 16 + 100, tabY = L.py + 38, tabW = 90, tabH = 24;
-    if (mx >= tabBuyX && mx < tabBuyX + tabW && my >= tabY && my < tabY + tabH) { this.tab = 0; return true; }
+    if (mx >= tabBuyX && mx < tabBuyX + tabW && my >= tabY && my < tabY + tabH) { this.tab = 0; this.sellPicker = null; return true; }
     if (mx >= tabSellX && mx < tabSellX + tabW && my >= tabY && my < tabY + tabH) { this.tab = 1; return true; }
 
-    const gridX = L.px + 16, gridY = L.py + 76;
+    const gridX = L.px + 16, gridY = this._buyGridY(L);
     const gold = inventory.countItem("coin");
 
     if (this.tab === 0) {
@@ -2535,50 +3502,72 @@ class Shop {
           const si = this.stock[i];
           const def = ITEMS[si.id];
           if (!def) return true;
-          if (si.qty <= 0) { this._showFeedback("Stok tükendi!", "#d04040"); return true; }
-          if (gold < def.buyPrice) { this._showFeedback("Yeterli altın yok!", "#d04040"); return true; }
-          inventory.removeItem("coin", def.buyPrice);
+          const price = si.price != null && si.price > 0 ? si.price : (def.buyPrice > 0 ? def.buyPrice : getShopBuyPriceForItem(si.id));
+          if (!si.unlimited && si.qty <= 0) { this._showFeedback("Stok t\u00fckendi!", "#d04040"); return true; }
+          if (gold < price) { this._showFeedback("Yeterli alt\u0131n yok!", "#d04040"); return true; }
+          inventory.removeItem("coin", price);
           inventory.addItem(si.id, 1);
-          si.qty--;
-          this._showFeedback(def.name + " satın alındı! -" + def.buyPrice + " altın");
+          if (!si.unlimited) si.qty--;
+          this._showFeedback(def.name + " sat\u0131n al\u0131nd\u0131! -" + price + " alt\u0131n");
           return true;
         }
       }
     } else {
-      const bulkBtn = this._bulkSellButtonRect(L);
-      if (button === 0 && mx >= bulkBtn.x && mx < bulkBtn.x + bulkBtn.w && my >= bulkBtn.y && my < bulkBtn.y + bulkBtn.h) {
-        this._sellBulkAll(inventory);
-        return true;
-      }
-      const sellable = [];
-      for (const container of [inventory.hotbar, inventory.slots]) {
-        for (let i = 0; i < container.length; i++) {
-          if (container[i] && container[i].id !== "coin" && ITEMS[container[i].id] && ITEMS[container[i].id].sellPrice > 0) {
-            sellable.push({ containerRef: container, slotIdx: i, slot: container[i] });
+      if (button !== 0) return true;
+      const U0 = this._sellPickerLayout(L);
+      if (this.sellPicker) {
+        const live0 = this._sellPickerLiveSlot(this.sellPicker, inventory);
+        if (!live0) {
+          this.sellPicker = null;
+        } else if (this._pointInRect(mx, my, U0.dialog)) {
+          const live = live0;
+          const maxCount = live.count;
+          const U = this._sellPickerLayout(L);
+          if (this._pointInRect(mx, my, U.btnMinus)) {
+            this.sellPicker.amount = Math.max(1, this.sellPicker.amount - 1);
+            return true;
           }
+          if (this._pointInRect(mx, my, U.btnPlus)) {
+            this.sellPicker.amount = Math.min(maxCount, this.sellPicker.amount + 1);
+            return true;
+          }
+          const trackHit = { x: U.track.x - 2, y: U.track.y - 8, w: U.track.w + 4, h: U.track.h + 16 };
+          if (this._pointInRect(mx, my, trackHit)) {
+            this.sellPicker.amount = this._sellAmountFromTrackMx(mx, U.track, maxCount);
+            return true;
+          }
+          if (this._pointInRect(mx, my, U.btnSell)) {
+            const n = Math.min(this.sellPicker.amount, maxCount);
+            if (n > 0) this._executeSellSlot(inventory, this.sellPicker, n);
+            return true;
+          }
+          if (this._pointInRect(mx, my, U.btnAll)) {
+            this._executeSellSlot(inventory, this.sellPicker, maxCount);
+            return true;
+          }
+          if (this._pointInRect(mx, my, U.btnCancel)) {
+            this.sellPicker = null;
+            return true;
+          }
+          return true;
+        } else {
+          this.sellPicker = null;
         }
       }
+      const sellable = this._getSellableEntries(inventory);
       for (let i = 0; i < sellable.length; i++) {
         const row = Math.floor(i / SHOP_COLS), col = i % SHOP_COLS;
         const sx = gridX + col * (SHOP_SLOT + SHOP_GAP);
         const sy = gridY + row * (SHOP_SLOT + SHOP_GAP + 14) - this.scrollSell;
         if (sy < gridY - SHOP_SLOT || sy > L.py + L.ph) continue;
         if (mx >= sx && mx < sx + SHOP_SLOT && my >= sy && my < sy + SHOP_SLOT + 14) {
-          if (button !== 0 && button !== 2) return true;
           const s = sellable[i];
-          const def = ITEMS[s.slot.id];
-          if (button === 2 || shiftKey) {
-            const stackN = s.slot.count;
-            const totalGold = def.sellPrice * stackN;
-            inventory.addItem("coin", totalGold);
-            s.containerRef[s.slotIdx] = null;
-            this._showFeedback(stackN + "x " + def.name + " sat\u0131ld\u0131! +" + totalGold + " alt\u0131n", "#f0d050");
-            return true;
-          }
-          inventory.addItem("coin", def.sellPrice);
-          s.slot.count--;
-          if (s.slot.count <= 0) s.containerRef[s.slotIdx] = null;
-          this._showFeedback(def.name + " satıldı! +" + def.sellPrice + " altın", "#f0d050");
+          this.sellPicker = {
+            containerRef: s.containerRef,
+            slotIdx: s.slotIdx,
+            itemId: s.slot.id,
+            amount: 1,
+          };
           return true;
         }
       }
@@ -2590,6 +3579,7 @@ class Shop {
     if (!this.open) return;
     const L = this._layout(cw, ch);
     if (mx >= L.px && mx < L.px + L.pw && my >= L.py && my < L.py + L.ph) {
+      if (this.tab === 1 && this.sellPicker) this.sellPicker = null;
       if (this.tab === 0) this.scrollBuy = Math.max(0, this.scrollBuy + dy * 20);
       else this.scrollSell = Math.max(0, this.scrollSell + dy * 20);
     }
@@ -2597,9 +3587,22 @@ class Shop {
 
   handleMouseMove(mx, my, cw, ch, inventory) {
     this.tooltipItem = null;
+    this.tooltipBuyPrice = null;
+    this.tooltipSpecial = false;
     if (!this.open) return;
     const L = this._layout(cw, ch);
-    const gridX = L.px + 16, gridY = L.py + 76;
+    const gridX = L.px + 16, gridY = this._buyGridY(L);
+
+    if (this.tab === 1 && this.sellPicker && canvasMouse0Down) {
+      const live = this._sellPickerLiveSlot(this.sellPicker, inventory);
+      if (live) {
+        const U = this._sellPickerLayout(L);
+        const trackHit = { x: U.track.x - 2, y: U.track.y - 8, w: U.track.w + 4, h: U.track.h + 16 };
+        if (this._pointInRect(mx, my, trackHit)) {
+          this.sellPicker.amount = this._sellAmountFromTrackMx(mx, U.track, live.count);
+        }
+      }
+    }
 
     if (this.tab === 0) {
       for (let i = 0; i < this.stock.length; i++) {
@@ -2607,25 +3610,26 @@ class Shop {
         const sx = gridX + col * (SHOP_SLOT + SHOP_GAP);
         const sy = gridY + row * (SHOP_SLOT + SHOP_GAP + 14) - this.scrollBuy;
         if (mx >= sx && mx < sx + SHOP_SLOT && my >= sy && my < sy + SHOP_SLOT) {
-          this.tooltipItem = this.stock[i].id;
+          const si = this.stock[i];
+          this.tooltipItem = si.id;
+          this.tooltipBuyPrice = si.price != null && si.price > 0 ? si.price : null;
+          this.tooltipSpecial = !!si.specialOffer;
           this.tooltipX = mx; this.tooltipY = my;
           return;
         }
       }
     } else {
-      const sellable = [];
-      for (const container of [inventory.hotbar, inventory.slots]) {
-        for (let i = 0; i < container.length; i++) {
-          if (container[i] && container[i].id !== "coin" && ITEMS[container[i].id] && ITEMS[container[i].id].sellPrice > 0)
-            sellable.push(container[i]);
-        }
+      if (this.sellPicker) {
+        const U = this._sellPickerLayout(L);
+        if (this._pointInRect(mx, my, U.dialog)) return;
       }
+      const sellable = this._getSellableEntries(inventory);
       for (let i = 0; i < sellable.length; i++) {
         const row = Math.floor(i / SHOP_COLS), col = i % SHOP_COLS;
         const sx = gridX + col * (SHOP_SLOT + SHOP_GAP);
         const sy = gridY + row * (SHOP_SLOT + SHOP_GAP + 14) - this.scrollSell;
         if (mx >= sx && mx < sx + SHOP_SLOT && my >= sy && my < sy + SHOP_SLOT) {
-          this.tooltipItem = sellable[i].id;
+          this.tooltipItem = sellable[i].slot.id;
           this.tooltipX = mx; this.tooltipY = my;
           return;
         }
@@ -2667,8 +3671,17 @@ class Shop {
     ctx.fillStyle = this.tab === 1 ? "#f0d050" : "#888"; ctx.font = "bold 12px monospace";
     ctx.fillText("Sat", tabSellX + 28, tabY + 16);
 
-    const gridX = L.px + 16, gridY = L.py + 76;
-    const clipBottom = this.tab === 1 ? L.py + L.ph - 44 : L.py + L.ph - 10;
+    const rotLeft = Math.max(0, SHOP_SPECIAL_ROTATE_SEC - this.specialT);
+    const mm = Math.floor(rotLeft / 60);
+    const ss = Math.floor(rotLeft % 60);
+    const ssPad = ss < 10 ? "0" + ss : String(ss);
+    ctx.fillStyle = "#e8c070"; ctx.font = "bold 10px monospace";
+    ctx.fillText("\u2605 \u00d6zel teklif yenileme: " + mm + ":" + ssPad, L.px + 16, L.py + 56);
+    ctx.fillStyle = "#7a7a98"; ctx.font = "9px monospace";
+    ctx.fillText("Ok, iksir, yiyecek ve temel malzemeler s\u0131n\u0131rs\u0131z stok.", L.px + 16, L.py + 72);
+
+    const gridX = L.px + 16, gridY = this._buyGridY(L);
+    const clipBottom = this.tab === 1 && !this.sellPicker ? L.py + L.ph - 28 : L.py + L.ph - 10;
 
     ctx.save();
     ctx.beginPath();
@@ -2683,33 +3696,40 @@ class Shop {
 
     ctx.restore();
 
-    if (this.tab === 1) {
-      const b = this._bulkSellButtonRect(L);
-      ctx.fillStyle = "rgba(100,70,35,0.9)";
-      ctx.strokeStyle = "#d8a040"; ctx.lineWidth = 1;
-      roundRect(ctx, b.x, b.y, b.w, b.h, 5); ctx.fill(); ctx.stroke();
-      ctx.fillStyle = "#f0e8c0"; ctx.font = "bold 11px monospace";
-      const bulkLabel = "T\u00fcm sat\u0131labilirleri sat";
-      ctx.fillText(bulkLabel, b.x + (b.w - ctx.measureText(bulkLabel).width) / 2, b.y + 16);
-      ctx.fillStyle = "#908070"; ctx.font = "9px monospace";
-      ctx.fillText("Stek: sa\u011f t\u0131k veya Shift+t\u0131k", b.x + 8, b.y - 6);
+    if (this.tab === 1 && !this.sellPicker) {
+      ctx.fillStyle = "#6a6a88"; ctx.font = "9px monospace";
+      ctx.fillText("Sat\u0131lacak y\u0131\u011f\u0131na t\u0131kla; miktar\u0131 kayd\u0131r\u0131c\u0131dan se\u00e7, Sat veya T\u00fcm\u00fcn\u00fc sat.", L.px + 16, L.py + L.ph - 14);
     }
+
+    if (this.tab === 1 && this.sellPicker) this._renderSellPicker(ctx, L, inventory);
 
     if (this.tooltipItem) {
       const def = ITEMS[this.tooltipItem];
       if (def) {
-        const ttW = 170, ttH = 58;
+        const buyP = this.tooltipBuyPrice != null
+          ? this.tooltipBuyPrice
+          : (def.buyPrice > 0 ? def.buyPrice : getShopBuyPriceForItem(this.tooltipItem));
+        const ttW = 200;
+        const ttH = this.tooltipSpecial ? 86 : 62;
         let tx = this.tooltipX + 14, ty = this.tooltipY - ttH - 4;
         if (tx + ttW > cw) tx = this.tooltipX - ttW - 4;
         if (ty < 0) ty = this.tooltipY + 14;
-        ctx.fillStyle = "rgba(5,5,20,0.95)"; ctx.strokeStyle = "#6060a0"; ctx.lineWidth = 1;
+        ctx.fillStyle = "rgba(5,5,20,0.95)"; ctx.strokeStyle = this.tooltipSpecial ? "#d0a040" : "#6060a0"; ctx.lineWidth = this.tooltipSpecial ? 2 : 1;
         roundRect(ctx, tx, ty, ttW, ttH, 5); ctx.fill(); ctx.stroke();
         ctx.fillStyle = "#f0d050"; ctx.font = "bold 12px monospace";
         ctx.fillText(def.name, tx + 8, ty + 16);
-        ctx.fillStyle = "#a0a0c0"; ctx.font = "11px monospace";
-        ctx.fillText(def.desc, tx + 8, ty + 32);
-        ctx.fillStyle = "#80d080"; ctx.fillText("Al: " + def.buyPrice + "g", tx + 8, ty + 48);
-        ctx.fillStyle = "#d0a040"; ctx.fillText("Sat: " + def.sellPrice + "g", tx + 85, ty + 48);
+        ctx.fillStyle = "#a0a0c0"; ctx.font = "10px monospace";
+        const dline = def.desc.length > 34 ? def.desc.slice(0, 34) + "\u2026" : def.desc;
+        ctx.fillText(dline, tx + 8, ty + 32);
+        let priceY = ty + 48;
+        if (this.tooltipSpecial) {
+          ctx.fillStyle = "#ffd080"; ctx.font = "9px monospace";
+          ctx.fillText("S\u0131n\u0131rl\u0131 \u00f6zel teklif; s\u00fcre dolunca yerine ba\u015fka e\u015fya gelir.", tx + 8, ty + 46);
+          priceY = ty + 62;
+        }
+        ctx.fillStyle = "#80d080"; ctx.font = "11px monospace";
+        ctx.fillText("Al: " + buyP + "g", tx + 8, priceY);
+        ctx.fillStyle = "#d0a040"; ctx.fillText("Sat: " + def.sellPrice + "g", tx + 108, priceY);
       }
     }
 
@@ -2732,36 +3752,146 @@ class Shop {
       const sx = gridX + col * (SHOP_SLOT + SHOP_GAP);
       const sy = gridY + row * (SHOP_SLOT + SHOP_GAP + 14) - this.scrollBuy;
 
-      const canBuy = gold >= def.buyPrice && si.qty > 0;
+      const price = si.price != null && si.price > 0 ? si.price : (def.buyPrice > 0 ? def.buyPrice : getShopBuyPriceForItem(si.id));
+      const canBuy = gold >= price && (si.unlimited || si.qty > 0);
+
       ctx.fillStyle = canBuy ? "rgba(50,70,50,0.6)" : "rgba(40,40,60,0.4)";
       ctx.strokeStyle = canBuy ? "#60a060" : "#404060"; ctx.lineWidth = 1;
       roundRect(ctx, sx, sy, SHOP_SLOT, SHOP_SLOT, 4); ctx.fill(); ctx.stroke();
+      if (si.specialOffer) {
+        ctx.strokeStyle = "rgba(255,200,80,0.85)"; ctx.lineWidth = 2;
+        roundRect(ctx, sx + 1, sy + 1, SHOP_SLOT - 2, SHOP_SLOT - 2, 4); ctx.stroke();
+      }
 
       drawItemIcon(ctx, si.id, sx + 6, sy + 4, SHOP_SLOT - 12);
 
-      if (si.qty > 0) {
+      if (si.specialOffer) {
+        ctx.fillStyle = "#ffd090"; ctx.font = "bold 8px monospace";
+        ctx.fillText("\u00d6ZEL", sx + 3, sy + 12);
+      }
+
+      if (si.unlimited) {
+        ctx.fillStyle = "#9cf"; ctx.font = "bold 11px monospace";
+        ctx.fillText("\u221e", sx + SHOP_SLOT - 16, sy + SHOP_SLOT - 3);
+      } else if (si.qty > 0) {
         ctx.fillStyle = "#aaa"; ctx.font = "9px monospace";
         ctx.fillText("x" + si.qty, sx + SHOP_SLOT - 18, sy + SHOP_SLOT - 3);
       } else {
         ctx.fillStyle = "rgba(0,0,0,0.5)"; ctx.fillRect(sx, sy, SHOP_SLOT, SHOP_SLOT);
-        ctx.fillStyle = "#d04040"; ctx.font = "bold 9px monospace";
-        ctx.fillText("TÜKENDİ", sx + 2, sy + SHOP_SLOT / 2 + 3);
+        ctx.fillStyle = "#d04040"; ctx.font = "bold 8px monospace";
+        ctx.fillText("T\u00dcKEND\u0130", sx + 2, sy + SHOP_SLOT / 2 + 3);
       }
 
       ctx.fillStyle = canBuy ? "#80d080" : "#806060"; ctx.font = "bold 10px monospace";
-      const priceText = def.buyPrice + "g";
+      const priceText = price + "g";
       ctx.fillText(priceText, sx + (SHOP_SLOT - ctx.measureText(priceText).width) / 2, sy + SHOP_SLOT + 11);
     }
   }
 
-  _renderSellTab(ctx, gridX, gridY, inventory) {
-    const sellable = [];
-    for (const container of [inventory.hotbar, inventory.slots]) {
-      for (let i = 0; i < container.length; i++) {
-        if (container[i] && container[i].id !== "coin" && ITEMS[container[i].id] && ITEMS[container[i].id].sellPrice > 0)
-          sellable.push(container[i]);
-      }
+  _renderSellPicker(ctx, L, inventory) {
+    const picker = this.sellPicker;
+    if (!picker) return;
+    const slot = this._sellPickerLiveSlot(picker, inventory);
+    if (!slot) {
+      this.sellPicker = null;
+      return;
     }
+    const def = ITEMS[slot.id];
+    if (!def) {
+      this.sellPicker = null;
+      return;
+    }
+    const maxCount = slot.count;
+    picker.amount = Math.max(1, Math.min(maxCount, picker.amount));
+    const amt = picker.amount;
+    const U = this._sellPickerLayout(L);
+    const d = U.dialog;
+
+    ctx.fillStyle = "rgba(0,0,0,0.42)";
+    ctx.fillRect(L.px, L.py, L.pw, L.ph);
+
+    ctx.fillStyle = "rgba(22,22,48,0.98)";
+    ctx.strokeStyle = "#d8a040";
+    ctx.lineWidth = 2;
+    roundRect(ctx, d.x, d.y, d.w, d.h, 8);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = "#f0d050";
+    ctx.font = "bold 13px monospace";
+    ctx.fillText(def.name, d.x + 14, d.y + 26);
+    ctx.fillStyle = "#a8a8c8";
+    ctx.font = "11px monospace";
+    ctx.fillText("Bu y\u0131\u011f\u0131nda: " + maxCount + " adet", d.x + 14, d.y + 46);
+    ctx.fillText("Birim sat\u0131\u015f: " + def.sellPrice + "g", d.x + 14, d.y + 60);
+    ctx.fillText("Se\u00e7ilen: " + amt + " adet  \u2192  +" + (def.sellPrice * amt) + "g", d.x + 14, d.y + 74);
+
+    const tr = U.track;
+    ctx.fillStyle = "rgba(0,0,0,0.45)";
+    roundRect(ctx, tr.x, tr.y, tr.w, tr.h, 4);
+    ctx.fill();
+    ctx.strokeStyle = "#606080";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(tr.x, tr.y, tr.w, tr.h);
+
+    const tThumb = maxCount <= 1 ? 0.5 : (amt - 1) / (maxCount - 1);
+    const cx = tr.x + tThumb * tr.w;
+    ctx.fillStyle = "#f0e8c0";
+    ctx.beginPath();
+    ctx.arc(cx, tr.y + tr.h / 2, 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#c0a050";
+    ctx.stroke();
+
+    ctx.fillStyle = "#c8c8e8";
+    ctx.font = "bold 14px monospace";
+    ctx.fillText("\u2212", U.btnMinus.x + 10, U.btnMinus.y + 16);
+    ctx.fillText("+", U.btnPlus.x + 11, U.btnPlus.y + 16);
+    ctx.strokeStyle = "#707090";
+    roundRect(ctx, U.btnMinus.x, U.btnMinus.y, U.btnMinus.w, U.btnMinus.h, 3);
+    ctx.stroke();
+    roundRect(ctx, U.btnPlus.x, U.btnPlus.y, U.btnPlus.w, U.btnPlus.h, 3);
+    ctx.stroke();
+
+    ctx.fillStyle = "rgba(60,120,60,0.85)";
+    ctx.strokeStyle = "#70d070";
+    roundRect(ctx, U.btnSell.x, U.btnSell.y, U.btnSell.w, U.btnSell.h, 5);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#e8ffe8";
+    ctx.font = "bold 11px monospace";
+    ctx.fillText("Sat", U.btnSell.x + 38, U.btnSell.y + 20);
+
+    ctx.fillStyle = "rgba(120,80,40,0.85)";
+    ctx.strokeStyle = "#d8a060";
+    roundRect(ctx, U.btnAll.x, U.btnAll.y, U.btnAll.w, U.btnAll.h, 5);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#fff0e0";
+    ctx.font = "bold 11px monospace";
+    ctx.fillText("T\u00fcm\u00fcn\u00fc sat", U.btnAll.x + 28, U.btnAll.y + 20);
+
+    ctx.fillStyle = "rgba(50,50,70,0.9)";
+    ctx.strokeStyle = "#606080";
+    roundRect(ctx, U.btnCancel.x, U.btnCancel.y, U.btnCancel.w, U.btnCancel.h, 4);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#aaa";
+    ctx.font = "10px monospace";
+    ctx.fillText("\u0130ptal", U.btnCancel.x + 36, U.btnCancel.y + 17);
+
+    const ix = d.x + d.w - 52, iy = d.y + 10;
+    ctx.fillStyle = "rgba(40,40,55,0.95)";
+    ctx.strokeStyle = "#8080a0";
+    ctx.lineWidth = 1;
+    roundRect(ctx, ix, iy, 40, 40, 4);
+    ctx.fill();
+    ctx.stroke();
+    drawItemIcon(ctx, slot.id, ix + 5, iy + 4, 30);
+  }
+
+  _renderSellTab(ctx, gridX, gridY, inventory) {
+    const sellable = this._getSellableEntries(inventory);
 
     if (sellable.length === 0) {
       ctx.fillStyle = "#666"; ctx.font = "12px monospace";
@@ -2770,7 +3900,7 @@ class Shop {
     }
 
     for (let i = 0; i < sellable.length; i++) {
-      const slot = sellable[i];
+      const slot = sellable[i].slot;
       const def = ITEMS[slot.id];
       const row = Math.floor(i / SHOP_COLS), col = i % SHOP_COLS;
       const sx = gridX + col * (SHOP_SLOT + SHOP_GAP);
@@ -2884,14 +4014,91 @@ class HUD {
     ctx.fillStyle = "#f0f0f0"; ctx.font = "11px monospace";
     if (touchState.mobileUI) {
       ctx.fillText(
-        "Mobil: sol joystick | sa\u011f s\u00fctun: E/Q/I/P/M/B/F | \u2694 k\u0131sa: sald\u0131r\u0131, uzun: g\u00fc\u00e7l\u00fc ok | \u00d7 kapat",
+        "Mobil: sol joystick | sa\u011f: E/Q/R/I/P/M/B/F | \u2694 k\u0131sa: sald\u0131r\u0131, uzun: g\u00fc\u00e7l\u00fc ok | altta iksir kutular\u0131 | \u00d7 kapat",
         10,
         canvasH - 10
       );
     } else {
-      ctx.fillText("WASD: Hareket | E: Etkile\u015fim | I: Envanter | Q: \u0130ksir | Shift: G\u00fc\u00e7l\u00fc At\u0131\u015f | B: Tekne | M: Harita", 10, canvasH - 10);
+      ctx.fillText("WASD: Hareket | E: Etkile\u015fim | C: Karakter | I: Envanter | Q/R: \u0130ksir | Shift: G\u00fc\u00e7 | B: Tekne | M: Harita", 10, canvasH - 10);
     }
   }
+}
+
+/** T\u0131klanabilir can/mana iksiri d\u00fc\u011fmeleri (son kare hit-test i\u00e7in) */
+let combatPotionRects = null;
+
+function layoutCombatPotions(cw, ch) {
+  const w = 50, h = 50, gap = 8, pad = 10;
+  const y = ch - h - pad - 24;
+  const x1 = cw - pad - w * 2 - gap;
+  const x2 = cw - pad - w;
+  combatPotionRects = [
+    { kind: "hp", x: x1, y, w, h, key: "Q" },
+    { kind: "mana", x: x2, y, w, h, key: "R" },
+  ];
+  return combatPotionRects;
+}
+
+function drawCombatPotions(ctx, cw, ch, inventory) {
+  const rects = layoutCombatPotions(cw, ch);
+  for (const r of rects) {
+    const id = r.kind === "hp" ? "potion" : "potion_mana";
+    const n = inventory.countItem(id);
+    ctx.fillStyle = "rgba(12,12,28,0.88)";
+    roundRect(ctx, r.x - 2, r.y - 14, r.w + 4, r.h + 18, 6);
+    ctx.fill();
+    ctx.strokeStyle = n > 0 ? "#7080a8" : "#504050";
+    ctx.lineWidth = 1;
+    roundRect(ctx, r.x - 2, r.y - 14, r.w + 4, r.h + 18, 6);
+    ctx.stroke();
+    drawItemIcon(ctx, id, r.x + 6, r.y + 4, r.w - 12);
+    ctx.fillStyle = n > 0 ? "#e0e8ff" : "#806060";
+    ctx.font = "bold 10px monospace";
+    ctx.fillText(String(n), r.x + r.w - 14, r.y + r.h - 4);
+    ctx.fillStyle = "#a0a8c0";
+    ctx.font = "9px monospace";
+    ctx.fillText("[" + r.key + "]", r.x + 4, r.y - 4);
+  }
+}
+
+function tryUseHpPotion() {
+  if (inventory.countItem("potion") <= 0) {
+    pickupMsgText = "Can iksirin yok!";
+    pickupMsgTimer = 1;
+    return false;
+  }
+  inventory.removeItem("potion", 1);
+  const healAmt = 32 + (player.wis + player._eqWis) * 3;
+  player.heal(healAmt);
+  pickupMsgText = "+" + Math.floor(healAmt) + " HP";
+  pickupMsgTimer = 1.2;
+  return true;
+}
+
+function tryUseManaPotion() {
+  if (inventory.countItem("potion_mana") <= 0) {
+    pickupMsgText = "Mana iksirin yok!";
+    pickupMsgTimer = 1;
+    return false;
+  }
+  inventory.removeItem("potion_mana", 1);
+  const amt = 28 + (player.wis + player._eqWis) * 2;
+  player.mana = Math.min(player.maxMana, player.mana + amt);
+  pickupMsgText = "+" + Math.floor(amt) + " MP";
+  pickupMsgTimer = 1.2;
+  return true;
+}
+
+function tryCombatPotionClick(mx, my) {
+  if (!combatPotionRects) return false;
+  for (const r of combatPotionRects) {
+    if (mx >= r.x - 2 && mx < r.x + r.w + 2 && my >= r.y - 14 && my < r.y + r.h + 6) {
+      if (r.kind === "hp") tryUseHpPotion();
+      else tryUseManaPotion();
+      return true;
+    }
+  }
+  return false;
 }
 
 /* ── Procedural World Generation ─────────────────────────── */
@@ -2919,7 +4126,7 @@ function fbm(x, y, oct) {
   return v / tot;
 }
 
-const WORLD_COLS = 280, WORLD_ROWS = 200;
+const WORLD_COLS = 420, WORLD_ROWS = 300;
 const VCOLS = 40, VROWS = 30;
 const VOX = Math.floor((WORLD_COLS - VCOLS) / 2);
 const VOY = Math.floor((WORLD_ROWS - VROWS) / 2);
@@ -2928,20 +4135,54 @@ const ORIG_GROUND = [5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5
 const ORIG_DETAIL = [-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,6,-1,-1,-1,-1,6,-1,-1,6,-1,-1,-1,-1,-1,6,-1,-1,6,-1,-1,-1,-1,-1,-1,-1,6,-1,-1,-1,-1,-1,6,-1,-1,6,-1,-1,6,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,6,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,6,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,7,-1,-1,-1,-1,7,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,7,-1,-1,-1,-1,-1,-1,7,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,6,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,6,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,6,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,7,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,6,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,6,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,7,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,7,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,6,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,6,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,6,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,6,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,6,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,6,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,6,-1,-1,-1,-1,-1,-1,-1,-1,6,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,6,-1,-1,7,-1,-1,-1,-1,-1,-1,-1,-1,-1,7,-1,-1,-1,-1,-1,-1,6,-1,-1,-1,7,-1,-1,-1,-1,-1,-1,7,-1,-1,6,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1];
 
 const ISLANDS = [
-  { cx: 48,  cy: 42,  r: 15, name: "Orman Adas\u0131",   monsters: ["wolf","wolf","slime","slime","slime"], scale: 1.0, boss: "forest_treant" },
-  { cx: 228, cy: 48,  r: 17, name: "\u00c7\u00f6l Adas\u0131",    monsters: ["skeleton","skeleton","orc","wolf","wolf"], scale: 1.5, boss: "desert_titan" },
-  { cx: 38,  cy: 168, r: 13, name: "Kayal\u0131k Ada",  monsters: ["golem","skeleton","skeleton","orc"], scale: 1.8, boss: "rock_warden" },
-  { cx: 235, cy: 165, r: 14, name: "\u00c7i\u00e7ek Adas\u0131",  monsters: ["slime","slime","wolf","slime"], scale: 0.8, boss: "flower_queen" },
-  { cx: 140, cy: 28,  r: 11, name: "Kuzey Adas\u0131",   monsters: ["orc","orc","golem"], scale: 2.0, boss: "north_frost" },
-  { cx: 140, cy: 178, r: 12, name: "G\u00fcney Adas\u0131",  monsters: ["skeleton","wolf","orc"], scale: 1.3, boss: "south_shadow" },
+  { cx: 72,  cy: 64,  rx: 32, ry: 24, r: 26, biome: "forest", name: "Derin Orman Adas\u0131",
+    monsters: ["wolf","wolf","vine_horror","dark_knight","slime","frost_spirit"], scale: 1.15, boss: "forest_treant" },
+  { cx: 342, cy: 72,  rx: 36, ry: 22, r: 28, biome: "desert", name: "K\u0131z\u0131l Kum Adas\u0131",
+    monsters: ["dune_raider","skeleton","orc","crystalline","dune_raider","void_hound"], scale: 1.65, boss: "desert_titan" },
+  { cx: 58,  cy: 248, rx: 28, ry: 30, r: 28, biome: "barren", name: "Granit Kayal\u0131k",
+    monsters: ["golem","iron_behemoth","skeleton","crystalline","orc"], scale: 1.85, boss: "rock_warden" },
+  { cx: 352, cy: 242, rx: 30, ry: 26, r: 26, biome: "forest", name: "\u00c7i\u00e7ek Adas\u0131",
+    monsters: ["vine_horror","wolf","slime","vine_horror","frost_spirit"], scale: 0.95, boss: "flower_queen" },
+  { cx: 210, cy: 42,  rx: 38, ry: 16, r: 22, biome: "snow", name: "Buz Tac\u0131 Adas\u0131",
+    monsters: ["frost_spirit","frost_spirit","crystalline","dark_knight","void_hound"], scale: 1.9, boss: "ice_queen" },
+  { cx: 210, cy: 268, rx: 34, ry: 18, r: 24, biome: "mesa", name: "G\u00fcney K\u0131ran\u0131",
+    monsters: ["dune_raider","storm_wraith","orc","iron_behemoth"], scale: 1.5, boss: "south_shadow" },
+  { cx: 118, cy: 150, rx: 42, ry: 18, r: 28, biome: "mesa", name: "Uzun Mesa Adas\u0131",
+    monsters: ["dune_raider","crystalline","iron_behemoth","void_hound","storm_wraith"], scale: 2.0, boss: "dune_king" },
+  { cx: 300, cy: 160, rx: 28, ry: 36, r: 30, biome: "rain", name: "Muson Orman\u0131",
+    monsters: ["vine_horror","vine_horror","wolf","storm_wraith","crystalline","dark_knight"], scale: 1.75, boss: "jungle_behemoth" },
+  { cx: 380, cy: 160, rx: 22, ry: 22, r: 20, biome: "storm", name: "F\u0131rt\u0131na Kayas\u0131",
+    monsters: ["storm_wraith","void_hound","crystalline","frost_spirit","iron_behemoth"], scale: 2.2, boss: "thunder_lord" },
+  { cx: 40,  cy: 140, rx: 24, ry: 28, r: 24, biome: "barren", name: "U\u00e7urum Resifi",
+    monsters: ["void_hound","crystalline","golem","iron_behemoth","storm_wraith"], scale: 2.1, boss: "abyss_crab" },
+  { cx: 320, cy: 28,  rx: 26, ry: 20, r: 22, biome: "volcanic", name: "Lav Dilimi",
+    monsters: ["iron_behemoth","orc","crystalline","dune_raider","dark_knight"], scale: 2.35, boss: "volcanic_titan" },
 ];
 
 function islandInfluence(c, r) {
   let best = 9999;
   for (const isl of ISLANDS) {
     const dx = c - isl.cx, dy = r - isl.cy;
-    const d = Math.sqrt(dx * dx + dy * dy) - isl.r;
+    const rx = isl.rx != null ? isl.rx : isl.r;
+    const ry = isl.ry != null ? isl.ry : isl.r;
+    const e = Math.sqrt((dx * dx) / (rx * rx) + (dy * dy) / (ry * ry));
+    const d = (e - 1) * Math.min(rx, ry);
     if (d < best) best = d;
+  }
+  return best;
+}
+
+function islandCellOwner(c, r) {
+  let best = null, bestE = 999;
+  for (const isl of ISLANDS) {
+    const dx = c - isl.cx, dy = r - isl.cy;
+    const rx = isl.rx != null ? isl.rx : isl.r;
+    const ry = isl.ry != null ? isl.ry : isl.r;
+    const e = Math.sqrt((dx * dx) / (rx * rx) + (dy * dy) / (ry * ry));
+    if (e < 1 && e < bestE) {
+      bestE = e;
+      best = isl;
+    }
   }
   return best;
 }
@@ -2950,7 +4191,7 @@ function generateWorld() {
   const ground = new Array(WORLD_COLS * WORLD_ROWS);
   const detail = new Array(WORLD_COLS * WORLD_ROWS);
   const centerX = WORLD_COLS / 2, centerY = WORLD_ROWS / 2;
-  const mainR = 56;
+  const mainR = 84;
 
   for (let r = 0; r < WORLD_ROWS; r++) {
     for (let c = 0; c < WORLD_COLS; c++) {
@@ -2972,7 +4213,7 @@ function generateWorld() {
 
       const islDist = islandInfluence(c, r);
       const onIsland = islDist < 0;
-      const islandCoast = islDist >= 0 && islDist < 3;
+      const islandCoast = islDist >= 0 && islDist < 4;
 
       const nx = c / 40, ny = r / 30;
       const elevation = fbm(nx + 0.3, ny + 0.7, 4);
@@ -2996,10 +4237,50 @@ function generateWorld() {
       } else if (islandCoast) {
         tile = T.SAND;
       } else if (onIsland) {
-        const iElev = elevation * 0.6 + 0.4;
-        if (iElev > 0.75) { tile = T.STONE_FLOOR; if (h < 0.1) det = T.TREE; }
-        else if (moisture > 0.5) { tile = T.TALL_GRASS; if (h < 0.18) det = T.TREE; else if (h < 0.22) det = T.FLOWER; }
-        else { tile = T.GRASS; if (h < 0.12) det = T.TREE; else if (h < 0.15) det = T.FLOWER; }
+        const isl = islandCellOwner(c, r);
+        const biome = isl && isl.biome ? isl.biome : "forest";
+        const iElev = elevation * 0.55 + 0.42;
+        const h2 = hashXY(c * 3 + 17, r * 3 + 31);
+        if (biome === "snow") {
+          if (iElev > 0.78) {
+            tile = T.STONE_FLOOR;
+            if (h2 < 0.07) det = T.TREE;
+          } else {
+            tile = T.SNOW;
+            if (h2 < 0.1) det = T.TREE;
+            else if (h2 < 0.14) det = T.FLOWER;
+          }
+        } else if (biome === "desert" || biome === "mesa") {
+          tile = h2 < 0.42 ? T.SAND : T.DIRT;
+          if (h2 < 0.06 && tile === T.DIRT) det = T.FLOWER;
+          if (biome === "mesa" && iElev > 0.72) {
+            tile = T.STONE_FLOOR;
+            if (h2 < 0.08) det = T.TREE;
+          }
+        } else if (biome === "rain" || biome === "jungle") {
+          tile = moisture > 0.42 ? T.TALL_GRASS : T.GRASS;
+          if (h2 < 0.22) det = T.TREE;
+          else if (h2 < 0.28) det = T.FLOWER;
+        } else if (biome === "storm") {
+          tile = iElev > 0.7 ? T.STONE_FLOOR : T.DIRT;
+          if (h2 < 0.12) det = T.TREE;
+        } else if (biome === "volcanic") {
+          tile = iElev > 0.65 ? T.STONE_FLOOR : T.DIRT;
+          if (h2 < 0.1) det = T.TREE;
+          else if (h2 < 0.14 && tile === T.DIRT) det = T.FLOWER;
+        } else if (biome === "barren") {
+          if (iElev > 0.74) {
+            tile = T.STONE_FLOOR;
+            if (h2 < 0.09) det = T.TREE;
+          } else {
+            tile = T.DIRT;
+            if (h2 < 0.05) det = T.FLOWER;
+          }
+        } else {
+          if (iElev > 0.75) { tile = T.STONE_FLOOR; if (h < 0.1) det = T.TREE; }
+          else if (moisture > 0.5) { tile = T.TALL_GRASS; if (h < 0.18) det = T.TREE; else if (h < 0.22) det = T.FLOWER; }
+          else { tile = T.GRASS; if (h < 0.12) det = T.TREE; else if (h < 0.15) det = T.FLOWER; }
+        }
       } else {
         if (elevation < 0.28) {
           tile = T.WATER;
@@ -3235,6 +4516,7 @@ class Minimap {
       [T.SAND]: [212,188,106], [T.STONE_FLOOR]: [138,138,138], [T.WALL]: [60,60,60],
       [T.TREE]: [30,90,20], [T.FLOWER]: [74,140,63], [T.BRIDGE]: [122,92,48],
       [T.TALL_GRASS]: [55,120,45],
+      [T.SNOW]: [200,220,235],
     };
 
     for (let py = 0; py < this.h; py++) {
@@ -3330,47 +4612,49 @@ const VILLAGE_NPCS = [
              "A\u011fa\u00e7lar\u0131 kesip odun toplayabilirsin.","Dikkatli ol, d\u0131\u015far\u0131s\u0131 tehlikeli!"], wanderRadius: 2 },
   { col: VOX+25, row: VOY+12, name: "T\u00fcccar Elif", color: "#c05050",
     dialog: ["Ho\u015f geldin! D\u00fckk\u00e2n\u0131ma g\u00f6z at!"], wanderRadius: 0,
-    merchant: true, stock: [
-      { id: "arrow", qty: 50 }, { id: "bow", qty: 2 }, { id: "apple", qty: 10 },
-      { id: "fish", qty: 8 }, { id: "seed", qty: 20 }, { id: "potion", qty: 5 },
-      { id: "axe", qty: 2 }, { id: "sword", qty: 1 }, { id: "flower", qty: 15 },
-      { id: "wood", qty: 30 }, { id: "rope", qty: 10 },
+    merchant: true, shopPool: "village", stock: [
+      { special: true }, { special: true },
+      { id: "arrow" }, { id: "potion" }, { id: "potion_mana" }, { id: "seed" }, { id: "apple" }, { id: "fish" },
+      { id: "flower" }, { id: "wood" }, { id: "stone" }, { id: "rope" },
+      { id: "axe", qty: 2 }, { id: "sword", qty: 1 }, { id: "bow", qty: 2 },
     ]},
   { col: VOX+22, row: VOY+5, name: "Muhtar", color: "#40a060",
     dialog: ["Ben bu k\u00f6y\u00fcn muhtar\u0131y\u0131m.","K\u00f6y\u00fc ke\u015ffetmekten \u00e7ekinme.",
              "G\u00fcneyin g\u00f6l kenar\u0131 \u00e7ok g\u00fczeldir.","D\u0131\u015far\u0131da dev bir d\u00fcnya seni bekliyor!"], wanderRadius: 0 },
-  { col: 30,  row: 25,  name: "Ormanc\u0131", color: "#3a7030",
+  { col: 45,  row: 38,  name: "Ormanc\u0131", color: "#3a7030",
     dialog: ["Bat\u0131 ormanlar\u0131nda odun bol.","Ama dikkat et, kayal\u0131klar tehlikeli."], wanderRadius: 3 },
-  { col: 160, row: 40,  name: "\u00c7\u00f6l Gezgini", color: "#c0a040",
+  { col: 240, row: 60,  name: "\u00c7\u00f6l Gezgini", color: "#c0a040",
     dialog: ["Do\u011fu \u00e7\u00f6l\u00fc s\u0131cak ama zengin.","Kumlar\u0131n alt\u0131nda hazineler var."], wanderRadius: 2 },
-  { col: 155, row: 42,  name: "\u00c7\u00f6l T\u00fcccar\u0131", color: "#d0b060",
+  { col: 232, row: 63,  name: "\u00c7\u00f6l T\u00fcccar\u0131", color: "#d0b060",
     dialog: ["Nadir mallar\u0131m var!"], wanderRadius: 0,
-    merchant: true, stock: [
-      { id: "arrow", qty: 80 }, { id: "bow", qty: 1 }, { id: "potion", qty: 10 },
-      { id: "sword", qty: 3 }, { id: "axe", qty: 3 }, { id: "stone", qty: 40 },
-      { id: "fish", qty: 12 }, { id: "rope", qty: 15 },
+    merchant: true, shopPool: "desert", stock: [
+      { special: true }, { special: true },
+      { id: "arrow" }, { id: "potion" }, { id: "potion_mana" }, { id: "stone" }, { id: "fish" }, { id: "rope" },
+      { id: "flower" }, { id: "apple" }, { id: "seed" },
+      { id: "sword", qty: 3 }, { id: "axe", qty: 3 }, { id: "bow", qty: 1 },
     ]},
-  { col: 50,  row: 120, name: "Bal\u0131k\u00e7\u0131", color: "#4080b0",
+  { col: 75,  row: 180, name: "Bal\u0131k\u00e7\u0131", color: "#4080b0",
     dialog: ["G\u00fcney g\u00f6lleri bal\u0131kla dolu.","Bir olta bul ve gel!"], wanderRadius: 2 },
-  { col: 140, row: 110, name: "Da\u011fc\u0131", color: "#806040",
+  { col: 210, row: 165, name: "Da\u011fc\u0131", color: "#806040",
     dialog: ["Kuzeydo\u011fu da\u011flar\u0131 sert ama g\u00fczel.","Orada nadir ta\u015flar bulabilirsin."], wanderRadius: 1 },
-  { col: 30, row: 18, name: "Orman Bekçisi", color: "#2a7030",
+  { col: 45, row: 27, name: "Orman Bekçisi", color: "#2a7030",
     dialog: ["Orman Adas\u0131'na ho\u015f geldin!","Burada nadir bitkiler ve odun bol.","Dikkat et, orman derinleri tehlikeli!"], wanderRadius: 2 },
-  { col: 172, row: 18, name: "Çöl Bilgini", color: "#d0a040",
+  { col: 258, row: 27, name: "Çöl Bilgini", color: "#d0a040",
     dialog: ["\u00c7\u00f6l Adas\u0131'n\u0131n s\u0131rlar\u0131n\u0131 bilirim.","Kumlar\u0131n alt\u0131nda eski bir hazine var."], wanderRadius: 1 },
-  { col: 170, row: 22, name: "Ada T\u00fcccar\u0131", color: "#b08030",
+  { col: 255, row: 33, name: "Ada T\u00fcccar\u0131", color: "#b08030",
     dialog: ["Nadir adalar mallar\u0131!"], wanderRadius: 0,
-    merchant: true, stock: [
-      { id: "rope", qty: 20 }, { id: "arrow", qty: 40 }, { id: "potion", qty: 8 },
-      { id: "bow", qty: 1 }, { id: "sword", qty: 2 }, { id: "fish", qty: 15 },
+    merchant: true, shopPool: "island", stock: [
+      { special: true }, { special: true },
+      { id: "arrow" }, { id: "potion" }, { id: "potion_mana" }, { id: "rope" }, { id: "fish" }, { id: "wood" },
+      { id: "bow", qty: 1 }, { id: "sword", qty: 2 },
     ]},
-  { col: 18, row: 132, name: "Ya\u015fl\u0131 Bal\u0131k\u00e7\u0131", color: "#4080b0",
+  { col: 27, row: 198, name: "Ya\u015fl\u0131 Bal\u0131k\u00e7\u0131", color: "#4080b0",
     dialog: ["Kayalık Ada'da en g\u00fczel bal\u0131klar tutulur.","Halat al\u0131rsan tekne yapabilirsin."], wanderRadius: 1 },
-  { col: 177, row: 128, name: "\u00c7i\u00e7ek\u00e7i", color: "#d060a0",
+  { col: 265, row: 192, name: "\u00c7i\u00e7ek\u00e7i", color: "#d060a0",
     dialog: ["\u00c7i\u00e7ek Adas\u0131 cennet gibidir!","Nadir \u00e7i\u00e7ekler sadece burada yeti\u015fir."], wanderRadius: 2 },
-  { col: 100, row: 8, name: "Kuzey Kaşifi", color: "#60a0c0",
+  { col: 150, row: 12, name: "Kuzey Kaşifi", color: "#60a0c0",
     dialog: ["Kuzeyin so\u011fuk r\u00fczg\u00e2rlar\u0131 sert eser.","Ama burasnin ta\u015flar\u0131 \u00e7ok de\u011ferli!"], wanderRadius: 1 },
-  { col: 100, row: 138, name: "G\u00fcney Muhaf\u0131z\u0131", color: "#a06040",
+  { col: 150, row: 207, name: "G\u00fcney Muhaf\u0131z\u0131", color: "#a06040",
     dialog: ["G\u00fcney Adas\u0131'n\u0131n koruyucusuyum.","Burada gizli bir \u00e7e\u015fme varm\u0131\u015f!"], wanderRadius: 1 },
   { col: 98, row: VOY + VROWS + 1, name: "Liman Reisi", color: "#3080a0",
     dialog: ["\u0130skeleye ho\u015f geldin, denizci!","Tekne yapmak i\u00e7in 15 odun, 5 ta\u015f ve 3 halat topla.",
@@ -3379,9 +4663,9 @@ const VILLAGE_NPCS = [
              "Uzak adalarda hazineler ve nadir kaynaklar var."], wanderRadius: 0 },
   { col: 102, row: VOY + VROWS + 1, name: "Liman T\u00fcccar\u0131", color: "#4090b0",
     dialog: ["Deniz malzemeleri burada!"], wanderRadius: 0,
-    merchant: true, stock: [
-      { id: "rope", qty: 20 }, { id: "wood", qty: 40 }, { id: "stone", qty: 20 },
-      { id: "arrow", qty: 60 }, { id: "potion", qty: 10 }, { id: "fish", qty: 15 },
+    merchant: true, shopPool: "dock", stock: [
+      { special: true }, { special: true },
+      { id: "rope" }, { id: "wood" }, { id: "stone" }, { id: "arrow" }, { id: "potion" }, { id: "potion_mana" }, { id: "fish" },
     ]},
 ];
 
@@ -3393,18 +4677,18 @@ const WILD_PETS_DATA = [
   { col: VOX+8,  row: VOY+22, type: "bunny" },
   { col: VOX+32, row: VOY+24, type: "bird" },
   { col: VOX+18, row: VOY+26, type: "fox" },
-  { col: 25,  row: 30,  type: "bunny" },
-  { col: 170, row: 35,  type: "bird" },
-  { col: 40,  row: 130, type: "cat" },
-  { col: 155, row: 120, type: "fox" },
-  { col: 100, row: 20,  type: "dog" },
-  { col: 28,  row: 22,  type: "fox" },
-  { col: 34,  row: 18,  type: "bunny" },
-  { col: 172, row: 24,  type: "bird" },
-  { col: 22,  row: 130, type: "cat" },
-  { col: 175, row: 130, type: "bunny" },
-  { col: 100, row: 12,  type: "bird" },
-  { col: 100, row: 142, type: "fox" },
+  { col: 38,  row: 45,  type: "bunny" },
+  { col: 255, row: 52,  type: "bird" },
+  { col: 60,  row: 195, type: "cat" },
+  { col: 232, row: 180, type: "fox" },
+  { col: 150, row: 30,  type: "dog" },
+  { col: 42,  row: 33,  type: "fox" },
+  { col: 51,  row: 27,  type: "bunny" },
+  { col: 258, row: 36,  type: "bird" },
+  { col: 33,  row: 195, type: "cat" },
+  { col: 262, row: 195, type: "bunny" },
+  { col: 150, row: 18,  type: "bird" },
+  { col: 150, row: 213, type: "fox" },
 ];
 
 const WORLD_ITEMS_DATA = [
@@ -3420,48 +4704,49 @@ const WORLD_ITEMS_DATA = [
   { col: VOX+28, row: VOY+26, item: "sword",  count: 1 },
   { col: VOX+10, row: VOY+17, item: "fish",   count: 2 },
   { col: VOX+33, row: VOY+15, item: "potion", count: 1 },
+  { col: VOX+31, row: VOY+17, item: "potion_mana", count: 2 },
   { col: VOX+20, row: VOY+6,  item: "coin",   count: 10 },
   { col: VOX+24, row: VOY+24, item: "coin",   count: 5 },
-  { col: 20,  row: 20,  item: "wood",   count: 8 },
-  { col: 35,  row: 45,  item: "stone",  count: 6 },
-  { col: 170, row: 30,  item: "seed",   count: 10 },
-  { col: 160, row: 50,  item: "apple",  count: 3 },
-  { col: 45,  row: 125, item: "fish",   count: 4 },
-  { col: 150, row: 115, item: "potion", count: 2 },
-  { col: 100, row: 15,  item: "wood",   count: 5 },
-  { col: 100, row: 135, item: "stone",  count: 5 },
-  { col: 15,  row: 80,  item: "coin",   count: 15 },
-  { col: 185, row: 80,  item: "sword",  count: 1 },
-  { col: 50,  row: 10,  item: "axe",    count: 1 },
-  { col: 130, row: 140, item: "coin",   count: 20 },
-  { col: 75,  row: 70,  item: "apple",  count: 2 },
-  { col: 120, row: 30,  item: "flower", count: 3 },
-  { col: 30,  row: 100, item: "potion", count: 1 },
-  { col: 175, row: 100, item: "seed",   count: 8 },
+  { col: 30,  row: 30,  item: "wood",   count: 8 },
+  { col: 52,  row: 68,  item: "stone",  count: 6 },
+  { col: 255, row: 45,  item: "seed",   count: 10 },
+  { col: 240, row: 75,  item: "apple",  count: 3 },
+  { col: 68,  row: 188, item: "fish",   count: 4 },
+  { col: 225, row: 172, item: "potion", count: 2 },
+  { col: 150, row: 22,  item: "wood",   count: 5 },
+  { col: 150, row: 202, item: "stone",  count: 5 },
+  { col: 22,  row: 120, item: "coin",   count: 15 },
+  { col: 278, row: 120, item: "sword",  count: 1 },
+  { col: 75,  row: 15,  item: "axe",    count: 1 },
+  { col: 195, row: 210, item: "coin",   count: 20 },
+  { col: 112, row: 105, item: "apple",  count: 2 },
+  { col: 180, row: 45,  item: "flower", count: 3 },
+  { col: 45,  row: 150, item: "potion", count: 1 },
+  { col: 262, row: 150, item: "seed",   count: 8 },
   { col: VOX+20, row: VOY+13, item: "arrow", count: 15 },
   { col: VOX+19, row: VOY+13, item: "bow",   count: 1 },
-  { col: 40,  row: 50,  item: "arrow", count: 10 },
-  { col: 150, row: 30,  item: "arrow", count: 12 },
-  { col: 90,  row: 90,  item: "arrow", count: 8 },
+  { col: 60,  row: 75,  item: "arrow", count: 10 },
+  { col: 225, row: 45,  item: "arrow", count: 12 },
+  { col: 135, row: 135, item: "arrow", count: 8 },
   { col: VOX+10, row: VOY+20, item: "rope", count: 2 },
   { col: VOX+30, row: VOY+20, item: "rope", count: 1 },
-  { col: 60,  row: 70,  item: "rope", count: 2 },
-  { col: 130, row: 50,  item: "rope", count: 1 },
-  { col: 28,  row: 18,  item: "wood",  count: 10 },
-  { col: 32,  row: 22,  item: "wood",  count: 8 },
-  { col: 34,  row: 16,  item: "flower", count: 5 },
-  { col: 168, row: 22,  item: "stone", count: 8 },
-  { col: 174, row: 16,  item: "coin",  count: 25 },
-  { col: 18,  row: 128, item: "fish",  count: 6 },
-  { col: 22,  row: 134, item: "stone", count: 5 },
-  { col: 20,  row: 126, item: "rope",  count: 3 },
-  { col: 173, row: 132, item: "flower", count: 8 },
-  { col: 178, row: 126, item: "seed",  count: 10 },
-  { col: 176, row: 134, item: "potion", count: 2 },
-  { col: 98,  row: 8,   item: "stone", count: 6 },
-  { col: 102, row: 12,  item: "arrow", count: 15 },
-  { col: 98,  row: 142, item: "coin",  count: 30 },
-  { col: 102, row: 138, item: "potion", count: 3 },
+  { col: 90,  row: 105, item: "rope", count: 2 },
+  { col: 195, row: 75,  item: "rope", count: 1 },
+  { col: 42,  row: 27,  item: "wood",  count: 10 },
+  { col: 48,  row: 33,  item: "wood",  count: 8 },
+  { col: 51,  row: 24,  item: "flower", count: 5 },
+  { col: 252, row: 33,  item: "stone", count: 8 },
+  { col: 261, row: 24,  item: "coin",  count: 25 },
+  { col: 27,  row: 192, item: "fish",  count: 6 },
+  { col: 33,  row: 201, item: "stone", count: 5 },
+  { col: 30,  row: 189, item: "rope",  count: 3 },
+  { col: 260, row: 198, item: "flower", count: 8 },
+  { col: 267, row: 189, item: "seed",  count: 10 },
+  { col: 264, row: 201, item: "potion", count: 2 },
+  { col: 147, row: 12,  item: "stone", count: 6 },
+  { col: 153, row: 18,  item: "arrow", count: 15 },
+  { col: 147, row: 213, item: "coin",  count: 30 },
+  { col: 153, row: 207, item: "potion", count: 3 },
   { col: worldData.dockCol - 1, row: VOY + VROWS + 2, item: "rope",  count: 2 },
   { col: worldData.dockCol + 1, row: VOY + VROWS + 2, item: "wood",  count: 5 },
 ];
@@ -3485,7 +4770,12 @@ camera.y = player.y - window.innerHeight / 2;
 function isSafeSpawn(col, row) { return !map.isSolid(col, row); }
 
 function findBossSpawn(isl) {
-  const tries = [[0, 0], [2, 0], [-2, 0], [0, 2], [0, -2], [3, 2], [-2, 3], [4, 0], [0, 4], [-3, -2]];
+  const rx = isl.rx != null ? isl.rx : isl.r;
+  const tries = [
+    [0, 0], [2, 0], [-2, 0], [0, 2], [0, -2], [3, 2], [-2, 3], [4, 0], [0, 4], [-3, -2],
+    [Math.floor(rx * 0.35), 0], [0, Math.floor((isl.ry || isl.r) * 0.3)], [-Math.floor(rx * 0.3), 1],
+    [1, 3], [-4, 0], [0, -4], [5, -2], [-5, 2],
+  ];
   for (const [ox, oy] of tries) {
     const mc = Math.floor(isl.cx + ox), mr = Math.floor(isl.cy + oy);
     if (mc >= 0 && mc < WORLD_COLS && mr >= 0 && mr < WORLD_ROWS && isSafeSpawn(mc, mr))
@@ -3508,16 +4798,27 @@ let activePet = null;
 const arrows = [];
 
 const MAINLAND_MONSTERS = [
-  { col: 60,  row: 50,  type: "slime" },  { col: 70,  row: 55,  type: "slime" },
-  { col: 140, row: 45,  type: "slime" },  { col: 130, row: 55,  type: "slime" },
-  { col: 50,  row: 80,  type: "slime" },  { col: 150, row: 80,  type: "slime" },
-  { col: 55,  row: 100, type: "wolf" },   { col: 145, row: 100, type: "wolf" },
-  { col: 65,  row: 70,  type: "wolf" },   { col: 135, row: 70,  type: "wolf" },
-  { col: 40,  row: 65,  type: "skeleton" },{ col: 160, row: 65,  type: "skeleton" },
-  { col: 80,  row: 45,  type: "skeleton" },{ col: 120, row: 110, type: "skeleton" },
-  { col: 50,  row: 115, type: "orc" },    { col: 155, row: 110, type: "orc" },
-  { col: 75,  row: 105, type: "slime" },  { col: 125, row: 40,  type: "slime" },
-  { col: 110, row: 105, type: "wolf" },   { col: 85,  row: 40,  type: "wolf" },
+  { col: 90,  row: 75,  type: "slime" }, { col: 105, row: 82,  type: "slime" },
+  { col: 210, row: 68,  type: "slime" }, { col: 195, row: 82,  type: "slime" },
+  { col: 75,  row: 120, type: "slime" }, { col: 225, row: 120, type: "slime" },
+  { col: 82,  row: 150, type: "wolf" }, { col: 218, row: 150, type: "wolf" },
+  { col: 98,  row: 105, type: "wolf" }, { col: 202, row: 105, type: "wolf" },
+  { col: 60,  row: 98,  type: "skeleton" }, { col: 240, row: 98,  type: "skeleton" },
+  { col: 120, row: 68,  type: "skeleton" }, { col: 180, row: 165, type: "skeleton" },
+  { col: 75,  row: 172, type: "orc" }, { col: 232, row: 165, type: "orc" },
+  { col: 112, row: 158, type: "slime" }, { col: 188, row: 60,  type: "slime" },
+  { col: 165, row: 158, type: "wolf" }, { col: 128, row: 60,  type: "wolf" },
+  { col: 150, row: 135, type: "golem" }, { col: 145, row: 90,  type: "orc" },
+  { col: 48,  row: 135, type: "dark_knight" }, { col: 255, row: 130, type: "dark_knight" },
+  { col: 130, row: 48,  type: "frost_spirit" }, { col: 170, row: 52, type: "frost_spirit" },
+  { col: 300, row: 95,  type: "dune_raider" }, { col: 315, row: 110, type: "dune_raider" },
+  { col: 85,  row: 195, type: "vine_horror" }, { col: 220, row: 200, type: "vine_horror" },
+  { col: 340, row: 130, type: "crystalline" }, { col: 355, row: 145, type: "crystalline" },
+  { col: 32,  row: 165, type: "void_hound" }, { col: 268, row: 55, type: "void_hound" },
+  { col: 148, row: 118, type: "iron_behemoth" }, { col: 285, row: 75, type: "iron_behemoth" },
+  { col: 360, row: 200, type: "storm_wraith" }, { col: 175, row: 185, type: "storm_wraith" },
+  { col: 115, row: 210, type: "golem" }, { col: 200, row: 40, type: "crystalline" },
+  { col: 52,  row: 72,  type: "wolf" }, { col: 380, row: 88, type: "skeleton" },
 ];
 
 function spawnMonsters() {
@@ -3530,9 +4831,10 @@ function spawnMonsters() {
     const mList = isl.monsters;
     for (let i = 0; i < mList.length; i++) {
       const angle = (i / mList.length) * Math.PI * 2;
-      const dist = isl.r * 0.5;
-      const mc = Math.floor(isl.cx + Math.cos(angle) * dist);
-      const mr = Math.floor(isl.cy + Math.sin(angle) * dist);
+      const rx = isl.rx != null ? isl.rx : isl.r;
+      const ry = isl.ry != null ? isl.ry : isl.r;
+      const mc = Math.floor(isl.cx + Math.cos(angle) * rx * 0.45);
+      const mr = Math.floor(isl.cy + Math.sin(angle) * ry * 0.45);
       if (isSafeSpawn(mc, mr)) list.push(new Monster(mc, mr, mList[i], isl.scale || 1));
     }
     if (isl.boss && MONSTER_TYPES[isl.boss]) {
@@ -3557,6 +4859,8 @@ function dropMonsterLoot(m, worldItems) {
 
 const MELEE_RANGE = 46;
 const MELEE_CONE_HALF = Math.PI * 0.42;
+/** Ok fırlatılırken bu yarıçap içindeki en yakın canavara doğrudan nişan (uçuşta takip yok). */
+const ARROW_AIM_ASSIST_RANGE = TILE_SIZE * 13;
 
 function angleAbsDiff(a, b) {
   let d = a - b;
@@ -3573,6 +4877,19 @@ function playerHasBladeWeapon(inv) {
 function playerHasBowEquipped(inv) {
   const e = inv.equipped && inv.equipped.bow;
   return !!(e && ITEMS[e.id] && ITEMS[e.id].equipSlot === "bow");
+}
+
+function arrowLaunchAngleTowardNearestInRange(fromX, fromY, fallbackAngle, monsters) {
+  let best = null;
+  let bestD = Infinity;
+  for (const m of monsters) {
+    if (!m.alive || m.state === "dying") continue;
+    const d = m.distTo(fromX, fromY);
+    if (d < 6 || d > ARROW_AIM_ASSIST_RANGE) continue;
+    if (d < bestD) { bestD = d; best = m; }
+  }
+  if (!best) return fallbackAngle;
+  return Math.atan2(best.cy - fromY, best.cx - fromX);
 }
 
 function tryPlayerMeleeAttack(player, inventory, monsters) {
@@ -3611,7 +4928,8 @@ function tryReleasePowerShotClick() {
     player.shootAnim = 0.3;
     const sx = player.centerX + Math.cos(player.angle) * 14;
     const sy = player.centerY + Math.sin(player.angle) * 14;
-    const pa = new Arrow(sx, sy, player.angle);
+    const aimAng = arrowLaunchAngleTowardNearestInRange(sx, sy, player.angle, monsters);
+    const pa = new Arrow(sx, sy, aimAng);
     pa.power = true;
     pa.damage = player.getPowerDamage();
     pa.speed *= 1.5;
@@ -3635,7 +4953,8 @@ function tryMeleeOrRangedClick() {
       player.shootAnim = 0.25;
       const sx = player.centerX + Math.cos(player.angle) * 14;
       const sy = player.centerY + Math.sin(player.angle) * 14;
-      const na = new Arrow(sx, sy, player.angle);
+      const aimAng = arrowLaunchAngleTowardNearestInRange(sx, sy, player.angle, monsters);
+      const na = new Arrow(sx, sy, aimAng);
       na.damage = player.getRangedDamage();
       arrows.push(na);
       player.gainXP(1);
@@ -3650,6 +4969,12 @@ function tryMeleeOrRangedClick() {
 
 canvas.addEventListener("mousedown", (e) => {
   if (e.sourceCapabilities && e.sourceCapabilities.firesTouchEvents) return;
+  if (e.button === 0) canvasMouse0Down = true;
+  if (charPanel.open) {
+    charPanel.handleClick(e.clientX, e.clientY, canvasW, canvasH, player, inventory);
+    e.preventDefault();
+    return;
+  }
   if (craftPanel.open) {
     craftPanel.handleClick(e.clientX, e.clientY, canvasW, canvasH, inventory, player);
     e.preventDefault(); return;
@@ -3658,10 +4983,22 @@ canvas.addEventListener("mousedown", (e) => {
     shop.handleClick(e.clientX, e.clientY, canvasW, canvasH, inventory, e.shiftKey, e.button);
     e.preventDefault(); return;
   }
+  if (inventory.open && e.button === 0) {
+    if (inventory.tryBeginEquipLongPress(e.clientX, e.clientY, canvasW, canvasH)) {
+      e.preventDefault(); return;
+    }
+  }
   const handled = inventory.handleClick(e.clientX, e.clientY, canvasW, canvasH, e.button === 2);
   if (handled) { e.preventDefault(); return; }
 
-  if (e.button === 0 && !inventory.open && !petPanel.open && !dialog.active && !shop.open && !craftPanel.open && !player.inBoat) {
+  if (e.button === 0 && !inventory.open && !petPanel.open && !dialog.active && !shop.open && !craftPanel.open && !charPanel.open) {
+    if (tryCombatPotionClick(e.clientX, e.clientY)) {
+      e.preventDefault();
+      return;
+    }
+  }
+
+  if (e.button === 0 && !inventory.open && !petPanel.open && !dialog.active && !shop.open && !craftPanel.open && !charPanel.open && !player.inBoat) {
     if (player.powerCharging && player.powerCharge > 0.1) {
       tryReleasePowerShotClick();
     } else {
@@ -3672,7 +5009,14 @@ canvas.addEventListener("mousedown", (e) => {
 canvas.addEventListener("contextmenu", (e) => { if (inventory.open || shop.open) e.preventDefault(); });
 canvas.addEventListener("mousemove", (e) => {
   inventory.handleMouseMove(e.clientX, e.clientY, canvasW, canvasH);
+  if (inventory.open) inventory.cancelSlotPressIfMovedOff(e.clientX, e.clientY, canvasW, canvasH);
   shop.handleMouseMove(e.clientX, e.clientY, canvasW, canvasH, inventory);
+});
+window.addEventListener("mouseup", (e) => {
+  if (e.button === 0) {
+    canvasMouse0Down = false;
+    if (inventory.open) inventory.finishSlotPress(e.clientX, e.clientY, canvasW, canvasH, false);
+  }
 });
 canvas.addEventListener("wheel", (e) => {
   if (shop.open) { shop.handleScroll(e.deltaY > 0 ? 1 : -1, e.clientX, e.clientY, canvasW, canvasH); e.preventDefault(); }
@@ -3685,6 +5029,7 @@ function tryMobileClosePanels(mx, my) {
   if (craftPanel.open) { craftPanel.close(); return true; }
   if (inventory.open) { inventory.close(); return true; }
   if (petPanel.open) { petPanel.close(); return true; }
+  if (charPanel.open) { charPanel.close(); return true; }
   return false;
 }
 
@@ -3713,6 +5058,11 @@ function handleCanvasTouchStart(e) {
       continue;
     }
 
+    if (charPanel.open) {
+      charPanel.handleClick(mx, my, canvasW, canvasH, player, inventory);
+      continue;
+    }
+
     if (petPanel.open && activePet) {
       const pw = 240, ph = 180;
       const px = Math.floor((canvasW - pw) / 2), py = Math.floor((canvasH - ph) / 2);
@@ -3726,6 +5076,8 @@ function handleCanvasTouchStart(e) {
     }
 
     if (!touchState.mobileUI) continue;
+
+    if (!shop.open && !craftPanel.open && tryCombatPotionClick(mx, my)) continue;
 
     const br = hitMobileButton(mx, my, canvasW, canvasH);
     if (br) {
@@ -3778,7 +5130,10 @@ function handleCanvasTouchMove(e) {
       touchState.aimY = my;
     }
 
-    if (inventory.open) inventory.handleMouseMove(mx, my, canvasW, canvasH);
+    if (inventory.open) {
+      inventory.handleMouseMove(mx, my, canvasW, canvasH);
+      inventory.cancelSlotPressIfMovedOff(mx, my, canvasW, canvasH);
+    }
     if (shop.open) shop.handleMouseMove(mx, my, canvasW, canvasH, inventory);
   }
   e.preventDefault();
@@ -3790,6 +5145,7 @@ function pulseMobileButtonKey(key) {
     return;
   }
   if (key === "KeyQ") pulseJust("KeyQ");
+  else if (key === "KeyR") pulseJust("KeyR");
   else if (key === "KeyI") pulseJust("KeyI");
   else if (key === "KeyP") pulseJust("KeyP");
   else if (key === "KeyM") pulseJust("KeyM");
@@ -3802,6 +5158,11 @@ function handleCanvasTouchEnd(e) {
     const t = e.changedTouches[i];
     const mx = t.clientX, my = t.clientY, id = t.identifier;
 
+    if (inventory.open && id === touchState.invSlotPressId) {
+      touchState.invSlotPressId = -1;
+      inventory.finishSlotPress(mx, my, canvasW, canvasH, false);
+    }
+
     if (id === touchState.joyId) {
       touchState.joyId = -1;
       touchState.joyDx = 0;
@@ -3812,7 +5173,7 @@ function handleCanvasTouchEnd(e) {
     if (id === touchState.attackId) {
       const held = performance.now() - touchState.attackT0;
       touchState.attackId = -1;
-      if (!inventory.open && !petPanel.open && !dialog.active && !shop.open && !craftPanel.open && !player.inBoat) {
+      if (!inventory.open && !petPanel.open && !dialog.active && !shop.open && !craftPanel.open && !charPanel.open && !player.inBoat) {
         if (held < 240) {
           player.powerCharging = false;
           player.powerCharge = 0;
@@ -3852,7 +5213,7 @@ canvas.addEventListener("touchcancel", handleCanvasTouchCancel, { passive: false
 function renderTouchOverlay(ctx) {
   if (!touchState.mobileUI) return;
   const cw = canvasW, ch = canvasH;
-  const modal = dialog.active || inventory.open || petPanel.open || shop.open || craftPanel.open;
+  const modal = dialog.active || inventory.open || petPanel.open || shop.open || craftPanel.open || charPanel.open;
   if (modal) {
     ctx.fillStyle = "rgba(30,30,50,0.85)";
     roundRect(ctx, cw - 50, 8, 42, 40, 8);
@@ -3959,7 +5320,7 @@ function tryChopTree(player, map, inventory) {
 function handleInteraction() {
   if (actionCooldown > 0) return;
 
-  if (inventory.open || petPanel.open || shop.open) return;
+  if (inventory.open || petPanel.open || shop.open || charPanel.open) return;
 
   if (dialog.active) { dialog.advance(); actionCooldown = 0.2; return; }
 
@@ -4007,7 +5368,7 @@ function handleInteraction() {
   for (const npc of npcs) {
     if (npc.isNearPlayer(player)) {
       if (npc.merchant && npc.stock) {
-        shop.openShop(npc.name, npc.stock);
+        shop.openShop(npc.name, npc.stock, npc.shopPool);
       } else {
         dialog.show(npc.name, npc.dialog);
       }
@@ -4023,20 +5384,44 @@ function gameLoop(now) {
   const dt = Math.min((now - lastTime) / 1000, 0.1);
   lastTime = now;
 
+  if (inventory.open) {
+    inventory.updateSlotLongPress(dt, mouseX, mouseY, canvasW, canvasH);
+  }
+
   if (wasJustPressed("Escape")) {
     if (dialog.active) dialog.close();
     else if (shop.open) shop.close();
     else if (craftPanel.open) craftPanel.close();
     else if (inventory.open) inventory.close();
     else if (petPanel.open) petPanel.close();
-  } else if (wasJustPressed("KeyI") || wasJustPressed("Tab")) { inventory.toggle(); if (inventory.open) { petPanel.open = false; shop.close(); craftPanel.close(); } }
-  if (wasJustPressed("KeyP")) { petPanel.toggle(); if (petPanel.open) { inventory.open = false; shop.close(); craftPanel.close(); } }
+    else if (charPanel.open) charPanel.close();
+  } else if (wasJustPressed("KeyI") || wasJustPressed("Tab")) {
+    inventory.toggle();
+    if (inventory.open) {
+      charPanel.close();
+      petPanel.open = false;
+      shop.close();
+      craftPanel.close();
+    }
+  }
+  if (wasJustPressed("KeyC") && !dialog.active) {
+    charPanel.toggle();
+  }
+  if (wasJustPressed("KeyP")) {
+    petPanel.toggle();
+    if (petPanel.open) {
+      charPanel.close();
+      inventory.open = false;
+      shop.close();
+      craftPanel.close();
+    }
+  }
   if (wasJustPressed("KeyM")) minimap.toggle();
 
   if (wasJustPressed("KeyB")) {
     if (craftPanel.open) {
       craftPanel.close();
-    } else if (!inventory.open && !petPanel.open && !shop.open && !dialog.active) {
+    } else if (!inventory.open && !petPanel.open && !shop.open && !dialog.active && !charPanel.open) {
       if (player.inBoat) {
         if (!map.isWaterPx(player.centerX, player.centerY)) {
           player.inBoat = false;
@@ -4051,6 +5436,7 @@ function gameLoop(now) {
         pickupMsgText = "Tekneye bindin! \u2693";
         pickupMsgTimer = 1.5;
       } else if (!player.hasBoat) {
+        charPanel.close();
         craftPanel.toggle();
       } else {
         pickupMsgText = "Su k\u0131y\u0131s\u0131na yakla\u015f!";
@@ -4059,10 +5445,10 @@ function gameLoop(now) {
     }
   }
   for (let n = 1; n <= 5; n++) {
-    if (wasJustPressed("Digit" + n)) inventory.selectedHotbar = n - 1;
+    if (wasJustPressed("Digit" + n) && !charPanel.open) inventory.selectedHotbar = n - 1;
   }
 
-  if (wasJustPressed("KeyF") && activePet && !inventory.open && !petPanel.open && !shop.open && !dialog.active) {
+  if (wasJustPressed("KeyF") && activePet && !inventory.open && !petPanel.open && !shop.open && !dialog.active && !charPanel.open) {
     const selSlot = inventory.hotbar[inventory.selectedHotbar];
     if (selSlot) {
       const foodItems = ["apple", "fish", "flower", "seed"];
@@ -4083,7 +5469,7 @@ function gameLoop(now) {
 
   shop.update(dt);
   craftPanel.update(dt);
-  const uiOpen = dialog.active || inventory.open || petPanel.open || shop.open || craftPanel.open;
+  const uiOpen = dialog.active || inventory.open || petPanel.open || shop.open || craftPanel.open || charPanel.open;
 
   const mobilePowerHold = touchState.mobileUI && touchState.attackId >= 0 &&
     (performance.now() - touchState.attackT0 > 220) && !player.inBoat;
@@ -4094,19 +5480,8 @@ function gameLoop(now) {
     player.powerCharging = false; player.powerCharge = 0;
   }
 
-  if (wasJustPressed("KeyQ") && !uiOpen) {
-    if (inventory.countItem("potion") > 0) {
-      inventory.removeItem("potion", 1);
-      const healAmt = 30 + (player.wis + player._eqWis) * 3;
-      player.heal(healAmt);
-      pickupMsgText = "+" + healAmt + " HP iyile\u015ftirildi!";
-      pickupMsgTimer = 1.5;
-      player.gainXP(1);
-    } else {
-      pickupMsgText = "\u0130ksirin yok!";
-      pickupMsgTimer = 1;
-    }
-  }
+  if (wasJustPressed("KeyQ") && !uiOpen) tryUseHpPotion();
+  if (wasJustPressed("KeyR") && !uiOpen) tryUseManaPotion();
 
   if (!uiOpen) {
     if (touchState.mobileUI && touchState.aimId >= 0) {
@@ -4126,7 +5501,7 @@ function gameLoop(now) {
 
   for (const wi of worldItems) wi.update(dt);
   for (const wp of wildPets) if (wp.alive) wp.update(dt, map);
-  if (activePet) activePet.update(dt, player, map);
+  if (activePet) activePet.update(dt, player, map, worldItems, inventory);
 
   if (!uiOpen) {
     for (const m of monsters) {
@@ -4297,7 +5672,7 @@ function gameLoop(now) {
   if (activePet && !player.inBoat) renderables.push(activePet);
   renderables.sort((a, b) => (a.y + (a.h || 16)) - (b.y + (b.h || 16)));
   for (const e of renderables) {
-    if (e === player) player.render(ctx, inventory);
+    if (e === player) player.render(ctx, inventory, monsters);
     else e.render(ctx);
   }
   if (player.inBoat) player.renderBoat(ctx);
@@ -4317,8 +5692,9 @@ function gameLoop(now) {
 
     ctx.fillStyle = "#f0d050"; ctx.font = "bold 11px monospace";
     ctx.fillText("Lv." + player.level + "  Okçu", hx + pad, hy + 14);
-    ctx.fillStyle = "#a0a0b0"; ctx.font = "9px monospace";
-    ctx.fillText("STR:" + player.str + " AGI:" + player.agi + " WIS:" + player.wis, hx + pad, hy + 24);
+    ctx.fillStyle = player.statPoints > 0 ? "#ffd080" : "#a0a0b0";
+    ctx.font = "9px monospace";
+    ctx.fillText("STR:" + player.str + " AGI:" + player.agi + " WIS:" + player.wis + (player.statPoints > 0 ? "  [C] +" + player.statPoints : ""), hx + pad, hy + 24);
 
     let by = hy + 28;
 
@@ -4380,6 +5756,8 @@ function gameLoop(now) {
       ctx.fillStyle = "#80c0ff"; ctx.font = "bold 12px monospace";
       ctx.fillText("\u2693 Teknede", hx + 14, extraY + 18);
     }
+
+    drawCombatPotions(ctx, canvasW, canvasH, inventory);
   }
 
   inventory.render(ctx, canvasW, canvasH, mouseX, mouseY);
@@ -4394,6 +5772,8 @@ function gameLoop(now) {
     minimap.render(ctx, canvasW, canvasH, camera, player, npcs, wildPets, activePet);
   }
 
+  charPanel.render(ctx, canvasW, canvasH, player, inventory);
+
   if (player.levelUpTimer > 0) {
     const t = player.levelUpTimer;
     const alpha = Math.min(1, t / 0.5);
@@ -4403,7 +5783,7 @@ function gameLoop(now) {
     const lvText = "\u2B50 Seviye " + player.level + "!";
     ctx.fillText(lvText, canvasW / 2 - ctx.measureText(lvText).width / 2, canvasH / 2 - 80 - (2.5 - t) * 20);
     ctx.fillStyle = "#c0c0d0"; ctx.font = "13px monospace";
-    const statText = "HP+" + 12 + "  MP+" + 8 + "  STR+" + 2 + "  AGI+" + 1;
+    const statText = "+3 stat puan\u0131  |  Taban HP+8  MP+5  |  [C] da\u011f\u0131t";
     ctx.fillText(statText, canvasW / 2 - ctx.measureText(statText).width / 2, canvasH / 2 - 55 - (2.5 - t) * 20);
     ctx.globalAlpha = 1;
   }
