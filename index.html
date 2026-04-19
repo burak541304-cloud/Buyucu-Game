@@ -239,6 +239,37 @@ function getItemRarityColor(itemId) {
   return d && d.rarity ? RARITY_COLOR[d.rarity] || "#ccc" : "#ccc";
 }
 
+const RARITY_LABEL_TR = {
+  common: "S\u0131radan",
+  rare: "Nadir",
+  epic: "Epik",
+  legendary: "Efsanevi",
+};
+
+function collectItemStatParts(def) {
+  const st = def && def.stats;
+  if (!st) return [];
+  const parts = [];
+  if (st.str) parts.push("G\u00fc\u00e7 +" + st.str);
+  if (st.agi) parts.push("\u00c7ev +" + st.agi);
+  if (st.wis) parts.push("Bil +" + st.wis);
+  if (st.maxHp) parts.push("Max HP +" + st.maxHp);
+  if (st.maxMana) parts.push("Max MP +" + st.maxMana);
+  if (st.meleeDmg) parts.push("Yak\u0131n +" + st.meleeDmg);
+  if (st.rangedDmg) parts.push("Uzak +" + st.rangedDmg);
+  return parts;
+}
+
+function splitDescLinesShop(desc, maxLen, maxLines) {
+  if (!desc) return [];
+  const lines = [];
+  for (let i = 0; i < desc.length && lines.length < maxLines; i += maxLen) {
+    lines.push(desc.slice(i, i + maxLen));
+  }
+  return lines;
+}
+
+
 function drawItemIcon(ctx, itemId, x, y, size) {
   const s = size;
   const cx = x + s / 2, cy = y + s / 2;
@@ -1523,6 +1554,8 @@ class Player {
     this.inBoat = false;
     this.hasBoat = false;
     this.boatWaveTimer = 0;
+    /** Karadan B ile indikten sonra hemen yeniden otomatik binmeyi engeller (sn). */
+    this.boatAutoBoardCooldown = 0;
 
     this.level = 1;
     this.xp = 0;
@@ -3709,27 +3742,83 @@ class Shop {
         const buyP = this.tooltipBuyPrice != null
           ? this.tooltipBuyPrice
           : (def.buyPrice > 0 ? def.buyPrice : getShopBuyPriceForItem(this.tooltipItem));
-        const ttW = 200;
-        const ttH = this.tooltipSpecial ? 86 : 62;
+        const statParts = collectItemStatParts(def);
+        let statLineCount = 0;
+        if (statParts.length) {
+          const joined = statParts.join("   ");
+          statLineCount = joined.length > 44 ? 2 : 1;
+        }
+        const descLines = splitDescLinesShop(def.desc || "", 46, 3);
+        const LH = 13;
+        let lineCount = 1;
+        if (def.rarity) lineCount++;
+        if (def.equipSlot) lineCount++;
+        lineCount += statLineCount;
+        lineCount += descLines.length;
+        if (this.tooltipSpecial && this.tab === 0) lineCount++;
+        lineCount++;
+        const padTop = 10;
+        const ttW = 240;
+        const ttH = padTop + lineCount * LH + 14;
         let tx = this.tooltipX + 14, ty = this.tooltipY - ttH - 4;
         if (tx + ttW > cw) tx = this.tooltipX - ttW - 4;
         if (ty < 0) ty = this.tooltipY + 14;
-        ctx.fillStyle = "rgba(5,5,20,0.95)"; ctx.strokeStyle = this.tooltipSpecial ? "#d0a040" : "#6060a0"; ctx.lineWidth = this.tooltipSpecial ? 2 : 1;
+        const borderGold = this.tooltipSpecial && this.tab === 0;
+        ctx.fillStyle = "rgba(5,5,20,0.96)";
+        ctx.strokeStyle = borderGold ? "#d0a040" : "#6060a0";
+        ctx.lineWidth = borderGold ? 2 : 1;
         roundRect(ctx, tx, ty, ttW, ttH, 5); ctx.fill(); ctx.stroke();
+        let ly = ty + padTop + 4;
         ctx.fillStyle = "#f0d050"; ctx.font = "bold 12px monospace";
-        ctx.fillText(def.name, tx + 8, ty + 16);
-        ctx.fillStyle = "#a0a0c0"; ctx.font = "10px monospace";
-        const dline = def.desc.length > 34 ? def.desc.slice(0, 34) + "\u2026" : def.desc;
-        ctx.fillText(dline, tx + 8, ty + 32);
-        let priceY = ty + 48;
-        if (this.tooltipSpecial) {
-          ctx.fillStyle = "#ffd080"; ctx.font = "9px monospace";
-          ctx.fillText("S\u0131n\u0131rl\u0131 \u00f6zel teklif; s\u00fcre dolunca yerine ba\u015fka e\u015fya gelir.", tx + 8, ty + 46);
-          priceY = ty + 62;
+        ctx.fillText(def.name, tx + 8, ly);
+        ly += LH;
+        if (def.rarity) {
+          ctx.fillStyle = getItemRarityColor(def.id);
+          ctx.font = "bold 10px monospace";
+          const rlab = RARITY_LABEL_TR[def.rarity] || String(def.rarity).toUpperCase();
+          ctx.fillText(rlab, tx + 8, ly);
+          ly += LH;
         }
-        ctx.fillStyle = "#80d080"; ctx.font = "11px monospace";
-        ctx.fillText("Al: " + buyP + "g", tx + 8, priceY);
-        ctx.fillStyle = "#d0a040"; ctx.fillText("Sat: " + def.sellPrice + "g", tx + 108, priceY);
+        if (def.equipSlot) {
+          ctx.fillStyle = "#a8b8e8";
+          ctx.font = "10px monospace";
+          ctx.fillText("Ku\u015fak: " + (EQ_LABELS[def.equipSlot] || def.equipSlot), tx + 8, ly);
+          ly += LH;
+        }
+        if (statParts.length) {
+          ctx.fillStyle = "#90e8a8";
+          ctx.font = "10px monospace";
+          const joined = statParts.join("   ");
+          if (joined.length <= 44) {
+            ctx.fillText(joined, tx + 8, ly);
+            ly += LH;
+          } else {
+            const mid = Math.ceil(statParts.length / 2);
+            ctx.fillText(statParts.slice(0, mid).join("  "), tx + 8, ly);
+            ly += LH;
+            ctx.fillText(statParts.slice(mid).join("  "), tx + 8, ly);
+            ly += LH;
+          }
+        }
+        ctx.fillStyle = "#a0a0c0"; ctx.font = "10px monospace";
+        for (let di = 0; di < descLines.length; di++) {
+          ctx.fillText(descLines[di], tx + 8, ly);
+          ly += LH;
+        }
+        if (this.tooltipSpecial && this.tab === 0) {
+          ctx.fillStyle = "#ffd090"; ctx.font = "9px monospace";
+          ctx.fillText("D\u00f6nen \u00f6zel teklif; s\u00fcre dolunca ba\u015fka e\u015fya gelir.", tx + 8, ly);
+          ly += LH;
+        }
+        if (this.tab === 0) {
+          ctx.fillStyle = "#80d080"; ctx.font = "bold 11px monospace";
+          ctx.fillText("Al: " + buyP + "g", tx + 8, ly);
+          ctx.fillStyle = "#d0a040";
+          ctx.fillText("Sat: " + def.sellPrice + "g", tx + 120, ly);
+        } else {
+          ctx.fillStyle = "#f0d080"; ctx.font = "bold 11px monospace";
+          ctx.fillText("Sat\u0131\u015f de\u011feri: " + def.sellPrice + "g / adet", tx + 8, ly);
+        }
       }
     }
 
@@ -3764,6 +3853,13 @@ class Shop {
       }
 
       drawItemIcon(ctx, si.id, sx + 6, sy + 4, SHOP_SLOT - 12);
+
+      if (def.rarity && def.rarity !== "common") {
+        ctx.strokeStyle = getItemRarityColor(si.id);
+        ctx.lineWidth = si.specialOffer ? 1.5 : 2;
+        roundRect(ctx, sx + 2, sy + 2, SHOP_SLOT - 4, SHOP_SLOT - 4, 3);
+        ctx.stroke();
+      }
 
       if (si.specialOffer) {
         ctx.fillStyle = "#ffd090"; ctx.font = "bold 8px monospace";
@@ -3911,6 +4007,13 @@ class Shop {
       roundRect(ctx, sx, sy, SHOP_SLOT, SHOP_SLOT, 4); ctx.fill(); ctx.stroke();
 
       drawItemIcon(ctx, slot.id, sx + 6, sy + 4, SHOP_SLOT - 12);
+
+      if (def.rarity && def.rarity !== "common") {
+        ctx.strokeStyle = getItemRarityColor(slot.id);
+        ctx.lineWidth = 2;
+        roundRect(ctx, sx + 2, sy + 2, SHOP_SLOT - 4, SHOP_SLOT - 4, 3);
+        ctx.stroke();
+      }
 
       if (slot.count > 1) {
         ctx.fillStyle = "#fff"; ctx.font = "bold 10px monospace";
@@ -5425,6 +5528,7 @@ function gameLoop(now) {
       if (player.inBoat) {
         if (!map.isWaterPx(player.centerX, player.centerY)) {
           player.inBoat = false;
+          player.boatAutoBoardCooldown = 2.2;
           pickupMsgText = "Tekneden indin!";
           pickupMsgTimer = 1.5;
         } else {
@@ -5496,6 +5600,12 @@ function gameLoop(now) {
       player.aimAt(mouseX + camera.x, mouseY + camera.y);
     }
     player.update(dt, map);
+    if (player.hasBoat && !player.inBoat && player.boatAutoBoardCooldown <= 0 &&
+        map.isNearWater(player.centerX, player.centerY, 2)) {
+      player.inBoat = true;
+      pickupMsgText = "Tekneye bindin! \u2693";
+      pickupMsgTimer = 1.2;
+    }
     for (const npc of npcs) npc.update(dt, map);
   }
 
@@ -5591,7 +5701,7 @@ function gameLoop(now) {
   }
   if (!nearNPC && !nearItem && !nearWild && !nearMonster && !nearTreeChop) {
     if (!uiOpen && player.hasBoat && !player.inBoat && map.isNearWater(player.centerX, player.centerY, 2)) {
-      hud.showInteractPrompt("[B] Tekneye bin");
+      hud.showInteractPrompt("Su k\u0131y\u0131s\u0131na yakla\u015f: tekne otomatik");
     } else if (!uiOpen && player.inBoat) {
       if (!map.isWaterPx(player.centerX, player.centerY)) {
         hud.showInteractPrompt("[B] Tekneden in");
