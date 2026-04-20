@@ -10,10 +10,27 @@
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { width: 100%; height: 100%; overflow: hidden; background: #111; touch-action: none; overscroll-behavior: none; -webkit-touch-callout: none; }
     #game-canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; touch-action: none; -webkit-user-select: none; user-select: none; }
+    #save-menu-overlay { display: none; position: fixed; inset: 0; z-index: 100; background: rgba(6, 8, 20, 0.96); overflow: auto; font-family: system-ui, "Segoe UI", sans-serif; color: #e8eaf0; padding: 16px; box-sizing: border-box; }
+    #save-menu-overlay h1 { text-align: center; font-size: 1.35rem; margin: 8px 0 4px; color: #f0d050; }
+    #save-menu-overlay .sub { text-align: center; opacity: 0.88; font-size: 0.88rem; margin-bottom: 20px; line-height: 1.4; }
+    .save-slot-card { max-width: 640px; margin: 0 auto 14px; padding: 14px 16px; border-radius: 12px; background: rgba(22, 26, 48, 0.95); border: 1px solid #506090; }
+    .save-slot-card h2 { font-size: 1rem; margin: 0 0 10px; color: #b8c8f0; }
+    .save-slot-card input[type="text"] { width: 100%; max-width: 420px; padding: 8px 10px; border-radius: 8px; border: 1px solid #405070; background: #0e1020; color: #f0f0f0; font-size: 15px; margin-bottom: 10px; box-sizing: border-box; }
+    .save-slot-card .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .save-slot-card button { padding: 8px 14px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; font-size: 14px; }
+    .save-slot-card .btn-go { background: #3a7a4a; color: #fff; }
+    .save-slot-card .btn-new { background: #4a6090; color: #fff; }
+    .save-slot-card .btn-del { background: #6a3040; color: #f0d0d0; }
+    .save-slot-card .meta { font-size: 12px; opacity: 0.75; margin-top: 8px; }
   </style>
 </head>
 <body>
 <canvas id="game-canvas"></canvas>
+<div id="save-menu-overlay" aria-hidden="true">
+  <h1>Chop &amp; Grow</h1>
+  <p class="sub">3 kayıt slotu. İsim yaz, <strong>Kaydet</strong> ile bu slota kayıt adını kaydet; <strong>Devam</strong> ile kaldığın yerden, <strong>Yeni oyun</strong> ile sıfırdan başla.</p>
+  <div id="save-slots-root"></div>
+</div>
 <script>
 "use strict";
 
@@ -41,11 +58,15 @@ let mouseX = 0, mouseY = 0;
 let canvasMouse0Down = false;
 
 window.addEventListener("keydown", (e) => {
+  if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA")) return;
   if (!keys[e.code]) justPressed[e.code] = true;
   keys[e.code] = true;
   e.preventDefault();
 });
-window.addEventListener("keyup", (e) => { keys[e.code] = false; });
+window.addEventListener("keyup", (e) => {
+  if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA")) return;
+  keys[e.code] = false;
+});
 window.addEventListener("mousemove", (e) => { mouseX = e.clientX; mouseY = e.clientY; });
 
 function isDown(code) { return !!keys[code]; }
@@ -74,6 +95,12 @@ const touchState = {
   btnDown: new Map(),
   invSlotPressId: -1,
 };
+
+/**
+ * Mobil: mini harita sa\u011f \u00fcstte; yan s\u00fctun (E, C, I, M, B, sald\u0131r\u0131) ile \u00e7ak\u0131\u015fmamas\u0131 i\u00e7in haritay\u0131 solda ka\u00e7 piksel kayd\u0131r.
+ * Gerekirse konsoldan veya kodda art\u0131r\u0131p azaltabilirsin (varsay\u0131lan ~bir yan s\u00fctun geni\u015fli\u011fi).
+ */
+let MOBILE_MINIMAP_RIGHT_RESERVE_PX = 68;
 
 function refreshMobileUI() {
   const narrow = Math.min(window.innerWidth, window.innerHeight) <= 1080;
@@ -134,10 +161,8 @@ function mobileButtonsLayout(cw, ch) {
     { key: "KeyE", label: "E" },
     { key: "KeyC", label: "C" },
     { key: "KeyI", label: "I" },
-    { key: "KeyP", label: "P" },
     { key: "KeyM", label: "M" },
     { key: "KeyB", label: "B" },
-    { key: "KeyF", label: "F" },
   ];
   for (const b of row) {
     out.push({ key: b.key, label: b.label, x, y, w, h: 32 });
@@ -1159,6 +1184,9 @@ const SLOT_SIZE = 48, SLOT_GAP = 4;
 const INV_LONG_PRESS_EQUIP_MS = 450;
 const INV_PRESS_MOVE_CANCEL = 16;
 
+/** Envanterde sol t\u0131k: ta\u015f\u0131ma yerine Giy / Yere at paneli */
+let inventorySlotInspect = null;
+
 class Inventory {
   constructor() {
     this.slots = new Array(INV_SLOTS).fill(null);
@@ -1326,9 +1354,13 @@ class Inventory {
     if (this.open) {
       this._consolidateItemStacks();
       closeWorldItemInspect();
+      closeInventorySlotInspect();
     }
     if (!this.open && this.heldItem) this._dropHeld();
-    if (!this.open) this._clearSlotPress();
+    if (!this.open) {
+      this._clearSlotPress();
+      closeInventorySlotInspect();
+    }
   }
 
   close() {
@@ -1338,6 +1370,7 @@ class Inventory {
     this.open = false;
     if (this.heldItem) this._dropHeld();
     this._clearSlotPress();
+    closeInventorySlotInspect();
   }
 
   _dropHeld() {
@@ -1407,6 +1440,7 @@ class Inventory {
   }
 
   tryBeginEquipLongPress(mx, my, canvasW, canvasH, touchId) {
+    if (inventorySlotInspect) return false;
     if (this.heldItem) return false;
     const layout = this._invLayout(canvasW, canvasH);
     const invIdx = this._hitTestSlots(mx, my, layout.slotsX, layout.slotsY, INV_SLOTS, INV_COLS, layout.slotSize, layout.slotGap);
@@ -1435,6 +1469,7 @@ class Inventory {
   }
 
   updateSlotLongPress(dt, mx, my, canvasW, canvasH) {
+    if (inventorySlotInspect) return;
     if (!this._slotPress || !this.open) return;
     const p = this._slotPress;
     if (this.heldItem) { this._clearSlotPress(); return; }
@@ -1512,6 +1547,7 @@ class Inventory {
   }
 
   _equipSlotClick(slotKey, rightClick) {
+    if (inventorySlotInspect) closeInventorySlotInspect();
     const cur = this.equipped[slotKey];
     if (rightClick && cur && !this.heldItem) {
       this.heldItem = { id: cur.id, count: 1 };
@@ -1568,6 +1604,11 @@ class Inventory {
         this._swapOrMerge(container, idx);
       }
     } else {
+      if (this.heldItem && inventorySlotInspect) closeInventorySlotInspect();
+      if (!this.heldItem && slot) {
+        openInventorySlotInspect(container === this.slots ? "slots" : "hb", idx);
+        return;
+      }
       this._swapOrMerge(container, idx);
     }
   }
@@ -1901,9 +1942,15 @@ class WorldItem {
   }
 
   tryPickup(inventory) {
-    const left = inventory.addItem(this.itemId, this.count);
-    if (left < this.count) { this.count = left; if (this.count <= 0) this.alive = false; return true; }
-    return false;
+    if (!this.alive) return false;
+    const before = Math.max(0, Math.floor(Number(this.count)) || 0);
+    if (before <= 0) return false;
+    const left = inventory.addItem(this.itemId, before);
+    const moved = before - left;
+    if (moved <= 0) return false;
+    this.count = left;
+    if (this.count <= 0) this.alive = false;
+    return true;
   }
 
   render(ctx) {
@@ -3758,11 +3805,14 @@ class Pet {
       let ldx = lx - this.centerX, ldy = ly - this.centerY;
       let ld = Math.sqrt(ldx * ldx + ldy * ldy);
       if (ld <= PET_LOOT_PICKUP_RANGE) {
-        const before = this.lootTarget.count;
-        const ok = this.lootTarget.tryPickup(inventory);
+        const wi = this.lootTarget;
+        const itemId = wi.itemId;
+        const before = wi.count;
+        const ok = wi.tryPickup(inventory);
         if (ok) {
-          const picked = before - this.lootTarget.count;
-          const def = ITEMS[this.lootTarget.itemId];
+          inventory._consolidateItemStacks();
+          const picked = before - (wi.alive ? wi.count : 0);
+          const def = ITEMS[itemId];
           if (def && picked > 0) {
             pickupMsgText = this.name + " toplad\u0131: +" + picked + " " + def.name;
             pickupMsgTimer = 1.2;
@@ -5398,6 +5448,7 @@ const WORLD_ITEM_AUTO_PICKUP_RANGE = TILE_SIZE * 1.2;
 
 function tryAutoPickupNearbyWorldItems() {
   if (worldItemInspect) return;
+  if (inventorySlotInspect) return;
   if (player.inBoat) return;
   let best = null;
   let bestD2 = 1e15;
@@ -5455,6 +5506,7 @@ function tryOpenWorldItemInspect(smx, smy) {
   if (player.inBoat) return false;
   const wi = pickWorldItemAtScreen(smx, smy);
   if (!wi) return false;
+  closeInventorySlotInspect();
   worldItemInspect = wi;
   return true;
 }
@@ -6060,7 +6112,8 @@ class Minimap {
   render(ctx, canvasW, canvasH, cam, player, npcs, wildPets, activePet) {
     if (!this.visible) return;
     const pad = 10;
-    const dx = canvasW - this.w - pad - 4;
+    const sideReserve = touchState.mobileUI ? MOBILE_MINIMAP_RIGHT_RESERVE_PX : 0;
+    const dx = canvasW - this.w - pad - 4 - sideReserve;
     const dy = pad;
 
     ctx.fillStyle = "rgba(0,0,0,0.6)";
@@ -6311,6 +6364,189 @@ const hud = new HUD();
 const inventory = new Inventory();
 const worldItems = WORLD_ITEMS_DATA.filter(d => isSafeSpawn(d.col, d.row)).map(d => new WorldItem(d.col, d.row, d.item, d.count));
 const wildPets = WILD_PETS_DATA.filter(d => isSafeSpawn(d.col, d.row)).map(d => new WildPet(d.col, d.row, d.type));
+
+function closeInventorySlotInspect() {
+  inventorySlotInspect = null;
+}
+
+function openInventorySlotInspect(kind, idx) {
+  const container = kind === "slots" ? inventory.slots : inventory.hotbar;
+  const slot = container[idx];
+  if (!slot || slot.count <= 0) return;
+  if (worldItemInspect) closeWorldItemInspect();
+  inventorySlotInspect = { kind, idx };
+}
+
+function dropInventorySlotStackToWorld(kind, idx) {
+  const container = kind === "slots" ? inventory.slots : inventory.hotbar;
+  const slot = container[idx];
+  if (!slot || slot.count <= 0) return false;
+  const baseCol = Math.floor(player.centerX / TILE_SIZE);
+  const baseRow = Math.floor(player.centerY / TILE_SIZE);
+  const offs = [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1], [2, 0], [-2, 0], [0, 2], [0, -2], [1, 1], [-1, -1], [1, -1], [-1, 1]];
+  for (const [dx, dy] of offs) {
+    const c = baseCol + dx, r = baseRow + dy;
+    if (c < 0 || r < 0 || c >= map.cols || r >= map.rows) continue;
+    if (map.isSolid(c, r, player.inBoat)) continue;
+    worldItems.push(new WorldItem(c, r, slot.id, slot.count, false));
+    container[idx] = null;
+    return true;
+  }
+  pickupMsgText = "Buraya b\u0131rak\u0131lam\u0131yor!";
+  pickupMsgTimer = 1.4;
+  return false;
+}
+
+function inventorySlotInspectLayout(cw, ch) {
+  const b = uiModalBounds(cw, ch);
+  const pw = Math.min(320, b.maxW);
+  const ph = Math.min(380, b.maxH);
+  const px = Math.floor((cw - pw) / 2);
+  const py = Math.max(b.top, Math.min(ch - ph - b.bottom, Math.floor((ch - ph) / 2)));
+  const btnH = 34;
+  const btnY = py + ph - btnH - 14;
+  const gap = 8;
+  const nBtn = 3;
+  const bw = Math.floor((pw - 32 - gap * (nBtn - 1)) / nBtn);
+  const btnEquip = { x: px + 16, y: btnY, w: bw, h: btnH };
+  const btnDrop = { x: px + 16 + bw + gap, y: btnY, w: bw, h: btnH };
+  const btnClose = { x: px + 16 + (bw + gap) * 2, y: btnY, w: bw, h: btnH };
+  return { px, py, pw, ph, btnEquip, btnDrop, btnClose };
+}
+
+function handleInventorySlotInspectClick(mx, my, cw, ch) {
+  if (!inventorySlotInspect) return false;
+  const { kind, idx } = inventorySlotInspect;
+  const container = kind === "slots" ? inventory.slots : inventory.hotbar;
+  const slot = container[idx];
+  if (!slot || slot.count <= 0) {
+    closeInventorySlotInspect();
+    return true;
+  }
+  const L = inventorySlotInspectLayout(cw, ch);
+  const inR = (r) => mx >= r.x && mx < r.x + r.w && my >= r.y && my < r.y + r.h;
+  if (inR(L.btnClose)) {
+    closeInventorySlotInspect();
+    return true;
+  }
+  if (mx < L.px || mx >= L.px + L.pw || my < L.py || my >= L.py + L.ph) {
+    closeInventorySlotInspect();
+    return false;
+  }
+  if (inR(L.btnDrop)) {
+    if (dropInventorySlotStackToWorld(kind, idx)) {
+      closeInventorySlotInspect();
+      player.applyEquipmentBonus(inventory);
+    }
+    return true;
+  }
+  if (inR(L.btnEquip)) {
+    const def = ITEMS[slot.id];
+    if (!def || !def.equipSlot) {
+      pickupMsgText = "Bu e\u015fya giyilmez.";
+      pickupMsgTimer = 1.2;
+      return true;
+    }
+    if (inventory.equipped[def.equipSlot]) {
+      pickupMsgText = "Bu ekipman slottu dolu.";
+      pickupMsgTimer = 1.2;
+      return true;
+    }
+    inventory._equipFromContainerSlot(container, idx);
+    player.applyEquipmentBonus(inventory);
+    closeInventorySlotInspect();
+    return true;
+  }
+  return true;
+}
+
+function renderInventorySlotInspect(ctx, cw, ch) {
+  if (!inventorySlotInspect || !inventory.open) return;
+  const { kind, idx } = inventorySlotInspect;
+  const container = kind === "slots" ? inventory.slots : inventory.hotbar;
+  const slot = container[idx];
+  if (!slot || slot.count <= 0) {
+    closeInventorySlotInspect();
+    return;
+  }
+  const def = ITEMS[slot.id];
+  if (!def) {
+    closeInventorySlotInspect();
+    return;
+  }
+  const L = inventorySlotInspectLayout(cw, ch);
+  ctx.fillStyle = "rgba(0,0,0,0.55)";
+  ctx.fillRect(0, 0, cw, ch);
+
+  ctx.fillStyle = "rgba(14,16,36,0.97)";
+  ctx.strokeStyle = "#7080b0";
+  ctx.lineWidth = 2;
+  roundRect(ctx, L.px, L.py, L.pw, L.ph, 12);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = "#e8e8f0";
+  ctx.font = "bold 15px monospace";
+  ctx.fillText("E\u015fya", L.px + 16, L.py + 28);
+
+  const iconS = 52;
+  const ix = L.px + 16, iy = L.py + 44;
+  drawItemIconFancy(ctx, slot.id, ix, iy, iconS, { timeMs: performance.now() });
+  ctx.fillStyle = "#f0d050";
+  ctx.font = "bold 14px monospace";
+  ctx.fillText(def.name + (slot.count > 1 ? "  x" + slot.count : ""), ix + iconS + 14, iy + 18);
+  if (def.rarity && def.rarity !== "common") {
+    ctx.fillStyle = getItemRarityColor(slot.id);
+    ctx.font = "bold 11px monospace";
+    ctx.fillText(RARITY_LABEL_TR[def.rarity] || def.rarity, ix + iconS + 14, iy + 38);
+  }
+
+  const layoutTt = buildItemTooltipLayout(ctx, def, slot.id, cw, touchState.mobileUI, { omitPrices: true, omitIdentity: true }, []);
+  let ty = iy + iconS + 12;
+  const maxY = L.btnEquip.y - 8;
+  for (const ln of layoutTt.lines) {
+    if (ty > maxY) break;
+    ctx.font = ln.font;
+    ctx.fillStyle = ln.color;
+    ctx.fillText(ln.text, L.px + 16, ty);
+    ty += touchState.mobileUI ? 19 : 15;
+  }
+
+  const canEq = !!(def.equipSlot && !inventory.equipped[def.equipSlot]);
+  ctx.fillStyle = canEq ? "rgba(45,90,55,0.92)" : "rgba(45,45,58,0.75)";
+  ctx.strokeStyle = canEq ? "#70c080" : "#505060";
+  roundRect(ctx, L.btnEquip.x, L.btnEquip.y, L.btnEquip.w, L.btnEquip.h, 6);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = canEq ? "#f0fff0" : "#707080";
+  ctx.font = "bold 11px monospace";
+  const tEq = "Giy";
+  ctx.fillText(tEq, L.btnEquip.x + (L.btnEquip.w - ctx.measureText(tEq).width) / 2, L.btnEquip.y + 22);
+
+  ctx.fillStyle = "rgba(90,55,45,0.92)";
+  ctx.strokeStyle = "#c08060";
+  roundRect(ctx, L.btnDrop.x, L.btnDrop.y, L.btnDrop.w, L.btnDrop.h, 6);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = "#ffe8e0";
+  ctx.font = "bold 11px monospace";
+  const tDr = "Yere at";
+  ctx.fillText(tDr, L.btnDrop.x + (L.btnDrop.w - ctx.measureText(tDr).width) / 2, L.btnDrop.y + 22);
+
+  ctx.fillStyle = "rgba(60,55,70,0.92)";
+  ctx.strokeStyle = "#807090";
+  roundRect(ctx, L.btnClose.x, L.btnClose.y, L.btnClose.w, L.btnClose.h, 6);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = "#ddd";
+  ctx.font = "bold 11px monospace";
+  const tCl = "Kapat";
+  ctx.fillText(tCl, L.btnClose.x + (L.btnClose.w - ctx.measureText(tCl).width) / 2, L.btnClose.y + 22);
+
+  ctx.fillStyle = "#707890";
+  ctx.font = "9px monospace";
+  ctx.fillText("Sol t\u0131k art\u0131k ta\u015f\u0131maz; giy veya yere b\u0131rak\u0131r.", L.px + 16, L.py + L.ph - 6);
+}
 const petPanel = new PetPanel();
 const shop = new Shop();
 const craftPanel = new CraftPanel();
@@ -6495,7 +6731,7 @@ function tryMeleeOrRangedClick() {
 }
 
 function combatPanelsBlockAutoAttack() {
-  return inventory.open || petPanel.open || dialog.active || shop.open || craftPanel.open || charPanel.open || !!worldItemInspect;
+  return inventory.open || petPanel.open || dialog.active || shop.open || craftPanel.open || charPanel.open || !!worldItemInspect || !!inventorySlotInspect;
 }
 
 /** Sol t\u0131k veya mobil sald\u0131r\u0131 bas\u0131l\u0131 tutuldu\u011funda cooldown/mana izin verdik\u00e7e otomatik vuru\u015f/ok. */
@@ -6524,6 +6760,13 @@ canvas.addEventListener("mousedown", (e) => {
   if (shop.open) {
     shop.handleClick(e.clientX, e.clientY, canvasW, canvasH, inventory, e.shiftKey, e.button);
     e.preventDefault(); return;
+  }
+  if (inventory.open && inventorySlotInspect && e.button === 0) {
+    if (handleInventorySlotInspectClick(e.clientX, e.clientY, canvasW, canvasH)) {
+      canvasMouse0Down = false;
+      e.preventDefault();
+      return;
+    }
   }
   if (inventory.open && e.button === 0) {
     if (inventory.tryBeginEquipLongPress(e.clientX, e.clientY, canvasW, canvasH)) {
@@ -6587,10 +6830,15 @@ function tryMobileClosePanels(mx, my) {
   if (dialog.active) { dialog.close(); return true; }
   if (shop.open) { shop.close(); return true; }
   if (craftPanel.open) { craftPanel.close(); return true; }
-  if (inventory.open) { inventory.close(); return true; }
+  if (inventory.open) {
+    if (inventorySlotInspect) { closeInventorySlotInspect(); return true; }
+    inventory.close();
+    return true;
+  }
   if (petPanel.open) { petPanel.close(); return true; }
   if (charPanel.open) { charPanel.close(); return true; }
   if (worldItemInspect) { closeWorldItemInspect(); return true; }
+  if (inventorySlotInspect) { closeInventorySlotInspect(); return true; }
   return false;
 }
 
@@ -6616,6 +6864,9 @@ function handleCanvasTouchStart(e) {
       continue;
     }
     if (inventory.open) {
+      if (inventorySlotInspect) {
+        if (handleInventorySlotInspectClick(mx, my, canvasW, canvasH)) continue;
+      }
       inventory.handleClick(mx, my, canvasW, canvasH, false);
       continue;
     }
@@ -6724,10 +6975,8 @@ function pulseMobileButtonKey(key) {
   else if (key === "KeyR") pulseJust("KeyR");
   else if (key === "KeyC") pulseJust("KeyC");
   else if (key === "KeyI") pulseJust("KeyI");
-  else if (key === "KeyP") pulseJust("KeyP");
   else if (key === "KeyM") pulseJust("KeyM");
   else if (key === "KeyB") pulseJust("KeyB");
-  else if (key === "KeyF") pulseJust("KeyF");
 }
 
 function handleCanvasTouchEnd(e) {
@@ -6780,7 +7029,7 @@ canvas.addEventListener("touchcancel", handleCanvasTouchCancel, { passive: false
 function renderTouchOverlay(ctx) {
   if (!touchState.mobileUI) return;
   const cw = canvasW, ch = canvasH;
-  const modal = dialog.active || inventory.open || petPanel.open || shop.open || craftPanel.open || charPanel.open || !!worldItemInspect;
+  const modal = dialog.active || inventory.open || petPanel.open || shop.open || craftPanel.open || charPanel.open || !!worldItemInspect || !!inventorySlotInspect;
   if (modal) {
     ctx.fillStyle = "rgba(30,30,50,0.85)";
     roundRect(ctx, cw - 50, 8, 42, 40, 8);
@@ -6896,7 +7145,7 @@ function tryChopTree(player, map, inventory) {
 function handleInteraction() {
   if (actionCooldown > 0) return;
 
-  if (inventory.open || petPanel.open || shop.open || craftPanel.open || charPanel.open || worldItemInspect) return;
+  if (inventory.open || petPanel.open || shop.open || craftPanel.open || charPanel.open || worldItemInspect || !!inventorySlotInspect) return;
 
   if (dialog.active) { dialog.advance(); actionCooldown = 0.2; return; }
 
@@ -6956,9 +7205,499 @@ function handleInteraction() {
 
 let lastTime = performance.now();
 
+/* ── Kayıt slotları (localStorage) ─────────────────────────── */
+const SAVE_KEY_PREFIX = "chopgrow_save_v3_";
+const SAVE_META_PREFIX = "chopgrow_savemeta_v3_";
+const NUM_SAVE_SLOTS = 3;
+/** -1 = kayıt menüsü; 0..2 = aktif oyun slotu */
+let currentSaveSlot = -1;
+let nextAutoSaveAt = 0;
+
+function saveKeyForSlot(slot) {
+  return SAVE_KEY_PREFIX + slot;
+}
+
+function saveMetaKeyForSlot(slot) {
+  return SAVE_META_PREFIX + slot;
+}
+
+function readSlotDisplayName(slot) {
+  try {
+    const raw = localStorage.getItem(saveMetaKeyForSlot(slot));
+    if (!raw) return "";
+    const o = JSON.parse(raw);
+    return (o && typeof o.name === "string") ? o.name : "";
+  } catch (e) { return ""; }
+}
+
+function writeSlotDisplayName(slot, name) {
+  try {
+    localStorage.setItem(saveMetaKeyForSlot(slot), JSON.stringify({ name: String(name || "").slice(0, 32) }));
+  } catch (e) { /* quota */ }
+}
+
+function hasSaveInSlot(slot) {
+  try {
+    const s = localStorage.getItem(saveKeyForSlot(slot));
+    return !!(s && s.length > 10);
+  } catch (e) { return false; }
+}
+
+function playerToSave(p) {
+  return {
+    x: p.x, y: p.y, w: p.w, h: p.h, speed: p.speed, angle: p.angle, direction: p.direction,
+    animTimer: p.animTimer, animFrame: p.animFrame, moving: p.moving,
+    shootCooldown: p.shootCooldown, shootAnim: p.shootAnim, meleeCooldown: p.meleeCooldown, swingAnim: p.swingAnim,
+    inBoat: p.inBoat, hasBoat: p.hasBoat, boatWaveTimer: p.boatWaveTimer, boatAutoBoardCooldown: p.boatAutoBoardCooldown,
+    level: p.level, xp: p.xp, xpToNext: p.xpToNext,
+    baseMaxHp: p.baseMaxHp, baseMaxMana: p.baseMaxMana, maxHp: p.maxHp, hp: p.hp, hpRegen: p.hpRegen,
+    maxMana: p.maxMana, mana: p.mana, manaRegen: p.manaRegen,
+    str: p.str, agi: p.agi, wis: p.wis,
+    _eqStr: p._eqStr, _eqAgi: p._eqAgi, _eqWis: p._eqWis, _eqMeleeDmg: p._eqMeleeDmg, _eqRangedDmg: p._eqRangedDmg,
+    manaCostShoot: p.manaCostShoot, manaCostPower: p.manaCostPower,
+    dmgFlashTimer: p.dmgFlashTimer, levelUpTimer: p.levelUpTimer, powerCharging: p.powerCharging, powerCharge: p.powerCharge,
+    statPoints: p.statPoints, skills: Object.assign({}, p.skills || {}),
+    _pendingFullHeal: !!p._pendingFullHeal,
+  };
+}
+
+function applyPlayerSave(p, d) {
+  if (!d) return;
+  for (const k of Object.keys(playerToSave(p))) {
+    if (k === "skills") p.skills = Object.assign(Object.create(null), d.skills || {});
+    else if (d[k] !== undefined) p[k] = d[k];
+  }
+}
+
+function inventoryToSave(inv) {
+  return {
+    gold: inv.gold,
+    slots: inv.slots.map(s => s ? { id: s.id, count: s.count } : null),
+    hotbar: inv.hotbar.map(s => s ? { id: s.id, count: s.count } : null),
+    equipped: Object.fromEntries(EQ_SLOTS.map(sk => [sk, inv.equipped[sk] ? { id: inv.equipped[sk].id, count: inv.equipped[sk].count || 1 } : null])),
+    selectedHotbar: inv.selectedHotbar,
+  };
+}
+
+function applyInventorySave(inv, d) {
+  if (!d) return;
+  inv.gold = d.gold | 0;
+  for (let i = 0; i < inv.slots.length; i++) {
+    const s = d.slots && d.slots[i];
+    inv.slots[i] = s && s.id ? { id: s.id, count: Math.max(1, s.count | 0) } : null;
+  }
+  for (let i = 0; i < inv.hotbar.length; i++) {
+    const s = d.hotbar && d.hotbar[i];
+    inv.hotbar[i] = s && s.id ? { id: s.id, count: Math.max(1, s.count | 0) } : null;
+  }
+  for (const sk of EQ_SLOTS) {
+    const e = d.equipped && d.equipped[sk];
+    inv.equipped[sk] = e && e.id ? { id: e.id, count: 1 } : null;
+  }
+  inv.selectedHotbar = Math.max(0, Math.min(inv.hotbar.length - 1, d.selectedHotbar | 0));
+  inv.heldItem = null;
+  inv.open = false;
+  inv._clearSlotPress();
+}
+
+function worldItemToSave(wi) {
+  return {
+    col: wi.col, row: wi.row, itemId: wi.itemId, count: wi.count, maxCount: wi.maxCount,
+    alive: wi.alive, respawnable: wi.respawnable, bobTimer: wi.bobTimer,
+    respawnTimer: wi.respawnTimer, respawnTime: wi.respawnTime,
+  };
+}
+
+function loadWorldItemsFromSave(arr) {
+  worldItems.length = 0;
+  if (!arr || !arr.length) return;
+  for (const o of arr) {
+    const wi = new WorldItem(o.col, o.row, o.itemId, o.count, o.respawnable !== false);
+    wi.maxCount = o.maxCount != null ? o.maxCount : wi.count;
+    wi.alive = o.alive !== false;
+    wi.bobTimer = o.bobTimer || 0;
+    wi.respawnTimer = o.respawnTimer || 0;
+    wi.respawnTime = o.respawnTime || wi.respawnTime;
+    worldItems.push(wi);
+  }
+}
+
+function monsterToSave(m) {
+  return {
+    type: m.type, col: m.col, row: m.row, levelScale: m.levelScale,
+    x: m.x, y: m.y, hp: m.hp, maxHp: m.maxHp, dmg: m.dmg, speed: m.speed,
+    xpReward: m.xpReward, aggroRange: m.aggroRange, atkRange: m.atkRange, atkCd: m.atkCd,
+    alive: m.alive, state: m.state, boss: m.boss,
+    homeX: m.homeX, homeY: m.homeY, direction: m.direction,
+    animTimer: m.animTimer, animFrame: m.animFrame,
+    wanderTimer: m.wanderTimer, moveDir: { dx: m.moveDir.dx, dy: m.moveDir.dy }, moveTime: m.moveTime,
+    atkTimer: m.atkTimer, atkAnim: m.atkAnim, hitFlash: m.hitFlash,
+    deathTimer: m.deathTimer, respawnTimer: m.respawnTimer, respawnTime: m.respawnTime,
+  };
+}
+
+function loadMonsterFromSave(o) {
+  const m = new Monster(o.col, o.row, o.type, o.levelScale != null ? o.levelScale : 1);
+  m.x = o.x; m.y = o.y;
+  m.hp = Math.min(o.hp != null ? o.hp : m.hp, o.maxHp != null ? o.maxHp : m.maxHp);
+  m.maxHp = o.maxHp != null ? o.maxHp : m.maxHp;
+  if (o.dmg != null) m.dmg = o.dmg;
+  if (o.speed != null) m.speed = o.speed;
+  if (o.xpReward != null) m.xpReward = o.xpReward;
+  if (o.aggroRange != null) m.aggroRange = o.aggroRange;
+  if (o.atkRange != null) m.atkRange = o.atkRange;
+  if (o.atkCd != null) m.atkCd = o.atkCd;
+  m.alive = o.alive !== false;
+  m.state = o.state || "idle";
+  m.homeX = o.homeX != null ? o.homeX : m.homeX;
+  m.homeY = o.homeY != null ? o.homeY : m.homeY;
+  m.direction = o.direction != null ? o.direction : m.direction;
+  m.animTimer = o.animTimer || 0;
+  m.animFrame = o.animFrame || 0;
+  m.wanderTimer = o.wanderTimer != null ? o.wanderTimer : m.wanderTimer;
+  m.moveDir = o.moveDir ? { dx: o.moveDir.dx || 0, dy: o.moveDir.dy || 0 } : m.moveDir;
+  m.moveTime = o.moveTime || 0;
+  m.atkTimer = o.atkTimer || 0;
+  m.atkAnim = o.atkAnim || 0;
+  m.hitFlash = o.hitFlash || 0;
+  m.deathTimer = o.deathTimer || 0;
+  m.respawnTimer = o.respawnTimer || 0;
+  m.respawnTime = o.respawnTime || m.respawnTime;
+  return m;
+}
+
+function wildPetToSave(wp) {
+  return {
+    type: wp.type, x: wp.x, y: wp.y, alive: wp.alive, direction: wp.direction,
+    animTimer: wp.animTimer, animFrame: wp.animFrame, moving: wp.moving,
+    wanderTimer: wp.wanderTimer, moveDir: { dx: wp.moveDir.dx, dy: wp.moveDir.dy }, moveTime: wp.moveTime,
+    homeX: wp.homeX, homeY: wp.homeY, tameProgress: wp.tameProgress, exclamTimer: wp.exclamTimer,
+  };
+}
+
+function loadWildPetFromSave(o) {
+  const col = o.x != null ? Math.floor(o.x / TILE_SIZE) : 0;
+  const row = o.y != null ? Math.floor(o.y / TILE_SIZE) : 0;
+  const wp = new WildPet(col, row, o.type);
+  if (o.x != null) wp.x = o.x;
+  if (o.y != null) wp.y = o.y;
+  wp.alive = o.alive !== false;
+  wp.direction = o.direction != null ? o.direction : wp.direction;
+  wp.animTimer = o.animTimer || 0;
+  wp.animFrame = o.animFrame || 0;
+  wp.moving = !!o.moving;
+  wp.wanderTimer = o.wanderTimer != null ? o.wanderTimer : wp.wanderTimer;
+  wp.moveDir = o.moveDir ? { dx: o.moveDir.dx || 0, dy: o.moveDir.dy || 0 } : wp.moveDir;
+  wp.moveTime = o.moveTime || 0;
+  wp.homeX = o.homeX != null ? o.homeX : wp.homeX;
+  wp.homeY = o.homeY != null ? o.homeY : wp.homeY;
+  wp.tameProgress = o.tameProgress | 0;
+  wp.exclamTimer = o.exclamTimer || 0;
+  return wp;
+}
+
+function npcToSave(n) {
+  return {
+    x: n.x, y: n.y, direction: n.direction, moving: n.moving,
+    moveDir: { dx: n.moveDir.dx, dy: n.moveDir.dy }, moveTime: n.moveTime,
+    wanderTimer: n.wanderTimer, animTimer: n.animTimer, animFrame: n.animFrame,
+  };
+}
+
+function applyNpcSave(n, d) {
+  if (!d) return;
+  n.x = d.x; n.y = d.y;
+  n.direction = d.direction != null ? d.direction : n.direction;
+  n.moving = !!d.moving;
+  n.moveDir = d.moveDir ? { dx: d.moveDir.dx || 0, dy: d.moveDir.dy || 0 } : n.moveDir;
+  n.moveTime = d.moveTime || 0;
+  n.wanderTimer = d.wanderTimer != null ? d.wanderTimer : n.wanderTimer;
+  n.animTimer = d.animTimer || 0;
+  n.animFrame = d.animFrame || 0;
+}
+
+function petToSave(pet) {
+  if (!pet) return null;
+  return {
+    type: pet.type, name: pet.name, x: pet.x, y: pet.y,
+    direction: pet.direction, animTimer: pet.animTimer, animFrame: pet.animFrame, moving: pet.moving,
+    happiness: pet.happiness, lastFedTimer: pet.lastFedTimer, heartTimer: pet.heartTimer, followDist: pet.followDist,
+  };
+}
+
+function loadActivePetFromSave(o) {
+  if (!o || !o.type) return null;
+  const pet = new Pet(o.type, o.name || PET_TYPES[o.type].name);
+  pet.x = o.x; pet.y = o.y;
+  pet.direction = o.direction != null ? o.direction : pet.direction;
+  pet.animTimer = o.animTimer || 0;
+  pet.animFrame = o.animFrame || 0;
+  pet.moving = !!o.moving;
+  pet.happiness = o.happiness != null ? o.happiness : pet.happiness;
+  pet.lastFedTimer = o.lastFedTimer || 0;
+  pet.heartTimer = o.heartTimer || 0;
+  pet.followDist = o.followDist != null ? o.followDist : pet.followDist;
+  pet.lootTarget = null;
+  pet.posHistory = [];
+  return pet;
+}
+
+function resetWorldToNewGameState() {
+  const fresh = new Player(PLAYER_START.col, PLAYER_START.row);
+  applyPlayerSave(player, playerToSave(fresh));
+  player.skills = Object.assign(Object.create(null), fresh.skills);
+  for (let i = 0; i < inventory.slots.length; i++) inventory.slots[i] = null;
+  for (let i = 0; i < inventory.hotbar.length; i++) inventory.hotbar[i] = null;
+  for (const sk of EQ_SLOTS) inventory.equipped[sk] = null;
+  inventory.gold = 0;
+  inventory.selectedHotbar = 0;
+  inventory.heldItem = null;
+  inventory.open = false;
+  inventory._clearSlotPress();
+
+  worldItems.length = 0;
+  for (const d of WORLD_ITEMS_DATA) {
+    if (isSafeSpawn(d.col, d.row)) worldItems.push(new WorldItem(d.col, d.row, d.item, d.count));
+  }
+  wildPets.length = 0;
+  for (const d of WILD_PETS_DATA) {
+    if (isSafeSpawn(d.col, d.row)) wildPets.push(new WildPet(d.col, d.row, d.type));
+  }
+  const freshM = spawnMonsters();
+  monsters.length = 0;
+  for (const m of freshM) monsters.push(m);
+
+  const npcList = VILLAGE_NPCS.filter(d => isSafeSpawn(d.col, d.row)).map(d => new NPC(d));
+  for (let i = 0; i < npcs.length && i < npcList.length; i++) {
+    const a = npcList[i], b = npcs[i];
+    b.x = a.x; b.y = a.y; b.homeX = a.homeX; b.homeY = a.homeY;
+    b.direction = a.direction; b.moving = false; b.moveDir = { dx: 0, dy: 0 }; b.moveTime = 0;
+    b.wanderTimer = a.wanderTimer; b.animTimer = 0; b.animFrame = 0;
+  }
+
+  activePet = null;
+  arrows.length = 0;
+  camera.x = player.x - canvasW / 2;
+  camera.y = player.y - canvasH / 2;
+  minimap.visible = true;
+  dialog.active = false;
+  if (shop.close) shop.close();
+  if (craftPanel.close) craftPanel.close();
+  petPanel.open = false;
+  if (typeof charPanel.close === "function") charPanel.close();
+  closeWorldItemInspect();
+  closeInventorySlotInspect();
+  player.applyEquipmentBonus(inventory);
+}
+
+function buildSavePayload(displayName) {
+  return {
+    v: 3,
+    name: String(displayName || "").slice(0, 32),
+    t: Date.now(),
+    player: playerToSave(player),
+    inventory: inventoryToSave(inventory),
+    camera: { x: camera.x, y: camera.y },
+    minimapVisible: minimap.visible,
+    worldItems: worldItems.map(worldItemToSave),
+    monsters: monsters.map(monsterToSave),
+    wildPets: wildPets.map(wildPetToSave),
+    npcs: npcs.map(npcToSave),
+    activePet: petToSave(activePet),
+  };
+}
+
+function applySavePayload(data) {
+  if (!data || data.v !== 3) return false;
+  if (data.name) writeSlotDisplayName(currentSaveSlot, data.name);
+  applyPlayerSave(player, data.player);
+  applyInventorySave(inventory, data.inventory);
+  if (data.camera) {
+    camera.x = data.camera.x;
+    camera.y = data.camera.y;
+  }
+  if (data.minimapVisible != null) minimap.visible = data.minimapVisible;
+
+  loadWorldItemsFromSave(data.worldItems);
+  monsters.length = 0;
+  if (data.monsters && data.monsters.length) {
+    for (const mo of data.monsters) monsters.push(loadMonsterFromSave(mo));
+  } else {
+    const freshM = spawnMonsters();
+    for (const m of freshM) monsters.push(m);
+  }
+  wildPets.length = 0;
+  if (data.wildPets && data.wildPets.length) {
+    for (const wo of data.wildPets) wildPets.push(loadWildPetFromSave(wo));
+  } else {
+    for (const d of WILD_PETS_DATA) {
+      if (isSafeSpawn(d.col, d.row)) wildPets.push(new WildPet(d.col, d.row, d.type));
+    }
+  }
+  if (data.npcs && data.npcs.length === npcs.length) {
+    for (let i = 0; i < npcs.length; i++) applyNpcSave(npcs[i], data.npcs[i]);
+  }
+  activePet = loadActivePetFromSave(data.activePet);
+  arrows.length = 0;
+  dialog.active = false;
+  if (shop.close) shop.close();
+  if (craftPanel.close) craftPanel.close();
+  petPanel.open = false;
+  if (typeof charPanel.close === "function") charPanel.close();
+  closeWorldItemInspect();
+  closeInventorySlotInspect();
+  player.applyEquipmentBonus(inventory);
+  return true;
+}
+
+function saveGameToSlot(slot) {
+  if (slot < 0 || slot >= NUM_SAVE_SLOTS) return;
+  const name = readSlotDisplayName(slot) || ("Kayıt " + (slot + 1));
+  try {
+    const json = JSON.stringify(buildSavePayload(name));
+    localStorage.setItem(saveKeyForSlot(slot), json);
+  } catch (e) { /* quota */ }
+}
+
+function loadGameFromSlot(slot) {
+  try {
+    const raw = localStorage.getItem(saveKeyForSlot(slot));
+    if (!raw) return false;
+    return applySavePayload(JSON.parse(raw));
+  } catch (e) {
+    return false;
+  }
+}
+
+function clearSaveSlot(slot) {
+  try {
+    localStorage.removeItem(saveKeyForSlot(slot));
+    localStorage.removeItem(saveMetaKeyForSlot(slot));
+  } catch (e) {}
+}
+
+function showSaveMenu() {
+  const ov = document.getElementById("save-menu-overlay");
+  if (ov) {
+    ov.style.display = "block";
+    ov.setAttribute("aria-hidden", "false");
+  }
+  currentSaveSlot = -1;
+  refreshSaveMenuDom();
+}
+
+function hideSaveMenu() {
+  const ov = document.getElementById("save-menu-overlay");
+  if (ov) {
+    ov.style.display = "none";
+    ov.setAttribute("aria-hidden", "true");
+  }
+}
+
+function refreshSaveMenuDom() {
+  const root = document.getElementById("save-slots-root");
+  if (!root) return;
+  root.innerHTML = "";
+  for (let s = 0; s < NUM_SAVE_SLOTS; s++) {
+    const card = document.createElement("div");
+    card.className = "save-slot-card";
+    const has = hasSaveInSlot(s);
+    const disp = readSlotDisplayName(s);
+    const h = document.createElement("h2");
+    h.textContent = "Slot " + (s + 1) + (has ? " — kayıt var" : " — boş");
+    const inp = document.createElement("input");
+    inp.type = "text";
+    inp.maxLength = 32;
+    inp.placeholder = "Kayıt adı (ör. Kahraman)";
+    inp.value = disp;
+    inp.id = "save-slot-name-" + s;
+    const row = document.createElement("div");
+    row.className = "row";
+    const btnSaveName = document.createElement("button");
+    btnSaveName.type = "button";
+    btnSaveName.textContent = "İsmi kaydet";
+    btnSaveName.className = "btn-new";
+    btnSaveName.onclick = () => {
+      writeSlotDisplayName(s, inp.value);
+      refreshSaveMenuDom();
+    };
+    const btnContinue = document.createElement("button");
+    btnContinue.type = "button";
+    btnContinue.textContent = "Devam et";
+    btnContinue.className = "btn-go";
+    btnContinue.disabled = !has;
+    btnContinue.onclick = () => {
+      writeSlotDisplayName(s, inp.value);
+      currentSaveSlot = s;
+      if (!loadGameFromSlot(s)) {
+        currentSaveSlot = -1;
+        alert("Kayıt okunamadı.");
+        refreshSaveMenuDom();
+        return;
+      }
+      hideSaveMenu();
+      nextAutoSaveAt = performance.now() + 8000;
+      lastTime = performance.now();
+    };
+    const btnNew = document.createElement("button");
+    btnNew.type = "button";
+    btnNew.textContent = "Yeni oyun";
+    btnNew.className = "btn-new";
+    btnNew.onclick = () => {
+      if (has && !confirm("Bu slottaki kaydı silip sıfırdan başlamak istiyor musun?")) return;
+      writeSlotDisplayName(s, inp.value);
+      currentSaveSlot = s;
+      resetWorldToNewGameState();
+      saveGameToSlot(s);
+      hideSaveMenu();
+      nextAutoSaveAt = performance.now() + 8000;
+      lastTime = performance.now();
+    };
+    const btnDel = document.createElement("button");
+    btnDel.type = "button";
+    btnDel.textContent = "Kaydı sil";
+    btnDel.className = "btn-del";
+    btnDel.disabled = !has;
+    btnDel.onclick = () => {
+      if (!confirm("Bu slottaki kayıt silinsin mi?")) return;
+      clearSaveSlot(s);
+      inp.value = "";
+      refreshSaveMenuDom();
+    };
+    row.appendChild(btnSaveName);
+    row.appendChild(btnContinue);
+    row.appendChild(btnNew);
+    row.appendChild(btnDel);
+    const meta = document.createElement("div");
+    meta.className = "meta";
+    meta.textContent = has ? "Son kayıt: yerel tarayıcıda saklanıyor." : "Henüz kayıt yok — Yeni oyun ile başlat.";
+    card.appendChild(h);
+    card.appendChild(inp);
+    card.appendChild(row);
+    card.appendChild(meta);
+    root.appendChild(card);
+  }
+}
+
+window.addEventListener("beforeunload", () => {
+  if (currentSaveSlot >= 0) saveGameToSlot(currentSaveSlot);
+});
+
 function gameLoop(now) {
+  if (currentSaveSlot < 0) {
+    lastTime = now;
+    clearJustPressed();
+    requestAnimationFrame(gameLoop);
+    return;
+  }
+
   const dt = Math.min((now - lastTime) / 1000, 0.1);
   lastTime = now;
+
+  if (now >= nextAutoSaveAt && currentSaveSlot >= 0) {
+    saveGameToSlot(currentSaveSlot);
+    nextAutoSaveAt = now + 12000;
+  }
 
   if (inventory.open) {
     inventory.updateSlotLongPress(dt, mouseX, mouseY, canvasW, canvasH);
@@ -6968,7 +7707,10 @@ function gameLoop(now) {
     if (dialog.active) dialog.close();
     else if (shop.open) shop.close();
     else if (craftPanel.open) craftPanel.close();
-    else if (inventory.open) inventory.close();
+    else if (inventory.open) {
+      if (inventorySlotInspect) closeInventorySlotInspect();
+      else inventory.close();
+    }
     else if (petPanel.open) petPanel.close();
     else if (charPanel.open) charPanel.close();
     else if (worldItemInspect) closeWorldItemInspect();
@@ -7052,7 +7794,7 @@ function gameLoop(now) {
 
   shop.update(dt);
   craftPanel.update(dt);
-  const uiOpen = dialog.active || inventory.open || petPanel.open || shop.open || craftPanel.open || charPanel.open || !!worldItemInspect;
+  const uiOpen = dialog.active || inventory.open || petPanel.open || shop.open || craftPanel.open || charPanel.open || !!worldItemInspect || !!inventorySlotInspect;
 
   if ((isDown("ShiftLeft") || isDown("ShiftRight")) && !uiOpen && !player.inBoat) {
     if (!player.powerCharging) { player.powerCharging = true; player.powerCharge = 0; }
@@ -7366,7 +8108,6 @@ function gameLoop(now) {
   petPanel.render(ctx, canvasW, canvasH, activePet);
   shop.render(ctx, canvasW, canvasH, inventory);
   craftPanel.render(ctx, canvasW, canvasH, inventory, player);
-  renderTouchOverlay(ctx);
 
   if (!inventory.open && !petPanel.open && !shop.open && !craftPanel.open) {
     hud.render(ctx, canvasW, canvasH);
@@ -7377,6 +8118,9 @@ function gameLoop(now) {
   charPanel.render(ctx, canvasW, canvasH, player, inventory);
 
   if (worldItemInspect) renderWorldItemInspect(ctx, canvasW, canvasH);
+  if (inventorySlotInspect) renderInventorySlotInspect(ctx, canvasW, canvasH);
+
+  renderTouchOverlay(ctx);
 
   if (player.levelUpTimer > 0) {
     const t = player.levelUpTimer;
@@ -7414,6 +8158,7 @@ function gameLoop(now) {
   requestAnimationFrame(gameLoop);
 }
 
+showSaveMenu();
 requestAnimationFrame(gameLoop);
 </script>
 </body>
