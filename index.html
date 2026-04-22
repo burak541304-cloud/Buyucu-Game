@@ -7653,14 +7653,20 @@ class Shop {
     const col2X = col1X + colW + colGap;
     let ly = B.statsY + statsLayout.padY + (mob ? 14 : 12);
     let ry = ly;
+    const toCompactFont = (fontStr) => {
+      const m = /(\d+)px/.exec(fontStr || "");
+      if (!m) return fontStr || (mob ? "12px monospace" : "10px monospace");
+      const base = Math.max(9, (parseInt(m[1], 10) || 12) - (mob ? 2 : 1));
+      return String(fontStr).replace(/(\d+)px/, base + "px");
+    };
     for (const ln of leftLines) {
-      ctx.font = ln.font;
+      ctx.font = toCompactFont(ln.font);
       ctx.fillStyle = ln.color;
       ctx.fillText(ln.text, col1X, ly);
       ly += statsLayout.lh;
     }
     for (const ln of rightLines) {
-      ctx.font = ln.font;
+      ctx.font = toCompactFont(ln.font);
       ctx.fillStyle = ln.color;
       ctx.fillText(ln.text, col2X, ry);
       ry += statsLayout.lh;
