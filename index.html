@@ -325,7 +325,7 @@ const touchState = {
 
 /** Mobil / masa\u00fcst\u00fc: sadele\u015ftirilmi\u015f 3 aktif beceri. */
 const ACTIVE_SKILL_DEFS = [
-  { id: "powerburst", icon: "P", mana: 12, cooldown: 5.2 },
+  { id: "powerburst", icon: "B", mana: 12, cooldown: 5.2 },
   { id: "volley", icon: "\u27F3", mana: 14, cooldown: 8.2 },
   { id: "mend", icon: "\u2764", mana: 10, cooldown: 8.5 },
 ];
@@ -577,14 +577,11 @@ function mobileButtonsLayout(cw, ch) {
     pcx = G.centerX - G.atkR - auxR - 14;
     pcy = G.centerY - G.atkR - auxR - 6;
   } else {
-    const targetRad = Math.max(36, G.orbitR - 6);
-    const powerRad = G.orbitR + 16;
-    const tAng = -Math.PI / 2 + 0.38;
-    const pAng = -Math.PI / 2 - 0.24;
-    tcx = G.centerX + Math.cos(tAng) * targetRad;
-    tcy = G.centerY + Math.sin(tAng) * targetRad;
-    pcx = G.centerX + Math.cos(pAng) * powerRad;
-    pcy = G.centerY + Math.sin(pAng) * powerRad;
+    // Dikey modda hedef/power butonlarini skill yayindan ayir.
+    tcx = G.centerX + G.atkR + auxR + 12;
+    tcy = G.centerY - 8;
+    pcx = G.centerX;
+    pcy = G.centerY - G.atkR - auxR - 14;
   }
   out.push({
     key: "target",
@@ -596,7 +593,7 @@ function mobileButtonsLayout(cw, ch) {
   out.push({
     key: MOBILE_POWER_BUTTON_KEY,
     kind: "power",
-    label: "P",
+    label: "PW",
     cx: pcx, cy: pcy, r: auxR,
     x: pcx - auxR, y: pcy - auxR, w: auxR * 2, h: auxR * 2,
   });
@@ -692,7 +689,7 @@ const WORLD_ZOOM_STEPS = [0.86, 1.0, 1.2, 1.34];
 const WORLD_ZOOM_MIN = WORLD_ZOOM_STEPS[0];
 const WORLD_ZOOM_MAX = WORLD_ZOOM_STEPS[WORLD_ZOOM_STEPS.length - 1];
 const WORLD_ZOOM_NEAR = WORLD_ZOOM_STEPS[2];
-let worldZoom = WORLD_ZOOM_STEPS[1];
+let worldZoom = WORLD_ZOOM_MIN;
 
 function clampWorldZoom(z) {
   return Math.max(WORLD_ZOOM_MIN, Math.min(WORLD_ZOOM_MAX, z));
@@ -4152,7 +4149,7 @@ class Player {
    * MMORPG tarzı yarasaları kanatlar: pembe-turuncu zar, mor kemik, turkuaz damar.
    * Bakış yönüne göre "sırt" ekseninde açılır; yürüyünce çırpma genişler.
    */
-  _drawFantasyWings(ctx, cx, cy, d, bounce) {
+  _drawFantasyWings(ctx, cx, cy, d, bounce, aimAngle) {
     const t = performance.now() * 0.0011;
     const flap = Math.sin(t) * 0.08;
 
@@ -4199,7 +4196,9 @@ class Player {
 
     ctx.save();
     ctx.translate(cx, cy - bounce * 0.35);
-    if (d === DIR.UP) ctx.rotate(Math.PI);
+    if (typeof aimAngle === "number") {
+      ctx.rotate(aimAngle - Math.PI / 2);
+    } else if (d === DIR.UP) ctx.rotate(Math.PI);
     else if (d === DIR.LEFT) ctx.rotate(Math.PI / 2);
     else if (d === DIR.RIGHT) ctx.rotate(-Math.PI / 2);
     drawOneWing(-1);
@@ -4208,9 +4207,12 @@ class Player {
   }
 
   /** Arkadaki pembe hale içinde minik peri silüeti. */
-  _drawBackFairyOrb(ctx, cx, cy, d, bounce) {
+  _drawBackFairyOrb(ctx, cx, cy, d, bounce, aimAngle) {
     let ox = 0, oy = -6;
-    if (d === DIR.DOWN) { ox = 0; oy = -14; }
+    if (typeof aimAngle === "number") {
+      ox = -Math.cos(aimAngle) * 10;
+      oy = -Math.sin(aimAngle) * 10 - 4;
+    } else if (d === DIR.DOWN) { ox = 0; oy = -14; }
     else if (d === DIR.UP) { ox = 0; oy = 6; }
     else if (d === DIR.LEFT) { ox = 10; oy = -6; }
     else if (d === DIR.RIGHT) { ox = -10; oy = -6; }
@@ -4429,6 +4431,7 @@ class Player {
     const pull = shootT > 0 ? Math.sin(shootT * Math.PI / 2) * 7.5 : 0;
     const d = this.direction;
     const a = this.angle;
+    const bodyRot = a - Math.PI / 2;
     const bowInFront = this._isBowInFront(d, a);
     const S = vis.shirt;
 
@@ -4456,14 +4459,15 @@ class Player {
     this._drawEquipmentAura(ctx, cx, cy, vis);
     this._drawEquippedItemEffects(ctx, cx, cy, inv);
     if (vis.showFantasyBack) {
-      this._drawFantasyWings(ctx, cx, cy, d, bounce);
-      this._drawBackFairyOrb(ctx, cx, cy, d, bounce);
+      this._drawFantasyWings(ctx, cx, cy, d, bounce, a);
+      this._drawBackFairyOrb(ctx, cx, cy, d, bounce, a);
     }
 
     if (showBow && !bowInFront) this._drawBowAndArms(ctx, cx, cy, bounce, pull, bowId, armBob, shootT);
 
     ctx.save();
     ctx.translate(cx, cy);
+    ctx.rotate(bodyRot);
 
     const greave = "#c4a035";
     ctx.fillStyle = S.pants;
@@ -7673,18 +7677,7 @@ class Shop {
     }
     ctx.restore();
 
-    const gFont = mob ? "13px monospace" : "11px monospace";
-    const gY = B.goldY;
-    ctx.fillStyle = "#c8d8f0";
-    ctx.font = gFont;
-    ctx.fillText("Birim fiyat: " + price + " alt\u0131n", d.x + 16, gY + (mob ? 14 : 12));
-    ctx.fillText("En fazla al\u0131nabilir: " + maxB + " adet", d.x + 16, gY + (mob ? 34 : 30));
-    ctx.fillStyle = gold >= total ? "#d8e8b0" : "#e8b0a0";
-    ctx.fillText("Paran: " + gold + " alt\u0131n", d.x + 16, gY + (mob ? 54 : 48));
-
-    ctx.fillStyle = "#d8e0f8";
-    ctx.font = mob ? "13px monospace" : "11px monospace";
-    ctx.fillText("Adet: " + amt + "  \u2192  Toplam: " + total + " alt\u0131n", d.x + 16, B.adetY + (mob ? 14 : 12));
+    // Bilgi satirlari (birim fiyat / en fazla / para / adet-toplam) gizlendi.
 
     const tr = B.track;
     ctx.fillStyle = "rgba(0,0,0,0.45)";
@@ -11311,7 +11304,7 @@ function renderTouchOverlay(ctx) {
       ctx.lineWidth = 1.5;
       ctx.stroke();
       ctx.fillStyle = onAux ? "#fff8ff" : (isPower ? "#7a2cb0" : "#383850");
-      ctx.font = "bold 12px monospace";
+      ctx.font = (b.label && String(b.label).length > 1) ? "bold 10px monospace" : "bold 12px monospace";
       ctx.fillText(b.label, b.cx - ctx.measureText(b.label).width / 2, b.cy + 4);
       ctx.fillStyle = "rgba(210,210,230,0.95)";
       ctx.font = "6px monospace";
