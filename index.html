@@ -7587,9 +7587,16 @@ class Shop {
     const tailH = nameLinesAll.length > nameLines.length ? (mob ? 12 : 11) : 0;
     const headerExtra = Math.max(0, nameStart + nameLines.length * nameLineH + tailH - iszPre - statsGapPre);
 
-    const innerMax = Math.max(72, dw - 40);
+    const innerMax = Math.max(68, Math.floor((dw - 52) / 2));
     const statsLayout = buildItemTooltipLayout(ctx, def, si.id, L.pw, mob, { omitPrices: true, omitIdentity: true, innerMax });
-    this._buyPickerMetrics = { itemId: si.id, statsH: statsLayout.th, headerExtra };
+    const statLines = statsLayout.lines || [];
+    const colBreak = Math.ceil(statLines.length / 2);
+    const colLeft = statLines.slice(0, colBreak);
+    const colRight = statLines.slice(colBreak);
+    const colRows = Math.max(colLeft.length, colRight.length);
+    const statsTopPad = statsLayout.padY + (mob ? 14 : 12);
+    const twoColStatsH = Math.max(56, statsTopPad + colRows * statsLayout.lh + 4);
+    this._buyPickerMetrics = { itemId: si.id, statsH: twoColStatsH, headerExtra };
     const B = this._buyPickerLayout(L);
     const d = B.dialog;
 
@@ -7631,13 +7638,33 @@ class Shop {
 
     const statsBoxH = B.statsBlockH + 6;
     ctx.fillStyle = "rgba(0,0,0,0.28)";
-    roundRect(ctx, d.x + 10, B.statsY - 4, d.w - 20, Math.max(statsBoxH, statsLayout.th + 4), 6);
+    roundRect(ctx, d.x + 10, B.statsY - 4, d.w - 20, statsBoxH, 6);
     ctx.fill();
     ctx.save();
     ctx.beginPath();
-    roundRect(ctx, d.x + 8, B.statsY - 6, d.w - 16, Math.max(statsBoxH, statsLayout.th + 6) + 2, 6);
+    roundRect(ctx, d.x + 8, B.statsY - 6, d.w - 16, statsBoxH + 2, 6);
     ctx.clip();
-    drawItemTooltipTextOnly(ctx, d.x + 14 - statsLayout.padX, B.statsY, statsLayout, mob);
+    const splitAt = Math.ceil(statLines.length / 2);
+    const leftLines = statLines.slice(0, splitAt);
+    const rightLines = statLines.slice(splitAt);
+    const colGap = 12;
+    const colW = Math.floor((d.w - 28 - colGap) / 2);
+    const col1X = d.x + 14;
+    const col2X = col1X + colW + colGap;
+    let ly = B.statsY + statsLayout.padY + (mob ? 14 : 12);
+    let ry = ly;
+    for (const ln of leftLines) {
+      ctx.font = ln.font;
+      ctx.fillStyle = ln.color;
+      ctx.fillText(ln.text, col1X, ly);
+      ly += statsLayout.lh;
+    }
+    for (const ln of rightLines) {
+      ctx.font = ln.font;
+      ctx.fillStyle = ln.color;
+      ctx.fillText(ln.text, col2X, ry);
+      ry += statsLayout.lh;
+    }
     ctx.restore();
 
     const gFont = mob ? "13px monospace" : "11px monospace";
