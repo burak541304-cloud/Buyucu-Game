@@ -603,17 +603,43 @@ function mobileButtonsLayout(cw, ch) {
   const topY = 4;
   const topH = 30;
   const menuItems = [
-    { key: "KeyI", label: "\u00c7ant" },
+    { key: "KeyI", label: "\u00c7anta" },
     { key: "KeyC", label: "K" },
     { key: "KeyM", label: "H" },
     { key: "KeyT", label: "\u015eehir" },
   ];
-  const tw = 44;
-  const totalW = menuItems.length * tw + (menuItems.length - 1) * 4;
-  let tx = Math.floor((cw - totalW) / 2);
-  for (const m of menuItems) {
-    out.push({ key: m.key, kind: "menu", label: m.label, x: tx, y: topY, w: tw, h: topH });
-    tx += tw + 4;
+  if (touchState.mobileUI) {
+    const potW = 42, potH = 42;
+    const hpX = Math.round(G.centerX - G.atkR - potW - (isLandscape ? 52 : 46));
+    const menuH = 30, menuW = 46, menuGap = 4;
+    const gridW = menuW * 2 + menuGap;
+    const gridH = menuH * 2 + menuGap;
+    let gx = hpX - 10 - gridW;
+    let gy = Math.round(ch - potH - 16 - (gridH - menuH));
+    if (gx < 6) gx = 6;
+    if (gy < 8) gy = 8;
+    if (gy + gridH > ch - 8) gy = Math.max(8, ch - 8 - gridH);
+
+    const menuPos = {
+      KeyT: { col: 0, row: 0 },  // sol-ust
+      KeyC: { col: 1, row: 0 },  // sag-ust
+      KeyM: { col: 0, row: 1 },  // sol-alt
+      KeyI: { col: 1, row: 1 },  // sag-alt (potlara en yakin: Canta)
+    };
+    for (const m of menuItems) {
+      const p = menuPos[m.key] || { col: 0, row: 0 };
+      const x = gx + p.col * (menuW + menuGap);
+      const y = gy + p.row * (menuH + menuGap);
+      out.push({ key: m.key, kind: "menu", label: m.label, x, y, w: menuW, h: menuH });
+    }
+  } else {
+    const tw = 44;
+    const totalW = menuItems.length * tw + (menuItems.length - 1) * 4;
+    let tx = Math.floor((cw - totalW) / 2);
+    for (const m of menuItems) {
+      out.push({ key: m.key, kind: "menu", label: m.label, x: tx, y: topY, w: tw, h: topH });
+      tx += tw + 4;
+    }
   }
   return out;
 }
@@ -2474,6 +2500,11 @@ const INV_PRESS_MOVE_CANCEL = 16;
 
 /** Envanterde sol t\u0131k: ta\u015f\u0131ma yerine Giy / Yere at paneli */
 let inventorySlotInspect = null;
+let inventoryInspectScrollY = 0;
+let inventoryInspectScrollMax = 0;
+let inventoryInspectScrollTouchId = -1;
+let inventoryInspectScrollLastY = 0;
+let inventoryInspectScrollRect = null;
 
 class Inventory {
   constructor() {
@@ -8487,6 +8518,7 @@ let combatTownTeleportRect = null;
 let combatZoomRect = null;
 
 function layoutCombatPotions(cw, ch) {
+  const isLandscape = cw > ch * 1.05;
   const w = 46, h = 46, gap = 6;
   const bottomPad = touchState.mobileUI ? 38 : 24;
   let x1, x2;
@@ -8495,8 +8527,8 @@ function layoutCombatPotions(cw, ch) {
   if (touchState.mobileUI) {
     const G = mobileCombatClusterGeom(cw, ch);
     const potW = 42, potH = 42, innerGap = 10;
-    const hpX = Math.round(G.centerX - G.atkR - potW - 14);
-    const hpY = Math.round(G.centerY - potH - 6);
+    const hpX = Math.round(G.centerX - G.atkR - potW - (isLandscape ? 52 : 46));
+    const hpY = Math.round(G.centerY - potH + (isLandscape ? 2 : 4));
     const manaX = hpX;
     const manaY = Math.round(hpY + potH + innerGap);
     combatTownTeleportRect = null;
@@ -8774,6 +8806,34 @@ function renderInspectStatLinesFitted(ctx, lines, x, startY, maxY, mobile) {
   return y;
 }
 
+function renderInspectStatLinesScrollable(ctx, lines, x, startY, maxY, mobile, scrollY) {
+  if (!lines || !lines.length) return { y: startY, maxScroll: 0, lineH: mobile ? 14 : 12 };
+  const avail = Math.max(20, maxY - startY);
+  const lineHBase = mobile ? 19 : 15;
+  const needBase = lines.length * lineHBase;
+  const compact = needBase > avail;
+  const lineH = compact ? (mobile ? 14 : 12) : lineHBase;
+  const contentH = lines.length * lineH;
+  const maxScroll = Math.max(0, contentH - avail);
+  const off = Math.max(0, Math.min(maxScroll, scrollY || 0));
+  let y = startY - off;
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(x - 4, startY - lineH, 10000, avail + lineH * 2);
+  ctx.clip();
+  for (const ln of lines) {
+    if (y > startY - lineH && y <= maxY + lineH) {
+      ctx.font = compact ? (mobile ? "11px monospace" : "10px monospace") : ln.font;
+      ctx.fillStyle = ln.color;
+      ctx.fillText(ln.text, x, y);
+    }
+    y += lineH;
+  }
+  ctx.restore();
+  return { y: Math.min(maxY, startY + contentH), maxScroll, lineH };
+}
+
 function worldItemInspectLayout(cw, ch) {
   const b = uiModalBounds(cw, ch);
   const land = cw > ch * 1.02;
@@ -8895,7 +8955,24 @@ function renderWorldItemInspect(ctx, cw, ch) {
     color: r.color || "#b8c8e8",
     font: touchState.mobileUI ? "11px monospace" : "10px monospace",
   })));
-  ty = renderInspectStatLinesFitted(ctx, allLines, L.px + 16, ty, maxY, touchState.mobileUI);
+  const scrollRes = renderInspectStatLinesScrollable(ctx, allLines, L.px + 16, ty, maxY, touchState.mobileUI, inventoryInspectScrollY);
+  inventoryInspectScrollMax = scrollRes.maxScroll;
+  inventoryInspectScrollY = Math.max(0, Math.min(inventoryInspectScrollMax, inventoryInspectScrollY));
+  inventoryInspectScrollRect = {
+    x: L.px + 12,
+    y: ty - scrollRes.lineH,
+    w: L.pw - 24,
+    h: Math.max(24, maxY - ty + scrollRes.lineH + 8),
+  };
+  if (inventoryInspectScrollMax > 0) {
+    const topA = inventoryInspectScrollY > 0 ? 0.55 : 0.2;
+    const botA = inventoryInspectScrollY < inventoryInspectScrollMax ? 0.55 : 0.2;
+    ctx.fillStyle = "rgba(180, 195, 230, " + topA + ")";
+    ctx.font = "bold 10px monospace";
+    ctx.fillText("▲", L.px + L.pw - 24, ty - 2);
+    ctx.fillStyle = "rgba(180, 195, 230, " + botA + ")";
+    ctx.fillText("▼", L.px + L.pw - 24, maxY + 2);
+  }
 
   const eqCands0 = equipSlotsForItemDef(def);
   const canEq = eqCands0.some((sk) => {
@@ -9682,6 +9759,11 @@ const wildPets = WILD_PETS_DATA.filter(d => isSafeSpawn(d.col, d.row)).map(d => 
 
 function closeInventorySlotInspect() {
   inventorySlotInspect = null;
+  inventoryInspectScrollY = 0;
+  inventoryInspectScrollMax = 0;
+  inventoryInspectScrollTouchId = -1;
+  inventoryInspectScrollLastY = 0;
+  inventoryInspectScrollRect = null;
 }
 
 function tryAttemptInventoryUpgrade(slot, def) {
@@ -9716,6 +9798,11 @@ function openInventorySlotInspect(kind, idx) {
   if (!slot || slot.count <= 0) return;
   if (worldItemInspect) closeWorldItemInspect();
   inventorySlotInspect = { kind, idx };
+  inventoryInspectScrollY = 0;
+  inventoryInspectScrollMax = 0;
+  inventoryInspectScrollTouchId = -1;
+  inventoryInspectScrollLastY = 0;
+  inventoryInspectScrollRect = null;
 }
 
 function tryOpenBossChestInContainer(inv, container, idx) {
@@ -9904,6 +9991,8 @@ function handleInventorySlotInspectClick(mx, my, cw, ch) {
 
 function renderInventorySlotInspect(ctx, cw, ch) {
   if (!inventorySlotInspect || !inventory.open) return;
+  inventoryInspectScrollRect = null;
+  inventoryInspectScrollMax = 0;
   const { kind, idx } = inventorySlotInspect;
   const fromEquip = kind === "eq";
   const container = fromEquip ? inventory.equipped : (kind === "slots" ? inventory.slots : inventory.hotbar);
@@ -10820,6 +10909,15 @@ window.addEventListener("mouseup", (e) => {
   }
 });
 canvas.addEventListener("wheel", (e) => {
+  if (inventory.open && inventorySlotInspect && inventoryInspectScrollRect && inventoryInspectScrollMax > 0) {
+    const r = inventoryInspectScrollRect;
+    const inside = e.clientX >= r.x && e.clientX < r.x + r.w && e.clientY >= r.y && e.clientY < r.y + r.h;
+    if (inside) {
+      inventoryInspectScrollY = Math.max(0, Math.min(inventoryInspectScrollMax, inventoryInspectScrollY + e.deltaY));
+      e.preventDefault();
+      return;
+    }
+  }
   if (shop.open) {
     const land = canvasW > canvasH * 1.02;
     const dy = e.deltaY > 0 ? (land ? 2.2 : 1) : (land ? -2.2 : -1);
@@ -10869,6 +10967,14 @@ function handleCanvasTouchStart(e) {
     }
     if (inventory.open) {
       if (inventorySlotInspect) {
+        if (inventoryInspectScrollRect && inventoryInspectScrollMax > 0) {
+          const r = inventoryInspectScrollRect;
+          if (mx >= r.x && mx < r.x + r.w && my >= r.y && my < r.y + r.h) {
+            inventoryInspectScrollTouchId = id;
+            inventoryInspectScrollLastY = my;
+            continue;
+          }
+        }
         if (handleInventorySlotInspectClick(mx, my, canvasW, canvasH)) continue;
       }
       inventory.handleClick(mx, my, canvasW, canvasH, false);
@@ -10955,6 +11061,11 @@ function handleCanvasTouchMove(e) {
       shop.gridScrollLastY = my;
       shop.applyTouchGridScroll(-dy, canvasW, canvasH, inventory);
     }
+    if (inventory.open && inventorySlotInspect && id === inventoryInspectScrollTouchId && inventoryInspectScrollMax > 0) {
+      const dy = my - inventoryInspectScrollLastY;
+      inventoryInspectScrollLastY = my;
+      inventoryInspectScrollY = Math.max(0, Math.min(inventoryInspectScrollMax, inventoryInspectScrollY - dy));
+    }
     if (id === touchState.joyId) {
       let dx = mx - touchState.joyOx, dy = my - touchState.joyOy;
       const max = touchState.joyR * 0.88;
@@ -11026,6 +11137,9 @@ function handleCanvasTouchEnd(e) {
 
     if (shop.open && id === shop.gridScrollTouchId) {
       shop.gridScrollTouchId = -1;
+    }
+    if (id === inventoryInspectScrollTouchId) {
+      inventoryInspectScrollTouchId = -1;
     }
     if (id === touchState.joyId) {
       touchState.joyId = -1;
@@ -12454,7 +12568,6 @@ function gameLoop(now) {
       ctx.fillText("\u2693 Teknede", hx + 14, extraY + 18);
     }
 
-    drawCombatPotions(ctx, canvasW, canvasH, inventory);
   }
 
   inventory.render(ctx, canvasW, canvasH, mouseX, mouseY);
@@ -12474,6 +12587,10 @@ function gameLoop(now) {
   if (inventorySlotInspect) renderInventorySlotInspect(ctx, canvasW, canvasH);
 
   renderTouchOverlay(ctx);
+
+  if (!inventory.open && !petPanel.open && !shop.open && !craftPanel.open) {
+    drawCombatPotions(ctx, canvasW, canvasH, inventory);
+  }
 
   if (!inventory.open && !petPanel.open && !shop.open && !craftPanel.open && !charPanel.open) {
     drawRangedTargetHpBanner(ctx, canvasW, canvasH, rangedFocusMonster);
