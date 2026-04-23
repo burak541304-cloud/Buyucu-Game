@@ -9,8 +9,9 @@
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { width: 100%; height: 100%; overflow: hidden; background: radial-gradient(ellipse 85% 70% at 50% 45%, #152028 0%, #0a0c12 55%, #050608 100%); touch-action: none; overscroll-behavior: none; -webkit-touch-callout: none; }
-    #game-canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; touch-action: none; -webkit-user-select: none; user-select: none; }
-    #save-menu-overlay { display: none; position: fixed; inset: 0; z-index: 100; background: rgba(6, 8, 20, 0.96); overflow: auto; font-family: system-ui, "Segoe UI", sans-serif; color: #e8eaf0; padding: 16px; box-sizing: border-box; }
+    #game-canvas { display: block; position: relative; z-index: 0; width: 100%; height: 100%; image-rendering: pixelated; touch-action: none; -webkit-user-select: none; user-select: none; background: #152028; }
+    /* Varsay\u0131lan: g\u00f6r\u00fcn\u00fcr. JS a\u00e7\u0131lmazsa da kay\u0131t penceresi g\u00f6r\u00fcs\u00fcn (siyah ekran yerine). Oyun ba\u015flay\u0131nca hideSaveMenu gizler. */
+    #save-menu-overlay { display: block; position: fixed; inset: 0; z-index: 10000; background: rgba(6, 8, 20, 0.98); overflow: auto; font-family: system-ui, 'Segoe UI', sans-serif; color: #e8eaf0; padding: 16px; box-sizing: border-box; }
     #save-menu-overlay h1 { text-align: center; font-size: 1.35rem; margin: 8px 0 4px; color: #f0d050; }
     #save-menu-overlay .sub { text-align: center; opacity: 0.88; font-size: 0.88rem; margin-bottom: 20px; line-height: 1.4; }
     .save-slot-card { max-width: 640px; margin: 0 auto 14px; padding: 14px 16px; border-radius: 12px; background: rgba(22, 26, 48, 0.95); border: 1px solid #506090; }
@@ -32,7 +33,33 @@
   <div id="save-slots-root"></div>
 </div>
 <script>
+(function () {
+  try {
+    var ov = document.getElementById("save-menu-overlay");
+    if (ov) {
+      ov.style.display = "block";
+      ov.style.zIndex = "2147483647";
+      ov.setAttribute("aria-hidden", "false");
+    }
+  } catch (e) {}
+})();
+</script>
+<script>
 "use strict";
+
+/* Ağır init (const map, player) patlarsa da kayıt arayüzü çizilsin: setTimeout(0) en sonda da çalışır. */
+const SAVE_KEY_PREFIX = "chopgrow_save_v3_";
+const SAVE_META_PREFIX = "chopgrow_savemeta_v3_";
+const NUM_SAVE_SLOTS = 3;
+let currentSaveSlot = -1;
+let nextAutoSaveAt = 0;
+setTimeout(function chopgrowRenderSaveMenu() {
+  try {
+    if (typeof showSaveMenu === "function") showSaveMenu();
+  } catch (e) {
+    console.error("chopgrowRenderSaveMenu", e);
+  }
+}, 0);
 
 /* ── helpers ─────────────────────────────────────────────── */
 
@@ -325,7 +352,7 @@ const touchState = {
 
 /** Mobil / masa\u00fcst\u00fc: sadele\u015ftirilmi\u015f 3 aktif beceri. */
 const ACTIVE_SKILL_DEFS = [
-  { id: "powerburst", icon: "G", mana: 12, cooldown: 5.2 },
+  { id: "powerburst", icon: "OK", mana: 12, cooldown: 5.2 },
 ];
 
 /** Masa\u00fcst\u00fcnde minimap ile sa\u011f UI \u00e7ak\u0131\u015fmas\u0131 i\u00e7in bo\u015fluk (mobilde kullan\u0131lmaz). */
@@ -500,7 +527,7 @@ function uiModalBounds(cw, ch) {
   };
 }
 
-/** Sa\u011f alt MMORPG k\u00fcmesi: merkez sald\u0131r\u0131 + y\u00f6r\u00fcnge (beceri, HEDEF, POWER). */
+/** Sa\u011f alt MMORPG k\u00fcmeyi: merkez sald\u0131r\u0131 + y\u00f6r\u00fcnge (beceri, HEDEF, POWER). */
 function mobileCombatClusterGeom(cw, ch) {
   const isLandscape = cw > ch * 1.05;
   const pad = 6;
@@ -509,7 +536,6 @@ function mobileCombatClusterGeom(cw, ch) {
   const skillR = isLandscape ? 18 : 16;
   let orbitR = isLandscape ? 66 : 60;
   const auxR = isLandscape ? 16 : 14;
-  /** Yard\u0131mc\u0131 butonlar sa\u011f s\u0131n\u0131r\u0131 a\u015fmas\u0131n. */
   const swapAng = 0.12;
   if (touchState.mobileUI && cw < 520) {
     orbitR = Math.max(52, Math.round(60 - (520 - cw) * 0.11));
@@ -523,7 +549,7 @@ function mobileCombatClusterGeom(cw, ch) {
 }
 
 /**
- * Beceri yayı: sol yarım halka (iksir / HEDEF / POWER alanlar\u0131ndan ayr\u0131).
+ * Beceri yay\u0131: sol yar\u0131m halka (iksir / HEDEF / POWER alanlar\u0131ndan ayr\u0131).
  * ~158\u00b0 \u2013 256\u00b0
  */
 function mobileSkillSlotAngles(count) {
@@ -569,11 +595,9 @@ function mobileButtonsLayout(cw, ch) {
   const auxR = G.auxR;
   let pcx, pcy;
   if (isLandscape) {
-    /* Sabit yatay preset: yardimci butonlar kesin ayrik dursun */
     pcx = G.centerX - G.atkR - auxR - 14;
     pcy = G.centerY - G.atkR - auxR - 6;
   } else {
-    // Dikey modda power butonunu skill yayindan ayir.
     pcx = G.centerX;
     pcy = G.centerY - G.atkR - auxR - 14;
   }
@@ -605,10 +629,10 @@ function mobileButtonsLayout(cw, ch) {
     if (gy + gridH > ch - 8) gy = Math.max(8, ch - 8 - gridH);
 
     const menuPos = {
-      KeyT: { col: 0, row: 0 },  // sol-ust
-      KeyC: { col: 1, row: 0 },  // sag-ust
-      KeyM: { col: 0, row: 1 },  // sol-alt
-      KeyI: { col: 1, row: 1 },  // sag-alt (potlara en yakin: Canta)
+      KeyT: { col: 0, row: 0 },
+      KeyC: { col: 1, row: 0 },
+      KeyM: { col: 0, row: 1 },
+      KeyI: { col: 1, row: 1 },
     };
     for (const m of menuItems) {
       const p = menuPos[m.key] || { col: 0, row: 0 };
@@ -1037,17 +1061,6 @@ function itemStatPowerScore(def) {
   return s;
 }
 
-/** Envanter s\u0131ralama / k\u0131yas ile ayn\u0131 form\u00fcl: y\u00fckseltme + birle\u015fik stat dahil. */
-function itemComparePowerValue(def, stack) {
-  if (!def || !stack) return 0;
-  const u = getStackUpgradeLv(stack);
-  const m = getEffectiveItemStatsMerged(def, u);
-  const base = itemStatPowerScore(def);
-  const ap = (m.advanced && m.advanced.attackPower) || 0;
-  const rarity = rarityRank(def.rarity || "common");
-  return base * 3 + ap * 0.35 + rarity * 8 + u * 10;
-}
-
 function getStackUpgradeLv(s) {
   if (!s || s.upgrade == null) return 0;
   const u = s.upgrade | 0;
@@ -1349,169 +1362,6 @@ function collectEffectiveStatLines(def, upgradeLv) {
     }
   }
   return lines;
-}
-
-/**
- * Karakter + e\u015fyalar\u0131n t\u00fcm toplu \u00f6zelliklerini (tek ekran listesi i\u00e7in) \u00fcretir.
- * Her sat\u0131r: { text, color }.
- */
-function buildPlayerBuildSummaryLines(player, inventory) {
-  const out = [];
-  const pushH = (t, c) => { out.push({ text: t, color: c || "#a8b0c8" }); };
-  const pushS = (title) => {
-    if (out.length) pushH("", "#303040");
-    pushH("\u2014 " + title + " \u2014", "#f0d050");
-  };
-  if (!player) return out;
-
-  const sum = sumEquipmentEffective(inventory);
-  const st = sum.stats;
-  const adv = sum.advanced;
-  const agg = aggregateEquipmentExtras(inventory);
-  const apT = getEquipmentAttackPowerTotal(inventory);
-  const advLabelCore = {
-    defense: "Savunma",
-    resFire: "Ate\u015f direnci",
-    resGlacier: "Buz direnci",
-    resLightning: "\u015eim\u015fek direnci",
-    resMagic: "B\u00fcy\u00fc direnci",
-    resPoison: "Zehir direnci",
-    resCurse: "Lanet direnci",
-    defDagger: "Han\u00e7er savunmas\u0131",
-    defSword: "K\u0131l\u0131\u00e7 savunmas\u0131",
-    defClub: "G\u00fc\u00e7l\u00fc darbe sav.",
-    defSpear: "M\u0131zrak savunmas\u0131",
-    defArrow: "Ok savunmas\u0131",
-    attackPower: "Attack Power",
-    durabilityMax: "Max dayan\u0131kl\u0131l\u0131k",
-    critRate: "Kritik oran (adv.)",
-    critDamage: "Kritik hasar (adv.)",
-  };
-  const advColorCore = {
-    attackPower: "#f4f4ff",
-    defense: "#7cc8ff",
-    resFire: "#ff9d5c",
-    resGlacier: "#8ed8ff",
-    resLightning: "#e8b0ff",
-    resMagic: "#b8b8ff",
-    resPoison: "#93e07e",
-    resCurse: "#b58cff",
-    defDagger: "#a0d0ff",
-    defSword: "#a0d0ff",
-    defClub: "#a0d0ff",
-    defSpear: "#a0d0ff",
-    defArrow: "#a0d0ff",
-    durabilityMax: "#d8d8e8",
-  };
-
-  pushS("KARAKTER (efektif)");
-  pushH("G\u00fc\u00e7: " + (player.str + player._eqStr) + "  (taban " + player.str + " + ekip " + (player._eqStr | 0) + ")", "#c8e0ff");
-  pushH("\u00c7eviklik: " + (player.agi + player._eqAgi) + "  (taban " + player.agi + " + ekip " + (player._eqAgi | 0) + ")", "#c8e0ff");
-  pushH("Bilgelik: " + (player.wis + player._eqWis) + "  (taban " + player.wis + " + ekip " + (player._eqWis | 0) + ")", "#c8e0ff");
-  pushH("Can: " + Math.floor(player.hp) + " / " + player.maxHp, "#7ae890");
-  pushH("Mana: " + Math.floor(player.mana) + " / " + player.maxMana, "#90b0ff");
-  pushH("HP rejenerasyon: " + (player.hpRegen != null ? player.hpRegen.toFixed(2) : "0") + " /s", "#88b898");
-  pushH("MP rejenerasyon: " + (player.manaRegen != null ? player.manaRegen.toFixed(2) : "0") + " /s", "#8898c8");
-  pushH("Seviye: " + player.level + "  |  Kalan stat: " + player.statPoints, "#b8b0c8");
-
-  pushS("SAVA\u015e (ham form\u00fcl, kritik + ekstralar uygulanmam\u0131\u015f)");
-  pushH("Taban (ok) hasar: ~" + Math.floor(player.getDamage()), "#f0e8a0");
-  pushH("Uzak: ~" + Math.floor(player.getRangedDamage()) + (player.skills.marksman ? "  (Ni\u015fanc\u0131: %10)" : ""), "#f0e8a0");
-  pushH("Yak\u0131n: ~" + Math.floor(player.getMeleeDamage()) + (player.skills.brawler ? "  (D\u00f6v\u00fc\u015f\u00e7\u00fc: +4)" : ""), "#f0e8a0");
-  {
-    const pc0 = player.powerCharge, pch0 = player.powerCharging;
-    player.powerCharging = false;
-    player.powerCharge = 1;
-    const pmax = Math.floor(player.getPowerDamage());
-    player.powerCharge = pc0;
-    player.powerCharging = pch0;
-    pushH("G\u00fc\u00e7 at\u0131\u015f\u0131 (+\u015farj=1, ~\u00fcst): ~" + pmax, "#ffb060");
-  }
-  pushH("Attack Power (ekip zemin): " + apT, "#e8e8ff");
-
-  pushS("SAVUNMA");
-  pushH("Fiziksel savunma: " + (player._eqDefense | 0) + (player.skills.ward ? "  |  Ward: %8 genel azaltma" : ""), "#7cc8ff");
-  pushH("Ate\u015f: " + (player._eqResFire | 0) + "  Buz: " + (player._eqResGlacier | 0) + "  \u015eim\u015fek: " + (player._eqResLightning | 0), "#b0a8e8");
-  pushH("B\u00fcy\u00fc: " + (player._eqResMagic | 0) + "  Zehir: " + (player._eqResPoison | 0) + "  Lanet: " + (player._eqResCurse | 0), "#a898d8");
-
-  pushS("EK\u0130P EXTRAS (kritik / y\u00fczde)");
-  pushH("Kritik \u015fans (tahmini): %" + (agg.critChance | 0) + "  (sava\u015fta en fazla %85)", "#ffd480");
-  pushH("Kritik hasar +%: " + (agg.critDamagePct | 0), "#ffd480");
-  pushH("Ek hasar % (bonusPctDmg): " + (agg.bonusPctDmg | 0), "#7ae890");
-  pushH("Ate\u015f +%: " + (agg.firePct | 0) + "  Buz +%: " + (agg.icePct | 0) + "  Zehir +%: " + (agg.poisonPct | 0), "#90d0a8");
-  if (agg.backstabCrit) pushH("S\u0131rttan: krit (backstab)", "#ff9090");
-  if (agg.lowHpRules && agg.lowHpRules.length) {
-    for (const r of agg.lowHpRules) {
-      pushH("D\u00fc\u015f\u00fck can: HP < %" + Math.round(100 * r.below) + " i\u00e7in +" + Math.round(100 * r.bonus) + "% hasar", "#64c890");
-    }
-  }
-
-  pushS("E\u015eYA TOPLAMI (d\u00fcz + geli\u015fmi\u015f)");
-  const addFlat = (k, lab) => {
-    const v = st[k];
-    if (v != null && v !== 0) pushH(lab + ": " + (v > 0 ? "+" : "") + v, v < 0 ? "#ff8888" : "#8ae0a8");
-  };
-  addFlat("str", "G\u00fc\u00e7");
-  addFlat("agi", "\u00c7eviklik");
-  addFlat("wis", "Bilgelik");
-  addFlat("maxHp", "Max Can");
-  addFlat("maxMana", "Max Mana");
-  addFlat("meleeDmg", "Yak\u0131n g\u00fc\u00e7");
-  addFlat("rangedDmg", "Uzak g\u00fc\u00e7");
-
-  for (const k of Object.keys(adv).sort()) {
-    const v = adv[k];
-    if (v == null || v === 0) continue;
-    if (k === "pctStr" || k === "pctAgi" || k === "pctWis" || k === "pctHp" || k === "pctMana") {
-      const pl = { pctStr: "G\u00fc\u00e7 %", pctAgi: "\u00c7eviklik %", pctWis: "Bilgelik %", pctHp: "Max Can %", pctMana: "Max Mana %" }[k];
-      pushH(pl + ": " + (v > 0 ? "+" : "") + v, v > 0 ? "#ffd480" : "#ff8080");
-      continue;
-    }
-    if (k === "elemPoison" || k === "elemFlame" || k === "elemGlacier" || k === "elemLightning") {
-      const ela = { elemPoison: "Zehir hasar\u0131", elemFlame: "Ate\u015f hasar\u0131", elemGlacier: "Buz hasar\u0131", elemLightning: "\u015eim\u015fek hasar\u0131" }[k];
-      const col = k === "elemFlame" ? "#ff9d5c" : k === "elemGlacier" ? "#7fd8ff" : k === "elemLightning" ? "#d39cff" : "#8be27a";
-      pushH(ela + ": " + v, col);
-      continue;
-    }
-    const lab = advLabelCore[k] || k;
-    const col = advColorCore[k] || (v < 0 ? "#ff8888" : "#9ac8a8");
-    pushH(lab + ": " + (v > 0 ? "+" : "") + v, col);
-  }
-
-  let worn = 0;
-  pushS("YETENEKLER (a\u00e7\u0131k)");
-  let anySk = false;
-  for (const sk of PLAYER_SKILL_DEFS) {
-    if (player.skills[sk.id]) { pushH(sk.name + ": " + sk.desc, "#90ffa8"); anySk = true; }
-  }
-  if (!anySk) pushH("(\u00e7\u00f6z\u00fclm\u00fc\u015f yetenek yok)", "#666890");
-
-  pushS("GIYILI E\u015eYALAR (detayl\u0131)");
-  for (const sk of EQ_SLOTS) {
-    const es = inventory && inventory.equipped ? inventory.equipped[sk] : null;
-    if (!es) {
-      pushH((EQ_LABELS[sk] || sk) + ": (bo\u015f)", "#505060");
-      continue;
-    }
-    worn++;
-    const d = ITEMS[es.id];
-    const u = getStackUpgradeLv(es);
-    const nm = d ? d.name : es.id;
-    pushH((EQ_LABELS[sk] || sk) + ": " + nm + (u > 0 ? "  [+" + u + "]" : ""), "#b8c8f0");
-    if (d) {
-      const sub = collectEffectiveStatLines(d, u);
-      for (const sLine of sub) {
-        const col = sLine.color || (sLine.neg ? "#ff8888" : "#86c898");
-        pushH("  " + sLine.text, col);
-      }
-    } else {
-      pushH("  (tan\u0131ms\u0131z e\u015fya)", "#805050");
-    }
-  }
-
-  const nAll = out.length;
-  out.unshift({ text: "\u00d6zet: " + (nAll + 1) + " sat\u0131r (ba\u015fl\u0131k dahil)  |  Giyili: " + worn + " par\u00e7a", "#f0a040" });
-  return out;
 }
 
 /** Envanter sol s\u00fctun: KO tarz\u0131 basit karakter \u00f6nizlemesi (2D ka\u011f\u0131t bebek). */
@@ -2366,12 +2216,6 @@ const PLAYER_SKILL_DEFS = [
 
 const charPanel = {
   open: false,
-  showBuildSummary: false,
-  summaryScroll: 0,
-  summaryScrollMax: 0,
-  summaryScrollRect: null,
-  summaryScrollTouchId: -1,
-  summaryScrollLastY: 0,
   _layout(cw, ch) {
     const b = uiModalBounds(cw, ch);
     const land = cw > ch * 1.02;
@@ -2399,21 +2243,10 @@ const charPanel = {
     const skillStartY = skillHdrY + (land ? 12 : 18);
     const autoPotY = touchState.mobileUI ? statBtnY + statBtnH + 8 : -1;
     const closeR = { x: px + pw - 30, y: py + 8, w: 24, h: 24 };
-    const summaryOpenR = { x: closeR.x - 4 - 98, y: closeR.y, w: 98, h: 22 };
-    const buildGeriR = { x: px + 10, y: closeR.y, w: 52, h: 22 };
     return {
-      px, py, pw, ph, rowStep, boxH, land, titleY, statBtnY, statBtnH, skillHdrY, skillStartY, closeR, summaryOpenR, buildGeriR,
+      px, py, pw, ph, rowStep, boxH, land, titleY, statBtnY, statBtnH, skillHdrY, skillStartY, closeR,
       autoPotY, autoPotBlockH,
     };
-  },
-  _tryBeginSummaryScroll(id, mx, my, cw, ch) {
-    if (!this.showBuildSummary) return false;
-    const r = this.summaryScrollRect;
-    if (!r || (this.summaryScrollMax | 0) <= 0) return false;
-    if (mx < r.x || mx >= r.x + r.w || my < r.y || my >= r.y + r.h) return false;
-    this.summaryScrollTouchId = id;
-    this.summaryScrollLastY = my;
-    return true;
   },
   _autopotStepRects(L) {
     if (!touchState.mobileUI || L.autoPotY < 0) return null;
@@ -2434,24 +2267,14 @@ const charPanel = {
   toggle() {
     this.open = !this.open;
     if (this.open) {
-      this.showBuildSummary = false;
-      this.summaryScroll = 0;
-      this.summaryScrollTouchId = -1;
       if (typeof inventory !== "undefined") inventory.close();
       if (typeof petPanel !== "undefined") petPanel.open = false;
       if (typeof shop !== "undefined") shop.close();
       if (typeof craftPanel !== "undefined") craftPanel.close();
-    } else {
-      this.showBuildSummary = false;
-      this.summaryScroll = 0;
-      this.summaryScrollTouchId = -1;
     }
   },
   close() {
     this.open = false;
-    this.showBuildSummary = false;
-    this.summaryScroll = 0;
-    this.summaryScrollTouchId = -1;
   },
   tryAllocStat(player, stat) {
     if (player.statPoints <= 0) return "Stat puan\u0131n yok.";
@@ -2482,21 +2305,6 @@ const charPanel = {
     }
     if (this._in(mx, my, L.closeR)) {
       this.close();
-      return true;
-    }
-    if (this.showBuildSummary) {
-      if (this._in(mx, my, L.buildGeriR)) {
-        this.showBuildSummary = false;
-        this.summaryScroll = 0;
-        this.summaryScrollTouchId = -1;
-        return true;
-      }
-      return true;
-    }
-    if (this._in(mx, my, L.summaryOpenR)) {
-      this.showBuildSummary = true;
-      this.summaryScroll = 0;
-      this.summaryScrollTouchId = -1;
       return true;
     }
 
@@ -2573,66 +2381,6 @@ const charPanel = {
     }
     return true;
   },
-  _renderBuildSummary(ctx, L, player, inventory) {
-    const land = L.land;
-    const lineH = land ? 13 : 14;
-    const fontLn = land ? "10px monospace" : "11px monospace";
-    const padX = 14;
-    const scrollY0 = L.titleY + (land ? 24 : 32);
-    const scrollH = Math.max(40, L.py + L.ph - scrollY0 - 24);
-    const scrollW = L.pw - padX * 2;
-    const scrollX0 = L.px + padX;
-
-    ctx.fillStyle = "#2a5080";
-    roundRect(ctx, L.buildGeriR.x, L.buildGeriR.y, L.buildGeriR.w, L.buildGeriR.h, 5);
-    ctx.fill();
-    ctx.strokeStyle = "#80b0ff";
-    ctx.stroke();
-    ctx.fillStyle = "#e8f0ff";
-    ctx.font = land ? "bold 10px monospace" : "bold 11px monospace";
-    ctx.fillText("Geri", L.buildGeriR.x + (L.buildGeriR.w - ctx.measureText("Geri").width) / 2, L.buildGeriR.y + (land ? 15 : 16));
-
-    ctx.fillStyle = "#e8e8f0";
-    ctx.font = land ? "bold 12px monospace" : "bold 14px monospace";
-    ctx.fillText("T\u00fcm \u00f6zellikler", L.px + 80, L.titleY);
-
-    const lines = buildPlayerBuildSummaryLines(player, inventory);
-    const totalH = lines.length * lineH;
-    this.summaryScrollMax = Math.max(0, totalH - scrollH);
-    this.summaryScroll = Math.max(0, Math.min(this.summaryScrollMax, this.summaryScroll));
-    this.summaryScrollRect = { x: scrollX0, y: scrollY0, w: scrollW, h: scrollH };
-
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(scrollX0, scrollY0, scrollW, scrollH);
-    ctx.clip();
-    ctx.font = fontLn;
-    let y = scrollY0 + lineH - 2 - this.summaryScroll;
-    for (let i = 0; i < lines.length; i++) {
-      const ln = lines[i];
-      ctx.fillStyle = ln.color || "#a8b0c8";
-      const t = ln.text || "";
-      ctx.fillText(t, scrollX0, y);
-      y += lineH;
-    }
-    ctx.restore();
-
-    if (this.summaryScrollMax > 0) {
-      ctx.fillStyle = "rgba(80,90,120,0.45)";
-      const trackH = scrollH - 4;
-      const knobH = Math.max(20, (scrollH / totalH) * trackH);
-      const tMax = trackH - knobH;
-      const r0 = this.summaryScrollMax > 0 ? (this.summaryScroll / this.summaryScrollMax) * tMax : 0;
-      const bx = L.px + L.pw - 8;
-      roundRect(ctx, bx, scrollY0 + 2 + r0, 5, knobH, 2);
-      ctx.fill();
-    }
-
-    ctx.fillStyle = "#707890";
-    ctx.font = "9px monospace";
-    const hint = "Teker / kayd\u0131r  |  ESC: geri  |  X: kapat";
-    ctx.fillText(hint, L.px + 14, L.py + L.ph - 10);
-  },
   render(ctx, cw, ch, player, inventory) {
     if (!this.open) return;
     const L = this._layout(cw, ch);
@@ -2643,23 +2391,6 @@ const charPanel = {
     ctx.lineWidth = 1.5;
     roundRect(ctx, L.px, L.py, L.pw, L.ph, 10);
     ctx.stroke();
-
-    if (this.showBuildSummary) {
-      this._renderBuildSummary(ctx, L, player, inventory);
-      return;
-    }
-
-    ctx.fillStyle = "#2a4068";
-    roundRect(ctx, L.summaryOpenR.x, L.summaryOpenR.y, L.summaryOpenR.w, L.summaryOpenR.h, 5);
-    ctx.fill();
-    ctx.strokeStyle = "#6080a8";
-    ctx.stroke();
-    ctx.fillStyle = "#e0e8f8";
-    ctx.font = L.land ? "bold 9px monospace" : "bold 10px monospace";
-    {
-      const lab = "T\u00fcm \u00f6zellikler";
-      ctx.fillText(lab, L.summaryOpenR.x + (L.summaryOpenR.w - ctx.measureText(lab).width) / 2, L.summaryOpenR.y + (L.land ? 15 : 16));
-    }
 
     ctx.fillStyle = "#e8e8f0";
     ctx.font = L.land ? "bold 12px monospace" : "bold 14px monospace";
@@ -4758,9 +4489,8 @@ class Player {
     const bowId = inv && inv.equipped && inv.equipped.bow ? inv.equipped.bow.id : null;
     const hasBladeEquipped = !!(bladeId && ITEMS[bladeId] && ITEMS[bladeId].equipSlot === "blade");
     const hasBowEquipped = !!(bowId && ITEMS[bowId] && ITEMS[bowId].equipSlot === "bow");
-    const meleeThreat = !this.inBoat && hasBladeEquipped && hasBowEquipped && this._anyMonsterInMeleeReach(monsters);
-    const showBow = hasBowEquipped && this.swingAnim <= 0 && (!meleeThreat || this.shootAnim > 0);
-    const showBladeVisual = hasBladeEquipped && this.swingAnim <= 0 && (!hasBowEquipped || meleeThreat) && this.shootAnim <= 0;
+    const showBow = hasBowEquipped && this.shootAnim > 0;
+    const showBladeVisual = hasBladeEquipped && (this.swingAnim > 0 || !hasBowEquipped) && this.shootAnim <= 0;
 
     const cx = Math.round(this.x + this.w / 2);
     const cy = Math.round(this.y + this.h / 2);
@@ -8852,7 +8582,6 @@ let combatTownTeleportRect = null;
 let combatZoomRect = null;
 
 function layoutCombatPotions(cw, ch) {
-  const isLandscape = cw > ch * 1.05;
   const w = 46, h = 46, gap = 6;
   const bottomPad = touchState.mobileUI ? 38 : 24;
   let x1, x2;
@@ -8861,12 +8590,14 @@ function layoutCombatPotions(cw, ch) {
   if (touchState.mobileUI) {
     const G = mobileCombatClusterGeom(cw, ch);
     const potW = 42, potH = 42, innerGap = 10;
-    const hpX = Math.round(G.centerX - G.atkR - potW - (isLandscape ? 52 : 46));
-    const hpY = Math.round(G.centerY - potH + (isLandscape ? 2 : 4));
+    /** Sola al: sa\u011f alt 3l\u00fc vuru\u015f/zoom \u00fcst \u00fcste binmesin. */
+    const margin = 10;
+    const hpX = margin;
+    const hpY = Math.max(52, Math.min(G.centerY - 100, ch - 180));
     const manaX = hpX;
     const manaY = Math.round(hpY + potH + innerGap);
     combatTownTeleportRect = null;
-    combatZoomRect = { x: hpX - 34, y: hpY + 2, w: 30, h: 30, key: "+" };
+    combatZoomRect = { x: margin, y: Math.max(44, hpY - 36), w: 32, h: 32, key: "+" };
     combatPotionRects = [
       { kind: "hp", x: hpX, y: hpY, w: potW, h: potH, key: "Q" },
       { kind: "mana", x: manaX, y: manaY, w: potW, h: potH, key: "R" },
@@ -9312,12 +9043,7 @@ function renderWorldItemInspect(ctx, cw, ch) {
   const layoutTt = buildItemTooltipLayout(ctx, def, wi.itemId, cw, touchState.mobileUI, { omitPrices: true, omitIdentity: true, upgradeLv: uWiPre, innerMax: Math.max(200, L.pw - 40) }, []);
   let ty = iy + iconS + 12;
   const maxY = L.btnEquip.y - 8;
-  const cmpLines = buildInspectCompareLines(def, { id: wi.itemId, count: 1, upgrade: uWiPre || 0 }, "world");
-  const allLines = cmpLines.map((r) => ({
-    text: r.text,
-    color: r.color || "#b8c8e8",
-    font: touchState.mobileUI ? "11px monospace" : "10px monospace",
-  })).concat(layoutTt.lines);
+  const allLines = layoutTt.lines;
   const scrollRes = renderInspectStatLinesScrollable(ctx, allLines, L.px + 16, ty, maxY, touchState.mobileUI, inventoryInspectScrollY, L.pw - 32);
   inventoryInspectScrollMax = scrollRes.maxScroll;
   inventoryInspectScrollY = Math.max(0, Math.min(inventoryInspectScrollMax, inventoryInspectScrollY));
@@ -10231,77 +9957,6 @@ function inventorySlotInspectLayout(cw, ch) {
   return { px, py, pw, ph, btnEquip, btnDrop, btnClose, btnUpgrade };
 }
 
-/**
- * Giyerken hedef yuva: \u00f6nce `firstEquipSlotForItem` ile ayn\u0131 (yeni t\u0131kland\u0131\u011f\u0131nda
- * hangi slota konaca\u011f\u0131) — slot doluysa o slottakini d\u00f6nd\u00fcr\u00fcr, bo\u015fsa yeni
- * par\u00e7a bo\u015f yere girecek farkl\u0131 g\u00f6sterilir.
- */
-function buildInspectCompareLines(def, stack, viewKind) {
-  const out = [];
-  if (!def || !def.equipSlot || !stack) return out;
-  if (viewKind === "eq") return out;
-  const sk = firstEquipSlotForItem(inventory, def);
-  if (!sk) return out;
-  const curEq = inventory.equipped[sk];
-  const uN = getStackUpgradeLv(stack);
-  const newM = getEffectiveItemStatsMerged(def, uN);
-  const slotL = EQ_LABELS[sk] || sk;
-  out.push({ text: "\u2014 Hedef yuva: " + slotL + " \u2014", color: "#f0c860" });
-  const pd = (label, a, b) => {
-    const d = (Number(a) || 0) - (Number(b) || 0);
-    if (Math.abs(d) < 1e-6) return;
-    const abs = Math.abs(d);
-    const numStr = (abs < 1.01 && abs > 0.01) ? d.toFixed(1) : String(Math.round(d));
-    out.push({ text: label + " " + (d > 0 ? "+" : "") + numStr, color: d > 0 ? "#6ae0a0" : "#ff9090" });
-  };
-  if (!curEq) {
-    out.push({ text: "Yuvada: (bo\u015f)  \u2192  giyilecek: " + def.name, color: "#a8e0c8" });
-    out.push({ text: "Tahmini toplam g\u00fc\u00e7: " + Math.round(itemComparePowerValue(def, stack)), color: "#90ffd0" });
-    return out;
-  }
-  const curD = ITEMS[curEq.id];
-  if (!curD) return out;
-  const uO = getStackUpgradeLv(curEq);
-  const oldM = getEffectiveItemStatsMerged(curD, uO);
-  out.push({ text: "Giyili: " + curD.name + (uO ? " (+" + uO + ")" : ""), color: "#b8c8f0" });
-  out.push({ text: "Envanterdeki: " + def.name + (uN ? " (+" + uN + ")" : ""), color: "#e8f0ff" });
-  const pN = itemComparePowerValue(def, stack);
-  const pO = itemComparePowerValue(curD, curEq);
-  const dP = pN - pO;
-  if (dP > 0.5) {
-    out.push({ text: ">>> Bu (envanter) par\u00e7a DAHA G\u00dc\u00c7L\u00dc  (tahmin \u0394" + (dP > 0 ? "+" : "") + Math.round(dP) + ")", color: "#5cff8a" });
-  } else if (dP < -0.5) {
-    out.push({ text: ">>> TAKILI par\u00e7a daha g\u00fc\u00e7l\u00fc  (tahmin \u0394" + Math.round(dP) + ")", color: "#ff9a8a" });
-  } else {
-    out.push({ text: ">>> Toplam g\u00fc\u00e7 neredeyse ayn\u0131", color: "#d0d0a0" });
-  }
-  out.push({ text: "Skor  yeni " + Math.round(pN) + "  /  giyili " + Math.round(pO), color: "#a8b0c8" });
-  pd("G\u00fc\u00e7", newM.stats.str, oldM.stats.str);
-  pd("\u00c7eviklik", newM.stats.agi, oldM.stats.agi);
-  pd("Bilgelik", newM.stats.wis, oldM.stats.wis);
-  pd("Max Can", newM.stats.maxHp, oldM.stats.maxHp);
-  pd("Max Mana", newM.stats.maxMana, oldM.stats.maxMana);
-  pd("Yak\u0131n g\u00fc\u00e7", newM.stats.meleeDmg, oldM.stats.meleeDmg);
-  pd("Uzak g\u00fc\u00e7", newM.stats.rangedDmg, oldM.stats.rangedDmg);
-  pd("Attack Power", (newM.advanced && newM.advanced.attackPower) || 0, (oldM.advanced && oldM.advanced.attackPower) || 0);
-  pd("Savunma", (newM.advanced && newM.advanced.defense) || 0, (oldM.advanced && oldM.advanced.defense) || 0);
-  const advL = {
-    resFire: "Ate\u015f dr.", resGlacier: "Buz dr.", resLightning: "\u015eim\u015fek dr.",
-    resMagic: "B\u00fcy\u00fc dr.", resPoison: "Zehir dr.", resCurse: "Lanet dr.",
-    defDagger: "Han\u00e7er sav", defSword: "K\u0131l\u0131\u00e7 sav", defClub: "Darbe sav", defSpear: "M\u0131zrak sav", defArrow: "Ok sav",
-    critRate: "Krit (adv)", critDamage: "Krit hasar (adv)", pctStr: "G\u00fc\u00e7 %", pctAgi: "Cev %", pctWis: "Bil %", pctHp: "Can %", pctMana: "Mana %",
-    elemPoison: "Zehir elem", elemFlame: "Ate\u015f elem", elemGlacier: "Buz elem", elemLightning: "\u015eim\u015fek elem",
-  };
-  const allK = new Set([...Object.keys(newM.advanced || {}), ...Object.keys(oldM.advanced || {})]);
-  for (const k of [...allK].sort()) {
-    if (k === "attackPower" || k === "defense") continue;
-    const a = (newM.advanced && newM.advanced[k]) != null ? newM.advanced[k] : 0;
-    const b = (oldM.advanced && oldM.advanced[k]) != null ? oldM.advanced[k] : 0;
-    if ((Number(a) || 0) || (Number(b) || 0)) pd(advL[k] || k, a, b);
-  }
-  return out;
-}
-
 function handleInventorySlotInspectClick(mx, my, cw, ch) {
   if (!inventorySlotInspect) return false;
   const { kind, idx } = inventorySlotInspect;
@@ -10428,12 +10083,7 @@ function renderInventorySlotInspect(ctx, cw, ch) {
   const layoutTt = buildItemTooltipLayout(ctx, def, slot.id, cw, touchState.mobileUI, { omitPrices: true, omitIdentity: true, stackRef: slot, innerMax: Math.max(200, L.pw - 40) }, []);
   let ty = iy + iconS + 12;
   const maxY = L.btnUpgrade.y - 6;
-  const cmpRaw = buildInspectCompareLines(def, slot, fromEquip ? "eq" : kind);
-  const allLines = cmpRaw.map((r) => ({
-    text: r.text,
-    color: r.color || "#b8c8e8",
-    font: touchState.mobileUI ? "11px monospace" : "10px monospace",
-  })).concat(layoutTt.lines);
+  const allLines = layoutTt.lines;
   const scrollRes = renderInspectStatLinesScrollable(ctx, allLines, L.px + 16, ty, maxY, touchState.mobileUI, inventoryInspectScrollY, L.pw - 32);
   inventoryInspectScrollMax = scrollRes.maxScroll;
   inventoryInspectScrollY = Math.max(0, Math.min(inventoryInspectScrollMax, inventoryInspectScrollY));
@@ -10619,56 +10269,6 @@ function isMonsterDangerousForPlayerLevel(m, plv) {
   if (mt && mt.boss) return true;
   const pl = 20 + plv * 21;
   return monsterRelativePowerScore(m) >= pl * 0.9;
-}
-
-function drawRangedTargetHpBanner(ctx, cw, ch, m) {
-  if (!m || !m.alive || m.state === "dying" || rangedFocusTimer <= 0) return;
-  const mt = MONSTER_TYPES[m.type];
-  const mobName = (mt && mt.name) ? mt.name : m.type;
-  const ratio = Math.max(0, Math.min(1, m.maxHp > 0 ? m.hp / m.maxHp : 0));
-  ctx.save();
-  ctx.font = "bold 11px monospace";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  const line = mobName;
-  const tw = ctx.measureText(line).width;
-  const bw = Math.min(cw - 20, Math.max(320, tw + 80));
-  const bh = 22;
-  const bx = (cw - bw) / 2;
-  /** \u00dcst men\u00fc (\u00c7ant/K/H/T) + minimap \u00fcst\u00fcnde kals\u0131n; mobilde biraz a\u015fa\u011f\u0131. */
-  const by = 8;
-  const pad = 4;
-  const barH = 6;
-  const barY = by + bh - barH - pad;
-  const barX = bx + pad;
-  const barW = bw - pad * 2;
-
-  ctx.fillStyle = "#1a0608";
-  roundRect(ctx, bx, by, bw, bh, 8);
-  ctx.fill();
-  ctx.strokeStyle = "rgba(0,0,0,0.55)";
-  ctx.lineWidth = 2;
-  roundRect(ctx, bx, by, bw, bh, 8);
-  ctx.stroke();
-
-  ctx.fillStyle = "rgba(0,0,0,0.5)";
-  roundRect(ctx, barX, barY, barW, barH, 4);
-  ctx.fill();
-  const fillW = Math.max(0, barW * ratio);
-  if (fillW > 0.5) {
-    ctx.fillStyle = ratio > 0.35 ? "#d81818" : ratio > 0.15 ? "#c04020" : "#903030";
-    roundRect(ctx, barX, barY, fillW, barH, 4);
-    ctx.fill();
-  }
-
-  ctx.font = "bold 10px monospace";
-  ctx.fillStyle = "#ffffff";
-  ctx.lineWidth = 2;
-  ctx.strokeStyle = "rgba(0,0,0,0.85)";
-  ctx.strokeText(line, cw / 2, by + 6);
-  ctx.fillStyle = "#ffffff";
-  ctx.fillText(line, cw / 2, by + 6);
-  ctx.restore();
 }
 
 function tryActivateRageBurst() {
@@ -11332,16 +10932,6 @@ canvas.addEventListener("wheel", (e) => {
     shop.handleScroll(dy, e.clientX, e.clientY, canvasW, canvasH);
     e.preventDefault();
   }
-  if (charPanel.open && charPanel.showBuildSummary) {
-    const r = charPanel.summaryScrollRect;
-    if (r && charPanel.summaryScrollMax > 0) {
-      const ins = e.clientX >= r.x && e.clientX < r.x + r.w && e.clientY >= r.y && e.clientY < r.y + r.h;
-      if (ins) {
-        charPanel.summaryScroll = Math.max(0, Math.min(charPanel.summaryScrollMax, charPanel.summaryScroll + e.deltaY * 0.5));
-        e.preventDefault();
-      }
-    }
-  }
 }, { passive: false });
 
 function tryMobileClosePanels(mx, my) {
@@ -11400,7 +10990,6 @@ function handleCanvasTouchStart(e) {
     }
 
     if (charPanel.open) {
-      if (charPanel.showBuildSummary && charPanel._tryBeginSummaryScroll(id, mx, my, canvasW, canvasH)) continue;
       charPanel.handleClick(mx, my, canvasW, canvasH, player, inventory);
       continue;
     }
@@ -11485,11 +11074,6 @@ function handleCanvasTouchMove(e) {
       inventoryInspectScrollLastY = my;
       inventoryInspectScrollY = Math.max(0, Math.min(inventoryInspectScrollMax, inventoryInspectScrollY - dy));
     }
-    if (charPanel.open && charPanel.showBuildSummary && id === charPanel.summaryScrollTouchId && charPanel.summaryScrollMax > 0) {
-      const dy = my - charPanel.summaryScrollLastY;
-      charPanel.summaryScrollLastY = my;
-      charPanel.summaryScroll = Math.max(0, Math.min(charPanel.summaryScrollMax, charPanel.summaryScroll - dy));
-    }
     if (id === touchState.joyId) {
       let dx = mx - touchState.joyOx, dy = my - touchState.joyOy;
       const max = touchState.joyR * 0.88;
@@ -11560,9 +11144,6 @@ function handleCanvasTouchEnd(e) {
     }
     if (id === inventoryInspectScrollTouchId) {
       inventoryInspectScrollTouchId = -1;
-    }
-    if (id === charPanel.summaryScrollTouchId) {
-      charPanel.summaryScrollTouchId = -1;
     }
     if (id === touchState.joyId) {
       touchState.joyId = -1;
@@ -11703,10 +11284,6 @@ function renderTouchOverlay(ctx) {
       ctx.fillStyle = onAux ? "#fff8ff" : (isPower ? "#7a2cb0" : "#383850");
       ctx.font = (b.label && String(b.label).length > 1) ? "bold 10px monospace" : "bold 12px monospace";
       ctx.fillText(b.label, b.cx - ctx.measureText(b.label).width / 2, b.cy + 4);
-      ctx.fillStyle = "rgba(210,210,230,0.95)";
-      ctx.font = "6px monospace";
-      const sub = "POWER";
-      ctx.fillText(sub, b.cx - ctx.measureText(sub).width / 2, b.cy + b.r + 7);
       continue;
     }
     const onRect = touchState.btnDown.size && [...touchState.btnDown.values()].some((v) => v.key === b.key);
@@ -11897,13 +11474,7 @@ function handleInteraction() {
 
 let lastTime = performance.now();
 
-/* ── Kayıt slotları (localStorage) ─────────────────────────── */
-const SAVE_KEY_PREFIX = "chopgrow_save_v3_";
-const SAVE_META_PREFIX = "chopgrow_savemeta_v3_";
-const NUM_SAVE_SLOTS = 3;
-/** -1 = kayıt menüsü; 0..2 = aktif oyun slotu */
-let currentSaveSlot = -1;
-let nextAutoSaveAt = 0;
+/* ── Kayıt slotları (localStorage) — prefix/say\u0131 yukar\u0131da, fonksiyonlar burada ─── */
 
 function saveKeyForSlot(slot) {
   return SAVE_KEY_PREFIX + slot;
@@ -12366,6 +11937,21 @@ function hideSaveMenu() {
   }
 }
 
+/** file:// veya erken \u00e7al\u0131\u015fmada men\u00fc g\u00f6r\u00fcnmezse tekrar dene (kay\u0131t se\u00e7iliyse dokunma). */
+function ensureSaveMenuVisible() {
+  try {
+    if (typeof currentSaveSlot === "number" && currentSaveSlot >= 0) return;
+    const ov = document.getElementById("save-menu-overlay");
+    if (!ov) return;
+    ov.style.display = "block";
+    ov.style.zIndex = "2147483647";
+    ov.setAttribute("aria-hidden", "false");
+    if (typeof refreshSaveMenuDom === "function") refreshSaveMenuDom();
+  } catch (e) {
+    console.error("ensureSaveMenuVisible", e);
+  }
+}
+
 function refreshSaveMenuDom() {
   const root = document.getElementById("save-slots-root");
   if (!root) return;
@@ -12459,6 +12045,22 @@ function gameLoop(now) {
   if (currentSaveSlot < 0) {
     lastTime = now;
     clearJustPressed();
+    if (ctx && canvasW > 0 && canvasH > 0) {
+      const g = ctx.createLinearGradient(0, 0, 0, canvasH);
+      g.addColorStop(0, "#1a2028");
+      g.addColorStop(1, "#0a0c10");
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, canvasW, canvasH);
+      ctx.fillStyle = "#b8c0d0";
+      ctx.font = "bold 16px system-ui, sans-serif";
+      const t0 = "\u00d6nce \u00fcstteki kay\u0131t penceresinden \"Yeni oyun\" veya \"Devam et\" se\u00e7in.";
+      ctx.fillText(t0, (canvasW - ctx.measureText(t0).width) / 2, canvasH * 0.4);
+      ctx.font = "13px system-ui, sans-serif";
+      const t1 = "Pencere yoksa: proje klas\u00f6r\u00fcnde serve.bat \u00e7al\u0131\u015f\u0131p http://127.0.0.1:8080/ adresini a\u00e7in; hata i\u00e7in F12 \u00bb Console.";
+      const w1 = ctx.measureText(t1).width;
+      const x1 = w1 < canvasW - 20 ? (canvasW - w1) / 2 : 10;
+      ctx.fillText(t1, x1, canvasH * 0.5);
+    }
     requestAnimationFrame(gameLoop);
     return;
   }
@@ -12485,13 +12087,7 @@ function gameLoop(now) {
     }
     else if (petPanel.open) petPanel.close();
     else if (charPanel.open) {
-      if (charPanel.showBuildSummary) {
-        charPanel.showBuildSummary = false;
-        charPanel.summaryScroll = 0;
-        charPanel.summaryScrollTouchId = -1;
-      } else {
-        charPanel.close();
-      }
+      charPanel.close();
     }
     else if (worldItemInspect) closeWorldItemInspect();
   } else if (wasJustPressed("KeyI") || wasJustPressed("Tab")) {
@@ -12887,28 +12483,11 @@ function gameLoop(now) {
 
   camera.resetTransform(ctx);
 
-  (function drawScreenVignette() {
-    const g = ctx.createRadialGradient(
-      canvasW * 0.5, canvasH * 0.42, Math.min(canvasW, canvasH) * 0.2,
-      canvasW * 0.5, canvasH * 0.5, Math.max(canvasW, canvasH) * 0.72
-    );
-    g.addColorStop(0, "rgba(0,0,0,0)");
-    g.addColorStop(0.65, "rgba(0,0,0,0.12)");
-    g.addColorStop(1, "rgba(0,0,0,0.28)");
-    ctx.save();
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, canvasW, canvasH);
-    ctx.restore();
-  })();
-
   if (!inventory.open && !petPanel.open && !shop.open && !craftPanel.open) {
     const hx = 10, hy = 10, hw = 170, barH = 10, gap = 4, pad = 6;
     const extraRageRow = (player.rageBurstTimer > 0 || player.rageMeter > 0.02) ? barH + gap : 0;
     const extraPwrRow = (player.powerCharging && player.powerCharge > 0) ? barH + gap : 0;
-    const extraComboRow = (player.archerComboTimer > 0 || player.archerComboCount > 0) ? barH + gap : 0;
-    const extraRapidRow = player.archerRapidFireTimer > 0 ? barH + gap : 0;
-    const panelH = pad * 2 + barH * 4 + gap * 3 + 22 + extraRageRow + extraPwrRow + extraComboRow + extraRapidRow;
+    const panelH = pad * 2 + barH * 4 + gap * 3 + 22 + extraRageRow + extraPwrRow;
 
     const hgrd = ctx.createLinearGradient(hx, hy, hx, hy + panelH);
     hgrd.addColorStop(0, "rgba(16, 18, 42, 0.92)");
@@ -12969,15 +12548,6 @@ function gameLoop(now) {
       by += barH + gap;
       drawBar("PWR", player.powerCharge * 100, 100, "#a040d0", "#d080ff", hx + pad, by);
     }
-    if (player.archerComboTimer > 0 || player.archerComboCount > 0) {
-      by += barH + gap;
-      const lbl = player.archerComboCount >= 5 ? "COMBO ULTI" : "COMBO";
-      drawBar(lbl, player.archerComboCount, 5, "#2090d0", "#70d8ff", hx + pad, by);
-    }
-    if (player.archerRapidFireTimer > 0) {
-      by += barH + gap;
-      drawBar("RAPID", player.archerRapidFireTimer, 3.2, "#8a40ff", "#e090ff", hx + pad, by);
-    }
 
     let extraY = hy + panelH + 6;
 
@@ -13001,7 +12571,6 @@ function gameLoop(now) {
       ctx.fillStyle = "#80c0ff"; ctx.font = "bold 12px monospace";
       ctx.fillText("\u2693 Teknede", hx + 14, extraY + 18);
     }
-
   }
 
   inventory.render(ctx, canvasW, canvasH, mouseX, mouseY);
@@ -13024,10 +12593,6 @@ function gameLoop(now) {
 
   if (!inventory.open && !petPanel.open && !shop.open && !craftPanel.open) {
     drawCombatPotions(ctx, canvasW, canvasH, inventory);
-  }
-
-  if (!inventory.open && !petPanel.open && !shop.open && !craftPanel.open && !charPanel.open) {
-    drawRangedTargetHpBanner(ctx, canvasW, canvasH, rangedFocusMonster);
   }
 
   if (player.levelUpTimer > 0) {
@@ -13076,7 +12641,19 @@ function gameLoop(now) {
   requestAnimationFrame(gameLoop);
 }
 
-showSaveMenu();
+try {
+  if (!canvas || !ctx) {
+    document.body.insertAdjacentHTML("beforeend", "<p style=\"position:fixed;z-index:99999;padding:20px;background:#500;color:#fff\">Taray\u0131c\u0131 canvas 2D desteklemiyor.</p>");
+  }
+} catch (e) {
+  const msg = (e && e.message) ? String(e.message) : String(e);
+  document.body.insertAdjacentHTML("beforeend", "<p style=\"position:fixed;z-index:99999;left:0;right:0;padding:20px;background:#500;color:#fff;white-space:pre-wrap;font:14px monospace\">Ba\u015flatma hatas\u0131: " + msg.replace(/</g, " ") + "</p>");
+  console.error(e);
+}
+if (typeof ensureSaveMenuVisible === "function") {
+  requestAnimationFrame(() => { ensureSaveMenuVisible(); });
+  window.addEventListener("load", () => { ensureSaveMenuVisible(); }, { once: true });
+}
 requestAnimationFrame(gameLoop);
 </script>
 </body>
