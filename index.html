@@ -963,6 +963,43 @@ const ITEMS = {
   boss_chest:     { id: "boss_chest",     name: "Boss Sand\u0131\u011f\u0131",       stackable: true, maxStack: 99, rarity: "legendary", desc: "A\u00e7\u0131nca nadir ganimet verir.", buyPrice: 0, sellPrice: 0 },
 };
 
+function cloneScaledNumericMap(src, mul) {
+  if (!src || typeof src !== "object") return src || {};
+  const out = {};
+  for (const k of Object.keys(src)) {
+    const v = src[k];
+    out[k] = (typeof v === "number") ? Math.max(1, Math.round(v * mul)) : v;
+  }
+  return out;
+}
+
+function ensureLegendaryForAllEquipments() {
+  const ids = Object.keys(ITEMS);
+  for (const id of ids) {
+    const def = ITEMS[id];
+    if (!def || !def.equipSlot) continue;
+    if (def.rarity === "legendary") continue;
+    const lid = id + "_legendary";
+    if (ITEMS[lid]) continue;
+
+    const niceName = /efsane/i.test(def.name || "") ? def.name : ("Efsanevi " + (def.name || id));
+    ITEMS[lid] = {
+      ...def,
+      id: lid,
+      name: niceName,
+      rarity: "legendary",
+      minLevel: Math.max(1, estimateEquipRequiredLevel(def) + 10),
+      stats: cloneScaledNumericMap(def.stats || {}, 1.45),
+      advanced: cloneScaledNumericMap(def.advanced || {}, 1.35),
+      sellPrice: Math.max((def.sellPrice | 0), Math.round((def.sellPrice | 0) * 3.2), 120),
+      buyPrice: 0,
+      desc: (def.desc ? (def.desc + " ") : "") + "Efsanevi gucle guclendirilmis versiyon.",
+    };
+  }
+}
+
+ensureLegendaryForAllEquipments();
+
 const RARITY_COLOR = {
   common: "#9aa0b0",
   rare: "#4a9fff",
@@ -6502,22 +6539,27 @@ class Monster {
     this.levelScale = s;
     this.campId = opts.campId != null ? String(opts.campId) : null;
     this.campTier = opts.campTier != null ? String(opts.campTier) : null;
+    this.ultraBoss = !!opts.ultraBoss;
     this.campScale = opts.campScale != null ? opts.campScale : s;
     this.campRole = opts.campRole != null ? String(opts.campRole) : null;
     this.socialAggroRange = opts.socialAggroRange != null ? opts.socialAggroRange : TILE_SIZE * 6.2;
     this.supportHealCd = 1.8 + Math.random() * 1.2;
     this._applyCampRoleTuning();
     const tierBonus = this.campTier === "apex" ? 7 : this.campTier === "heroic" ? 4 : this.campTier === "elite" ? 2 : 0;
-    this.level = Math.max(1, Math.round(this.levelScale * 4 + (this.boss ? 6 : 0) + tierBonus));
-    const hpArchetype = Math.max(0.65, Math.min(7.5, mt.hp / 30));
-    const dmgArchetype = Math.max(0.75, Math.min(8, mt.dmg / 5));
-    const lvHp = (3 + Math.pow(this.level, 1.34) * 2.0) * hpArchetype * (this.boss ? 3.2 : 1);
-    const lvDmg = (1 + Math.pow(this.level, 1.16) * 0.78) * dmgArchetype * (this.boss ? 2.05 : 1);
-    this.maxHp = Math.max(5, Math.floor(lvHp));
+    this.level = Math.max(1, Math.round(this.levelScale * 4 + (this.boss ? 6 : 0) + tierBonus + (this.ultraBoss ? 8 : 0)));
+    const hpArchetype = Math.max(0.65, Math.min(8.2, mt.hp / 28));
+    const dmgArchetype = Math.max(0.75, Math.min(8.8, mt.dmg / 4.6));
+    const tierHpMul = this.campTier === "apex" ? 2.15 : this.campTier === "heroic" ? 1.7 : this.campTier === "elite" ? 1.38 : 1;
+    const tierDmgMul = this.campTier === "apex" ? 1.95 : this.campTier === "heroic" ? 1.58 : this.campTier === "elite" ? 1.3 : 1;
+    const lateHpRamp = this.level >= 26 ? (1 + (this.level - 25) * 0.03) : 1;
+    const lateDmgRamp = this.level >= 26 ? (1 + (this.level - 25) * 0.022) : 1;
+    const lvHp = (4 + Math.pow(this.level, 1.42) * 2.45) * hpArchetype * tierHpMul * lateHpRamp * (this.boss ? 3.8 : 1);
+    const lvDmg = (1 + Math.pow(this.level, 1.24) * 0.95) * dmgArchetype * tierDmgMul * lateDmgRamp * (this.boss ? 2.45 : 1);
+    this.maxHp = Math.max(5, Math.floor(this.ultraBoss ? lvHp * 2.25 : lvHp));
     this.hp = this.maxHp;
-    this.dmg = Math.max(1, Math.floor(lvDmg));
-    this.xpReward = Math.max(2, Math.floor(this.xpReward * (0.45 + this.level * 0.22)));
-    this.goldReward = Math.max(1, Math.floor(this.goldReward * (0.5 + this.level * 0.16)));
+    this.dmg = Math.max(1, Math.floor(this.ultraBoss ? lvDmg * 1.7 : lvDmg));
+    this.xpReward = Math.max(2, Math.floor(this.xpReward * (0.45 + this.level * 0.22) * (this.ultraBoss ? 2.4 : 1)));
+    this.goldReward = Math.max(1, Math.floor(this.goldReward * (0.5 + this.level * 0.16) * (this.ultraBoss ? 2.1 : 1)));
     this.respawnTime = this._rollRespawnTime();
   }
 
@@ -6785,13 +6827,17 @@ class Monster {
     ctx.restore();
     const mt = MONSTER_TYPES[this.type];
     const nm = (mt && mt.name) ? mt.name : this.type;
-    const lvName = "Lv." + this.level + " " + nm;
+    const lvName = (this.ultraBoss ? "ULTRA " : "") + "Lv." + this.level + " " + nm;
     const danger = typeof player !== "undefined" && player && isMonsterDangerousForPlayerLevel(this, player.level);
-    drawEntityNameLabel(ctx, this.cx, this.y - 20, lvName, {
-      color: danger ? "#ff4a4a" : "#ffffff",
-      border: danger ? "rgba(90, 20, 20, 0.7)" : "rgba(200, 200, 210, 0.35)",
-      bg: danger ? "rgba(26, 8, 8, 0.82)" : "rgba(8, 10, 22, 0.78)",
-    });
+    const showLabel = !touchState.mobileUI || this.boss ||
+      (typeof player !== "undefined" && player && this.distTo(player.centerX, player.centerY) <= TILE_SIZE * 7);
+    if (showLabel) {
+      drawEntityNameLabel(ctx, this.cx, this.y - 20, lvName, {
+        color: danger ? "#ff4a4a" : "#ffffff",
+        border: danger ? "rgba(90, 20, 20, 0.7)" : "rgba(200, 200, 210, 0.35)",
+        bg: danger ? "rgba(26, 8, 8, 0.82)" : "rgba(8, 10, 22, 0.78)",
+      });
+    }
     // İstek doğrultusunda etiket sadece "Lv + isim".
   }
 }
@@ -11132,7 +11178,23 @@ function spawnMonsters() {
     }
     if (isl.boss && MONSTER_TYPES[isl.boss]) {
       const sp = findBossSpawn(isl);
-      if (sp) list.push(new Monster(sp.col, sp.row, isl.boss, (isl.scale || 1) * 1.65));
+      if (sp) {
+        const bossScale = (isl.scale || 1) * 1.65;
+        list.push(new Monster(sp.col, sp.row, isl.boss, bossScale));
+        const dist = worldDistanceNorm(sp.col, sp.row);
+        const ultraChance = Math.max(0, Math.min(0.8, (dist - 0.58) * 1.15 + ((isl.scale || 1) - 1.2) * 0.22));
+        if (dist > 0.62 && Math.random() < ultraChance) {
+          const ox = (hashXY(sp.col * 71 + 11, sp.row * 67 + 23) > 0.5) ? 2 : -2;
+          const oy = (hashXY(sp.col * 59 + 31, sp.row * 53 + 7) > 0.5) ? 2 : -2;
+          const uc = sp.col + ox, ur = sp.row + oy;
+          if (isSafeSpawn(uc, ur)) {
+            list.push(new Monster(uc, ur, isl.boss, bossScale * 1.3, {
+              campTier: "apex",
+              ultraBoss: true,
+            }));
+          }
+        }
+      }
     }
     const chestTries = [[0, 0], [2, 1], [-2, 1], [1, -2], [-1, -2]];
     for (const [ox, oy] of chestTries) {
@@ -11265,11 +11327,28 @@ function dropMonsterLoot(m, worldItems) {
   const mLevel = Math.max(1, m.level | 0);
   const tc = Math.floor(m.cx / TILE_SIZE), tr = Math.floor(m.cy / TILE_SIZE);
   const dropped = [];
+  const estimateGenericDropLevel = (def) => {
+    if (!def) return 1;
+    if (def.equipSlot) return estimateEquipRequiredLevel(def);
+    if (def.rarity === "legendary") return 42;
+    if (def.rarity === "epic") return 28;
+    if (def.rarity === "rare") return 14;
+    const eco = Math.max(0, (def.buyPrice || 0) + (def.sellPrice || 0));
+    return Math.max(1, Math.min(55, 1 + Math.floor(eco / 60)));
+  };
   const canDropForMonsterLevel = (itemId) => {
     const d = ITEMS[itemId];
-    if (!d || !d.equipSlot) return true;
-    return estimateEquipRequiredLevel(d) <= mLevel;
+    if (!d) return false;
+    if (!d.equipSlot) return false;
+    const reqLv = estimateGenericDropLevel(d);
+    if (reqLv > mLevel + 6) return false;
+    if (d.rarity === "legendary" && !m.boss) return false;
+    return true;
   };
+  const allEquipForLevelSorted = () =>
+    Object.keys(ITEMS)
+      .filter((id) => ITEMS[id] && ITEMS[id].equipSlot && (m.boss || ITEMS[id].rarity !== "legendary"))
+      .sort((a, b) => estimateGenericDropLevel(ITEMS[a]) - estimateGenericDropLevel(ITEMS[b]));
   const pushDrop = (itemId, count, upgradeLevel) => {
     if (!canDropForMonsterLevel(itemId)) return false;
     const cnt = Math.max(1, count | 0);
@@ -11316,28 +11395,14 @@ function dropMonsterLoot(m, worldItems) {
     }
   }
 
-  const EQUIP_POOLS_BY_RARITY = {
-    common: [
-      "sword_rusty", "bow", "bow_short", "bow_recurve", "helm_leather", "chest_leather", "boots_leather",
-      "waist_cloth", "arms_cloth", "wings_cloth", "ring_copper", "amulet_wood",
-      "cloak_common", "talisman_common", "artifact_common",
-    ],
-    rare: [
-      "sword_steel", "bow_hunter", "bow_composite", "bow_war", "helm_iron", "chest_steel", "boots_swift",
-      "waist_chain", "arms_iron", "wings_azure", "gloves_archer", "explorer_band",
-      "lucky_charm", "cloak_shadow", "shoulder_guard",
-    ],
-    epic: [
-      "sword_elven", "spear_epic", "bow_long", "bow_moon_epic", "bow_sun_epic", "helm_epic", "chest_epic", "boots_epic",
-      "waist_epic", "arms_epic", "wings_epic", "ring_power", "merchants_ring",
-      "earring_focus", "bracelet_titan", "talisman_epic", "artifact_epic", "cloak_epic",
-    ],
-    legendary: [
-      "bow_storm_legendary", "bow_void_legendary", "bow_dragon_legendary", "helm_legendary", "chest_legendary",
-      "waist_legendary", "arms_legendary", "wings_legendary", "amulet_wisdom",
-      "talisman_void", "artifact_dragon_eye", "cloak_legendary",
-    ],
-  };
+  const EQUIP_POOLS_BY_RARITY = { common: [], rare: [], epic: [], legendary: [] };
+  for (const itemId of Object.keys(ITEMS)) {
+    const d = ITEMS[itemId];
+    if (!d || !d.equipSlot) continue;
+    const rr = d.rarity || "common";
+    if (!EQUIP_POOLS_BY_RARITY[rr]) EQUIP_POOLS_BY_RARITY[rr] = [];
+    EQUIP_POOLS_BY_RARITY[rr].push(itemId);
+  }
   const STRONG_BOSS_EPIC_LEGENDARY = [
     "helm_epic", "helm_legendary", "chest_epic", "chest_legendary", "boots_epic",
     "waist_epic", "waist_legendary", "arms_epic", "arms_legendary", "wings_epic", "wings_legendary",
@@ -11349,13 +11414,14 @@ function dropMonsterLoot(m, worldItems) {
   ];
   const DRAGON_GUARANTEE_LEGENDARY = ["helm_legendary", "chest_legendary", "waist_legendary", "arms_legendary", "wings_legendary", "amulet_wisdom", "bow_storm_legendary", "bow_dragon_legendary", "talisman_void", "artifact_dragon_eye"];
 
-  const strongBoss = !!(m.boss && STRONG_BOSS_TYPES.has(m.type));
+  const ultraBoss = !!m.ultraBoss;
+  const strongBoss = !!(m.boss && (ultraBoss || STRONG_BOSS_TYPES.has(m.type)));
   const bRate = LOOT_BALANCE_PANEL.bossRateTable[m.type] || { legendMul: 1, hiTierMul: 1 };
-  const levelRollCount = m.boss ? 2 + (strongBoss ? 1 : 0) : 1;
+  const levelRollCount = m.boss ? 2 + (strongBoss ? 1 : 0) + (ultraBoss ? 1 : 0) : 1;
   const rollLevelBasedRarity = () => {
     const t = Math.random();
-    const legendaryChance = m.boss ? (strongBoss ? 0.03 : 0.016) : Math.min(0.008, 0.0004 + mLevel * 0.00018);
-    const epicChance = Math.min(0.48, 0.05 + mLevel * 0.012 + (m.boss ? 0.15 : 0));
+    const legendaryChance = m.boss ? (ultraBoss ? 0.12 : (strongBoss ? 0.03 : 0.016)) : Math.min(0.008, 0.0004 + mLevel * 0.00018);
+    const epicChance = Math.min(0.65, 0.05 + mLevel * 0.012 + (m.boss ? (ultraBoss ? 0.26 : 0.15) : 0));
     const rareChance = Math.min(0.75, 0.26 + mLevel * 0.014 + (m.boss ? 0.1 : 0));
     if (t < legendaryChance) return "legendary";
     if (t < legendaryChance + epicChance) return "epic";
@@ -11366,8 +11432,11 @@ function dropMonsterLoot(m, worldItems) {
     const pool = (EQUIP_POOLS_BY_RARITY[rarity] || EQUIP_POOLS_BY_RARITY.common).filter((id) => canDropForMonsterLevel(id));
     if (!pool.length) {
       const fallback = EQUIP_POOLS_BY_RARITY.common.filter((id) => canDropForMonsterLevel(id));
-      if (!fallback.length) return null;
-      return fallback[Math.floor(Math.random() * fallback.length)];
+      if (fallback.length) return fallback[Math.floor(Math.random() * fallback.length)];
+      const all = allEquipForLevelSorted();
+      if (!all.length) return null;
+      const cap = Math.max(0, Math.min(all.length - 1, Math.floor((mLevel / 55) * all.length)));
+      return all[Math.floor(Math.random() * (cap + 1))];
     }
     const idx = Math.floor(Math.random() * pool.length);
     return pool[idx];
@@ -11390,8 +11459,23 @@ function dropMonsterLoot(m, worldItems) {
       if (pick && d) pushDrop(pick, 1, up);
     }
   }
+  const extraEquipDropChance = m.boss ? (ultraBoss ? 1 : 0.95) : Math.min(0.88, 0.38 + mLevel * 0.014);
+  if (Math.random() < extraEquipDropChance) {
+    const extraPool = Object.keys(ITEMS).filter((id) => canDropForMonsterLevel(id));
+    if (extraPool.length > 0) {
+      const pick = extraPool[Math.floor(Math.random() * extraPool.length)];
+      pushDrop(pick, 1, 0);
+    } else {
+      const all = allEquipForLevelSorted();
+      if (all.length) {
+        const cap = Math.max(0, Math.min(all.length - 1, Math.floor((mLevel / 55) * all.length)));
+        const pick = all[Math.floor(Math.random() * (cap + 1))];
+        pushDrop(pick, 1, 0);
+      }
+    }
+  }
 
-  if (m.boss && Math.random() < Math.min(0.95, preset.bossAnyLegendaryChance * bRate.legendMul)) {
+  if (m.boss && Math.random() < Math.min(0.995, preset.bossAnyLegendaryChance * bRate.legendMul * (ultraBoss ? 1.7 : 1))) {
     const lg = ANY_BOSS_LEGENDARY[Math.floor(Math.random() * ANY_BOSS_LEGENDARY.length)];
     pushDrop(lg, 1);
   }
@@ -11400,6 +11484,7 @@ function dropMonsterLoot(m, worldItems) {
     const hi = STRONG_BOSS_EPIC_LEGENDARY[Math.floor(Math.random() * STRONG_BOSS_EPIC_LEGENDARY.length)];
     pushDrop(hi, 1);
   }
+  if (ultraBoss && Math.random() < 0.8) pushDrop("boss_chest", 1);
 
   if (m.type === "skywing_dragon") {
     const hasLegendary = dropped.some((x) => {
@@ -12500,6 +12585,11 @@ function handleInteraction() {
 }
 
 let lastTime = performance.now();
+let mobilePerfFrame = 0;
+const MOBILE_MONSTER_FAR_UPDATE_DIST = TILE_SIZE * 16;
+const MOBILE_MONSTER_FAR_UPDATE_STAGGER = 3;
+const MOBILE_MONSTER_RENDER_DIST = TILE_SIZE * 13;
+const MOBILE_MAX_VISIBLE_MONSTERS = 55;
 
 /* ── Kayıt slotları (localStorage) — prefix/say\u0131 yukar\u0131da, fonksiyonlar burada ─── */
 
@@ -12693,7 +12783,7 @@ function monsterToSave(m) {
     type: m.type, col: m.col, row: m.row, levelScale: m.levelScale,
     x: m.x, y: m.y, hp: m.hp, maxHp: m.maxHp, dmg: m.dmg, speed: m.speed,
     xpReward: m.xpReward, goldReward: m.goldReward, aggroRange: m.aggroRange, atkRange: m.atkRange, atkCd: m.atkCd,
-    alive: m.alive, state: m.state, boss: m.boss,
+    alive: m.alive, state: m.state, boss: m.boss, ultraBoss: !!m.ultraBoss,
     campId: m.campId, campTier: m.campTier, campScale: m.campScale, campRole: m.campRole, socialAggroRange: m.socialAggroRange, level: m.level,
     homeX: m.homeX, homeY: m.homeY, direction: m.direction,
     animTimer: m.animTimer, animFrame: m.animFrame,
@@ -12710,6 +12800,7 @@ function loadMonsterFromSave(o) {
     campScale: o.campScale != null ? o.campScale : (o.levelScale != null ? o.levelScale : undefined),
     campRole: o.campRole != null ? o.campRole : null,
     socialAggroRange: o.socialAggroRange != null ? o.socialAggroRange : undefined,
+    ultraBoss: !!o.ultraBoss,
   });
   m.x = o.x; m.y = o.y;
   m.hp = Math.min(o.hp != null ? o.hp : m.hp, o.maxHp != null ? o.maxHp : m.maxHp);
@@ -13117,6 +13208,7 @@ function gameLoop(now) {
 
   const dt = Math.min((now - lastTime) / 1000, 0.1);
   lastTime = now;
+  if (touchState.mobileUI) mobilePerfFrame = (mobilePerfFrame + 1) % 2048;
 
   if (now >= nextAutoSaveAt && currentSaveSlot >= 0) {
     saveGameToSlot(currentSaveSlot);
@@ -13358,9 +13450,23 @@ function gameLoop(now) {
   if (activePet) activePet.update(dt, player, map, worldItems, inventory, monsters);
 
   if (!uiOpen) {
-    processCampSupport(monsters, dt);
-    for (const m of monsters) {
-      const r = m.update(dt, map, player);
+    if (!touchState.mobileUI || (mobilePerfFrame % 2) === 0) {
+      processCampSupport(monsters, touchState.mobileUI ? dt * 2 : dt);
+    }
+    const farUpdateDistSq = MOBILE_MONSTER_FAR_UPDATE_DIST * MOBILE_MONSTER_FAR_UPDATE_DIST;
+    for (let mi = 0; mi < monsters.length; mi++) {
+      const m = monsters[mi];
+      let stepDt = dt;
+      if (touchState.mobileUI && !m.boss && m.alive) {
+        const mdx = m.cx - player.centerX;
+        const mdy = m.cy - player.centerY;
+        const farMonster = (mdx * mdx + mdy * mdy) > farUpdateDistSq;
+        if (farMonster) {
+          if (((mobilePerfFrame + mi) % MOBILE_MONSTER_FAR_UPDATE_STAGGER) !== 0) continue;
+          stepDt *= MOBILE_MONSTER_FAR_UPDATE_STAGGER;
+        }
+      }
+      const r = m.update(stepDt, map, player);
       if (m.alertAlliesTimer > 0 && (m.state === "chase" || m.state === "attack")) {
         alertCampAllies(monsters, m, player);
       }
@@ -13559,12 +13665,33 @@ function gameLoop(now) {
     ctx.fillText("\u2693 \u0130SKELE", signX + 3, signY + 12);
   }
 
-  for (const wi of worldItems) if (wi.alive) wi.render(ctx);
+  const itemCullPad = touchState.mobileUI ? 72 : 0;
+  const minViewX = camera.x - itemCullPad;
+  const minViewY = camera.y - itemCullPad;
+  const maxViewX = camera.x + viewWorldW + itemCullPad;
+  const maxViewY = camera.y + viewWorldH + itemCullPad;
+  for (const wi of worldItems) {
+    if (!wi.alive) continue;
+    if (touchState.mobileUI && (wi.x < minViewX || wi.x > maxViewX || wi.y < minViewY || wi.y > maxViewY)) continue;
+    wi.render(ctx);
+  }
 
   const renderables = [...npcs];
   if (!player.inBoat) renderables.push(player);
   for (const wp of wildPets) if (wp.alive) renderables.push(wp);
-  for (const m of monsters) if (m.alive) renderables.push(m);
+  const mobRenderDistSq = MOBILE_MONSTER_RENDER_DIST * MOBILE_MONSTER_RENDER_DIST;
+  let mobileVisibleMonsterCount = 0;
+  for (const m of monsters) {
+    if (!m.alive) continue;
+    if (touchState.mobileUI && !m.boss) {
+      const dxm = m.cx - player.centerX;
+      const dym = m.cy - player.centerY;
+      if ((dxm * dxm + dym * dym) > mobRenderDistSq) continue;
+      if (mobileVisibleMonsterCount >= MOBILE_MAX_VISIBLE_MONSTERS) continue;
+      mobileVisibleMonsterCount++;
+    }
+    renderables.push(m);
+  }
   if (activePet && !player.inBoat) renderables.push(activePet);
   renderables.sort((a, b) => (a.y + (a.h || 16)) - (b.y + (b.h || 16)));
   for (const e of renderables) {
