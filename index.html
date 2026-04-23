@@ -735,17 +735,17 @@ const TileType = {
 };
 
 const TILE_COLORS = {
-  [TileType.GRASS]:       "#3d8a42",
-  [TileType.DIRT]:        "#7a5a35",
-  [TileType.WATER]:       "#2a6aa8",
-  [TileType.SAND]:        "#c9ae58",
-  [TileType.STONE_FLOOR]: "#7a7a82",
-  [TileType.WALL]:        "#4a4a52",
-  [TileType.TREE]:        "#2a6a1c",
-  [TileType.FLOWER]:      "#3d8440",
-  [TileType.BRIDGE]:      "#6a5030",
-  [TileType.TALL_GRASS]:  "#2e7238",
-  [TileType.SNOW]:        "#dceaf4",
+  [TileType.GRASS]:       "#3f9550",
+  [TileType.DIRT]:        "#8a6941",
+  [TileType.WATER]:       "#2d78bb",
+  [TileType.SAND]:        "#d7c078",
+  [TileType.STONE_FLOOR]: "#8c8f98",
+  [TileType.WALL]:        "#5a5f6d",
+  [TileType.TREE]:        "#2d7d2b",
+  [TileType.FLOWER]:      "#5aa85e",
+  [TileType.BRIDGE]:      "#785a36",
+  [TileType.TALL_GRASS]:  "#2f8047",
+  [TileType.SNOW]:        "#e7f3fb",
 };
 
 const SOLID_TILES = new Set([TileType.WATER, TileType.WALL, TileType.TREE]);
@@ -798,15 +798,16 @@ const ITEMS = {
   coin:   { id: "coin",   name: "Alt\u0131n",     stackable: true, maxStack: 999,desc: "P\u0131r\u0131l p\u0131r\u0131l alt\u0131n.",      buyPrice: 0,  sellPrice: 0  },
   arrow:  { id: "arrow",  name: "Ok",       stackable: true, maxStack: 1000, desc: "Keskin u\u00e7lu ok.",           buyPrice: 2,  sellPrice: 1  },
   bow:    { id: "bow",    name: "Tahta Yay", stackable: true, maxStack: 32, rarity: "common", equipSlot: "bow",
-    stats: { str: 0, agi: 2, wis: 0, maxHp: 0, maxMana: 0, meleeDmg: 0, rangedDmg: 3 },
+    stats: { str: 0, agi: 1, wis: 0, maxHp: 0, maxMana: 0, meleeDmg: 0, rangedDmg: 1 },
+    advanced: { attackPower: 1 },
     desc: "Sa\u011flam ah\u015fap yay.", buyPrice: 25, sellPrice: 10 },
   bow_hunter: { id: "bow_hunter", name: "Avc\u0131 Yay\u0131", stackable: true, maxStack: 32, rarity: "rare", equipSlot: "bow", weight: 3.2,
-    stats: { str: 1, agi: 4, wis: 0, maxHp: 0, maxMana: 5, meleeDmg: 0, rangedDmg: 7 },
-    advanced: { attackPower: 118, defArrow: 4, resPoison: 6 },
+    stats: { str: 1, agi: 4, wis: 0, maxHp: 0, maxMana: 5, meleeDmg: 0, rangedDmg: 45 },
+    advanced: { attackPower: 55, defArrow: 4, resPoison: 6 },
     desc: "G\u00fc\u00e7l\u00fc gerilim.", buyPrice: 0, sellPrice: 35 },
   bow_long: { id: "bow_long", name: "Uzun Yay", stackable: true, maxStack: 32, rarity: "epic", equipSlot: "bow", weight: 4,
-    stats: { str: 0, agi: 3, wis: 2, maxHp: 0, maxMana: 10, meleeDmg: 0, rangedDmg: 12 },
-    advanced: { attackPower: 132, elemFlame: 78, resFire: 8, resLightning: 6, defense: 5 },
+    stats: { str: 0, agi: 3, wis: 2, maxHp: 0, maxMana: 10, meleeDmg: 0, rangedDmg: 180 },
+    advanced: { attackPower: 190, elemFlame: 78, resFire: 8, resLightning: 6, defense: 5 },
     extras: {
       itemLevel: { cur: 1, max: 40 },
       displayBaseDmg: 132,
@@ -815,8 +816,8 @@ const ITEMS = {
     },
     desc: "Menzil ve isabet.", buyPrice: 0, sellPrice: 85 },
   bow_storm_legendary: { id: "bow_storm_legendary", name: "Firtina Efsane Yayi", stackable: true, maxStack: 32, rarity: "legendary", equipSlot: "bow", weight: 4.4,
-    stats: { str: 2, agi: 9, wis: 4, maxHp: 12, maxMana: 20, meleeDmg: 0, rangedDmg: 20 },
-    advanced: { attackPower: 196, elemLightning: 140, elemFlame: 20, resLightning: 24, resMagic: 10, critRate: 8 },
+    stats: { str: 2, agi: 9, wis: 4, maxHp: 12, maxMana: 20, meleeDmg: 0, rangedDmg: 340 },
+    advanced: { attackPower: 380, elemLightning: 140, elemFlame: 20, resLightning: 24, resMagic: 10, critRate: 8 },
     extras: {
       itemLevel: { cur: 1, max: 40 },
       displayBaseDmg: 186,
@@ -829,8 +830,8 @@ const ITEMS = {
     },
     desc: "Gokten muhurlenmis yay; guclu tekli vuruslar icin.", buyPrice: 0, sellPrice: 620 },
   bow_dragon_legendary: { id: "bow_dragon_legendary", name: "Ejder Nefesi Yayi", stackable: true, maxStack: 32, rarity: "legendary", equipSlot: "bow", weight: 4.8,
-    stats: { str: 4, agi: 8, wis: 6, maxHp: 20, maxMana: 28, meleeDmg: 0, rangedDmg: 24 },
-    advanced: { attackPower: 224, elemFlame: 180, elemLightning: 45, resFire: 26, resLightning: 14, defense: 10, critRate: 10 },
+    stats: { str: 4, agi: 8, wis: 6, maxHp: 20, maxMana: 28, meleeDmg: 0, rangedDmg: 500 },
+    advanced: { attackPower: 500, elemFlame: 180, elemLightning: 45, resFire: 26, resLightning: 14, defense: 10, critRate: 10 },
     extras: {
       itemLevel: { cur: 1, max: 40 },
       displayBaseDmg: 214,
@@ -842,6 +843,30 @@ const ITEMS = {
       special: { text: "Can %60 ustundeyken +%30 ilave hasar.", dmgBonus: 0.3 },
     },
     desc: "Kadim ejderha kalbinden guc alir; en yuksek yay hasarlarindan biri.", buyPrice: 0, sellPrice: 880 },
+  bow_short: { id: "bow_short", name: "Kisa Av Yayi", stackable: true, maxStack: 32, rarity: "common", equipSlot: "bow", weight: 2.9,
+    stats: { str: 0, agi: 2, wis: 0, maxHp: 0, maxMana: 0, meleeDmg: 0, rangedDmg: 8 },
+    advanced: { attackPower: 8, defArrow: 1 }, desc: "Baslangic ustu bir av yayi.", buyPrice: 0, sellPrice: 14 },
+  bow_recurve: { id: "bow_recurve", name: "Kivrimli Yay", stackable: true, maxStack: 32, rarity: "common", equipSlot: "bow", weight: 3.0,
+    stats: { str: 0, agi: 2, wis: 1, maxHp: 0, maxMana: 2, meleeDmg: 0, rangedDmg: 16 },
+    advanced: { attackPower: 16, defArrow: 1 }, desc: "Daha duzgun cekis verir.", buyPrice: 0, sellPrice: 20 },
+  bow_composite: { id: "bow_composite", name: "Kompozit Yay", stackable: true, maxStack: 32, rarity: "rare", equipSlot: "bow", weight: 3.5,
+    stats: { str: 1, agi: 5, wis: 1, maxHp: 0, maxMana: 6, meleeDmg: 0, rangedDmg: 90 },
+    advanced: { attackPower: 90, defArrow: 5, critRate: 2 }, desc: "Kemik ve ahsap katmanli yay.", buyPrice: 0, sellPrice: 60 },
+  bow_war: { id: "bow_war", name: "Savas Yayi", stackable: true, maxStack: 32, rarity: "rare", equipSlot: "bow", weight: 3.8,
+    stats: { str: 2, agi: 6, wis: 1, maxHp: 4, maxMana: 8, meleeDmg: 0, rangedDmg: 130 },
+    advanced: { attackPower: 130, defArrow: 6, critRate: 3 }, desc: "On cephe okcularinin favorisi.", buyPrice: 0, sellPrice: 90 },
+  bow_moon_epic: { id: "bow_moon_epic", name: "Ay Isigi Yayi", stackable: true, maxStack: 32, rarity: "epic", equipSlot: "bow", weight: 4.1,
+    stats: { str: 1, agi: 6, wis: 3, maxHp: 8, maxMana: 14, meleeDmg: 0, rangedDmg: 260 },
+    advanced: { attackPower: 260, elemMagic: 80, resMagic: 10, critRate: 5 },
+    desc: "Gece avlarinda oldurucu isabet saglar.", buyPrice: 0, sellPrice: 180 },
+  bow_sun_epic: { id: "bow_sun_epic", name: "Gunes Kiri Yayi", stackable: true, maxStack: 32, rarity: "epic", equipSlot: "bow", weight: 4.2,
+    stats: { str: 2, agi: 7, wis: 2, maxHp: 10, maxMana: 12, meleeDmg: 0, rangedDmg: 300 },
+    advanced: { attackPower: 300, elemFlame: 95, resFire: 12, critRate: 6 },
+    desc: "Yuksek gerilimli sicak cekis.", buyPrice: 0, sellPrice: 220 },
+  bow_void_legendary: { id: "bow_void_legendary", name: "Bosluk Ucu Yayi", stackable: true, maxStack: 32, rarity: "legendary", equipSlot: "bow", weight: 4.7,
+    stats: { str: 3, agi: 10, wis: 6, maxHp: 18, maxMana: 26, meleeDmg: 0, rangedDmg: 440 },
+    advanced: { attackPower: 440, elemMagic: 140, resMagic: 18, critRate: 9, critDamage: 18 },
+    desc: "Oklar hedefte bosluk izi birakir.", buyPrice: 0, sellPrice: 760 },
   rope:   { id: "rope",   name: "Halat",    stackable: true, maxStack: 150, desc: "Sa\u011flam kenevir halat.",     buyPrice: 6,  sellPrice: 2  },
   helm_leather:   { id: "helm_leather",   name: "Deri Mi\u011fer",       stackable: true, maxStack: 32, rarity: "common",    equipSlot: "head",   stats: { str: 1, agi: 0, wis: 0, maxHp: 8, maxMana: 0 },
     extras: { weakTo: [{ kind: "fire", label: "Ate\u015f" }], passives: [{ text: "Deri: a\u015f\u0131r\u0131 \u0131s\u0131da dayan\u0131kl\u0131l\u0131k d\u00fc\u015fer (bilgi)." }] },
@@ -915,6 +940,26 @@ const ITEMS = {
     stats: { str: 3, agi: 3, wis: 8, maxHp: 18, maxMana: 32 }, advanced: { attackPower: 66, resMagic: 20, resPoison: 12, pctMana: 10 }, desc: "Kadim runelerle kutsanmis.", buyPrice: 0, sellPrice: 360 },
   artifact_dragon_eye:{ id: "artifact_dragon_eye", name: "Ejder Gozu Artefakti", stackable: true, maxStack: 32, rarity: "legendary", equipSlot: "artifact",
     stats: { str: 6, agi: 6, wis: 6, maxHp: 30, maxMana: 30 }, advanced: { attackPower: 88, critRate: 10, critDamage: 22, elemFlame: 60, elemLightning: 40 }, desc: "En guclu boss ganimetlerinden biri.", buyPrice: 0, sellPrice: 520 },
+  boots_leather:   { id: "boots_leather", name: "Deri Bot", stackable: true, maxStack: 32, rarity: "common", equipSlot: "feet",
+    stats: { str: 0, agi: 1, wis: 0, maxHp: 4, maxMana: 0 }, desc: "Basit yuruyus botu.", buyPrice: 0, sellPrice: 10 },
+  ring_copper:     { id: "ring_copper", name: "Bakir Yuzuk", stackable: true, maxStack: 32, rarity: "common", equipSlot: "ring",
+    stats: { str: 1, agi: 0, wis: 1, maxHp: 4, maxMana: 4 }, desc: "Acemi maceracilar icin.", buyPrice: 0, sellPrice: 9 },
+  amulet_wood:     { id: "amulet_wood", name: "Tahta Tilsim", stackable: true, maxStack: 32, rarity: "common", equipSlot: "amulet",
+    stats: { str: 0, agi: 0, wis: 2, maxHp: 0, maxMana: 8 }, desc: "Zayif ama faydali mana t\u0131ls\u0131m\u0131.", buyPrice: 0, sellPrice: 11 },
+  cloak_common:    { id: "cloak_common", name: "Gezgin Pelerini", stackable: true, maxStack: 32, rarity: "common", equipSlot: "cloak",
+    stats: { str: 0, agi: 1, wis: 0, maxHp: 6, maxMana: 0 }, desc: "Ruzgari keser.", buyPrice: 0, sellPrice: 13 },
+  cloak_epic:      { id: "cloak_epic", name: "Ay Golgesi Pelerini", stackable: true, maxStack: 32, rarity: "epic", equipSlot: "cloak",
+    stats: { str: 2, agi: 5, wis: 2, maxHp: 16, maxMana: 10 }, desc: "Sessiz adim bonusu saglar.", buyPrice: 0, sellPrice: 140 },
+  cloak_legendary: { id: "cloak_legendary", name: "Ebedi Gece Pelerini", stackable: true, maxStack: 32, rarity: "legendary", equipSlot: "cloak",
+    stats: { str: 4, agi: 8, wis: 4, maxHp: 28, maxMana: 22 }, desc: "Cok nadir golge kumas.", buyPrice: 0, sellPrice: 420 },
+  talisman_common: { id: "talisman_common", name: "Cirak Tilsimi", stackable: true, maxStack: 32, rarity: "common", equipSlot: "talisman",
+    stats: { str: 0, agi: 0, wis: 2, maxHp: 2, maxMana: 10 }, desc: "Temel buyu odak esyasi.", buyPrice: 0, sellPrice: 12 },
+  talisman_epic:   { id: "talisman_epic", name: "Kadim Tilsim", stackable: true, maxStack: 32, rarity: "epic", equipSlot: "talisman",
+    stats: { str: 2, agi: 2, wis: 6, maxHp: 10, maxMana: 26 }, desc: "Buyusel direnc saglar.", buyPrice: 0, sellPrice: 190 },
+  artifact_common: { id: "artifact_common", name: "Eski Relik", stackable: true, maxStack: 32, rarity: "common", equipSlot: "artifact",
+    stats: { str: 1, agi: 1, wis: 1, maxHp: 6, maxMana: 6 }, desc: "Tozlu ama ise yarar.", buyPrice: 0, sellPrice: 15 },
+  artifact_epic:   { id: "artifact_epic", name: "Yildiz Religi", stackable: true, maxStack: 32, rarity: "epic", equipSlot: "artifact",
+    stats: { str: 4, agi: 4, wis: 4, maxHp: 16, maxMana: 16 }, desc: "Nadir guc tasi.", buyPrice: 0, sellPrice: 220 },
   boss_chest:     { id: "boss_chest",     name: "Boss Sand\u0131\u011f\u0131",       stackable: true, maxStack: 99, rarity: "legendary", desc: "A\u00e7\u0131nca nadir ganimet verir.", buyPrice: 0, sellPrice: 0 },
 };
 
@@ -943,6 +988,25 @@ function rarityRank(r) {
   if (r === "rare") return 2;
   if (r === "common") return 1;
   return 0;
+}
+
+function estimateEquipRequiredLevel(def) {
+  if (!def || !def.equipSlot) return 1;
+  if (def.minLevel != null) return Math.max(1, def.minLevel | 0);
+  const rr = rarityRank(def.rarity || "common");
+  const score = itemStatPowerScore(def);
+  const slotBase = (def.equipSlot === "blade" || def.equipSlot === "bow") ? 2 : 1;
+  let lv = slotBase + rr * 4 + Math.floor(score / 14);
+  if (rr >= 4) lv += 6;
+  else if (rr >= 3) lv += 2;
+  return Math.max(1, Math.min(70, lv));
+}
+
+function canPlayerEquipItem(def, playerRef) {
+  if (!def || !def.equipSlot) return { ok: true, needLevel: 1 };
+  const needLevel = estimateEquipRequiredLevel(def);
+  const pLv = playerRef && playerRef.level ? (playerRef.level | 0) : 1;
+  return { ok: pLv >= needLevel, needLevel };
 }
 
 function normalizeBonusPct(v) {
@@ -1182,6 +1246,15 @@ function getEffectiveItemStatsMerged(def, upgradeLv) {
   const stats = {};
   if (def.stats) {
     for (const k of Object.keys(def.stats)) stats[k] = def.stats[k];
+  }
+  if (def.equipSlot) {
+    const rr = rarityRank(def.rarity || "common");
+    const dmgMul = rr >= 4 ? 2.2 : rr >= 3 ? 1.7 : rr >= 2 ? 1.35 : 1;
+    const hpMul = rr >= 4 ? 1.35 : rr >= 3 ? 1.2 : rr >= 2 ? 1.08 : 1;
+    if (typeof stats.meleeDmg === "number" && stats.meleeDmg > 0) stats.meleeDmg = Math.max(1, Math.round(stats.meleeDmg * dmgMul));
+    if (typeof stats.rangedDmg === "number" && stats.rangedDmg > 0) stats.rangedDmg = Math.max(1, Math.round(stats.rangedDmg * dmgMul));
+    if (typeof stats.maxHp === "number" && stats.maxHp > 0) stats.maxHp = Math.max(1, Math.round(stats.maxHp * hpMul));
+    if (def.equipSlot === "bow" && typeof stats.rangedDmg === "number") stats.rangedDmg = Math.min(500, stats.rangedDmg);
   }
   const advanced = {};
   if (def.advanced) {
@@ -2588,6 +2661,7 @@ class Inventory {
     this._slotPress = null;
     this.invPage = 0;
     this.sortStrongFirst = true;
+    this.autoEquipOnPickup = false;
   }
 
   _invPageCount() {
@@ -2665,12 +2739,12 @@ class Inventory {
 
     if (itemId === "coin") {
       this.gold += count;
-      this._scanAutoEquipAllEmpty();
+      if (this.autoEquipOnPickup) this._scanAutoEquipAllEmpty();
       return 0;
     }
 
     if (def.stackable) {
-      for (const container of [this.hotbar, this.slots]) {
+      for (const container of [this.slots, this.hotbar]) {
         for (let i = 0; i < container.length; i++) {
           const s = container[i];
           if (s && s.id === itemId && stackUpgradesMatch(s, { upgrade: u }) && s.count < def.maxStack) {
@@ -2679,7 +2753,7 @@ class Inventory {
             s.count += add;
             count -= add;
             if (count <= 0) {
-              this._scanAutoEquipAllEmpty();
+              if (this.autoEquipOnPickup) this._scanAutoEquipAllEmpty();
               return 0;
             }
           }
@@ -2687,7 +2761,7 @@ class Inventory {
       }
     }
 
-    for (const container of [this.hotbar, this.slots]) {
+    for (const container of [this.slots, this.hotbar]) {
       for (let i = 0; i < container.length; i++) {
         if (!container[i]) {
           const add = Math.min(count, def.maxStack);
@@ -2697,13 +2771,13 @@ class Inventory {
           container[i] = stack;
           count -= add;
           if (count <= 0) {
-            this._scanAutoEquipAllEmpty();
+            if (this.autoEquipOnPickup) this._scanAutoEquipAllEmpty();
             return 0;
           }
         }
       }
     }
-    this._scanAutoEquipAllEmpty();
+    if (this.autoEquipOnPickup) this._scanAutoEquipAllEmpty();
     return count;
   }
 
@@ -2817,6 +2891,8 @@ class Inventory {
   tryEquipOneFromId(itemId, upgradeOpt) {
     const def = ITEMS[itemId];
     if (!def || !def.equipSlot) return "Giyilebilir bir e\u015fya de\u011fil.";
+    const gate = canPlayerEquipItem(def, player);
+    if (!gate.ok) return "Bu esya icin Seviye " + gate.needLevel + "+ gerekli.";
     const sk = firstEquipSlotForItem(this, def);
     if (!sk) return "Bu e\u015fya i\u00e7in uygun slot yok.";
     const uWant = upgradeOpt | 0;
@@ -2843,6 +2919,8 @@ class Inventory {
     if (!slot || slot.count < 1) return "B\u00f6yle bir e\u015fya yok.";
     const def = ITEMS[slot.id];
     if (!def || !def.equipSlot) return "Giyilebilir bir e\u015fya de\u011fil.";
+    const gate = canPlayerEquipItem(def, player);
+    if (!gate.ok) return "Bu esya icin Seviye " + gate.needLevel + "+ gerekli.";
     const sk = firstEquipSlotForItem(this, def);
     if (!sk) return "Bu e\u015fya i\u00e7in uygun slot yok.";
     const id = slot.id;
@@ -2875,7 +2953,7 @@ class Inventory {
           const s = container[i];
           if (!s) continue;
           const d = ITEMS[s.id];
-          if (d && itemFitsEquipSlot(d, sk)) {
+          if (d && itemFitsEquipSlot(d, sk) && canPlayerEquipItem(d, player).ok) {
             this._equipFromContainerSlot(container, i);
             break;
           }
@@ -3648,12 +3726,23 @@ class TileMap {
   }
 
   _drawTileDecoration(ctx, tile, x, y) {
+    const seed = ((x * 73856093) ^ (y * 19349663)) >>> 0;
+    const r01 = (n) => (((seed >> n) & 255) / 255);
     switch (tile) {
       case TileType.GRASS:
-        ctx.fillStyle = "#57994a";
-        ctx.fillRect(x + 6, y + 8, 2, 6);
-        ctx.fillRect(x + 20, y + 4, 2, 5);
-        ctx.fillRect(x + 14, y + 20, 2, 5);
+        ctx.fillStyle = "#4f9448";
+        ctx.fillRect(x + 5, y + 9, 2, 7);
+        ctx.fillRect(x + 20, y + 5, 2, 6);
+        ctx.fillRect(x + 14, y + 20, 2, 6);
+        if (r01(0) > 0.58) {
+          ctx.fillStyle = "rgba(180, 210, 145, 0.28)";
+          ctx.fillRect(x + 9, y + 12, 10, 2);
+        }
+        if (r01(8) > 0.72) {
+          ctx.fillStyle = "#6f7b72";
+          ctx.fillRect(x + 11, y + 16, 3, 2);
+          if (r01(16) > 0.5) ctx.fillRect(x + 15, y + 18, 2, 2);
+        }
         break;
       case TileType.WATER:
         ctx.fillStyle = "#4a8ed4";
@@ -3664,6 +3753,10 @@ class TileMap {
         ctx.fillStyle = "#c4ac5a";
         ctx.fillRect(x + 10, y + 14, 3, 2);
         ctx.fillRect(x + 22, y + 6, 2, 2);
+        if (r01(4) > 0.66) {
+          ctx.fillStyle = "#8f8770";
+          ctx.fillRect(x + 7, y + 20, 2, 2);
+        }
         break;
       case TileType.WALL:
         ctx.fillStyle = "#4a4a4a";
@@ -3680,6 +3773,11 @@ class TileMap {
           ctx.fillRect(gx, y + 4, 2, 10);
           ctx.fillRect(gx - 1, y + 3, 4, 2);
         }
+        if (r01(12) > 0.64) {
+          ctx.fillStyle = "#758268";
+          ctx.fillRect(x + 23, y + 21, 2, 2);
+          ctx.fillRect(x + 25, y + 20, 2, 2);
+        }
         break;
       case TileType.BRIDGE:
         ctx.fillStyle = "#6a4c28";
@@ -3694,6 +3792,15 @@ class TileMap {
         ctx.fillRect(x + 4, y + 6, 3, 2);
         ctx.fillRect(x + 18, y + 20, 4, 2);
         ctx.fillRect(x + 12, y + 14, 2, 3);
+        break;
+      case TileType.DIRT:
+        ctx.fillStyle = "#8a6941";
+        ctx.fillRect(x + 7, y + 10, 3, 2);
+        ctx.fillRect(x + 20, y + 17, 2, 2);
+        if (r01(20) > 0.6) {
+          ctx.fillStyle = "#798070";
+          ctx.fillRect(x + 12, y + 21, 3, 2);
+        }
         break;
     }
   }
@@ -3713,16 +3820,28 @@ class TileMap {
         ctx.fill();
         break;
       case TileType.FLOWER:
-        ctx.fillStyle = "#2d6e1e";
-        ctx.fillRect(x + 15, y + 18, 2, 8);
-        ctx.fillStyle = "#e84040";
-        ctx.beginPath();
-        ctx.arc(x + 16, y + 16, 4, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = "#f0d040";
-        ctx.beginPath();
-        ctx.arc(x + 16, y + 16, 2, 0, Math.PI * 2);
-        ctx.fill();
+        {
+          const seed = ((x * 92837111) ^ (y * 689287499)) >>> 0;
+          const pick = seed % 20;
+          let petal = "#e8e2dc";
+          if (pick === 0) petal = "#ead07a"; // sarı artık çok daha seyrek
+          else if (pick <= 4) petal = "#e9f3ff";
+          else if (pick <= 8) petal = "#d9c7ff";
+          else if (pick <= 12) petal = "#ffd3e8";
+          else if (pick <= 15) petal = "#ffc89f";
+          else if (pick <= 18) petal = "#d6ffd1";
+          else petal = "#ff8f8f"; // kırmızı seyrek
+          ctx.fillStyle = "#2d6e1e";
+          ctx.fillRect(x + 15, y + 18, 2, 8);
+          ctx.fillStyle = petal;
+          ctx.beginPath();
+          ctx.arc(x + 16, y + 16, 4, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = "#c9b26a";
+          ctx.beginPath();
+          ctx.arc(x + 16, y + 16, 2, 0, Math.PI * 2);
+          ctx.fill();
+        }
         break;
       case TileType.BRIDGE:
         ctx.fillStyle = "#7a5c30";
@@ -3865,6 +3984,11 @@ class Player {
     this.archerComboTimer = 0;
     this.comboBlastTimer = 0;
     this.archerRapidFireTimer = 0;
+    this.equipPowerToastTimer = 0;
+    this.equipPowerToastText = "";
+    this.equipPowerToastColor = "#ffffff";
+    this._lastEquipSig = null;
+    this._lastEquipTotalHit = null;
   }
 
   gainXP(amount) {
@@ -3928,6 +4052,42 @@ class Player {
       this.hp = Math.min(this.maxHp, this.hp);
       this.mana = Math.min(this.maxMana, this.mana);
     }
+    const equipSig = this._equipSignature(inv);
+    const totalHit = this._computeTotalHitForDisplay(inv);
+    if (this._lastEquipSig != null && equipSig !== this._lastEquipSig && this._lastEquipTotalHit != null) {
+      const delta = totalHit - this._lastEquipTotalHit;
+      if (delta !== 0) {
+        this.equipPowerToastColor = delta > 0 ? "#4cff79" : "#ff5a5a";
+        const sign = delta > 0 ? "+" : "";
+        this.equipPowerToastText = sign + delta + "  Total Vurus: " + totalHit;
+        this.equipPowerToastTimer = 1.35;
+      }
+    }
+    this._lastEquipSig = equipSig;
+    this._lastEquipTotalHit = totalHit;
+  }
+
+  _equipSignature(inv) {
+    if (!inv || !inv.equipped) return "";
+    const parts = [];
+    for (const sk of EQ_SLOTS) {
+      const s = inv.equipped[sk];
+      if (!s) continue;
+      parts.push(sk + ":" + s.id + ":" + getStackUpgradeLv(s));
+    }
+    return parts.join("|");
+  }
+
+  _computeTotalHitForDisplay(inv) {
+    const hasBow = !!(inv && inv.equipped && inv.equipped.bow && ITEMS[inv.equipped.bow.id]);
+    const base = 8 + (this.str + this._eqStr) * 1.5 + Math.floor(this.level * 0.8) + (this.levelDamageBonus || 0);
+    let ranged = hasBow
+      ? Math.max(1, this._eqRangedDmg) + Math.floor((this.agi + this._eqAgi) * 0.05) + Math.floor((this.level - 1) * 0.35)
+      : base + this._eqRangedDmg;
+    if (this.skills.marksman) ranged *= 1.1;
+    let melee = Math.floor(base * 1.2) + this._eqMeleeDmg;
+    if (this.skills.brawler) melee += 4;
+    return Math.max(1, Math.floor(Math.max(melee, ranged)));
   }
 
   takeDamage(amount, opts) {
@@ -3976,7 +4136,13 @@ class Player {
   }
 
   getRangedDamage() {
-    let d = this.getDamage() + this._eqRangedDmg;
+    const eqBow = (typeof inventory !== "undefined" && inventory && inventory.equipped) ? inventory.equipped.bow : null;
+    let d;
+    if (eqBow && ITEMS[eqBow.id]) {
+      d = Math.max(1, this._eqRangedDmg) + Math.floor((this.agi + this._eqAgi) * 0.05) + Math.floor((this.level - 1) * 0.35);
+    } else {
+      d = this.getDamage() + this._eqRangedDmg;
+    }
     if (this.skills.marksman) d *= 1.1;
     return d;
   }
@@ -4014,6 +4180,7 @@ class Player {
     if (this.archerComboTimer <= 0) this.archerComboCount = 0;
     if (this.comboBlastTimer > 0) this.comboBlastTimer -= dt;
     if (this.archerRapidFireTimer > 0) this.archerRapidFireTimer -= dt;
+    if (this.equipPowerToastTimer > 0) this.equipPowerToastTimer -= dt;
 
     this.hp = Math.min(this.maxHp, this.hp + this.hpRegen * dt);
     this.mana = Math.min(this.maxMana, this.mana + this.manaRegen * dt);
@@ -6285,7 +6452,8 @@ function drawMonsterSprite(ctx, type, x, y, dir, frame, hitFlash, atkAnim, bw, b
 }
 
 class Monster {
-  constructor(col, row, type, levelScale) {
+  constructor(col, row, type, levelScale, opts) {
+    opts = opts || {};
     this.x = col * TILE_SIZE;
     this.y = row * TILE_SIZE;
     this.w = 20; this.h = 20;
@@ -6306,6 +6474,7 @@ class Monster {
     this.dmg = Math.floor(mt.dmg * s);
     this.speed = mt.speed;
     this.xpReward = Math.floor(mt.xp * s);
+    this.goldReward = Math.max(1, Math.floor((mt.gold != null ? mt.gold : Math.max(1, mt.xp * 0.7)) * s));
     this.aggroRange = mt.aggroRange;
     this.atkRange = mt.atkRange;
     this.atkCd = mt.atkCd;
@@ -6326,10 +6495,30 @@ class Monster {
     this.atkAnim = 0;
     this.hitFlash = 0;
     this.deathTimer = 0;
-    this.respawnTime = 30 + Math.random() * 30;
+    this.alertAlliesTimer = 0;
+    this.respawnTime = 0;
     this.respawnTimer = 0;
     this.col = col; this.row = row;
     this.levelScale = s;
+    this.campId = opts.campId != null ? String(opts.campId) : null;
+    this.campTier = opts.campTier != null ? String(opts.campTier) : null;
+    this.campScale = opts.campScale != null ? opts.campScale : s;
+    this.campRole = opts.campRole != null ? String(opts.campRole) : null;
+    this.socialAggroRange = opts.socialAggroRange != null ? opts.socialAggroRange : TILE_SIZE * 6.2;
+    this.supportHealCd = 1.8 + Math.random() * 1.2;
+    this._applyCampRoleTuning();
+    const tierBonus = this.campTier === "apex" ? 7 : this.campTier === "heroic" ? 4 : this.campTier === "elite" ? 2 : 0;
+    this.level = Math.max(1, Math.round(this.levelScale * 4 + (this.boss ? 6 : 0) + tierBonus));
+    const hpArchetype = Math.max(0.65, Math.min(7.5, mt.hp / 30));
+    const dmgArchetype = Math.max(0.75, Math.min(8, mt.dmg / 5));
+    const lvHp = (3 + Math.pow(this.level, 1.34) * 2.0) * hpArchetype * (this.boss ? 3.2 : 1);
+    const lvDmg = (1 + Math.pow(this.level, 1.16) * 0.78) * dmgArchetype * (this.boss ? 2.05 : 1);
+    this.maxHp = Math.max(5, Math.floor(lvHp));
+    this.hp = this.maxHp;
+    this.dmg = Math.max(1, Math.floor(lvDmg));
+    this.xpReward = Math.max(2, Math.floor(this.xpReward * (0.45 + this.level * 0.22)));
+    this.goldReward = Math.max(1, Math.floor(this.goldReward * (0.5 + this.level * 0.16)));
+    this.respawnTime = this._rollRespawnTime();
   }
 
   get cx() { return this.x + this.w / 2; }
@@ -6338,6 +6527,51 @@ class Monster {
   distTo(px, py) {
     const dx = this.cx - px, dy = this.cy - py;
     return Math.sqrt(dx * dx + dy * dy);
+  }
+
+  _applyCampRoleTuning() {
+    if (!this.campRole) return;
+    if (this.campRole === "tank") {
+      this.maxHp = Math.floor(this.maxHp * 1.35);
+      this.hp = Math.min(this.hp, this.maxHp);
+      this.dmg = Math.floor(this.dmg * 0.92);
+      this.speed *= 0.92;
+    } else if (this.campRole === "dps") {
+      this.maxHp = Math.floor(this.maxHp * 0.95);
+      this.hp = Math.min(this.hp, this.maxHp);
+      this.dmg = Math.floor(this.dmg * 1.24);
+      this.speed *= 1.06;
+      this.xpReward = Math.floor(this.xpReward * 1.08);
+      this.goldReward = Math.floor(this.goldReward * 1.1);
+    } else if (this.campRole === "ranged") {
+      this.maxHp = Math.floor(this.maxHp * 0.88);
+      this.hp = Math.min(this.hp, this.maxHp);
+      this.dmg = Math.floor(this.dmg * 1.08);
+      this.speed *= 1.02;
+      if (!this.rangedKind) {
+        const rk = ["poison", "ice", "fire"];
+        this.rangedKind = rk[(Math.random() * rk.length) | 0];
+      }
+      this.rangedMax = Math.max(this.rangedMax, TILE_SIZE * 6.5);
+      this.rangedMin = Math.max(20, this.rangedMin);
+    } else if (this.campRole === "healer") {
+      this.maxHp = Math.floor(this.maxHp * 1.08);
+      this.hp = Math.min(this.hp, this.maxHp);
+      this.dmg = Math.floor(this.dmg * 0.78);
+      this.speed *= 0.95;
+      this.xpReward = Math.floor(this.xpReward * 1.06);
+      this.goldReward = Math.floor(this.goldReward * 1.08);
+    }
+    if (this.maxHp < 1) this.maxHp = 1;
+    if (this.hp > this.maxHp) this.hp = this.maxHp;
+    if (this.dmg < 1) this.dmg = 1;
+  }
+
+  _rollRespawnTime() {
+    if (!this.campId) return 30 + Math.random() * 30;
+    if (this.campTier === "heroic") return 24 + Math.random() * 14;
+    if (this.campTier === "elite") return 18 + Math.random() * 12;
+    return 14 + Math.random() * 10;
   }
 
   takeDamage(amount) {
@@ -6361,6 +6595,7 @@ class Monster {
     } else if (this.state === "idle") {
       this.state = "chase";
     }
+    if (this.state !== "dying") this.alertAlliesTimer = 1.2;
   }
 
   update(dt, map, player) {
@@ -6373,13 +6608,14 @@ class Monster {
         this.y = this.row * TILE_SIZE;
         this.state = "idle";
         this.respawnTimer = 0;
-        this.respawnTime = 30 + Math.random() * 30;
+        this.respawnTime = this._rollRespawnTime();
       }
       return;
     }
 
     if (this.hitFlash > 0) this.hitFlash -= dt;
     if (this.atkAnim > 0) this.atkAnim -= dt;
+    if (this.alertAlliesTimer > 0) this.alertAlliesTimer -= dt;
     this.animTimer += dt;
     if (this.animTimer >= 0.18) { this.animTimer = 0; this.animFrame = (this.animFrame + 1) % 4; }
 
@@ -6549,12 +6785,14 @@ class Monster {
     ctx.restore();
     const mt = MONSTER_TYPES[this.type];
     const nm = (mt && mt.name) ? mt.name : this.type;
+    const lvName = "Lv." + this.level + " " + nm;
     const danger = typeof player !== "undefined" && player && isMonsterDangerousForPlayerLevel(this, player.level);
-    drawEntityNameLabel(ctx, this.cx, this.y - 20, nm, {
+    drawEntityNameLabel(ctx, this.cx, this.y - 20, lvName, {
       color: danger ? "#ff4a4a" : "#ffffff",
       border: danger ? "rgba(90, 20, 20, 0.7)" : "rgba(200, 200, 210, 0.35)",
       bg: danger ? "rgba(26, 8, 8, 0.82)" : "rgba(8, 10, 22, 0.78)",
     });
+    // İstek doğrultusunda etiket sadece "Lv + isim".
   }
 }
 
@@ -7154,6 +7392,119 @@ class PetPanel {
   }
 }
 
+/* ── Bank Panel ─────────────────────────────────────────── */
+class BankPanel {
+  constructor() {
+    this.open = false;
+    this.slots = Array(160).fill(null);
+    this.gold = 0;
+  }
+  toggle() { this.open = !this.open; }
+  close() { this.open = false; }
+  _stackKey(s) { return (s && s.id ? s.id : "") + "|" + getStackUpgradeLv(s || {}); }
+  _copyStack(s, countOverride) {
+    if (!s) return null;
+    const t = { id: s.id, count: Math.max(1, countOverride != null ? countOverride : (s.count | 0)) };
+    if (s.upgrade != null) t.upgrade = s.upgrade | 0;
+    if (s.durability != null) t.durability = s.durability | 0;
+    return t;
+  }
+  addStack(stack) {
+    if (!stack || !stack.id || stack.count <= 0) return stack ? stack.count : 0;
+    const def = ITEMS[stack.id];
+    if (!def) return stack.count | 0;
+    let left = stack.count | 0;
+    if (def.stackable) {
+      for (let i = 0; i < this.slots.length && left > 0; i++) {
+        const s = this.slots[i];
+        if (!s || s.id !== stack.id || !stackUpgradesMatch(s, stack)) continue;
+        const room = def.maxStack - (s.count | 0);
+        if (room <= 0) continue;
+        const take = Math.min(room, left);
+        s.count += take;
+        left -= take;
+      }
+    }
+    for (let i = 0; i < this.slots.length && left > 0; i++) {
+      if (this.slots[i]) continue;
+      const take = Math.min(def.maxStack || 1, left);
+      this.slots[i] = this._copyStack(stack, take);
+      left -= take;
+    }
+    return left;
+  }
+  depositAllFromInventory(inv) {
+    let moved = 0;
+    for (const container of [inv.hotbar, inv.slots]) {
+      for (let i = 0; i < container.length; i++) {
+        const s = container[i];
+        if (!s || s.id === "coin") continue;
+        const left = this.addStack(s);
+        const movedNow = (s.count | 0) - left;
+        if (movedNow > 0) moved += movedNow;
+        if (left <= 0) container[i] = null;
+        else s.count = left;
+      }
+    }
+    return moved;
+  }
+  withdrawAllToInventory(inv) {
+    let moved = 0;
+    for (let i = 0; i < this.slots.length; i++) {
+      const s = this.slots[i];
+      if (!s) continue;
+      const left = inv.addItem(s.id, s.count, getStackUpgradeLv(s), s);
+      const movedNow = (s.count | 0) - left;
+      if (movedNow > 0) moved += movedNow;
+      if (left <= 0) this.slots[i] = null;
+      else s.count = left;
+    }
+    return moved;
+  }
+  depositAllGoldFromInventory(inv) {
+    const g = Math.max(0, inv.gold | 0);
+    if (g <= 0) return 0;
+    this.gold += g;
+    inv.gold = 0;
+    return g;
+  }
+  withdrawAllGoldToInventory(inv) {
+    const g = Math.max(0, this.gold | 0);
+    if (g <= 0) return 0;
+    inv.gold += g;
+    this.gold = 0;
+    return g;
+  }
+  usedSlots() {
+    let n = 0;
+    for (const s of this.slots) if (s) n++;
+    return n;
+  }
+  render(ctx, cw, ch) {
+    if (!this.open) return;
+    const w = Math.min(560, cw - 40);
+    const h = Math.min(280, ch - 40);
+    const x = Math.floor((cw - w) / 2);
+    const y = Math.floor((ch - h) / 2);
+    ctx.fillStyle = "rgba(0,0,0,0.55)";
+    ctx.fillRect(0, 0, cw, ch);
+    ctx.fillStyle = "rgba(16,20,44,0.96)";
+    ctx.strokeStyle = "#6f84c0";
+    ctx.lineWidth = 2;
+    roundRect(ctx, x, y, w, h, 12); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#e8f0ff";
+    ctx.font = "bold 16px monospace";
+    ctx.fillText("Banka", x + 16, y + 30);
+    ctx.font = "11px monospace";
+    ctx.fillStyle = "#a8c0f0";
+    ctx.fillText("Slot: " + this.usedSlots() + "/" + this.slots.length, x + 16, y + 50);
+    ctx.fillText("Banka Altin: " + formatGold(this.gold), x + 220, y + 50);
+    ctx.fillStyle = "#9ca8c8";
+    ctx.fillText("[N] Kapat  [J] Envanteri Yatir  [K] Envantere Cek", x + 16, y + h - 34);
+    ctx.fillText("[H] Altin Yatir  [G] Altin Cek", x + 16, y + h - 16);
+  }
+}
+
 /* ── Shop / Market ───────────────────────────────────────── */
 
 const SHOP_SLOT = 44, SHOP_GAP = 4;
@@ -7182,6 +7533,7 @@ class Shop {
     this.feedbackColor = "#50e050";
     this.buyFilter = "all";
     this.buySort = "default";
+    this.sellRarityFilter = "all";
     this.sellPicker = null;
     /** Sat\u0131n al onay diyalo\u011fu: { stockIndex, itemId } */
     this.buyPicker = null;
@@ -7211,6 +7563,7 @@ class Shop {
     this.gridScrollTouchId = -1;
     this.buyFilter = "all";
     this.buySort = "default";
+    this.sellRarityFilter = "all";
   }
 
   rebuildStockFromTemplate() {
@@ -7376,6 +7729,10 @@ class Shop {
   }
 
   _buyGridY(L) {
+    if (this.tab === 1) {
+      const sCtl = this._sellRarityControlsLayout(L);
+      return sCtl.bulkBtn.y + sCtl.bulkBtn.h + 8;
+    }
     return L.gridYStart;
   }
 
@@ -7397,7 +7754,7 @@ class Shop {
 
   _maxScrollSell(L, inventory) {
     const rowStride = this._shopRowStride(L);
-    const n = this._getSellableEntries(inventory).length;
+    const n = this._getFilteredSellableEntries(inventory).length;
     const cols = L.shopCols;
     const rows = Math.ceil(Math.max(1, n) / cols);
     const totalH = rows * rowStride;
@@ -7452,6 +7809,69 @@ class Shop {
       }
     }
     return sellable;
+  }
+
+  _sellFilterLabel() {
+    if (this.sellRarityFilter === "common") return "Siradan";
+    if (this.sellRarityFilter === "rare") return "Nadir";
+    if (this.sellRarityFilter === "epic") return "Epik";
+    if (this.sellRarityFilter === "legendary") return "Efsanevi";
+    return "Tum";
+  }
+
+  _sellRarityControlsLayout(L) {
+    const y = L.tabY + L.tabH + 8;
+    const h = L.shopLand ? 18 : 22;
+    const gap = 4;
+    const labels = [
+      { id: "all", label: "Tum" },
+      { id: "common", label: "Siradan" },
+      { id: "rare", label: "Nadir" },
+      { id: "epic", label: "Epik" },
+      { id: "legendary", label: "Efs." },
+    ];
+    const avail = L.pw - 24 - gap * (labels.length - 1);
+    const fw = Math.max(40, Math.floor(avail / labels.length));
+    const filters = [];
+    let x = L.px + 12;
+    for (const it of labels) {
+      filters.push({ id: it.id, label: it.label, x, y, w: fw, h });
+      x += fw + gap;
+    }
+    const bulkBtn = { x: L.px + 12, y: y + h + 6, w: Math.min(220, L.pw - 24), h: L.shopLand ? 18 : 22 };
+    return { filters, bulkBtn };
+  }
+
+  _getFilteredSellableEntries(inventory) {
+    const src = this._getSellableEntries(inventory);
+    if (this.sellRarityFilter === "all") return src;
+    return src.filter((e) => {
+      const d = ITEMS[e.slot.id];
+      const r = d && d.rarity ? d.rarity : "common";
+      return r === this.sellRarityFilter;
+    });
+  }
+
+  _sellAllByRarity(inventory) {
+    const list = this._getFilteredSellableEntries(inventory);
+    if (!list.length) {
+      this._showFeedback("Filtrede satilacak esya yok.", "#d04040");
+      return;
+    }
+    let totalGold = 0;
+    let totalItems = 0;
+    for (const e of list) {
+      const slot = e.containerRef[e.slotIdx];
+      if (!slot || slot.id !== e.slot.id) continue;
+      const d = ITEMS[slot.id];
+      if (!d || d.sellPrice <= 0) continue;
+      totalItems += slot.count | 0;
+      totalGold += (slot.count | 0) * d.sellPrice;
+      e.containerRef[e.slotIdx] = null;
+    }
+    if (totalGold > 0) inventory.addItem("coin", totalGold);
+    this.sellPicker = null;
+    this._showFeedback(totalItems + " esya toplu satildi! +" + totalGold + " altin", "#f0d050");
   }
 
   _sellPickerLiveSlot(picker, inventory) {
@@ -7939,6 +8359,19 @@ class Shop {
       }
     } else {
       if (button !== 0) return true;
+      const sCtl = this._sellRarityControlsLayout(L);
+      for (const f of sCtl.filters) {
+        if (this._pointInRect(mx, my, f)) {
+          this.sellRarityFilter = f.id;
+          this.scrollSell = 0;
+          this.sellPicker = null;
+          return true;
+        }
+      }
+      if (this._pointInRect(mx, my, sCtl.bulkBtn)) {
+        this._sellAllByRarity(inventory);
+        return true;
+      }
       const U0 = this._sellPickerLayout(L);
       if (this.sellPicker) {
         const live0 = this._sellPickerLiveSlot(this.sellPicker, inventory);
@@ -7979,7 +8412,7 @@ class Shop {
           this.sellPicker = null;
         }
       }
-      const sellable = this._getSellableEntries(inventory);
+      const sellable = this._getFilteredSellableEntries(inventory);
       for (let i = 0; i < sellable.length; i++) {
         const row = Math.floor(i / L.shopCols), col = i % L.shopCols;
         const sx = gridX + col * (L.shopSlot + L.shopGap);
@@ -8079,11 +8512,16 @@ class Shop {
         }
       }
     } else {
+      const sCtl = this._sellRarityControlsLayout(L);
+      for (const f of sCtl.filters) {
+        if (this._pointInRect(mx, my, f)) return;
+      }
+      if (this._pointInRect(mx, my, sCtl.bulkBtn)) return;
       if (this.sellPicker) {
         const U = this._sellPickerLayout(L);
         if (this._pointInRect(mx, my, U.dialog)) return;
       }
-      const sellable = this._getSellableEntries(inventory);
+      const sellable = this._getFilteredSellableEntries(inventory);
       for (let i = 0; i < sellable.length; i++) {
         const row = Math.floor(i / L.shopCols), col = i % L.shopCols;
         const sx = gridX + col * (L.shopSlot + L.shopGap);
@@ -8159,6 +8597,30 @@ class Shop {
       ctx.fillStyle = "#d8e4ff";
       ctx.font = land ? "bold 9px monospace" : "bold 10px monospace";
       ctx.fillText(sortLabel, srt.x + (srt.w - ctx.measureText(sortLabel).width) / 2, srt.y + (land ? 12 : 15));
+    } else {
+      const sCtl = this._sellRarityControlsLayout(L);
+      for (const f of sCtl.filters) {
+        const active = this.sellRarityFilter === f.id;
+        ctx.fillStyle = active ? "rgba(160,120,62,0.42)" : "rgba(36,40,62,0.72)";
+        ctx.strokeStyle = active ? "#f0c070" : "#5a6288";
+        ctx.lineWidth = active ? 1.4 : 1;
+        roundRect(ctx, f.x, f.y, f.w, f.h, 4);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = active ? "#fff0d8" : "#aeb6d6";
+        ctx.font = land ? "bold 9px monospace" : "bold 10px monospace";
+        ctx.fillText(f.label, f.x + (f.w - ctx.measureText(f.label).width) / 2, f.y + (land ? 12 : 15));
+      }
+      const b = sCtl.bulkBtn;
+      ctx.fillStyle = "rgba(120,80,40,0.9)";
+      ctx.strokeStyle = "#d8a060";
+      roundRect(ctx, b.x, b.y, b.w, b.h, 4);
+      ctx.fill();
+      ctx.stroke();
+      const bl = this._sellFilterLabel() + " -> Tumunu sat";
+      ctx.fillStyle = "#fff0dc";
+      ctx.font = land ? "bold 9px monospace" : "bold 10px monospace";
+      ctx.fillText(bl, b.x + (b.w - ctx.measureText(bl).width) / 2, b.y + (land ? 12 : 15));
     }
 
     const rotLeft = Math.max(0, SHOP_SPECIAL_ROTATE_SEC - this.specialT);
@@ -8419,7 +8881,7 @@ class Shop {
   }
 
   _renderSellTab(ctx, gridX, gridY, inventory, L) {
-    const sellable = this._getSellableEntries(inventory);
+    const sellable = this._getFilteredSellableEntries(inventory);
     const rowStride = this._shopRowStride(L);
     const s = L.shopSlot;
 
@@ -8540,6 +9002,42 @@ class HUD {
   clearInteractPrompt()    { this.interactPrompt = null; }
 
   render(ctx, canvasW, canvasH) {
+    if (typeof player !== "undefined" && player) {
+      const px = Math.floor(player.centerX);
+      const py = Math.floor(player.centerY);
+      const col = Math.max(0, Math.floor(px / TILE_SIZE));
+      const row = Math.max(0, Math.floor(py / TILE_SIZE));
+      let zone = "";
+      for (const m of monsters) {
+        if (!m || !m.alive || !m.campId) continue;
+        const d = Math.hypot(m.cx - player.centerX, m.cy - player.centerY);
+        if (d <= TILE_SIZE * 7) {
+          const meta = getCampMetaById(m.campId);
+          zone = meta && meta.name ? meta.name : "Canavar Kampı";
+          break;
+        }
+      }
+      const coordText = touchState.mobileUI
+        ? ("Koord X:" + px + " Y:" + py + " | C:" + col + " R:" + row)
+        : ("Koord X:" + px + " Y:" + py + "  |  Kare C:" + col + " R:" + row + (zone ? "  |  Bölge: " + zone : ""));
+      ctx.font = touchState.mobileUI ? "10px monospace" : "11px monospace";
+      const tw = ctx.measureText(coordText).width;
+      const padX = 8;
+      const boxW = tw + padX * 2;
+      const boxH = 20;
+      const x = 8;
+      const y = canvasH - boxH - (touchState.mobileUI ? 24 : 26);
+      ctx.fillStyle = "rgba(8, 12, 30, 0.78)";
+      roundRect(ctx, x, y, boxW, boxH, 5);
+      ctx.fill();
+      ctx.strokeStyle = "rgba(110, 130, 180, 0.55)";
+      ctx.lineWidth = 1;
+      roundRect(ctx, x, y, boxW, boxH, 5);
+      ctx.stroke();
+      ctx.fillStyle = "#d8e6ff";
+      ctx.fillText(coordText, x + padX, y + 13);
+    }
+
     if (this.interactPrompt) {
       ctx.font = "12px monospace";
       const tw = ctx.measureText(this.interactPrompt).width + 24;
@@ -8797,12 +9295,18 @@ function tryAutoPickupNearbyWorldItems() {
   }
   if (!best) return;
   const before = best.count;
-  if (!best.tryPickup(inventory)) return;
+  if (!best.tryPickup(inventory)) {
+    const d = ITEMS[best.itemId];
+    if (!d) pickupMsgText = "Bu esya tanimsiz: " + String(best.itemId);
+    else pickupMsgText = inventory.countAddable(best.itemId, before) <= 0 ? "Envanter dolu!" : "Esya eklenemedi.";
+    pickupMsgTimer = 1.2;
+    return;
+  }
   const picked = before - best.count;
   const def = ITEMS[best.itemId];
   if (picked > 0 && def) {
     gameAudio.playPickup();
-    pickupMsgText = "+" + picked + " " + def.name;
+    pickupMsgText = "+" + picked + " " + def.name + " (envanter)";
     pickupMsgTimer = 1.1;
     actionCooldown = Math.max(actionCooldown, 0.06);
   }
@@ -8967,7 +9471,9 @@ function handleWorldItemInspectClick(mx, my, cw, ch) {
       player.applyEquipmentBonus(inventory);
       if (!wi.alive || wi.count <= 0) closeWorldItemInspect();
     } else {
-      pickupMsgText = "Envanter dolu!";
+      const d = ITEMS[wi.itemId];
+      if (!d) pickupMsgText = "Bu esya tanimsiz: " + String(wi.itemId);
+      else pickupMsgText = inventory.countAddable(wi.itemId, before) <= 0 ? "Envanter dolu!" : "Esya eklenemedi.";
       pickupMsgTimer = 1.2;
     }
     return true;
@@ -9165,6 +9671,18 @@ const ISLANDS = [
     monsters: ["dune_raider","skeleton","crystalline","orc"], scale: 0.95, boss: "dune_raider" },
   { cx: 465, cy: 100, rx: 18, ry: 16, r: 16, biome: "rain", name: "Yosun \u0130skele",
     monsters: ["vine_horror","slime","wolf","storm_wraith","vine_horror"], scale: 1.15, boss: "flower_queen" },
+  { cx: 252, cy: 152, rx: 14, ry: 10, r: 12, biome: "forest", name: "Yeşil Adacık I",
+    monsters: ["slime","wolf","slime","ancient_root"], scale: 0.9, boss: "wolf" },
+  { cx: 282, cy: 166, rx: 12, ry: 10, r: 11, biome: "forest", name: "Yeşil Adacık II",
+    monsters: ["slime","wolf","skeleton","slime"], scale: 0.95, boss: "slime" },
+  { cx: 300, cy: 192, rx: 13, ry: 11, r: 12, biome: "rain", name: "Sazlık Adacığı",
+    monsters: ["slime","vine_horror","wolf","spore_creeper"], scale: 1.0, boss: "spore_creeper" },
+  { cx: 244, cy: 214, rx: 14, ry: 12, r: 12, biome: "forest", name: "Çam Adacığı",
+    monsters: ["wolf","ancient_root","slime","wolf"], scale: 1.05, boss: "ancient_root" },
+  { cx: 210, cy: 198, rx: 12, ry: 9, r: 10, biome: "forest", name: "Dere Adacığı",
+    monsters: ["slime","slime","wolf","bog_troll"], scale: 0.92, boss: "wolf" },
+  { cx: 214, cy: 164, rx: 13, ry: 10, r: 11, biome: "rain", name: "Yosun Adacığı",
+    monsters: ["slime","wolf","spore_creeper","vine_horror"], scale: 1.0, boss: "spore_creeper" },
 ];
 
 function islandWorldCenter(isl) {
@@ -9210,11 +9728,103 @@ function islandCellOwner(c, r) {
   return best;
 }
 
+function paintDisk(ground, detail, cx, cy, rad, tile, clearDetail) {
+  const r2 = rad * rad;
+  const minR = Math.max(0, Math.floor(cy - rad));
+  const maxR = Math.min(WORLD_ROWS - 1, Math.ceil(cy + rad));
+  const minC = Math.max(0, Math.floor(cx - rad));
+  const maxC = Math.min(WORLD_COLS - 1, Math.ceil(cx + rad));
+  for (let rr = minR; rr <= maxR; rr++) {
+    for (let cc = minC; cc <= maxC; cc++) {
+      const dx = cc - cx;
+      const dy = rr - cy;
+      if (dx * dx + dy * dy > r2) continue;
+      const idx = rr * WORLD_COLS + cc;
+      if (tile != null) ground[idx] = tile;
+      if (clearDetail) detail[idx] = -1;
+    }
+  }
+}
+
+function carveSplinePath(ground, detail, pts, brush, tile, clearDetail) {
+  if (!pts || pts.length < 2) return;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const a = pts[i], b = pts[i + 1];
+    const len = Math.max(Math.abs(b.x - a.x), Math.abs(b.y - a.y));
+    const steps = Math.max(8, len * 2);
+    for (let s = 0; s <= steps; s++) {
+      const t = s / steps;
+      const x = a.x + (b.x - a.x) * t;
+      const y = a.y + (b.y - a.y) * t;
+      const wob = (noise2D(x * 0.08 + i * 7.1, y * 0.08 + i * 9.3) - 0.5) * 2;
+      const rr = brush + wob * 1.3;
+      paintDisk(ground, detail, x, y, Math.max(1.2, rr), tile, clearDetail);
+    }
+  }
+}
+
+function applyWorldDesignPass(ground, detail) {
+  const vx = VOX + Math.floor(VCOLS / 2);
+  const vy = VOY + Math.floor(VROWS / 2);
+
+  // Ana yollar: köyden kuzey, doğu ve güney iskele bağlantısı.
+  carveSplinePath(ground, detail, [
+    { x: vx, y: vy + 2 }, { x: vx + 10, y: vy + 10 }, { x: vx + 24, y: vy + 32 }, { x: vx + 42, y: vy + 56 },
+  ], 2.2, T.DIRT, true);
+  carveSplinePath(ground, detail, [
+    { x: vx - 2, y: vy }, { x: vx - 18, y: vy - 8 }, { x: vx - 36, y: vy - 20 }, { x: vx - 54, y: vy - 32 },
+  ], 2.4, T.DIRT, true);
+  carveSplinePath(ground, detail, [
+    { x: vx + 1, y: vy + 4 }, { x: vx + 3, y: vy + 20 }, { x: vx + 4, y: vy + 40 }, { x: vx + 5, y: vy + 58 },
+  ], 1.9, T.STONE_FLOOR, true);
+
+  // Deniz şeritleri: dünya daha parçalı/okyanus hissinde olsun.
+  carveSplinePath(ground, detail, [
+    { x: ISLAND_OFFSET_X + 40, y: ISLAND_OFFSET_Y + 86 },
+    { x: ISLAND_OFFSET_X + 132, y: ISLAND_OFFSET_Y + 114 },
+    { x: ISLAND_OFFSET_X + 220, y: ISLAND_OFFSET_Y + 98 },
+    { x: ISLAND_OFFSET_X + 322, y: ISLAND_OFFSET_Y + 126 },
+    { x: ISLAND_OFFSET_X + 430, y: ISLAND_OFFSET_Y + 112 },
+  ], 3.2, T.WATER, true);
+  carveSplinePath(ground, detail, [
+    { x: ISLAND_OFFSET_X + 66, y: ISLAND_OFFSET_Y + 226 },
+    { x: ISLAND_OFFSET_X + 156, y: ISLAND_OFFSET_Y + 212 },
+    { x: ISLAND_OFFSET_X + 272, y: ISLAND_OFFSET_Y + 244 },
+    { x: ISLAND_OFFSET_X + 404, y: ISLAND_OFFSET_Y + 228 },
+  ], 3.6, T.WATER, true);
+
+  // Kıyı parlatma + açık çayırlar.
+  for (let r = 1; r < WORLD_ROWS - 1; r++) {
+    for (let c = 1; c < WORLD_COLS - 1; c++) {
+      const idx = r * WORLD_COLS + c;
+      const t = ground[idx];
+      if (t !== T.GRASS && t !== T.TALL_GRASS && t !== T.DIRT) continue;
+      let waterN = 0;
+      for (let dr = -1; dr <= 1; dr++) {
+        for (let dc = -1; dc <= 1; dc++) {
+          if (dr === 0 && dc === 0) continue;
+          const n = ground[(r + dr) * WORLD_COLS + (c + dc)];
+          if (n === T.WATER) waterN++;
+        }
+      }
+      if (waterN >= 3 && hashXY(c * 11 + 7, r * 13 + 17) < 0.72) {
+        ground[idx] = T.SAND;
+        detail[idx] = -1;
+      } else if (waterN === 0 && hashXY(c * 5 + 3, r * 9 + 1) < 0.008 && t === T.GRASS) {
+        detail[idx] = T.FLOWER;
+      } else if (waterN === 0 && hashXY(c * 7 + 2, r * 6 + 9) < 0.008 && t !== T.SNOW && t !== T.STONE_FLOOR) {
+        detail[idx] = T.TREE;
+      }
+    }
+  }
+}
+
 function generateWorld() {
   const ground = new Array(WORLD_COLS * WORLD_ROWS);
   const detail = new Array(WORLD_COLS * WORLD_ROWS);
   const centerX = WORLD_COLS / 2, centerY = WORLD_ROWS / 2;
-  const mainR = Math.floor(Math.min(WORLD_COLS, WORLD_ROWS) * 0.24);
+  const mainR = Math.floor(Math.min(WORLD_COLS, WORLD_ROWS) * 0.34);
+  const mainOuterR = mainR + 26;
 
   for (let r = 0; r < WORLD_ROWS; r++) {
     for (let c = 0; c < WORLD_COLS; c++) {
@@ -9241,21 +9851,47 @@ function generateWorld() {
       const nx = c / 40, ny = r / 30;
       const elevation = fbm(nx + 0.3, ny + 0.7, 4);
       const moisture = fbm(nx * 1.3 + 50, ny * 1.3 + 50, 3);
+      const ridge = fbm(nx * 0.55 + 20.1, ny * 0.55 + 73.6, 5);
+      const heat = fbm(nx * 0.8 + 99.4, ny * 0.8 + 14.8, 3);
       const h = hashXY(c, r);
 
       let tile, det = -1;
 
-      if (distEdge > 0.99 && !onIsland && !islandCoast) {
+      if (distMain < mainR && !onIsland) {
+        const rim = mainR - distMain;
+        if (rim < 7) {
+          tile = T.SAND;
+          if (h < 0.015) det = T.FLOWER;
+        } else if (moisture > 0.5 || ridge > 0.48) {
+          tile = T.TALL_GRASS;
+          if (h < 0.06) det = T.TREE;
+          else if (h < 0.12) det = T.FLOWER;
+        } else {
+          tile = T.GRASS;
+          if (h < 0.05) det = T.TREE;
+          else if (h < 0.1) det = T.FLOWER;
+        }
+      } else if (distMain < mainOuterR && !onIsland && !islandCoast) {
+        if (elevation < 0.32 || moisture > 0.72) {
+          tile = T.WATER;
+        } else if (elevation < 0.37) {
+          tile = T.SAND;
+        } else {
+          tile = moisture > 0.5 ? T.TALL_GRASS : T.GRASS;
+          if (h < 0.035) det = T.TREE;
+          else if (h < 0.07) det = T.FLOWER;
+        }
+      } else if (distEdge > 0.99 && !onIsland && !islandCoast) {
         tile = T.WATER;
-      } else if (distMain > mainR && !onIsland && !islandCoast) {
-        const fade = (distMain - mainR) / 15;
+      } else if (distMain > mainOuterR && !onIsland && !islandCoast) {
+        const fade = (distMain - mainOuterR) / 15;
         if (fade > 1 + (elevation - 0.4) * 3) {
           tile = T.WATER;
         } else if (fade > 0.8 + (elevation - 0.4) * 2) {
           tile = T.SAND;
         } else {
           tile = elevation > 0.6 ? T.GRASS : T.SAND;
-          if (h < 0.06 && tile === T.GRASS) det = T.TREE;
+          if (h < 0.02 && tile === T.GRASS) det = T.TREE;
         }
       } else if (islandCoast) {
         tile = T.SAND;
@@ -9267,64 +9903,64 @@ function generateWorld() {
         if (biome === "snow") {
           if (iElev > 0.78) {
             tile = T.STONE_FLOOR;
-            if (h2 < 0.07) det = T.TREE;
+            if (h2 < 0.025) det = T.TREE;
           } else {
             tile = T.SNOW;
-            if (h2 < 0.1) det = T.TREE;
-            else if (h2 < 0.14) det = T.FLOWER;
+            if (h2 < 0.03) det = T.TREE;
+            else if (h2 < 0.06) det = T.FLOWER;
           }
         } else if (biome === "desert" || biome === "mesa") {
           tile = h2 < 0.42 ? T.SAND : T.DIRT;
-          if (h2 < 0.06 && tile === T.DIRT) det = T.FLOWER;
+          if (h2 < 0.025 && tile === T.DIRT) det = T.FLOWER;
           if (biome === "mesa" && iElev > 0.72) {
             tile = T.STONE_FLOOR;
-            if (h2 < 0.08) det = T.TREE;
+            if (h2 < 0.025) det = T.TREE;
           }
         } else if (biome === "rain" || biome === "jungle") {
           tile = moisture > 0.42 ? T.TALL_GRASS : T.GRASS;
-          if (h2 < 0.22) det = T.TREE;
-          else if (h2 < 0.28) det = T.FLOWER;
+          if (h2 < 0.07) det = T.TREE;
+          else if (h2 < 0.14) det = T.FLOWER;
         } else if (biome === "storm") {
           tile = iElev > 0.7 ? T.STONE_FLOOR : T.DIRT;
-          if (h2 < 0.12) det = T.TREE;
+          if (h2 < 0.04) det = T.TREE;
         } else if (biome === "volcanic") {
           tile = iElev > 0.65 ? T.STONE_FLOOR : T.DIRT;
-          if (h2 < 0.1) det = T.TREE;
-          else if (h2 < 0.14 && tile === T.DIRT) det = T.FLOWER;
+          if (h2 < 0.03) det = T.TREE;
+          else if (h2 < 0.06 && tile === T.DIRT) det = T.FLOWER;
         } else if (biome === "barren") {
           if (iElev > 0.74) {
             tile = T.STONE_FLOOR;
-            if (h2 < 0.09) det = T.TREE;
+            if (h2 < 0.03) det = T.TREE;
           } else {
             tile = T.DIRT;
-            if (h2 < 0.05) det = T.FLOWER;
+            if (h2 < 0.03) det = T.FLOWER;
           }
         } else {
-          if (iElev > 0.75) { tile = T.STONE_FLOOR; if (h < 0.1) det = T.TREE; }
-          else if (moisture > 0.5) { tile = T.TALL_GRASS; if (h < 0.18) det = T.TREE; else if (h < 0.22) det = T.FLOWER; }
-          else { tile = T.GRASS; if (h < 0.12) det = T.TREE; else if (h < 0.15) det = T.FLOWER; }
+          if (iElev > 0.75) { tile = T.STONE_FLOOR; if (h < 0.03) det = T.TREE; }
+          else if (moisture > 0.5) { tile = T.TALL_GRASS; if (h < 0.06) det = T.TREE; else if (h < 0.12) det = T.FLOWER; }
+          else { tile = T.GRASS; if (h < 0.04) det = T.TREE; else if (h < 0.08) det = T.FLOWER; }
         }
       } else {
-        if (elevation < 0.28) {
+        if (elevation < 0.24 || (ridge < 0.24 && moisture > 0.5)) {
           tile = T.WATER;
-        } else if (elevation < 0.33) {
+        } else if (elevation < 0.31) {
           tile = T.SAND;
-        } else if (elevation > 0.72) {
+        } else if (elevation > 0.77 || ridge > 0.84) {
           tile = T.WALL;
-        } else if (elevation > 0.65) {
+        } else if (elevation > 0.68) {
           tile = T.STONE_FLOOR;
-          if (h < 0.12) det = T.TREE;
-        } else if (moisture > 0.55) {
+          if (h < 0.035) det = T.TREE;
+        } else if (moisture > 0.62) {
           tile = T.TALL_GRASS;
-          if (h < 0.15) det = T.TREE;
-          else if (h < 0.18) det = T.FLOWER;
-        } else if (moisture < 0.35) {
+          if (h < 0.045) det = T.TREE;
+          else if (h < 0.09) det = T.FLOWER;
+        } else if (moisture < 0.34 || heat > 0.72) {
           tile = T.DIRT;
-          if (h < 0.04) det = T.FLOWER;
+          if (h < 0.025) det = T.FLOWER;
         } else {
           tile = T.GRASS;
-          if (h < 0.08) det = T.TREE;
-          else if (h < 0.11) det = T.FLOWER;
+          if (h < 0.025) det = T.TREE;
+          else if (h < 0.05) det = T.FLOWER;
         }
       }
 
@@ -9332,6 +9968,8 @@ function generateWorld() {
       detail[idx] = det;
     }
   }
+
+  applyWorldDesignPass(ground, detail);
 
   const dockCol = VOX + 20;
   const gateVC = dockCol - VOX;
@@ -10070,6 +10708,12 @@ function renderInventorySlotInspect(ctx, cw, ch) {
     ctx.font = "bold 11px monospace";
     ctx.fillText(RARITY_LABEL_TR[def.rarity] || def.rarity, ix + iconS + 14, iy + 38);
   }
+  if (def.equipSlot) {
+    const eqGateColor = canPlayerEquipItem(def, player).ok ? "#ffffff" : "#ff5a5a";
+    ctx.fillStyle = eqGateColor;
+    ctx.font = "10px monospace";
+    ctx.fillText("Gerekli Seviye: " + estimateEquipRequiredLevel(def), ix + iconS + 14, iy + 52);
+  }
 
   const layoutTt = buildItemTooltipLayout(ctx, def, slot.id, cw, touchState.mobileUI, { omitPrices: true, omitIdentity: true, stackRef: slot, innerMax: Math.max(200, L.pw - 40) }, []);
   let ty = iy + iconS + 12;
@@ -10097,9 +10741,10 @@ function renderInventorySlotInspect(ctx, cw, ch) {
 
   const eqCands1 = equipSlotsForItemDef(def);
   const canUse = !fromEquip && slot.id === "boss_chest";
+  const gate = canPlayerEquipItem(def, player);
   const canEq = canUse || (fromEquip ? true : eqCands1.some((sk) => {
     const curI = inventory.equipped[sk];
-    return !curI || curI.id !== slot.id || getStackUpgradeLv(curI) !== getStackUpgradeLv(slot);
+    return gate.ok && (!curI || curI.id !== slot.id || getStackUpgradeLv(curI) !== getStackUpgradeLv(slot));
   }));
   ctx.fillStyle = canEq ? "rgba(45,90,55,0.92)" : "rgba(45,45,58,0.75)";
   ctx.strokeStyle = canEq ? "#70c080" : "#505060";
@@ -10154,10 +10799,13 @@ function renderInventorySlotInspect(ctx, cw, ch) {
   ctx.font = "9px monospace";
   const hintText = canUse
     ? "Ac: sandigi acip rastgele ganimet kazanirsin."
-    : (fromEquip ? "Takili esya: ozellik gor, cikar veya yere at." : "Sol t\u0131k: panel; ba\u015far\u0131s\u0131z y\u00fckseltmelerde alt\u0131n harcan\u0131r.");
+    : (!fromEquip && def.equipSlot && !gate.ok
+      ? ("Bu esya icin Seviye " + gate.needLevel + "+ gerekiyor.")
+      : (fromEquip ? "Takili esya: ozellik gor, cikar veya yere at." : "Sol t\u0131k: panel; ba\u015far\u0131s\u0131z y\u00fckseltmelerde alt\u0131n harcan\u0131r."));
   ctx.fillText(hintText, L.px + 16, L.py + L.ph - 6);
 }
 const petPanel = new PetPanel();
+const bankPanel = new BankPanel();
 const shop = new Shop();
 const craftPanel = new CraftPanel();
 const minimap = new Minimap(map);
@@ -10191,11 +10839,285 @@ const MAINLAND_MONSTERS = [
   { col: 52,  row: 72,  type: "wolf" }, { col: 380, row: 88, type: "skeleton" },
 ];
 
+const VILLAGE_CENTER_COL = VOX + Math.floor(VCOLS / 2);
+const VILLAGE_CENTER_ROW = VOY + Math.floor(VROWS / 2);
+
+function mainlandDistanceNorm(col, row) {
+  const dx = col - VILLAGE_CENTER_COL;
+  const dy = row - VILLAGE_CENTER_ROW;
+  const d = Math.sqrt(dx * dx + dy * dy);
+  return Math.max(0, Math.min(1, d / 240));
+}
+
+function mainlandPackTemplateByDistance(norm) {
+  if (norm < 0.22) {
+    return { tier: "normal", scale: 0.78, members: ["slime", "slime", "wolf", "slime", "wolf"] };
+  }
+  if (norm < 0.4) {
+    return { tier: "normal", scale: 0.96, members: ["wolf", "wolf", "skeleton", "wolf", "slime"] };
+  }
+  if (norm < 0.58) {
+    return { tier: "elite", scale: 1.2, members: ["skeleton", "orc", "ancient_root", "wolf", "skeleton"] };
+  }
+  if (norm < 0.76) {
+    return { tier: "heroic", scale: 1.55, members: ["orc", "dark_knight", "crystalline", "vine_horror", "orc"] };
+  }
+  return { tier: "apex", scale: 2.0, members: ["iron_behemoth", "golem", "storm_wraith", "void_hound", "crystalline"] };
+}
+
+const TIER_MEMBER_VARIANTS = {
+  normal: [
+    ["slime", "slime", "wolf", "slime", "wolf"],
+    ["wolf", "wolf", "slime", "wolf", "slime"],
+    ["slime", "wolf", "skeleton", "slime", "wolf"],
+  ],
+  elite: [
+    ["skeleton", "orc", "ancient_root", "wolf", "skeleton"],
+    ["orc", "skeleton", "wolf", "ancient_root", "orc"],
+    ["skeleton", "wolf", "orc", "bog_troll", "ancient_root"],
+  ],
+  heroic: [
+    ["orc", "dark_knight", "crystalline", "vine_horror", "orc"],
+    ["dark_knight", "orc", "crystalline", "storm_wraith", "vine_horror"],
+    ["crystalline", "dark_knight", "orc", "void_hound", "vine_horror"],
+  ],
+  apex: [
+    ["iron_behemoth", "golem", "storm_wraith", "void_hound", "crystalline"],
+    ["golem", "iron_behemoth", "storm_wraith", "crystalline", "void_hound"],
+    ["iron_behemoth", "void_hound", "storm_wraith", "golem", "dark_knight"],
+  ],
+};
+
+function pickTierMembers(tier, col, row) {
+  const arr = TIER_MEMBER_VARIANTS[tier] || TIER_MEMBER_VARIANTS.normal;
+  const idx = Math.floor(hashXY(col * 17 + 31, row * 19 + 11) * arr.length) % arr.length;
+  return arr[idx].slice();
+}
+
+function spawnMainlandRegionalPack(list, anchor, idxSeed) {
+  const dn = mainlandDistanceNorm(anchor.col, anchor.row);
+  const tpl = mainlandPackTemplateByDistance(dn);
+  const members = pickTierMembers(tpl.tier, anchor.col, anchor.row);
+  const ring = [
+    { dc: 0, dr: 0 }, { dc: 2, dr: 0 }, { dc: -2, dr: 0 }, { dc: 0, dr: 2 },
+    { dc: 0, dr: -2 }, { dc: 2, dr: 2 }, { dc: -2, dr: -2 },
+  ];
+  const campId = "mainland_pack_" + idxSeed;
+  for (let i = 0; i < members.length; i++) {
+    const p = ring[i % ring.length];
+    const mc = anchor.col + p.dc;
+    const mr = anchor.row + p.dr;
+    if (!isSafeSpawn(mc, mr)) continue;
+    let type = members[i];
+    if (tpl.tier === "apex" && i === 0) {
+      const roll = hashXY(mc * 13 + 7, mr * 11 + 5);
+      if (roll > 0.88) type = "thunder_lord";
+      else if (roll > 0.74) type = "abyss_crab";
+    }
+    const jitter = 0.88 + hashXY(mc * 5 + 17, mr * 7 + 31) * 0.36;
+    const scale = tpl.scale * jitter;
+    const role = getCampRoleByIndex(i, tpl.members.length);
+    list.push(new Monster(mc, mr, type, scale, {
+      campId,
+      campTier: tpl.tier,
+      campScale: scale,
+      campRole: role,
+      socialAggroRange: TILE_SIZE * (tpl.tier === "apex" ? 10 : tpl.tier === "heroic" ? 8.5 : tpl.tier === "elite" ? 7.2 : 6.4),
+    }));
+  }
+}
+
+/** Kasaba çevresi sabit grup koridorları (hep aynı düzen). */
+const FIXED_MAINLAND_GROUP_CAMPS = [
+  // Kasaba çıkışı sağ/sol: Lv 1-5 Balçık (5'li grup)
+  { id: "town_exit_east_slime_a", name: "Çıkış Balçık A", col: VOX + VCOLS + 8, row: VOY + Math.floor(VROWS * 0.45), members: ["slime","slime","slime","slime","slime"], scale: 0.35, tier: "normal" },
+  { id: "town_exit_east_slime_b", name: "Çıkış Balçık B", col: VOX + VCOLS + 14, row: VOY + Math.floor(VROWS * 0.62), members: ["slime","slime","slime","slime","slime"], scale: 0.48, tier: "normal" },
+  { id: "town_exit_west_slime_a", name: "Çıkış Balçık C", col: VOX - 8, row: VOY + Math.floor(VROWS * 0.44), members: ["slime","slime","slime","slime","slime"], scale: 0.4, tier: "normal" },
+  { id: "town_exit_west_slime_b", name: "Çıkış Balçık D", col: VOX - 14, row: VOY + Math.floor(VROWS * 0.60), members: ["slime","slime","slime","slime","slime"], scale: 0.55, tier: "normal" },
+
+  // Bir sonraki halka: Lv 5-10 Kurt (5'li grup, birbirine yakın)
+  { id: "west_wolf_lane_a", name: "Kurt Geçidi A", col: VOX - 24, row: VOY + Math.floor(VROWS * 0.50), members: ["wolf","wolf","wolf","wolf","wolf"], scale: 0.72, tier: "normal" },
+  { id: "west_wolf_lane_b", name: "Kurt Geçidi B", col: VOX - 30, row: VOY + Math.floor(VROWS * 0.64), members: ["wolf","wolf","wolf","wolf","wolf"], scale: 0.86, tier: "normal" },
+  { id: "west_wolf_lane_c", name: "Kurt Geçidi C", col: VOX - 36, row: VOY + Math.floor(VROWS * 0.56), members: ["wolf","wolf","wolf","wolf","wolf"], scale: 1.02, tier: "normal" },
+
+  // Sağ tarafta da benzer progression
+  { id: "east_wolf_lane_a", name: "Doğu Kurt A", col: VOX + VCOLS + 24, row: VOY + Math.floor(VROWS * 0.52), members: ["wolf","wolf","wolf","wolf","wolf"], scale: 0.78, tier: "normal" },
+  { id: "east_wolf_lane_b", name: "Doğu Kurt B", col: VOX + VCOLS + 31, row: VOY + Math.floor(VROWS * 0.60), members: ["wolf","wolf","wolf","wolf","wolf"], scale: 0.95, tier: "normal" },
+];
+
+const LEVEL_BAND_VARIANTS = [
+  { minLv: 1, maxLv: 5, tier: "normal", scaleMin: 0.28, scaleMax: 0.56, groups: [
+    ["slime","slime","slime","slime","slime"],
+    ["slime","slime","wolf","slime","wolf"],
+    ["slime","wolf","slime","slime","wolf"],
+  ]},
+  { minLv: 5, maxLv: 10, tier: "normal", scaleMin: 0.62, scaleMax: 1.02, groups: [
+    ["wolf","wolf","wolf","wolf","wolf"],
+    ["wolf","wolf","skeleton","wolf","slime"],
+    ["skeleton","wolf","wolf","skeleton","wolf"],
+  ]},
+  { minLv: 10, maxLv: 16, tier: "elite", scaleMin: 1.1, scaleMax: 1.55, groups: [
+    ["skeleton","orc","ancient_root","wolf","skeleton"],
+    ["orc","skeleton","bog_troll","wolf","ancient_root"],
+    ["vine_horror","orc","skeleton","wolf","spore_creeper"],
+  ]},
+  { minLv: 16, maxLv: 24, tier: "elite", scaleMin: 1.6, scaleMax: 2.2, groups: [
+    ["dark_knight","orc","crystalline","vine_horror","void_hound"],
+    ["crystalline","dark_knight","orc","storm_wraith","vine_horror"],
+    ["void_hound","crystalline","bog_troll","dark_knight","orc"],
+  ]},
+  { minLv: 24, maxLv: 36, tier: "heroic", scaleMin: 2.3, scaleMax: 3.3, groups: [
+    ["iron_behemoth","golem","storm_wraith","void_hound","crystalline"],
+    ["golem","iron_behemoth","storm_wraith","dark_knight","void_hound"],
+    ["storm_wraith","void_hound","crystalline","iron_behemoth","golem"],
+  ]},
+  { minLv: 36, maxLv: 55, tier: "apex", scaleMin: 3.4, scaleMax: 6.0, groups: [
+    ["thunder_lord","iron_behemoth","storm_wraith","void_hound","crystalline"],
+    ["abyss_crab","golem","storm_wraith","dark_knight","iron_behemoth"],
+    ["volcanic_titan","iron_behemoth","void_hound","storm_wraith","golem"],
+  ]},
+];
+
+function worldDistanceNorm(col, row) {
+  const dx = col - VILLAGE_CENTER_COL;
+  const dy = row - VILLAGE_CENTER_ROW;
+  const d = Math.sqrt(dx * dx + dy * dy);
+  const maxD = Math.sqrt((WORLD_COLS * 0.5) ** 2 + (WORLD_ROWS * 0.5) ** 2);
+  return Math.max(0, Math.min(1, d / Math.max(1, maxD * 0.82)));
+}
+
+function islandIsolationBoost(col, row) {
+  const isl = islandCellOwner(col, row);
+  if (!isl) return 0;
+  const rx = isl.rx != null ? isl.rx : isl.r;
+  const ry = isl.ry != null ? isl.ry : isl.r;
+  const small = (rx + ry) * 0.5 <= 20 ? 0.2 : 0.08;
+  const hostileBiome = (isl.biome === "storm" || isl.biome === "volcanic" || isl.biome === "barren") ? 0.16 : 0;
+  return small + hostileBiome;
+}
+
+function chooseBandByDifficulty(diff) {
+  if (diff < 0.18) return LEVEL_BAND_VARIANTS[0];
+  if (diff < 0.3) return LEVEL_BAND_VARIANTS[1];
+  if (diff < 0.45) return LEVEL_BAND_VARIANTS[2];
+  if (diff < 0.62) return LEVEL_BAND_VARIANTS[3];
+  if (diff < 0.78) return LEVEL_BAND_VARIANTS[4];
+  return LEVEL_BAND_VARIANTS[5];
+}
+
+function buildVarietyRegionalCamps() {
+  const camps = [];
+  let id = 0;
+  const stepX = 38, stepY = 30;
+  for (let c = 26; c < WORLD_COLS - 26; c += stepX) {
+    for (let r = 24; r < WORLD_ROWS - 24; r += stepY) {
+      const jx = Math.round((hashXY(c * 5 + 7, r * 9 + 3) - 0.5) * 16);
+      const jy = Math.round((hashXY(c * 13 + 19, r * 7 + 23) - 0.5) * 14);
+      const cc = c + jx;
+      const rr = r + jy;
+      // Kasaba merkezini temiz bırak.
+      if (cc >= VOX - 10 && cc <= VOX + VCOLS + 10 && rr >= VOY - 10 && rr <= VOY + VROWS + 12) continue;
+      if (!isSafeSpawn(cc, rr)) continue;
+      const diff = Math.max(0, Math.min(1, worldDistanceNorm(cc, rr) + islandIsolationBoost(cc, rr)));
+      const band = chooseBandByDifficulty(diff);
+      const groupIdx = Math.floor(hashXY(cc * 17 + 31, rr * 19 + 11) * band.groups.length) % band.groups.length;
+      const group = band.groups[groupIdx];
+      const sRoll = hashXY(cc * 29 + 2, rr * 23 + 5);
+      const scale = band.scaleMin + (band.scaleMax - band.scaleMin) * sRoll;
+      camps.push({
+        id: "regional_variety_" + (id++),
+        name: "Bölge Kampı",
+        col: cc,
+        row: rr,
+        members: group.slice(),
+        scale,
+        tier: band.tier,
+      });
+      const extraRoll = hashXY(cc * 41 + 17, rr * 37 + 29);
+      if (extraRoll > 0.34) {
+        const cc2 = cc + Math.round((hashXY(cc * 7 + 13, rr * 5 + 19) - 0.5) * 10);
+        const rr2 = rr + Math.round((hashXY(cc * 11 + 23, rr * 3 + 31) - 0.5) * 10);
+        if (isSafeSpawn(cc2, rr2)) {
+          const groupIdx2 = Math.floor(hashXY(cc2 * 17 + 7, rr2 * 19 + 5) * band.groups.length) % band.groups.length;
+          const group2 = band.groups[groupIdx2];
+          const sRoll2 = hashXY(cc2 * 43 + 3, rr2 * 31 + 11);
+          const scale2 = band.scaleMin + (band.scaleMax - band.scaleMin) * sRoll2;
+          camps.push({
+            id: "regional_variety_" + (id++),
+            name: "Bolge Kampi",
+            col: cc2,
+            row: rr2,
+            members: group2.slice(),
+            scale: scale2,
+            tier: band.tier,
+          });
+        }
+      }
+    }
+  }
+  return camps;
+}
+
+/** Knight Online tarzı grup farm kampları (pack pull + rota). */
+const MONSTER_CAMPS = [
+  { id: "wolf_pack_north", name: "Kurt Kampı", col: 116, row: 132, members: ["wolf", "wolf", "wolf", "slime", "wolf"], scale: 1.1, tier: "normal" },
+  { id: "orc_squad_mid", name: "Ork Mangası", col: 160, row: 122, members: ["orc", "orc", "skeleton", "wolf", "skeleton"], scale: 1.35, tier: "elite" },
+  { id: "dark_patrol_west", name: "Kara Devriye", col: 92, row: 168, members: ["dark_knight", "skeleton", "wolf", "orc", "crystalline"], scale: 1.55, tier: "elite" },
+  { id: "marsh_raiders_south", name: "Batak Baskını", col: 204, row: 186, members: ["bog_troll", "spore_creeper", "vine_horror", "orc", "dark_knight"], scale: 1.8, tier: "heroic" },
+];
+
+function getCampMetaById(campId) {
+  if (!campId) return null;
+  for (const c of MONSTER_CAMPS) if (c.id === campId) return c;
+  return null;
+}
+
+function getCampLevelText(m) {
+  const sc = m && m.campScale != null ? m.campScale : (m && m.levelScale != null ? m.levelScale : 1);
+  const base = Math.max(1, Math.round(sc * 10));
+  const spread = m && m.campTier === "heroic" ? 4 : (m && m.campTier === "elite" ? 3 : 2);
+  const lo = Math.max(1, base - 1);
+  const hi = lo + spread;
+  return "Lv." + lo + "-" + hi;
+}
+
+function getCampRoleByIndex(idx, count) {
+  if (count <= 1) return "dps";
+  if (idx === 0) return "tank";
+  if (idx === count - 1) return "healer";
+  if (idx % 2 === 0) return "ranged";
+  return "dps";
+}
+
+function spawnMonsterCamp(list, camp) {
+  if (!camp || !camp.members || !camp.members.length) return;
+  const ring = [
+    { dc: 0, dr: 0 }, { dc: 2, dr: 0 }, { dc: -2, dr: 0 }, { dc: 0, dr: 2 },
+    { dc: 0, dr: -2 }, { dc: 2, dr: 2 }, { dc: -2, dr: 2 }, { dc: 2, dr: -2 }, { dc: -2, dr: -2 },
+  ];
+  const scale = camp.scale || 1;
+  const tier = camp.tier || "normal";
+  for (let i = 0; i < camp.members.length; i++) {
+    const p = ring[i % ring.length];
+    const mc = camp.col + p.dc;
+    const mr = camp.row + p.dr;
+    if (!isSafeSpawn(mc, mr)) continue;
+    const role = getCampRoleByIndex(i, camp.members.length);
+    list.push(new Monster(mc, mr, camp.members[i], scale, {
+      campId: camp.id || ("camp_" + camp.col + "_" + camp.row),
+      campTier: tier,
+      campScale: scale,
+      campRole: role,
+      socialAggroRange: TILE_SIZE * (tier === "heroic" ? 8.5 : tier === "elite" ? 7.2 : 6.2),
+    }));
+  }
+}
+
 function spawnMonsters() {
   const list = [];
-  for (const md of MAINLAND_MONSTERS) {
-    if (isSafeSpawn(md.col, md.row)) list.push(new Monster(md.col, md.row, md.type, 1));
-  }
+  // Ana kara: rastgele dağınık yerine sabit grup kampları.
+  for (const camp of FIXED_MAINLAND_GROUP_CAMPS) spawnMonsterCamp(list, camp);
+  for (const camp of buildVarietyRegionalCamps()) spawnMonsterCamp(list, camp);
   for (const isl of ISLANDS) {
     if (!isl.monsters) continue;
     const mList = isl.monsters;
@@ -10221,6 +11143,7 @@ function spawnMonsters() {
       }
     }
   }
+  for (const camp of MONSTER_CAMPS) spawnMonsterCamp(list, camp);
   return list;
 }
 const monsters = spawnMonsters();
@@ -10234,6 +11157,52 @@ function registerRangedAimTarget(mon) {
   if (mon && mon.alive && mon.state !== "dying") {
     rangedFocusMonster = mon;
     rangedFocusTimer = RANGED_FOCUS_HOLD_SEC;
+  }
+}
+
+function alertCampAllies(monsters, source, player) {
+  if (!source || !source.campId || !source.alive || source.state === "dying") return;
+  const maxD = source.socialAggroRange || TILE_SIZE * 6;
+  const maxD2 = maxD * maxD;
+  for (const m of monsters) {
+    if (!m || m === source || !m.alive || m.state === "dying") continue;
+    if (m.campId !== source.campId) continue;
+    const dx = m.cx - source.cx;
+    const dy = m.cy - source.cy;
+    if (dx * dx + dy * dy > maxD2) continue;
+    const pDist = m.distTo(player.centerX, player.centerY);
+    if (pDist <= (m.aggroRange * 1.4)) {
+      m.state = "chase";
+      m.wanderTimer = Math.max(0.6, m.wanderTimer || 0);
+    }
+  }
+}
+
+function processCampSupport(monsters, dt) {
+  for (const h of monsters) {
+    if (!h || !h.alive || h.state === "dying") continue;
+    if (!h.campId || h.campRole !== "healer") continue;
+    h.supportHealCd = (h.supportHealCd || 0) - dt;
+    if (h.supportHealCd > 0) continue;
+    h.supportHealCd = 2.4 + Math.random() * 1.4;
+    let target = null;
+    let bestMissing = 0;
+    for (const m of monsters) {
+      if (!m || !m.alive || m.state === "dying" || m.campId !== h.campId) continue;
+      if (m.hp >= m.maxHp) continue;
+      const missing = m.maxHp - m.hp;
+      const d = Math.hypot(m.cx - h.cx, m.cy - h.cy);
+      if (d > TILE_SIZE * 8) continue;
+      if (!target || missing > bestMissing) {
+        target = m;
+        bestMissing = missing;
+      }
+    }
+    if (target) {
+      const heal = Math.max(4, Math.floor(target.maxHp * 0.06));
+      target.hp = Math.min(target.maxHp, target.hp + heal);
+      spawnDamageFloater(target.cx, target.y - 10, "+" + heal, false, "#72ff88");
+    }
   }
 }
 
@@ -10293,12 +11262,23 @@ function tryActivateRageBurst() {
 function dropMonsterLoot(m, worldItems) {
   const preset = getLootPreset();
   const lo = m.loot || [];
+  const mLevel = Math.max(1, m.level | 0);
   const tc = Math.floor(m.cx / TILE_SIZE), tr = Math.floor(m.cy / TILE_SIZE);
   const dropped = [];
-  const pushDrop = (itemId, count) => {
+  const canDropForMonsterLevel = (itemId) => {
+    const d = ITEMS[itemId];
+    if (!d || !d.equipSlot) return true;
+    return estimateEquipRequiredLevel(d) <= mLevel;
+  };
+  const pushDrop = (itemId, count, upgradeLevel) => {
+    if (!canDropForMonsterLevel(itemId)) return false;
     const cnt = Math.max(1, count | 0);
-    worldItems.push(new WorldItem(tc, tr, itemId, cnt, false));
+    const wi = new WorldItem(tc, tr, itemId, cnt, false);
+    const up = upgradeLevel | 0;
+    if (up > 0) wi.upgrade = up;
+    worldItems.push(wi);
     dropped.push({ id: itemId, c: cnt });
+    return true;
   };
   if (m.type === "island_treasure_chest") {
     const chestPool = [
@@ -10336,30 +11316,79 @@ function dropMonsterLoot(m, worldItems) {
     }
   }
 
-  const ALL_MONSTER_EQUIP_COMMON_RARE = [
-    "helm_leather", "helm_iron", "chest_leather", "chest_steel", "boots_swift",
-    "waist_cloth", "waist_chain", "arms_cloth", "arms_iron", "wings_cloth", "wings_azure",
-    "gloves_archer", "explorer_band", "lucky_charm", "ring_power", "merchants_ring", "amulet_wisdom",
-    "cloak_shadow", "shoulder_guard",
-  ];
+  const EQUIP_POOLS_BY_RARITY = {
+    common: [
+      "sword_rusty", "bow", "bow_short", "bow_recurve", "helm_leather", "chest_leather", "boots_leather",
+      "waist_cloth", "arms_cloth", "wings_cloth", "ring_copper", "amulet_wood",
+      "cloak_common", "talisman_common", "artifact_common",
+    ],
+    rare: [
+      "sword_steel", "bow_hunter", "bow_composite", "bow_war", "helm_iron", "chest_steel", "boots_swift",
+      "waist_chain", "arms_iron", "wings_azure", "gloves_archer", "explorer_band",
+      "lucky_charm", "cloak_shadow", "shoulder_guard",
+    ],
+    epic: [
+      "sword_elven", "spear_epic", "bow_long", "bow_moon_epic", "bow_sun_epic", "helm_epic", "chest_epic", "boots_epic",
+      "waist_epic", "arms_epic", "wings_epic", "ring_power", "merchants_ring",
+      "earring_focus", "bracelet_titan", "talisman_epic", "artifact_epic", "cloak_epic",
+    ],
+    legendary: [
+      "bow_storm_legendary", "bow_void_legendary", "bow_dragon_legendary", "helm_legendary", "chest_legendary",
+      "waist_legendary", "arms_legendary", "wings_legendary", "amulet_wisdom",
+      "talisman_void", "artifact_dragon_eye", "cloak_legendary",
+    ],
+  };
   const STRONG_BOSS_EPIC_LEGENDARY = [
     "helm_epic", "helm_legendary", "chest_epic", "chest_legendary", "boots_epic",
     "waist_epic", "waist_legendary", "arms_epic", "arms_legendary", "wings_epic", "wings_legendary",
-    "sword_elven", "spear_epic", "bow_long", "bow_storm_legendary", "bow_dragon_legendary", "ring_power", "merchants_ring", "amulet_wisdom",
+    "sword_elven", "spear_epic", "bow_long", "bow_moon_epic", "bow_sun_epic", "bow_storm_legendary", "bow_void_legendary", "bow_dragon_legendary", "ring_power", "merchants_ring", "amulet_wisdom",
     "earring_focus", "bracelet_titan", "talisman_void", "artifact_dragon_eye",
   ];
   const ANY_BOSS_LEGENDARY = [
-    "helm_legendary", "chest_legendary", "waist_legendary", "arms_legendary", "wings_legendary", "amulet_wisdom", "bow_storm_legendary", "bow_dragon_legendary", "talisman_void", "artifact_dragon_eye",
+    "helm_legendary", "chest_legendary", "waist_legendary", "arms_legendary", "wings_legendary", "amulet_wisdom", "bow_storm_legendary", "bow_void_legendary", "bow_dragon_legendary", "talisman_void", "artifact_dragon_eye",
   ];
   const DRAGON_GUARANTEE_LEGENDARY = ["helm_legendary", "chest_legendary", "waist_legendary", "arms_legendary", "wings_legendary", "amulet_wisdom", "bow_storm_legendary", "bow_dragon_legendary", "talisman_void", "artifact_dragon_eye"];
 
   const strongBoss = !!(m.boss && STRONG_BOSS_TYPES.has(m.type));
   const bRate = LOOT_BALANCE_PANEL.bossRateTable[m.type] || { legendMul: 1, hiTierMul: 1 };
-
-  if (Math.random() < (m.boss ? Math.min(0.9, preset.allMobEquipChance + 0.2) : preset.allMobEquipChance)) {
-    const pick = ALL_MONSTER_EQUIP_COMMON_RARE[Math.floor(Math.random() * ALL_MONSTER_EQUIP_COMMON_RARE.length)];
-    const d = ITEMS[pick];
-    if (d && (d.rarity === "common" || d.rarity === "rare")) pushDrop(pick, 1);
+  const levelRollCount = m.boss ? 2 + (strongBoss ? 1 : 0) : 1;
+  const rollLevelBasedRarity = () => {
+    const t = Math.random();
+    const legendaryChance = m.boss ? (strongBoss ? 0.03 : 0.016) : Math.min(0.008, 0.0004 + mLevel * 0.00018);
+    const epicChance = Math.min(0.48, 0.05 + mLevel * 0.012 + (m.boss ? 0.15 : 0));
+    const rareChance = Math.min(0.75, 0.26 + mLevel * 0.014 + (m.boss ? 0.1 : 0));
+    if (t < legendaryChance) return "legendary";
+    if (t < legendaryChance + epicChance) return "epic";
+    if (t < legendaryChance + epicChance + rareChance) return "rare";
+    return "common";
+  };
+  const pickFromRarity = (rarity) => {
+    const pool = (EQUIP_POOLS_BY_RARITY[rarity] || EQUIP_POOLS_BY_RARITY.common).filter((id) => canDropForMonsterLevel(id));
+    if (!pool.length) {
+      const fallback = EQUIP_POOLS_BY_RARITY.common.filter((id) => canDropForMonsterLevel(id));
+      if (!fallback.length) return null;
+      return fallback[Math.floor(Math.random() * fallback.length)];
+    }
+    const idx = Math.floor(Math.random() * pool.length);
+    return pool[idx];
+  };
+  if (Math.random() < (m.boss ? Math.min(0.92, preset.allMobEquipChance + 0.25) : preset.allMobEquipChance)) {
+    for (let i = 0; i < levelRollCount; i++) {
+      const rarity = rollLevelBasedRarity();
+      const pick = pickFromRarity(rarity);
+      const d = ITEMS[pick];
+      let up = 0;
+      if (pick && d && d.equipSlot) {
+        const upBase = Math.max(0, Math.floor((mLevel - 6) / 8));
+        const rarityBonus = rarity === "legendary" ? 2 : rarity === "epic" ? 1 : 0;
+        const upCap = Math.min(MAX_ITEM_UPGRADE, upBase + rarityBonus + (m.boss ? 2 : 0));
+        if (upCap > 0) {
+          const upChance = Math.min(0.8, 0.08 + mLevel * 0.01 + (m.boss ? 0.18 : 0));
+          if (Math.random() < upChance) up = 1 + Math.floor(Math.random() * upCap);
+        }
+      }
+      if (pick && d) pushDrop(pick, 1, up);
+    }
   }
 
   if (m.boss && Math.random() < Math.min(0.95, preset.bossAnyLegendaryChance * bRate.legendMul)) {
@@ -10838,6 +11867,9 @@ canvas.addEventListener("mousedown", (e) => {
     craftPanel.handleClick(e.clientX, e.clientY, canvasW, canvasH, inventory, player);
     e.preventDefault(); return;
   }
+  if (bankPanel.open) {
+    e.preventDefault(); return;
+  }
   if (shop.open) {
     shop.handleClick(e.clientX, e.clientY, canvasW, canvasH, inventory, e.shiftKey, e.button);
     e.preventDefault(); return;
@@ -10864,7 +11896,7 @@ canvas.addEventListener("mousedown", (e) => {
     return;
   }
 
-  if (e.button === 0 && !inventory.open && !petPanel.open && !dialog.active && !shop.open && !craftPanel.open && !charPanel.open && !player.inBoat) {
+  if (e.button === 0 && !inventory.open && !bankPanel.open && !petPanel.open && !dialog.active && !shop.open && !craftPanel.open && !charPanel.open && !player.inBoat) {
     if (tryOpenWorldItemInspect(e.clientX, e.clientY)) {
       canvasMouse0Down = false;
       e.preventDefault();
@@ -10872,7 +11904,7 @@ canvas.addEventListener("mousedown", (e) => {
     }
   }
 
-  if (e.button === 0 && !inventory.open && !petPanel.open && !dialog.active && !shop.open && !craftPanel.open && !charPanel.open) {
+  if (e.button === 0 && !inventory.open && !bankPanel.open && !petPanel.open && !dialog.active && !shop.open && !craftPanel.open && !charPanel.open) {
     if (tryCombatPotionClick(e.clientX, e.clientY)) {
       e.preventDefault();
       return;
@@ -10883,7 +11915,7 @@ canvas.addEventListener("mousedown", (e) => {
     }
   }
 
-  if (e.button === 0 && !inventory.open && !petPanel.open && !dialog.active && !shop.open && !craftPanel.open && !charPanel.open && !player.inBoat) {
+  if (e.button === 0 && !inventory.open && !bankPanel.open && !petPanel.open && !dialog.active && !shop.open && !craftPanel.open && !charPanel.open && !player.inBoat) {
     if (player.powerCharging && player.powerCharge > 0.1) {
       tryReleasePowerShotClick();
     }
@@ -10930,6 +11962,7 @@ function tryMobileClosePanels(mx, my) {
   if (dialog.active) { dialog.close(true); return true; }
   if (shop.open) { shop.close(); return true; }
   if (craftPanel.open) { craftPanel.close(); return true; }
+  if (bankPanel.open) { bankPanel.close(); return true; }
   if (inventory.open) {
     if (inventorySlotInspect) { closeInventorySlotInspect(); return true; }
     inventory.close();
@@ -10962,6 +11995,9 @@ function handleCanvasTouchStart(e) {
     if (shop.open) {
       if (shop.tryBeginGridScroll(id, mx, my, canvasW, canvasH, inventory)) continue;
       shop.handleClick(mx, my, canvasW, canvasH, inventory, false, 0);
+      continue;
+    }
+    if (bankPanel.open) {
       continue;
     }
     if (inventory.open) {
@@ -11656,24 +12692,32 @@ function monsterToSave(m) {
   return {
     type: m.type, col: m.col, row: m.row, levelScale: m.levelScale,
     x: m.x, y: m.y, hp: m.hp, maxHp: m.maxHp, dmg: m.dmg, speed: m.speed,
-    xpReward: m.xpReward, aggroRange: m.aggroRange, atkRange: m.atkRange, atkCd: m.atkCd,
+    xpReward: m.xpReward, goldReward: m.goldReward, aggroRange: m.aggroRange, atkRange: m.atkRange, atkCd: m.atkCd,
     alive: m.alive, state: m.state, boss: m.boss,
+    campId: m.campId, campTier: m.campTier, campScale: m.campScale, campRole: m.campRole, socialAggroRange: m.socialAggroRange, level: m.level,
     homeX: m.homeX, homeY: m.homeY, direction: m.direction,
     animTimer: m.animTimer, animFrame: m.animFrame,
     wanderTimer: m.wanderTimer, moveDir: { dx: m.moveDir.dx, dy: m.moveDir.dy }, moveTime: m.moveTime,
     atkTimer: m.atkTimer, atkAnim: m.atkAnim, hitFlash: m.hitFlash,
-    deathTimer: m.deathTimer, respawnTimer: m.respawnTimer, respawnTime: m.respawnTime,
+    deathTimer: m.deathTimer, respawnTimer: m.respawnTimer, respawnTime: m.respawnTime, supportHealCd: m.supportHealCd,
   };
 }
 
 function loadMonsterFromSave(o) {
-  const m = new Monster(o.col, o.row, o.type, o.levelScale != null ? o.levelScale : 1);
+  const m = new Monster(o.col, o.row, o.type, o.levelScale != null ? o.levelScale : 1, {
+    campId: o.campId != null ? o.campId : null,
+    campTier: o.campTier != null ? o.campTier : null,
+    campScale: o.campScale != null ? o.campScale : (o.levelScale != null ? o.levelScale : undefined),
+    campRole: o.campRole != null ? o.campRole : null,
+    socialAggroRange: o.socialAggroRange != null ? o.socialAggroRange : undefined,
+  });
   m.x = o.x; m.y = o.y;
   m.hp = Math.min(o.hp != null ? o.hp : m.hp, o.maxHp != null ? o.maxHp : m.maxHp);
   m.maxHp = o.maxHp != null ? o.maxHp : m.maxHp;
   if (o.dmg != null) m.dmg = o.dmg;
   if (o.speed != null) m.speed = o.speed;
   if (o.xpReward != null) m.xpReward = o.xpReward;
+  if (o.goldReward != null) m.goldReward = o.goldReward;
   if (o.aggroRange != null) m.aggroRange = o.aggroRange;
   if (o.atkRange != null) m.atkRange = o.atkRange;
   if (o.atkCd != null) m.atkCd = o.atkCd;
@@ -11693,6 +12737,8 @@ function loadMonsterFromSave(o) {
   m.deathTimer = o.deathTimer || 0;
   m.respawnTimer = o.respawnTimer || 0;
   m.respawnTime = o.respawnTime || m.respawnTime;
+  m.supportHealCd = o.supportHealCd != null ? o.supportHealCd : m.supportHealCd;
+  if (o.level != null) m.level = o.level;
   return m;
 }
 
@@ -11781,6 +12827,7 @@ function resetWorldToNewGameState() {
   for (let i = 0; i < inventory.slots.length; i++) inventory.slots[i] = null;
   for (let i = 0; i < inventory.hotbar.length; i++) inventory.hotbar[i] = null;
   for (const sk of EQ_SLOTS) inventory.equipped[sk] = null;
+  inventory.equipped.bow = { id: "bow", count: 1 };
   inventory.gold = 0;
   inventory.selectedHotbar = 0;
   inventory.heldItem = null;
@@ -11808,6 +12855,9 @@ function resetWorldToNewGameState() {
   }
 
   activePet = null;
+  bankPanel.close();
+  bankPanel.slots = Array(160).fill(null);
+  bankPanel.gold = 0;
   arrows.length = 0;
   monsterSpells.length = 0;
   camera.x = player.x - canvasW / 2;
@@ -11837,6 +12887,7 @@ function buildSavePayload(displayName) {
     wildPets: wildPets.map(wildPetToSave),
     npcs: npcs.map(npcToSave),
     activePet: petToSave(activePet),
+    bank: { slots: bankPanel.slots, gold: bankPanel.gold | 0 },
   };
 }
 
@@ -11871,6 +12922,14 @@ function applySavePayload(data) {
     for (let i = 0; i < npcs.length; i++) applyNpcSave(npcs[i], data.npcs[i]);
   }
   activePet = loadActivePetFromSave(data.activePet);
+  if (data.bank) {
+    bankPanel.slots = Array.isArray(data.bank.slots) ? data.bank.slots.map((s) => s ? { ...s } : null) : Array(160).fill(null);
+    bankPanel.gold = Math.max(0, (data.bank.gold | 0));
+  } else {
+    bankPanel.slots = Array(160).fill(null);
+    bankPanel.gold = 0;
+  }
+  bankPanel.close();
   arrows.length = 0;
   monsterSpells.length = 0;
   dialog.active = false;
@@ -12072,6 +13131,7 @@ function gameLoop(now) {
     if (dialog.active) dialog.close(true);
     else if (shop.open) shop.close();
     else if (craftPanel.open) craftPanel.close();
+    else if (bankPanel.open) bankPanel.close();
     else if (inventory.open) {
       if (inventorySlotInspect) closeInventorySlotInspect();
       else inventory.close();
@@ -12084,6 +13144,7 @@ function gameLoop(now) {
   } else if (wasJustPressed("KeyI") || wasJustPressed("Tab")) {
     inventory.toggle();
     if (inventory.open) {
+      bankPanel.close();
       charPanel.close();
       petPanel.open = false;
       shop.close();
@@ -12092,10 +13153,46 @@ function gameLoop(now) {
   }
   if (wasJustPressed("KeyC") && !dialog.active) {
     charPanel.toggle();
+    if (charPanel.open) bankPanel.close();
+  }
+  if (wasJustPressed("KeyN") && !dialog.active && !shop.open && !craftPanel.open && !charPanel.open && !worldItemInspect && !inventorySlotInspect) {
+    bankPanel.toggle();
+    if (bankPanel.open) {
+      inventory.close();
+      petPanel.close();
+      shop.close();
+      craftPanel.close();
+      charPanel.close();
+      closeWorldItemInspect();
+      closeInventorySlotInspect();
+    }
+  }
+  if (bankPanel.open) {
+    if (wasJustPressed("KeyJ")) {
+      const moved = bankPanel.depositAllFromInventory(inventory);
+      pickupMsgText = moved > 0 ? (moved + " esya bankaya yatirildi.") : "Yatirilacak esya yok.";
+      pickupMsgTimer = 1.5;
+    }
+    if (wasJustPressed("KeyK")) {
+      const moved = bankPanel.withdrawAllToInventory(inventory);
+      pickupMsgText = moved > 0 ? (moved + " esya envantere cekildi.") : "Cekilecek esya yok veya envanter dolu.";
+      pickupMsgTimer = 1.5;
+    }
+    if (wasJustPressed("KeyH")) {
+      const g = bankPanel.depositAllGoldFromInventory(inventory);
+      pickupMsgText = g > 0 ? (formatGold(g) + " altin bankaya yatirildi.") : "Yatirilacak altin yok.";
+      pickupMsgTimer = 1.5;
+    }
+    if (wasJustPressed("KeyG")) {
+      const g = bankPanel.withdrawAllGoldToInventory(inventory);
+      pickupMsgText = g > 0 ? (formatGold(g) + " altin bankadan cekildi.") : "Bankada altin yok.";
+      pickupMsgTimer = 1.5;
+    }
   }
   if (wasJustPressed("KeyP")) {
     petPanel.toggle();
     if (petPanel.open) {
+      bankPanel.close();
       charPanel.close();
       inventory.open = false;
       shop.close();
@@ -12163,7 +13260,7 @@ function gameLoop(now) {
 
   shop.update(dt);
   craftPanel.update(dt);
-  const uiOpen = dialog.active || inventory.open || petPanel.open || shop.open || craftPanel.open || charPanel.open || !!worldItemInspect || !!inventorySlotInspect;
+  const uiOpen = dialog.active || inventory.open || bankPanel.open || petPanel.open || shop.open || craftPanel.open || charPanel.open || !!worldItemInspect || !!inventorySlotInspect;
 
   const desktopPowerHold = canvasMouse0Down && !touchState.mobileUI && (performance.now() - mouseAttackT0) >= DESKTOP_POWER_HOLD_MS;
   if ((isDown("ShiftLeft") || isDown("ShiftRight") || desktopPowerHold) && !uiOpen && !player.inBoat) {
@@ -12261,15 +13358,21 @@ function gameLoop(now) {
   if (activePet) activePet.update(dt, player, map, worldItems, inventory, monsters);
 
   if (!uiOpen) {
+    processCampSupport(monsters, dt);
     for (const m of monsters) {
       const r = m.update(dt, map, player);
+      if (m.alertAlliesTimer > 0 && (m.state === "chase" || m.state === "attack")) {
+        alertCampAllies(monsters, m, player);
+      }
       if (r === "dead") {
         gameAudio.playKill();
         player.gainXP(m.xpReward);
+        inventory.addItem("coin", m.goldReward || 0);
         dropMonsterLoot(m, worldItems);
         const mt = MONSTER_TYPES[m.type];
         const btag = mt && mt.boss ? "[BOSS] " : "";
-        pickupMsgText = "+" + m.xpReward + " XP — " + btag + (mt ? mt.name : m.type) + " yendi!";
+        const campTag = m.campId ? " [GRUP]" : "";
+        pickupMsgText = "+" + m.xpReward + " XP  +" + (m.goldReward || 0) + " Altın — " + btag + (mt ? mt.name : m.type) + campTag + " yendi!";
         pickupMsgTimer = 1.8;
       }
     }
@@ -12567,11 +13670,12 @@ function gameLoop(now) {
   }
 
   inventory.render(ctx, canvasW, canvasH, mouseX, mouseY);
+  bankPanel.render(ctx, canvasW, canvasH);
   petPanel.render(ctx, canvasW, canvasH, activePet);
   shop.render(ctx, canvasW, canvasH, inventory);
   craftPanel.render(ctx, canvasW, canvasH, inventory, player);
 
-  if (!inventory.open && !petPanel.open && !shop.open && !craftPanel.open) {
+  if (!inventory.open && !bankPanel.open && !petPanel.open && !shop.open && !craftPanel.open) {
     hud.render(ctx, canvasW, canvasH);
     dialog.render(ctx, canvasW, canvasH);
     minimap.render(ctx, canvasW, canvasH, camera, player, npcs, wildPets, activePet);
@@ -12584,7 +13688,7 @@ function gameLoop(now) {
 
   renderTouchOverlay(ctx);
 
-  if (!inventory.open && !petPanel.open && !shop.open && !craftPanel.open) {
+  if (!inventory.open && !bankPanel.open && !petPanel.open && !shop.open && !craftPanel.open) {
     drawCombatPotions(ctx, canvasW, canvasH, inventory);
   }
 
@@ -12627,6 +13731,16 @@ function gameLoop(now) {
     ctx.globalAlpha = alpha;
     ctx.fillStyle = "#50e050"; ctx.font = "bold 14px monospace";
     ctx.fillText(pickupMsgText, canvasW / 2 - ctx.measureText(pickupMsgText).width / 2, canvasH / 2 - 40 - offsetY);
+    ctx.globalAlpha = 1;
+  }
+  if (player.equipPowerToastTimer > 0 && player.equipPowerToastText) {
+    const tAlpha = Math.min(1, player.equipPowerToastTimer / 0.22);
+    const yOff = (1.35 - player.equipPowerToastTimer) * 24;
+    ctx.globalAlpha = tAlpha;
+    ctx.fillStyle = player.equipPowerToastColor || "#ffffff";
+    ctx.font = "bold 15px monospace";
+    const yy = canvasH * 0.34 - yOff;
+    ctx.fillText(player.equipPowerToastText, canvasW / 2 - ctx.measureText(player.equipPowerToastText).width / 2, yy);
     ctx.globalAlpha = 1;
   }
 
