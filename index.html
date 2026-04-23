@@ -541,10 +541,10 @@ function mobileCombatClusterGeom(cw, ch) {
     orbitR = Math.max(52, Math.round(60 - (520 - cw) * 0.11));
   }
   const rightExtent = Math.cos(swapAng) * orbitR + auxR;
-  let centerX = cw - pad - (isLandscape ? 60 : 52);
+  let centerX = cw - pad - (isLandscape ? 46 : 42);
   const maxCx = cw - margin - rightExtent;
   if (centerX > maxCx) centerX = maxCx;
-  const centerY = ch - pad - (isLandscape ? 70 : 62);
+  const centerY = ch - pad - (isLandscape ? 52 : 48);
   return { centerX, centerY, atkR, skillR, orbitR, auxR, pad };
 }
 
@@ -617,32 +617,19 @@ function mobileButtonsLayout(cw, ch) {
     { key: "KeyT", label: "\u015eehir" },
   ];
   if (touchState.mobileUI) {
-    const menuH = isLandscape ? 32 : 30;
-    const menuW = isLandscape ? 52 : 46;
-    const menuGap = 4;
-    const gridW = menuW * 2 + menuGap;
-    const gridH = menuH * 2 + menuGap;
-    let gx = Math.round(G.centerX - G.atkR - 12 - gridW);
-    let gy = Math.round(G.centerY + G.atkR - gridH);
-    if (isLandscape) {
-      // Sağ yarıda tutup saldırı kümesiyle hizala; hotbar/orta HUD ile çakışmayı azalt.
-      gx = Math.max(gx, Math.floor(cw * 0.58));
-    }
-    if (gx < 6) gx = 6;
+    const menuH = isLandscape ? 30 : 28;
+    const menuW = isLandscape ? 54 : 50;
+    const menuGap = 6;
+    const rowW = menuItems.length * menuW + (menuItems.length - 1) * menuGap;
+    let gx = Math.round(G.centerX - G.atkR - 16 - rowW);
+    let gy = Math.round(ch - menuH - 10);
+    if (gx < 8) gx = 8;
     if (gy < 8) gy = 8;
-    if (gy + gridH > ch - 8) gy = Math.max(8, ch - 8 - gridH);
-
-    const menuPos = {
-      KeyT: { col: 0, row: 0 },
-      KeyC: { col: 1, row: 0 },
-      KeyM: { col: 0, row: 1 },
-      KeyI: { col: 1, row: 1 },
-    };
-    for (const m of menuItems) {
-      const p = menuPos[m.key] || { col: 0, row: 0 };
-      const x = gx + p.col * (menuW + menuGap);
-      const y = gy + p.row * (menuH + menuGap);
-      out.push({ key: m.key, kind: "menu", label: m.label, x, y, w: menuW, h: menuH });
+    if (gy + menuH > ch - 4) gy = ch - 4 - menuH;
+    for (let i = 0; i < menuItems.length; i++) {
+      const m = menuItems[i];
+      const x = gx + i * (menuW + menuGap);
+      out.push({ key: m.key, kind: "menu", label: m.label, x, y: gy, w: menuW, h: menuH });
     }
   } else {
     const tw = 44;
