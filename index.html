@@ -617,13 +617,17 @@ function mobileButtonsLayout(cw, ch) {
     { key: "KeyT", label: "\u015eehir" },
   ];
   if (touchState.mobileUI) {
-    const potW = 42, potH = 42;
-    const hpX = Math.round(G.centerX - G.atkR - potW - (isLandscape ? 52 : 46));
-    const menuH = 30, menuW = 46, menuGap = 4;
+    const menuH = isLandscape ? 32 : 30;
+    const menuW = isLandscape ? 52 : 46;
+    const menuGap = 4;
     const gridW = menuW * 2 + menuGap;
     const gridH = menuH * 2 + menuGap;
-    let gx = hpX - 10 - gridW;
-    let gy = Math.round(ch - potH - 16 - (gridH - menuH));
+    let gx = Math.round(G.centerX - G.atkR - 12 - gridW);
+    let gy = Math.round(G.centerY + G.atkR - gridH);
+    if (isLandscape) {
+      // Sağ yarıda tutup saldırı kümesiyle hizala; hotbar/orta HUD ile çakışmayı azalt.
+      gx = Math.max(gx, Math.floor(cw * 0.58));
+    }
     if (gx < 6) gx = 6;
     if (gy < 8) gy = 8;
     if (gy + gridH > ch - 8) gy = Math.max(8, ch - 8 - gridH);
@@ -12407,7 +12411,9 @@ function gameLoop(now) {
   ctx.fillStyle = "#2f8f4d";
   ctx.fillRect(0, 0, canvasW, canvasH);
   camera.applyTransform(ctx);
-  map.render(ctx, camera.x, camera.y, canvasW, canvasH);
+  const viewWorldW = (camera && camera.viewW > 0) ? camera.viewW : (canvasW / Math.max(0.01, worldZoom));
+  const viewWorldH = (camera && camera.viewH > 0) ? camera.viewH : (canvasH / Math.max(0.01, worldZoom));
+  map.render(ctx, camera.x, camera.y, viewWorldW, viewWorldH);
 
   if (worldData.dockCol && worldData.dockEnd) {
     const dc = worldData.dockCol, de = worldData.dockEnd;
