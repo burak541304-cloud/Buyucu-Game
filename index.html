@@ -13289,6 +13289,10 @@ const MOBILE_MONSTER_FAR_UPDATE_DIST = TILE_SIZE * 16;
 const MOBILE_MONSTER_FAR_UPDATE_STAGGER = 3;
 const MOBILE_MONSTER_RENDER_DIST = TILE_SIZE * 13;
 const MOBILE_MAX_VISIBLE_MONSTERS = 55;
+const MOBILE_MONSTER_VERY_FAR_UPDATE_DIST = TILE_SIZE * 26;
+const MOBILE_MONSTER_VERY_FAR_UPDATE_STAGGER = 7;
+const MOBILE_CROWDED_MONSTER_THRESHOLD = 320;
+const MOBILE_CROWDED_VISIBLE_MONSTERS = 40;
 const DESKTOP_MONSTER_CROWDED_THRESHOLD = 260;
 const DESKTOP_MONSTER_FAR_UPDATE_DIST = TILE_SIZE * 20;
 const DESKTOP_MONSTER_FAR_UPDATE_STAGGER = 4;
@@ -14160,12 +14164,14 @@ function gameLoop(now) {
 
   if (!uiOpen) {
     const crowdedDesktop = !touchState.mobileUI && monsters.length > DESKTOP_MONSTER_CROWDED_THRESHOLD;
+    const crowdedMobile = touchState.mobileUI && monsters.length > MOBILE_CROWDED_MONSTER_THRESHOLD;
     if (!touchState.mobileUI || (mobilePerfFrame % 2) === 0) {
       if (!crowdedDesktop || (mobilePerfFrame % 2) === 0) {
         processCampSupport(monsters, touchState.mobileUI ? dt * 2 : (crowdedDesktop ? dt * 1.35 : dt));
       }
     }
     const farUpdateDistSq = MOBILE_MONSTER_FAR_UPDATE_DIST * MOBILE_MONSTER_FAR_UPDATE_DIST;
+    const veryFarUpdateDistSq = MOBILE_MONSTER_VERY_FAR_UPDATE_DIST * MOBILE_MONSTER_VERY_FAR_UPDATE_DIST;
     const farUpdateDistSqDesktop = DESKTOP_MONSTER_FAR_UPDATE_DIST * DESKTOP_MONSTER_FAR_UPDATE_DIST;
     for (let mi = 0; mi < monsters.length; mi++) {
       const m = monsters[mi];
@@ -14173,10 +14179,13 @@ function gameLoop(now) {
       if (touchState.mobileUI && !m.boss && m.alive) {
         const mdx = m.cx - player.centerX;
         const mdy = m.cy - player.centerY;
-        const farMonster = (mdx * mdx + mdy * mdy) > farUpdateDistSq;
+        const d2m = (mdx * mdx + mdy * mdy);
+        const farMonster = d2m > farUpdateDistSq;
         if (farMonster) {
-          if (((mobilePerfFrame + mi) % MOBILE_MONSTER_FAR_UPDATE_STAGGER) !== 0) continue;
-          stepDt *= MOBILE_MONSTER_FAR_UPDATE_STAGGER;
+          let stagger = MOBILE_MONSTER_FAR_UPDATE_STAGGER;
+          if (d2m > veryFarUpdateDistSq || crowdedMobile) stagger = MOBILE_MONSTER_VERY_FAR_UPDATE_STAGGER;
+          if (((mobilePerfFrame + mi) % stagger) !== 0) continue;
+          stepDt *= stagger;
         }
       }
       if (crowdedDesktop && !m.boss && m.alive) {
@@ -14237,8 +14246,14 @@ function gameLoop(now) {
     const a = arrows[i];
     a.update(dt, map);
     if (a.alive) {
+      const arrowMobCheckDistSq = touchState.mobileUI ? (TILE_SIZE * 18) * (TILE_SIZE * 18) : Infinity;
       for (const m of monsters) {
         if (!m.alive || m.state === "dying") continue;
+        if (touchState.mobileUI) {
+          const ddx = m.cx - a.x;
+          const ddy = m.cy - a.y;
+          if ((ddx * ddx + ddy * ddy) > arrowMobCheckDistSq && !m.boss) continue;
+        }
         if (a.x >= m.x - 2 && a.x <= m.x + m.w + 2 && a.y >= m.y - 2 && a.y <= m.y + m.h + 2) {
           if (a.power) {
             if (a.hitMonsters.has(m)) continue;
@@ -14411,16 +14426,18 @@ function gameLoop(now) {
   for (const wp of wildPets) if (wp.alive) renderables.push(wp);
   const mobRenderDistSq = MOBILE_MONSTER_RENDER_DIST * MOBILE_MONSTER_RENDER_DIST;
   const crowdedDesktopRender = !touchState.mobileUI && monsters.length > DESKTOP_MONSTER_CROWDED_THRESHOLD;
+  const crowdedMobileRender = touchState.mobileUI && monsters.length > MOBILE_CROWDED_MONSTER_THRESHOLD;
   const desktopRenderDistSq = DESKTOP_MONSTER_RENDER_DIST * DESKTOP_MONSTER_RENDER_DIST;
   let mobileVisibleMonsterCount = 0;
   let desktopVisibleMonsterCount = 0;
+  const mobileVisibleCap = crowdedMobileRender ? MOBILE_CROWDED_VISIBLE_MONSTERS : MOBILE_MAX_VISIBLE_MONSTERS;
   for (const m of monsters) {
     if (!m.alive) continue;
     if (touchState.mobileUI && !m.boss) {
       const dxm = m.cx - player.centerX;
       const dym = m.cy - player.centerY;
       if ((dxm * dxm + dym * dym) > mobRenderDistSq) continue;
-      if (mobileVisibleMonsterCount >= MOBILE_MAX_VISIBLE_MONSTERS) continue;
+      if (mobileVisibleMonsterCount >= mobileVisibleCap) continue;
       mobileVisibleMonsterCount++;
     }
     if (crowdedDesktopRender && !m.boss) {
