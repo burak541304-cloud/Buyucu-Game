@@ -493,6 +493,35 @@ function cycleLootPreset() {
 
 loadLootPresetSettings();
 
+/* Mobil Performans Modlar\u0131 */
+const PERF_MODES = [
+  { id: "balanced", label: "Dengeli", dpr: 1.0, stagger: 1, labelShort: "Dengeli" },
+  { id: "performance", label: "Performans", dpr: 0.82, stagger: 2, labelShort: "H\u0131zl\u0131" },
+  { id: "ultra", label: "Ultra Performans", dpr: 0.68, stagger: 3, labelShort: "Ultra" }
+];
+let perfModeIdx = 0;
+const PERF_SETTINGS_KEY = "chopgrow_perf_v1";
+
+function loadPerfSettings() {
+  try {
+    const v = localStorage.getItem(PERF_SETTINGS_KEY);
+    if (v != null) perfModeIdx = Math.max(0, Math.min(PERF_MODES.length - 1, parseInt(v) | 0));
+  } catch(e) {}
+}
+function savePerfSettings() {
+  try { localStorage.setItem(PERF_SETTINGS_KEY, perfModeIdx); } catch(e) {}
+}
+function cyclePerformanceMode() {
+  perfModeIdx = (perfModeIdx + 1) % PERF_MODES.length;
+  savePerfSettings();
+  if (typeof resize === "function") resize();
+  pickupMsgText = "Performans Modu: " + PERF_MODES[perfModeIdx].label;
+  pickupMsgTimer = 1.35;
+  return PERF_MODES[perfModeIdx];
+}
+loadPerfSettings();
+
+
 function refreshMobileUI() {
   const narrow = Math.min(window.innerWidth, window.innerHeight) <= 1080;
   touchState.mobileUI = window.matchMedia("(pointer: coarse)").matches ||
@@ -622,6 +651,7 @@ function mobileButtonsLayout(cw, ch) {
     { key: "KeyC", label: "K" },
     { key: "KeyM", label: "H" },
     { key: "KeyT", label: "\u015eehir" },
+    { key: "KeyPerf", label: PERF_MODES[perfModeIdx].labelShort },
   ];
   if (touchState.mobileUI) {
     const menuH = isLandscape ? 30 : 28;
@@ -12892,6 +12922,7 @@ function pulseMobileButtonKey(key) {
   else if (key === "KeyL") pulseJust("KeyL");
   else if (key === "KeyT") pulseJust("KeyT");
   else if (key === "KeyB") pulseJust("KeyB");
+  else if (key === "KeyPerf") cyclePerformanceMode();
 }
 
 function handleCanvasTouchEnd(e) {
@@ -13067,10 +13098,11 @@ function renderTouchOverlay(ctx) {
 }
 
 function resize() {
+  const dpr = (typeof PERF_MODES !== "undefined") ? PERF_MODES[perfModeIdx].dpr : 1;
   canvasW = window.innerWidth;
   canvasH = window.innerHeight;
-  canvas.width = canvasW;
-  canvas.height = canvasH;
+  canvas.width = canvasW * dpr;
+  canvas.height = canvasH * dpr;
   camera.resize(canvasW / Math.max(0.01, worldZoom), canvasH / Math.max(0.01, worldZoom));
   refreshMobileUI();
   updateTouchLayout();
@@ -14165,9 +14197,10 @@ function gameLoop(now) {
   if (!uiOpen) {
     const crowdedDesktop = !touchState.mobileUI && monsters.length > DESKTOP_MONSTER_CROWDED_THRESHOLD;
     const crowdedMobile = touchState.mobileUI && monsters.length > MOBILE_CROWDED_MONSTER_THRESHOLD;
-    if (!touchState.mobileUI || (mobilePerfFrame % 2) === 0) {
+    const perfStagger = PERF_MODES[perfModeIdx].stagger;
+    if (!touchState.mobileUI || (mobilePerfFrame % (2 * perfStagger)) === 0) {
       if (!crowdedDesktop || (mobilePerfFrame % 2) === 0) {
-        processCampSupport(monsters, touchState.mobileUI ? dt * 2 : (crowdedDesktop ? dt * 1.35 : dt));
+        processCampSupport(monsters, touchState.mobileUI ? dt * 2 * perfStagger : (crowdedDesktop ? dt * 1.35 : dt));
       }
     }
     const farUpdateDistSq = MOBILE_MONSTER_FAR_UPDATE_DIST * MOBILE_MONSTER_FAR_UPDATE_DIST;
@@ -14182,8 +14215,8 @@ function gameLoop(now) {
         const d2m = (mdx * mdx + mdy * mdy);
         const farMonster = d2m > farUpdateDistSq;
         if (farMonster) {
-          let stagger = MOBILE_MONSTER_FAR_UPDATE_STAGGER;
-          if (d2m > veryFarUpdateDistSq || crowdedMobile) stagger = MOBILE_MONSTER_VERY_FAR_UPDATE_STAGGER;
+          let stagger = MOBILE_MONSTER_FAR_UPDATE_STAGGER * perfStagger;
+          if (d2m > veryFarUpdateDistSq || crowdedMobile) stagger = MOBILE_MONSTER_VERY_FAR_UPDATE_STAGGER * perfStagger;
           if (((mobilePerfFrame + mi) % stagger) !== 0) continue;
           stepDt *= stagger;
         }
@@ -14347,6 +14380,10 @@ function gameLoop(now) {
     }
   }
 
+  const dpr = PERF_MODES[perfModeIdx].dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.imageSmoothingEnabled = false;
+
   ctx.clearRect(0, 0, canvasW, canvasH);
   // En uzak zoomda harita sinirlari disinda siyah gorunumu engelle.
   ctx.fillStyle = "#2f8f4d";
@@ -14430,7 +14467,7 @@ function gameLoop(now) {
   const desktopRenderDistSq = DESKTOP_MONSTER_RENDER_DIST * DESKTOP_MONSTER_RENDER_DIST;
   let mobileVisibleMonsterCount = 0;
   let desktopVisibleMonsterCount = 0;
-  const mobileVisibleCap = crowdedMobileRender ? MOBILE_CROWDED_VISIBLE_MONSTERS : MOBILE_MAX_VISIBLE_MONSTERS;
+  const mobileVisibleCap = Math.max(8, Math.round((crowdedMobileRender ? MOBILE_CROWDED_VISIBLE_MONSTERS : MOBILE_MAX_VISIBLE_MONSTERS) / (perfModeIdx === 2 ? 1.8 : 1)));
   for (const m of monsters) {
     if (!m.alive) continue;
     if (touchState.mobileUI && !m.boss) {
@@ -14629,6 +14666,7 @@ function gameLoop(now) {
   }
 
   clearJustPressed();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
   requestAnimationFrame(gameLoop);
 }
 
