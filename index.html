@@ -353,6 +353,8 @@ const touchState = {
 /** Mobil / masa\u00fcst\u00fc: sadele\u015ftirilmi\u015f 3 aktif beceri. */
 const ACTIVE_SKILL_DEFS = [
   { id: "powerburst", icon: "OK", mana: 12, cooldown: 5.2 },
+  { id: "mend", icon: "CAN", mana: 16, cooldown: 11.5 },
+  { id: "volley", icon: "SALVO", mana: 18, cooldown: 8.4 },
 ];
 
 /** Masa\u00fcst\u00fcnde minimap ile sa\u011f UI \u00e7ak\u0131\u015fmas\u0131 i\u00e7in bo\u015fluk (mobilde kullan\u0131lmaz). */
@@ -451,6 +453,10 @@ const LOOT_BALANCE_PANEL = {
     godzilla: { legendMul: 1.2, hiTierMul: 1.22 },
     scorpion_king: { legendMul: 1.08, hiTierMul: 1.11 },
     giant_bee_queen: { legendMul: 1.06, hiTierMul: 1.08 },
+    ancient_dragon_air: { legendMul: 1.7, hiTierMul: 1.8 },
+    ancient_dragon_water: { legendMul: 1.7, hiTierMul: 1.8 },
+    ancient_dragon_earth: { legendMul: 1.75, hiTierMul: 1.85 },
+    ancient_dragon_fire: { legendMul: 1.75, hiTierMul: 1.85 },
     skywing_dragon: { legendMul: 1.45, hiTierMul: 1.5 },
   },
 };
@@ -458,7 +464,8 @@ let lootPresetId = LOOT_BALANCE_PANEL.defaultPresetId;
 const STRONG_BOSS_TYPES = new Set([
   "forest_treant", "desert_titan", "rock_warden", "flower_queen", "north_frost", "south_shadow",
   "ice_queen", "dune_king", "jungle_behemoth", "thunder_lord", "abyss_crab", "volcanic_titan",
-  "godzilla", "scorpion_king", "giant_bee_queen", "skywing_dragon",
+  "godzilla", "scorpion_king", "giant_bee_queen", "ancient_dragon_air", "ancient_dragon_water",
+  "ancient_dragon_earth", "ancient_dragon_fire", "skywing_dragon",
 ]);
 function loadLootPresetSettings() {
   try {
@@ -960,6 +967,26 @@ const ITEMS = {
     stats: { str: 1, agi: 1, wis: 1, maxHp: 6, maxMana: 6 }, desc: "Tozlu ama ise yarar.", buyPrice: 0, sellPrice: 15 },
   artifact_epic:   { id: "artifact_epic", name: "Yildiz Religi", stackable: true, maxStack: 32, rarity: "epic", equipSlot: "artifact",
     stats: { str: 4, agi: 4, wis: 4, maxHp: 16, maxMana: 16 }, desc: "Nadir guc tasi.", buyPrice: 0, sellPrice: 220 },
+  dragon_air_crown: { id: "dragon_air_crown", name: "Firtina Taci", stackable: true, maxStack: 32, rarity: "legendary", equipSlot: "head",
+    minLevel: 48, dropOnlyMonster: "ancient_dragon_air",
+    stats: { str: 6, agi: 13, wis: 7, maxHp: 44, maxMana: 36 },
+    advanced: { attackPower: 140, elemLightning: 110, resLightning: 35, critRate: 12, defense: 12 },
+    desc: "Hava antik ejderhasinin taci. Yalnizca ondan duser.", buyPrice: 0, sellPrice: 980 },
+  dragon_water_heart: { id: "dragon_water_heart", name: "Abyss Kalbi", stackable: true, maxStack: 32, rarity: "legendary", equipSlot: "amulet",
+    minLevel: 48, dropOnlyMonster: "ancient_dragon_water",
+    stats: { str: 5, agi: 7, wis: 13, maxHp: 56, maxMana: 58 },
+    advanced: { attackPower: 136, elemMagic: 105, resGlacier: 34, resMagic: 22, pctMana: 18, defense: 12 },
+    desc: "Su antik ejderhasinin ruh cekirdegi. Yalnizca ondan duser.", buyPrice: 0, sellPrice: 980 },
+  dragon_earth_plate: { id: "dragon_earth_plate", name: "Gaia Zirhi", stackable: true, maxStack: 32, rarity: "legendary", equipSlot: "chest",
+    minLevel: 48, dropOnlyMonster: "ancient_dragon_earth",
+    stats: { str: 13, agi: 4, wis: 6, maxHp: 96, maxMana: 22 },
+    advanced: { attackPower: 128, defense: 46, defSword: 24, defClub: 24, resPoison: 20, pctHp: 14 },
+    desc: "Toprak antik ejderhasinin pullarindan. Yalnizca ondan duser.", buyPrice: 0, sellPrice: 980 },
+  dragon_fire_fang: { id: "dragon_fire_fang", name: "Kizil Fang Yayi", stackable: true, maxStack: 32, rarity: "legendary", equipSlot: "bow",
+    minLevel: 48, dropOnlyMonster: "ancient_dragon_fire",
+    stats: { str: 9, agi: 11, wis: 6, maxHp: 34, maxMana: 24, meleeDmg: 0, rangedDmg: 560 },
+    advanced: { attackPower: 560, elemFlame: 220, critRate: 14, critDamage: 26, resFire: 36, defense: 14 },
+    desc: "Alev antik ejderhasinin disinden islenen yay. Yalnizca ondan duser.", buyPrice: 0, sellPrice: 1100 },
   boss_chest:     { id: "boss_chest",     name: "Boss Sand\u0131\u011f\u0131",       stackable: true, maxStack: 99, rarity: "legendary", desc: "A\u00e7\u0131nca nadir ganimet verir.", buyPrice: 0, sellPrice: 0 },
 };
 
@@ -1131,6 +1158,81 @@ function applyOutgoingPlayerDamage(baseDmg, player, inventory, opts) {
   return Math.max(1, Math.floor(d));
 }
 
+function consumePlayerItemSkillCooldown(playerRef, key, cdSec) {
+  if (!playerRef) return false;
+  if (!playerRef.itemSkillCd) playerRef.itemSkillCd = Object.create(null);
+  const left = playerRef.itemSkillCd[key] || 0;
+  if (left > 0) return false;
+  playerRef.itemSkillCd[key] = Math.max(0.05, cdSec || 0.1);
+  return true;
+}
+
+function triggerEquippedItemSpecialOnHit(monster, dealtDamage, opts) {
+  opts = opts || {};
+  if (!monster || !monster.alive || monster.state === "dying") return;
+  if (dealtDamage <= 0) return;
+  if (!inventory || !inventory.equipped || !player) return;
+
+  const eq = inventory.equipped;
+  const bow = eq.bow;
+  const talisman = eq.talisman;
+  const artifact = eq.artifact;
+
+  if (bow && bow.id === "bow_dragon_legendary" && consumePlayerItemSkillCooldown(player, "dragon_meteor", 2.4)) {
+    if (Math.random() < 0.18) {
+      const splash = Math.max(2, Math.floor(dealtDamage * 0.35));
+      let hitN = 0;
+      for (const m of monsters) {
+        if (!m || m === monster || !m.alive || m.state === "dying") continue;
+        const d = Math.hypot(m.cx - monster.cx, m.cy - monster.cy);
+        if (d > TILE_SIZE * 2.6) continue;
+        m.takeDamage(splash);
+        hitN++;
+        if (hitN >= 3) break;
+      }
+      spawnDamageFloater(monster.cx, monster.y - 18, "METEOR!", false, "#ff9a5a");
+    }
+  }
+
+  if (artifact && artifact.id === "artifact_dragon_eye" && consumePlayerItemSkillCooldown(player, "dragon_chain", 1.6)) {
+    if (Math.random() < 0.14) {
+      const chainDmg = Math.max(2, Math.floor(dealtDamage * 0.45));
+      let bounces = 0;
+      for (const m of monsters) {
+        if (!m || m === monster || !m.alive || m.state === "dying") continue;
+        const d = Math.hypot(m.cx - monster.cx, m.cy - monster.cy);
+        if (d > TILE_SIZE * 3.1) continue;
+        m.takeDamage(chainDmg);
+        bounces++;
+        if (bounces >= 2) break;
+      }
+      if (bounces > 0) spawnDamageFloater(monster.cx, monster.y - 18, "CHAIN!", false, "#9ed2ff");
+    }
+  }
+
+  if (talisman && talisman.id === "talisman_void" && consumePlayerItemSkillCooldown(player, "void_leech", 2.1)) {
+    if (Math.random() < 0.22) {
+      const heal = Math.max(2, Math.floor(player.maxHp * 0.06));
+      player.hp = Math.min(player.maxHp, player.hp + heal);
+      spawnDamageFloater(player.centerX, player.y - 14, "+" + heal, false, "#7dffb0");
+    }
+  }
+
+  // Genel efsanevi etki: kısa zehirleme.
+  if (consumePlayerItemSkillCooldown(player, "legendary_ignite", 1.1)) {
+    let hasLegendary = false;
+    for (const sk of EQ_SLOTS) {
+      const s = eq[sk];
+      if (s && ITEMS[s.id] && ITEMS[s.id].rarity === "legendary") { hasLegendary = true; break; }
+    }
+    if (hasLegendary && Math.random() < 0.08) {
+      monster.itemDotTimer = Math.max(monster.itemDotTimer || 0, 2.6);
+      monster.itemDotDps = Math.max(monster.itemDotDps || 0, Math.max(1, Math.floor(dealtDamage * 0.18)));
+      spawnDamageFloater(monster.cx, monster.y - 16, "DOT", false, "#d8ff72");
+    }
+  }
+}
+
 function itemStatPowerScore(def) {
   if (!def) return 0;
   let s = 0;
@@ -1183,6 +1285,7 @@ function copyStackMetaTo(target, src) {
   if (!src) return ensureStackAxeDurability(target);
   const u = getStackUpgradeLv(src);
   if (u > 0) target.upgrade = u;
+  if (src.locked) target.locked = true;
   if (target.id === "axe") {
     const mx = getAxeDurabilityMax(target);
     const d = src.durability | 0;
@@ -1636,7 +1739,13 @@ function collectItemStatParts(def) {
 /** Tooltip: seviye, temel hasar, kritik, zay\u0131fl\u0131k, pasif, y\u00fczde bonuslar, \u00f6zel kutu. */
 function appendItemExtraTooltipLines(def, fonts, measurePush, pushWrapped, upgradeLv) {
   const ex = def && def.extras;
-  if (!ex) return;
+  if (!def) return;
+  if (!ex) {
+    if (def.id === "bow_dragon_legendary") measurePush(fonts.meta, "#ffb27a", "Yetenek: Meteor patlamasi (%18)");
+    else if (def.id === "artifact_dragon_eye") measurePush(fonts.meta, "#9ed2ff", "Yetenek: Zincir yildirim (%14)");
+    else if (def.id === "talisman_void") measurePush(fonts.meta, "#7dffb0", "Yetenek: Void emisi (can yenileme)");
+    return;
+  }
   const up = Math.max(0, upgradeLv | 0);
   if (ex.itemLevel) {
     const baseCur = Math.max(1, (ex.itemLevel.cur | 0) || 1);
@@ -1732,6 +1841,47 @@ function collectItemMetaLines(def, itemId, opts) {
   opts = opts || {};
   const lines = [];
   if (!def) return lines;
+  if (def.equipSlot) {
+    const slotTopLabel = {
+      head: "BASLIK",
+      chest: "GOGUSLUK",
+      feet: "BOT",
+      waist: "DONLUK",
+      arms: "KOLLUK",
+      wings: "KANATLIK",
+      blade: "SILAH",
+      bow: "YAY",
+      ring: "YUZUK",
+      amulet: "KOLYE",
+      axe: "BALTA",
+      cloak: "PELERIN",
+      talisman: "TILSIM",
+      artifact: "ARTEFAKT",
+    };
+    const slotUsage = {
+      head: "Baslik: kafa savunmasi ve temel stat artisi saglar.",
+      chest: "Gogusluk: savunma + max HP icin ana ekipmandir.",
+      feet: "Bot: hareket/ceviklik odakli bonus verir.",
+      waist: "Donluk: denge ve dayaniklilik bonusu verir.",
+      arms: "Kolluk: saldiri ve savunma dengesini guclendirir.",
+      wings: "Kanatlik: ceviklik ve mana bonusu verir.",
+      blade: "Silah (kilic/mizrak): yakin hasari belirler.",
+      bow: "Yay: uzak hasarini ve atis gucunu belirler.",
+      ring: "Yuzuk: destekleyici stat bonuslari verir.",
+      amulet: "Kolye/Tilsim: buyu ve direncleri guclendirir.",
+      axe: "Balta: agac kesme ve kaynak toplama icindir.",
+      cloak: "Pelerin: ek savunma ve direncler saglar.",
+      talisman: "Tilsim: buyu odakli guc ve etki bonusu verir.",
+      artifact: "Artefakt: yuksek seviye ozel guc artisi saglar.",
+    };
+    const top = slotTopLabel[def.equipSlot] || String(def.equipSlot || "EKIPMAN").toUpperCase();
+    lines.push("GIYIM: " + top);
+    const usage = slotUsage[def.equipSlot] || "Ekipman parcasi: karakter gucunu arttirir.";
+    lines.push(usage);
+    if (def.equipSlot === "chest") {
+      lines.push("Ornek okuma: Max HP + Savunma yuksekse tank gorevine uygundur.");
+    }
+  }
   if (def.stackable && def.maxStack) {
     lines.push("Maks. y\u0131\u011f\u0131n: " + def.maxStack + " adet");
   }
@@ -2321,15 +2471,18 @@ const charPanel = {
     const b = uiModalBounds(cw, ch);
     const land = cw > ch * 1.02;
     const n = PLAYER_SKILL_DEFS.length;
+    const an = ACTIVE_SKILL_DEFS.length;
     let rowStep = land ? 40 : 54;
     const titleH = land ? 20 : 26;
     const statBlockH = land ? 52 : 78;
     const gapBeforeSkills = land ? 10 : 18;
+    const activeHdrH = land ? 14 : 20;
+    const activeRowH = land ? 34 : 46;
     const autoPotBlockH = touchState.mobileUI ? 58 : 0;
-    let needH = (land ? 10 : 14) + titleH + statBlockH + gapBeforeSkills + autoPotBlockH + 16 + n * rowStep + (land ? 14 : 20);
+    let needH = (land ? 10 : 14) + titleH + statBlockH + gapBeforeSkills + autoPotBlockH + activeHdrH + an * activeRowH + 10 + 16 + n * rowStep + (land ? 14 : 20);
     while (needH > b.maxH && rowStep > 30) {
       rowStep -= 2;
-      needH = (land ? 10 : 14) + titleH + statBlockH + gapBeforeSkills + autoPotBlockH + 16 + n * rowStep + (land ? 14 : 20);
+      needH = (land ? 10 : 14) + titleH + statBlockH + gapBeforeSkills + autoPotBlockH + activeHdrH + an * activeRowH + 10 + 16 + n * rowStep + (land ? 14 : 20);
     }
     let pw = Math.min(land ? Math.min(560, b.maxW) : 420, b.maxW);
     pw = Math.max(280, pw);
@@ -2340,12 +2493,14 @@ const charPanel = {
     const titleY = py + (land ? 16 : 24);
     const statBtnY = py + (land ? 36 : 52);
     const statBtnH = land ? 26 : 30;
-    const skillHdrY = statBtnY + (land ? 34 : 42) + autoPotBlockH;
+    const activeHdrY = statBtnY + (land ? 34 : 42) + autoPotBlockH;
+    const activeStartY = activeHdrY + (land ? 12 : 18);
+    const skillHdrY = activeStartY + an * activeRowH + (land ? 12 : 16);
     const skillStartY = skillHdrY + (land ? 12 : 18);
     const autoPotY = touchState.mobileUI ? statBtnY + statBtnH + 8 : -1;
     const closeR = { x: px + pw - 30, y: py + 8, w: 24, h: 24 };
     return {
-      px, py, pw, ph, rowStep, boxH, land, titleY, statBtnY, statBtnH, skillHdrY, skillStartY, closeR,
+      px, py, pw, ph, rowStep, boxH, land, titleY, statBtnY, statBtnH, activeHdrY, activeStartY, activeRowH, skillHdrY, skillStartY, closeR,
       autoPotY, autoPotBlockH,
     };
   },
@@ -2462,6 +2617,24 @@ const charPanel = {
       }
     }
 
+    let ay = L.activeStartY;
+    const castW = Math.min(122, L.pw - 130);
+    const castH = L.land ? 22 : 24;
+    for (let i = 0; i < ACTIVE_SKILL_DEFS.length; i++) {
+      const def = ACTIVE_SKILL_DEFS[i];
+      const rowR = { x: L.px + 14, y: ay, w: L.pw - 28, h: L.activeRowH - 4 };
+      const castR = { x: L.px + L.pw - castW - 10, y: ay + 3, w: castW, h: castH };
+      if (this._in(mx, my, castR) || this._in(mx, my, rowR)) {
+        const ok = tryCastActiveSkill(i);
+        if (ok) {
+          pickupMsgText = "Yetenek kullanildi: " + (def.id === "powerburst" ? "Power Burst" : def.id === "mend" ? "Mend" : "Volley");
+          pickupMsgTimer = 0.8;
+        }
+        return true;
+      }
+      ay += L.activeRowH;
+    }
+
     let sy = L.skillStartY;
     const unlockW = Math.min(108, L.pw - 130);
     const unlockH = L.land ? 26 : 28;
@@ -2552,9 +2725,82 @@ const charPanel = {
       ctx.fillText("\u00b15%  (5\u201395%)", L.px + 14, ay + 58);
     }
 
+    ctx.fillStyle = "#9cc7ff";
+    ctx.font = L.land ? "bold 10px monospace" : "bold 11px monospace";
+    ctx.fillText("Aktif yetenekler (1-2-3 veya tikla)", L.px + 14, L.activeHdrY);
+
+    let ay = L.activeStartY;
+    const castW = Math.min(122, L.pw - 130);
+    const castH = L.land ? 22 : 24;
+    for (let i = 0; i < ACTIVE_SKILL_DEFS.length; i++) {
+      const def = ACTIVE_SKILL_DEFS[i];
+      const cd = player.activeSkillCd[i] || 0;
+      const ready = cd <= 0;
+      const enoughMana = player.mana >= def.mana;
+      const castR = { x: L.px + L.pw - castW - 10, y: ay + 3, w: castW, h: castH };
+      const skillName = def.id === "powerburst" ? "Power Burst" : def.id === "mend" ? "Mend" : "Volley";
+      const skillDesc = def.id === "powerburst"
+        ? "Guclu tek atis"
+        : def.id === "mend"
+          ? "Anlik can yeniler"
+          : "3lu ok salvosu";
+
+      ctx.fillStyle = "#1f3049";
+      roundRect(ctx, L.px + 14, ay, L.pw - 28, L.activeRowH - 4, 6);
+      ctx.fill();
+      ctx.strokeStyle = "#426892";
+      roundRect(ctx, L.px + 14, ay, L.pw - 28, L.activeRowH - 4, 6);
+      ctx.stroke();
+
+      const keyBadge = { x: L.px + 20, y: ay + 6, w: L.land ? 16 : 20, h: L.land ? 16 : 20 };
+      ctx.fillStyle = ready ? "#355f8f" : "#4a3f50";
+      roundRect(ctx, keyBadge.x, keyBadge.y, keyBadge.w, keyBadge.h, 4);
+      ctx.fill();
+      ctx.strokeStyle = ready ? "#76b6ff" : "#7a667f";
+      ctx.stroke();
+      ctx.fillStyle = "#ffffff";
+      ctx.font = L.land ? "bold 9px monospace" : "bold 10px monospace";
+      ctx.fillText(String(i + 1), keyBadge.x + (keyBadge.w - ctx.measureText(String(i + 1)).width) / 2, keyBadge.y + (L.land ? 12 : 14));
+
+      ctx.fillStyle = "#eff6ff";
+      ctx.font = L.land ? "bold 10px monospace" : "bold 11px monospace";
+      ctx.fillText(skillName, L.px + 46, ay + (L.land ? 14 : 17));
+
+      ctx.fillStyle = ready ? (enoughMana ? "#7dff9f" : "#f0b060") : "#f4a3a3";
+      ctx.font = L.land ? "8px monospace" : "9px monospace";
+      const statusText = ready
+        ? (enoughMana ? "Hazir" : "Mana az")
+        : ("CD " + cd.toFixed(1) + "sn");
+      ctx.fillText(skillDesc + " | MP " + def.mana + " | " + statusText, L.px + 46, ay + (L.land ? 27 : 36));
+
+      const maxCd = Math.max(0.001, def.cooldown || 1);
+      const cdRatio = Math.max(0, Math.min(1, cd / maxCd));
+      const barX = L.px + 46;
+      const barY = ay + (L.land ? 25 : 40);
+      const barW = Math.max(42, castR.x - barX - 8);
+      const barH = 4;
+      ctx.fillStyle = "#2a2f3d";
+      roundRect(ctx, barX, barY, barW, barH, 2);
+      ctx.fill();
+      ctx.fillStyle = ready ? "#43b86e" : "#c06b6b";
+      roundRect(ctx, barX, barY, Math.max(2, barW * (1 - cdRatio)), barH, 2);
+      ctx.fill();
+
+      ctx.fillStyle = (ready && enoughMana) ? "#2d7b4a" : "#3c3c44";
+      roundRect(ctx, castR.x, castR.y, castR.w, castR.h, 5);
+      ctx.fill();
+      ctx.strokeStyle = (ready && enoughMana) ? "#84dfad" : "#666673";
+      ctx.stroke();
+      ctx.fillStyle = (ready && enoughMana) ? "#ffffff" : "#8f8fa1";
+      ctx.font = L.land ? "bold 9px monospace" : "bold 10px monospace";
+      const bt = ready ? (enoughMana ? "Kullan" : "MP Yetersiz") : "Bekle";
+      ctx.fillText(bt, castR.x + (castR.w - ctx.measureText(bt).width) / 2, castR.y + (L.land ? 15 : 17));
+      ay += L.activeRowH;
+    }
+
     ctx.fillStyle = "#c0c8e0";
     ctx.font = L.land ? "bold 10px monospace" : "bold 11px monospace";
-    ctx.fillText("Yetenekler (seviye + alt\u0131n)", L.px + 14, L.skillHdrY);
+    ctx.fillText("Pasif yetenekler (seviye + altin)", L.px + 14, L.skillHdrY);
 
     let sy = L.skillStartY;
     const gold = inventory.countItem("coin");
@@ -2729,6 +2975,74 @@ class Inventory {
     };
     filled.sort((a, b) => (desc ? powerOf(b) - powerOf(a) : powerOf(a) - powerOf(b)));
     for (let i = 0; i < this.slots.length; i++) this.slots[i] = filled[i] || null;
+  }
+
+  _equipPowerScoreForStack(s) {
+    if (!s || !s.id) return -1;
+    const d = ITEMS[s.id];
+    if (!d || !d.equipSlot) return -1;
+    const u = getStackUpgradeLv(s);
+    const m = getEffectiveItemStatsMerged(d, u);
+    const st = m.stats || {};
+    const adv = m.advanced || {};
+    let p = 0;
+    p += (st.str || 0) * 3.0 + (st.agi || 0) * 3.0 + (st.wis || 0) * 3.0;
+    p += (st.maxHp || 0) * 0.55 + (st.maxMana || 0) * 0.5;
+    p += (st.meleeDmg || 0) * 7.5 + (st.rangedDmg || 0) * 7.5;
+    p += (adv.attackPower || 0) * 2.2 + (adv.defense || 0) * 2.6;
+    p += (adv.defSword || 0) * 1.15 + (adv.defArrow || 0) * 1.15;
+    p += (adv.resFire || 0) + (adv.resGlacier || 0) + (adv.resLightning || 0) + (adv.resMagic || 0) + (adv.resPoison || 0) + (adv.resCurse || 0);
+    p += (adv.pctStr || 0) * 3.4 + (adv.pctAgi || 0) * 3.4 + (adv.pctWis || 0) * 3.4 + (adv.pctHp || 0) * 2.4 + (adv.pctMana || 0) * 2.2;
+    p += (adv.elemFlame || 0) * 1.25 + (adv.elemGlacier || 0) * 1.25 + (adv.elemLightning || 0) * 1.25 + (adv.elemPoison || 0) * 1.25;
+    p += rarityRank(d.rarity || "common") * 20 + u * 14 + itemStatPowerScore(d) * 3;
+    return p;
+  }
+
+  autoEquipBestAvailable() {
+    const pullOneFrom = (container, idx) => {
+      const s = container[idx];
+      if (!s || s.count <= 0) return null;
+      const one = { id: s.id, count: 1 };
+      copyStackMetaTo(one, s);
+      s.count--;
+      if (s.count <= 0) container[idx] = null;
+      return one;
+    };
+    let changed = 0;
+    for (const sk of EQ_SLOTS) {
+      const current = this.equipped[sk];
+      if (current && current.locked) continue;
+      let bestScore = current ? this._equipPowerScoreForStack(current) : -1;
+      let bestSrc = null;
+      for (const container of [this.slots, this.hotbar]) {
+        for (let i = 0; i < container.length; i++) {
+          const s = container[i];
+          if (!s) continue;
+          if (s.locked) continue;
+          const d = ITEMS[s.id];
+          if (!d || !itemFitsEquipSlot(d, sk)) continue;
+          if (!canPlayerEquipItem(d, player).ok) continue;
+          const sc = this._equipPowerScoreForStack(s);
+          if (sc > bestScore + 0.001) {
+            bestScore = sc;
+            bestSrc = { container, idx: i };
+          }
+        }
+      }
+      if (!bestSrc) continue;
+      const one = pullOneFrom(bestSrc.container, bestSrc.idx);
+      if (!one) continue;
+      if (current) {
+        const left = this.addItem(current.id, 1, getStackUpgradeLv(current), current);
+        if (left > 0) {
+          this.addItem(one.id, 1, getStackUpgradeLv(one), one);
+          continue;
+        }
+      }
+      this.equipped[sk] = one;
+      changed++;
+    }
+    return changed;
   }
 
   _mergeSlotCoinsIntoGold() {
@@ -3725,7 +4039,7 @@ class TileMap {
         this._drawTileDecoration(ctx, tile, x, y);
 
         const detail = this.getDetail(col, row);
-        if (detail >= 0) this._drawDetailTile(ctx, detail, x, y);
+        if (detail >= 0) this._drawDetailTile(ctx, detail, x, y, col, row);
       }
     }
   }
@@ -3842,7 +4156,7 @@ class TileMap {
     }
   }
 
-  _drawDetailTile(ctx, detail, x, y) {
+  _drawDetailTile(ctx, detail, x, y, col, row) {
     switch (detail) {
       case TileType.TREE:
         ctx.fillStyle = "#5a3a1a";
@@ -3855,6 +4169,16 @@ class TileMap {
         ctx.beginPath();
         ctx.arc(x + 14, y + 12, 6, 0, Math.PI * 2);
         ctx.fill();
+        {
+          const rr = treeHpRatioAt(col, row);
+          if (rr < 0.999) {
+            const bx = x + 4, by = y + 2, bw = TILE_SIZE - 8, bh = 4;
+            ctx.fillStyle = "rgba(0,0,0,0.55)";
+            ctx.fillRect(bx, by, bw, bh);
+            ctx.fillStyle = rr > 0.45 ? "#56d27a" : "#d96262";
+            ctx.fillRect(bx + 0.5, by + 0.5, Math.max(1, (bw - 1) * rr), bh - 1);
+          }
+        }
         break;
       case TileType.FLOWER:
         {
@@ -4024,6 +4348,7 @@ class Player {
     this.equipPowerToastTimer = 0;
     this.equipPowerToastText = "";
     this.equipPowerToastColor = "#ffffff";
+    this.itemSkillCd = Object.create(null);
     this._lastEquipSig = null;
     this._lastEquipTotalHit = null;
   }
@@ -4218,6 +4543,10 @@ class Player {
     if (this.comboBlastTimer > 0) this.comboBlastTimer -= dt;
     if (this.archerRapidFireTimer > 0) this.archerRapidFireTimer -= dt;
     if (this.equipPowerToastTimer > 0) this.equipPowerToastTimer -= dt;
+    for (const k of Object.keys(this.itemSkillCd)) {
+      this.itemSkillCd[k] -= dt;
+      if (this.itemSkillCd[k] <= 0) delete this.itemSkillCd[k];
+    }
 
     this.hp = Math.min(this.maxHp, this.hp + this.hpRegen * dt);
     this.mana = Math.min(this.maxMana, this.mana + this.manaRegen * dt);
@@ -5175,6 +5504,9 @@ class Arrow {
     this.element = null;
     /** G\u00fc\u00e7 patlamas\u0131nda at\u0131lan b\u00fcy\u00fck ok g\u00f6r\u00fcn\u00fcm\u00fc */
     this.furyShot = false;
+    this.hitTreeCells = new Set();
+    this.hitMonsters = new Set();
+    this.pierceLeft = 0;
   }
 
   update(dt, map) {
@@ -5190,6 +5522,30 @@ class Arrow {
     }
     this.x += this.dx * this.speed * dt;
     this.y += this.dy * this.speed * dt;
+    const tc = Math.floor(this.x / TILE_SIZE);
+    const tr = Math.floor(this.y / TILE_SIZE);
+    const tile = map.getTile(tc, tr);
+    const detail = map.getDetail(tc, tr);
+    if (this.power) {
+      const isTree = (detail === TileType.TREE || tile === TileType.TREE);
+      if (isTree) {
+        const tk = treeCellKey(tc, tr);
+        if (!this.hitTreeCells.has(tk)) {
+          this.hitTreeCells.add(tk);
+          damageTree(map, tc, tr, POWER_SHOT_TREE_DAMAGE);
+        }
+      }
+      const blockedByHardSolid =
+        tile === TileType.WATER || tile === TileType.WALL ||
+        detail === TileType.WATER || detail === TileType.WALL;
+      if (blockedByHardSolid) this.alive = false;
+      return;
+    }
+    if (detail === TileType.TREE || tile === TileType.TREE) {
+      damageTree(map, tc, tr, ARROW_TREE_DAMAGE);
+      this.alive = false;
+      return;
+    }
     if (map.isSolidPx(this.x, this.y)) {
       this.alive = false;
     }
@@ -5553,6 +5909,18 @@ const MONSTER_TYPES = {
               loot: [{id:"coin",c:20,ch:1},{id:"flower",c:6,ch:0.5},{id:"potion",c:2,ch:0.35},{id:"sword",c:1,ch:0.07}] },
   spore_creeper: { name: "Spor Bitkisi", hp: 240, dmg: 22, speed: 26, xp: 52, aggroRange: TILE_SIZE*6, atkRange: TILE_SIZE*0.95, atkCd: 1.1,
               rangedKind: "poison", rangedMax: TILE_SIZE*5.5, loot: [{id:"coin",c:12,ch:1},{id:"flower",c:10,ch:0.65},{id:"potion_mana",c:1,ch:0.22},{id:"seed",c:4,ch:0.4}] },
+  ancient_dragon_air: { name: "Antik Hava Ejderhasi", hp: 28500, dmg: 118, speed: 54, xp: 6400, aggroRange: TILE_SIZE*21, atkRange: TILE_SIZE*2.0, atkCd: 0.64,
+              boss: true, rangedKind: "lightning", rangedMax: TILE_SIZE*16, rangedMin: TILE_SIZE*1.3,
+              loot: [{id:"coin",c:1400,ch:1},{id:"coin",c:950,ch:0.9},{id:"dragon_air_crown",c:1,ch:0.72}] },
+  ancient_dragon_water: { name: "Antik Su Ejderhasi", hp: 30000, dmg: 112, speed: 50, xp: 6500, aggroRange: TILE_SIZE*21, atkRange: TILE_SIZE*2.0, atkCd: 0.66,
+              boss: true, rangedKind: "ice", rangedMax: TILE_SIZE*16, rangedMin: TILE_SIZE*1.3,
+              loot: [{id:"coin",c:1450,ch:1},{id:"coin",c:980,ch:0.9},{id:"dragon_water_heart",c:1,ch:0.72}] },
+  ancient_dragon_earth: { name: "Antik Toprak Ejderhasi", hp: 33000, dmg: 126, speed: 42, xp: 6900, aggroRange: TILE_SIZE*21, atkRange: TILE_SIZE*2.15, atkCd: 0.7,
+              boss: true, rangedKind: "meteor", rangedMax: TILE_SIZE*15, rangedMin: TILE_SIZE*1.2,
+              loot: [{id:"coin",c:1550,ch:1},{id:"coin",c:1050,ch:0.9},{id:"dragon_earth_plate",c:1,ch:0.72}] },
+  ancient_dragon_fire: { name: "Antik Ates Ejderhasi", hp: 29500, dmg: 132, speed: 48, xp: 6700, aggroRange: TILE_SIZE*21, atkRange: TILE_SIZE*2.05, atkCd: 0.62,
+              boss: true, rangedKind: "fire", rangedMax: TILE_SIZE*16, rangedMin: TILE_SIZE*1.25,
+              loot: [{id:"coin",c:1500,ch:1},{id:"coin",c:1000,ch:0.9},{id:"dragon_fire_fang",c:1,ch:0.72}] },
   skywing_dragon: { name: "G\u00f6k Kanatl\u0131 Ejderha", hp: 16500, dmg: 92, speed: 42, xp: 3200, aggroRange: TILE_SIZE*18, atkRange: TILE_SIZE*2.0, atkCd: 0.78,
               boss: true, rangedKind: "fire", rangedMax: TILE_SIZE*15, rangedMin: TILE_SIZE*1.4,
               loot: [{id:"coin",c:900,ch:1},{id:"coin",c:500,ch:0.9},{id:"helm_legendary",c:1,ch:0.52},{id:"chest_legendary",c:1,ch:0.52},{id:"amulet_wisdom",c:1,ch:0.48},{id:"boss_chest",c:1,ch:0.4},{id:"sword_elven",c:1,ch:0.22},{id:"bow_long",c:1,ch:0.22},{id:"bow_storm_legendary",c:1,ch:0.18},{id:"bow_dragon_legendary",c:1,ch:0.14},{id:"spear_epic",c:1,ch:0.18}] },
@@ -6356,6 +6724,10 @@ function drawMonsterSprite(ctx, type, x, y, dir, frame, hitFlash, atkAnim, bw, b
       ctx.restore();
       break;
     }
+    case "ancient_dragon_air":
+    case "ancient_dragon_water":
+    case "ancient_dragon_earth":
+    case "ancient_dragon_fire":
     case "skywing_dragon": {
       const mst = mstate || "idle";
       const stride = mst === "chase" || mst === "attack" ? 1 : 0.45;
@@ -6364,7 +6736,12 @@ function drawMonsterSprite(ctx, type, x, y, dir, frame, hitFlash, atkAnim, bw, b
       const tailW = Math.sin(frame * 0.55) * 8 * stride;
       const face = dir === DIR.LEFT ? -1 : 1;
       const hx = hitFlash > 0;
-      const bodyC = hx ? "#4a2020" : "#2a1810";
+      const dragonTheme = type === "ancient_dragon_air" ? { body: "#2a2a44", wing: "rgba(70,90,170,0.55)", edge: "#4a5ea8" }
+        : type === "ancient_dragon_water" ? { body: "#143052", wing: "rgba(26,120,185,0.55)", edge: "#3fa2d6" }
+          : type === "ancient_dragon_earth" ? { body: "#3b2b19", wing: "rgba(112,82,46,0.6)", edge: "#8f7242" }
+            : type === "ancient_dragon_fire" ? { body: "#361610", wing: "rgba(155,42,24,0.6)", edge: "#cc5b35" }
+              : { body: "#2a1810", wing: "rgba(120,20,30,0.55)", edge: "#501018" };
+      const bodyC = hx ? "#4a2020" : dragonTheme.body;
       const scale = Math.min(bww, bhh) / 52;
       ctx.save();
       ctx.translate(cx, cy);
@@ -6375,14 +6752,14 @@ function drawMonsterSprite(ctx, type, x, y, dir, frame, hitFlash, atkAnim, bw, b
       ctx.ellipse(0, 38, 42, 10, 0, 0, Math.PI * 2);
       ctx.fill();
       for (const side of [-1, 1]) {
-        ctx.fillStyle = hx ? "rgba(255,80,60,0.45)" : "rgba(120,20,30,0.55)";
+        ctx.fillStyle = hx ? "rgba(255,80,60,0.45)" : dragonTheme.wing;
         ctx.beginPath();
         ctx.moveTo(side * 8, -8);
         ctx.quadraticCurveTo(side * 52, -28 - wingFlap * 12, side * 62, 4);
         ctx.quadraticCurveTo(side * 36, 8, side * 10, 6);
         ctx.closePath();
         ctx.fill();
-        ctx.strokeStyle = hx ? "#ff8060" : "#501018";
+        ctx.strokeStyle = hx ? "#ff8060" : dragonTheme.edge;
         ctx.lineWidth = 2;
         ctx.stroke();
         ctx.fillStyle = hx ? "rgba(255,200,120,0.25)" : "rgba(180,40,50,0.2)";
@@ -6499,7 +6876,7 @@ class Monster {
     if (type === "godzilla") { this.w = 36; this.h = 32; }
     else if (type === "scorpion_king") { this.w = 30; this.h = 26; }
     else if (type === "giant_bee_queen") { this.w = 28; this.h = 24; }
-    else if (type === "skywing_dragon") { this.w = 96; this.h = 82; }
+    else if (type === "skywing_dragon" || type === "ancient_dragon_air" || type === "ancient_dragon_water" || type === "ancient_dragon_earth" || type === "ancient_dragon_fire") { this.w = 108; this.h = 92; }
     else if (type === "island_treasure_chest") { this.w = 22; this.h = 20; }
     else if (type === "forest_treant") { this.w = 30; this.h = 34; }
     else if (type === "ancient_root") { this.w = 24; this.h = 30; }
@@ -6540,6 +6917,8 @@ class Monster {
     this.campId = opts.campId != null ? String(opts.campId) : null;
     this.campTier = opts.campTier != null ? String(opts.campTier) : null;
     this.ultraBoss = !!opts.ultraBoss;
+    this.groupBoss = !!opts.groupBoss;
+    if (this.groupBoss) this.boss = true;
     this.campScale = opts.campScale != null ? opts.campScale : s;
     this.campRole = opts.campRole != null ? String(opts.campRole) : null;
     this.socialAggroRange = opts.socialAggroRange != null ? opts.socialAggroRange : TILE_SIZE * 6.2;
@@ -6553,13 +6932,32 @@ class Monster {
     const tierDmgMul = this.campTier === "apex" ? 1.95 : this.campTier === "heroic" ? 1.58 : this.campTier === "elite" ? 1.3 : 1;
     const lateHpRamp = this.level >= 26 ? (1 + (this.level - 25) * 0.03) : 1;
     const lateDmgRamp = this.level >= 26 ? (1 + (this.level - 25) * 0.022) : 1;
-    const lvHp = (4 + Math.pow(this.level, 1.42) * 2.45) * hpArchetype * tierHpMul * lateHpRamp * (this.boss ? 3.8 : 1);
-    const lvDmg = (1 + Math.pow(this.level, 1.24) * 0.95) * dmgArchetype * tierDmgMul * lateDmgRamp * (this.boss ? 2.45 : 1);
-    this.maxHp = Math.max(5, Math.floor(this.ultraBoss ? lvHp * 2.25 : lvHp));
+    const lvHp = (4 + Math.pow(this.level, 1.42) * 2.9) * hpArchetype * tierHpMul * lateHpRamp * (this.boss ? 4.4 : 1);
+    const lvDmg = (1 + Math.pow(this.level, 1.24) * 1.1) * dmgArchetype * tierDmgMul * lateDmgRamp * (this.boss ? 2.9 : 1);
+    this.maxHp = Math.max(5, Math.floor(this.ultraBoss ? lvHp * 2.45 : lvHp));
     this.hp = this.maxHp;
-    this.dmg = Math.max(1, Math.floor(this.ultraBoss ? lvDmg * 1.7 : lvDmg));
-    this.xpReward = Math.max(2, Math.floor(this.xpReward * (0.45 + this.level * 0.22) * (this.ultraBoss ? 2.4 : 1)));
-    this.goldReward = Math.max(1, Math.floor(this.goldReward * (0.5 + this.level * 0.16) * (this.ultraBoss ? 2.1 : 1)));
+    this.dmg = Math.max(1, Math.floor(this.ultraBoss ? lvDmg * 1.95 : lvDmg));
+    this.xpReward = Math.max(2, Math.floor(this.xpReward * (0.62 + this.level * 0.3) * (this.ultraBoss ? 2.9 : 1)));
+    this.goldReward = Math.max(1, Math.floor(this.goldReward * (0.62 + this.level * 0.21) * (this.ultraBoss ? 2.35 : 1)));
+    if (this.groupBoss) {
+      this.level += 4;
+      this.maxHp = Math.max(8, Math.floor(this.maxHp * 2.05));
+      this.hp = this.maxHp;
+      this.dmg = Math.max(2, Math.floor(this.dmg * 1.55));
+      this.xpReward = Math.max(4, Math.floor(this.xpReward * 2.15));
+      this.goldReward = Math.max(2, Math.floor(this.goldReward * 1.85));
+      this.speed *= 0.93;
+      this.w = Math.floor(this.w * 1.34);
+      this.h = Math.floor(this.h * 1.34);
+      this.aggroRange *= 1.22;
+      this.socialAggroRange *= 1.2;
+    }
+    this.baseDmg = this.dmg;
+    this.baseSpeed = this.speed;
+    this.baseAtkCd = this.atkCd;
+    this.groupAuraTimer = 0;
+    this.groupAuraPulseCd = 2.4 + Math.random() * 1.2;
+    this.enraged = false;
     this.respawnTime = this._rollRespawnTime();
   }
 
@@ -6611,6 +7009,7 @@ class Monster {
 
   _rollRespawnTime() {
     if (!this.campId) return 30 + Math.random() * 30;
+    if (this.groupBoss) return 38 + Math.random() * 24;
     if (this.campTier === "heroic") return 24 + Math.random() * 14;
     if (this.campTier === "elite") return 18 + Math.random() * 12;
     return 14 + Math.random() * 10;
@@ -6658,6 +7057,23 @@ class Monster {
     if (this.hitFlash > 0) this.hitFlash -= dt;
     if (this.atkAnim > 0) this.atkAnim -= dt;
     if (this.alertAlliesTimer > 0) this.alertAlliesTimer -= dt;
+    if (this.itemDotTimer > 0) {
+      this.itemDotTimer -= dt;
+      const dotDmg = Math.max(0, (this.itemDotDps || 0) * dt);
+      if (dotDmg > 0) this.takeDamage(dotDmg);
+    }
+    if (this.groupAuraTimer > 0) this.groupAuraTimer -= dt;
+    const hpRatio = this.maxHp > 0 ? this.hp / this.maxHp : 1;
+    const canEnrage = this.groupBoss || this.ultraBoss || this.boss;
+    if (canEnrage && !this.enraged && hpRatio <= 0.35) {
+      this.enraged = true;
+      spawnDamageFloater(this.cx, this.y - 18, "ENRAGE", false, "#ff6b6b");
+    }
+    const auraMul = this.groupAuraTimer > 0 ? 1.18 : 1;
+    const enrMul = this.enraged ? 1.38 : 1;
+    this.dmg = Math.max(1, Math.floor(this.baseDmg * auraMul * enrMul));
+    this.speed = this.baseSpeed * (this.enraged ? 1.2 : 1) * (this.groupAuraTimer > 0 ? 1.06 : 1);
+    this.atkCd = Math.max(0.28, this.baseAtkCd / (this.enraged ? 1.22 : 1));
     this.animTimer += dt;
     if (this.animTimer >= 0.18) { this.animTimer = 0; this.animFrame = (this.animFrame + 1) % 4; }
 
@@ -6809,6 +7225,15 @@ class Monster {
       ctx.translate(-this.cx, -this.cy);
     }
 
+    if (this.groupBoss && this.state !== "dying") {
+      const auraR = Math.max(this.w, this.h) * 0.72 + (this.groupAuraTimer > 0 ? 6 : 0);
+      ctx.strokeStyle = this.groupAuraTimer > 0 ? "rgba(255,180,90,0.65)" : "rgba(180,120,80,0.35)";
+      ctx.lineWidth = this.groupAuraTimer > 0 ? 2 : 1.2;
+      ctx.beginPath();
+      ctx.arc(this.cx, this.cy + 2, auraR, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
     drawMonsterSprite(ctx, this.type, this.x, this.y, this.direction, this.animFrame, this.hitFlash, this.atkAnim, this.w, this.h, this.state);
 
     if (this.state !== "dying") {
@@ -6816,7 +7241,7 @@ class Monster {
       const bx = this.cx - barW / 2, by = this.y - 6;
       ctx.fillStyle = "rgba(0,0,0,0.6)";
       ctx.fillRect(bx - 1, by - 1, barW + 2, barH + 2);
-      ctx.fillStyle = this.hp > this.maxHp * 0.5 ? "#40c040" : this.hp > this.maxHp * 0.25 ? "#d0a030" : "#d04040";
+      ctx.fillStyle = this.enraged ? "#ff5c9f" : (this.hp > this.maxHp * 0.5 ? "#40c040" : this.hp > this.maxHp * 0.25 ? "#d0a030" : "#d04040");
       ctx.fillRect(bx, by, barW * (this.hp / this.maxHp), barH);
     }
 
@@ -6827,7 +7252,7 @@ class Monster {
     ctx.restore();
     const mt = MONSTER_TYPES[this.type];
     const nm = (mt && mt.name) ? mt.name : this.type;
-    const lvName = (this.ultraBoss ? "ULTRA " : "") + "Lv." + this.level + " " + nm;
+    const lvName = (this.ultraBoss ? "ULTRA " : (this.groupBoss ? "BOSS " : "")) + "Lv." + this.level + " " + nm;
     const danger = typeof player !== "undefined" && player && isMonsterDangerousForPlayerLevel(this, player.level);
     const showLabel = !touchState.mobileUI || this.boss ||
       (typeof player !== "undefined" && player && this.distTo(player.centerX, player.centerY) <= TILE_SIZE * 7);
@@ -7089,7 +7514,7 @@ class Pet {
         this.petAttackCd -= dt;
         if (this.petAttackCd <= 0) {
           const raw = player.getMeleeDamage() * 0.5;
-          m.takeDamage(applyOutgoingPlayerDamage(raw, player, inventory, { monster: m }));
+          dealPlayerDamageToMonster(m, raw, {});
           this.petAttackCd = 0.55;
         }
         this.moving = md > 3;
@@ -7849,7 +8274,7 @@ class Shop {
     for (const container of [inventory.hotbar, inventory.slots]) {
       for (let i = 0; i < container.length; i++) {
         const slot = container[i];
-        if (slot && slot.id !== "coin" && ITEMS[slot.id] && ITEMS[slot.id].sellPrice > 0) {
+        if (slot && !slot.locked && slot.id !== "coin" && ITEMS[slot.id] && ITEMS[slot.id].sellPrice > 0) {
           sellable.push({ containerRef: container, slotIdx: i, slot });
         }
       }
@@ -7909,6 +8334,7 @@ class Shop {
     for (const e of list) {
       const slot = e.containerRef[e.slotIdx];
       if (!slot || slot.id !== e.slot.id) continue;
+      if (slot.locked) continue;
       const d = ITEMS[slot.id];
       if (!d || d.sellPrice <= 0) continue;
       totalItems += slot.count | 0;
@@ -7924,6 +8350,7 @@ class Shop {
     if (!picker) return null;
     const slot = picker.containerRef[picker.slotIdx];
     if (!slot || slot.id !== picker.itemId) return null;
+    if (slot.locked) return null;
     const def = ITEMS[slot.id];
     if (!def || def.sellPrice <= 0) return null;
     return slot;
@@ -9729,6 +10156,26 @@ const ISLANDS = [
     monsters: ["slime","slime","wolf","bog_troll"], scale: 0.92, boss: "wolf" },
   { cx: 214, cy: 164, rx: 13, ry: 10, r: 11, biome: "rain", name: "Yosun Adacığı",
     monsters: ["slime","wolf","spore_creeper","vine_horror"], scale: 1.0, boss: "spore_creeper" },
+  { cx: -66, cy: -50, rx: 34, ry: 28, r: 30, biome: "storm", name: "Kose Hava Mabet Adasi",
+    cornerKey: "nw", dragonCorner: true, monsters: ["storm_wraith","void_hound","crystalline","frost_spirit"], scale: 2.35 },
+  { cx: 566, cy: -52, rx: 35, ry: 28, r: 30, biome: "rain", name: "Kose Su Mabet Adasi",
+    cornerKey: "ne", dragonCorner: true, monsters: ["frost_spirit","void_hound","vine_horror","crystalline"], scale: 2.4 },
+  { cx: -70, cy: 410, rx: 36, ry: 30, r: 32, biome: "barren", name: "Kose Toprak Mabet Adasi",
+    cornerKey: "sw", dragonCorner: true, monsters: ["golem","iron_behemoth","crystalline","void_hound"], scale: 2.5 },
+  { cx: 570, cy: 412, rx: 36, ry: 30, r: 32, biome: "volcanic", name: "Kose Ates Mabet Adasi",
+    cornerKey: "se", dragonCorner: true, monsters: ["iron_behemoth","storm_wraith","void_hound","dune_raider"], scale: 2.5 },
+  { cx: 510, cy: 306, rx: 34, ry: 24, r: 28, biome: "volcanic", name: "Kor Alev Takimadalar",
+    monsters: ["volcanic_titan","iron_behemoth","storm_wraith","void_hound","crystalline"], scale: 2.65, boss: "volcanic_titan" },
+  { cx: 532, cy: 180, rx: 30, ry: 24, r: 26, biome: "storm", name: "Yildirim Yarigi",
+    monsters: ["storm_wraith","void_hound","thunder_lord","crystalline","dark_knight"], scale: 2.58, boss: "thunder_lord" },
+  { cx: 482, cy: 20, rx: 28, ry: 20, r: 24, biome: "snow", name: "Don Zirvesi",
+    monsters: ["ice_queen","frost_spirit","crystalline","void_hound"], scale: 2.48, boss: "ice_queen" },
+  { cx: -24, cy: 320, rx: 30, ry: 24, r: 26, biome: "barren", name: "Ucurum Sirti",
+    monsters: ["abyss_crab","golem","iron_behemoth","void_hound","storm_wraith"], scale: 2.62, boss: "abyss_crab" },
+  { cx: -40, cy: 196, rx: 26, ry: 22, r: 24, biome: "desert", name: "Pasli Cukur",
+    monsters: ["scorpion_king","dune_raider","orc","void_hound","dark_knight"], scale: 2.36, boss: "scorpion_king" },
+  { cx: 150, cy: 360, rx: 42, ry: 24, r: 30, biome: "rain", name: "Yagmur Halleri",
+    monsters: ["jungle_behemoth","vine_horror","spore_creeper","storm_wraith","bog_troll","dark_knight"], scale: 2.42, boss: "jungle_behemoth" },
 ];
 
 function islandWorldCenter(isl) {
@@ -9869,8 +10316,8 @@ function generateWorld() {
   const ground = new Array(WORLD_COLS * WORLD_ROWS);
   const detail = new Array(WORLD_COLS * WORLD_ROWS);
   const centerX = WORLD_COLS / 2, centerY = WORLD_ROWS / 2;
-  const mainR = Math.floor(Math.min(WORLD_COLS, WORLD_ROWS) * 0.34);
-  const mainOuterR = mainR + 26;
+  const mainR = Math.floor(Math.min(WORLD_COLS, WORLD_ROWS) * 0.42);
+  const mainOuterR = mainR + 42;
 
   for (let r = 0; r < WORLD_ROWS; r++) {
     for (let c = 0; c < WORLD_COLS; c++) {
@@ -9918,9 +10365,9 @@ function generateWorld() {
           else if (h < 0.1) det = T.FLOWER;
         }
       } else if (distMain < mainOuterR && !onIsland && !islandCoast) {
-        if (elevation < 0.32 || moisture > 0.72) {
+        if (elevation < 0.24 || moisture > 0.86) {
           tile = T.WATER;
-        } else if (elevation < 0.37) {
+        } else if (elevation < 0.31) {
           tile = T.SAND;
         } else {
           tile = moisture > 0.5 ? T.TALL_GRASS : T.GRASS;
@@ -9930,10 +10377,10 @@ function generateWorld() {
       } else if (distEdge > 0.99 && !onIsland && !islandCoast) {
         tile = T.WATER;
       } else if (distMain > mainOuterR && !onIsland && !islandCoast) {
-        const fade = (distMain - mainOuterR) / 15;
-        if (fade > 1 + (elevation - 0.4) * 3) {
+        const fade = (distMain - mainOuterR) / 24;
+        if (fade > 1.34 + (elevation - 0.4) * 2.6) {
           tile = T.WATER;
-        } else if (fade > 0.8 + (elevation - 0.4) * 2) {
+        } else if (fade > 1.08 + (elevation - 0.4) * 1.75) {
           tile = T.SAND;
         } else {
           tile = elevation > 0.6 ? T.GRASS : T.SAND;
@@ -10592,6 +11039,11 @@ function dropInventorySlotStackToWorld(kind, idx) {
   const container = fromEquip ? inventory.equipped : (kind === "slots" ? inventory.slots : inventory.hotbar);
   const slot = container[idx];
   if (!slot || slot.count <= 0) return false;
+  if (slot.locked) {
+    pickupMsgText = "Kilitli esya yere atilamaz!";
+    pickupMsgTimer = 1.4;
+    return false;
+  }
   const baseCol = Math.floor(player.centerX / TILE_SIZE);
   const baseRow = Math.floor(player.centerY / TILE_SIZE);
   const offs = [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1], [2, 0], [-2, 0], [0, 2], [0, -2], [1, 1], [-1, -1], [1, -1], [-1, 1]];
@@ -10628,8 +11080,10 @@ function inventorySlotInspectLayout(cw, ch) {
   const btnEquip = { x: px + 16, y: btnY, w: bw, h: btnH };
   const btnDrop = { x: px + 16 + bw + gap, y: btnY, w: bw, h: btnH };
   const btnClose = { x: px + 16 + (bw + gap) * 2, y: btnY, w: bw, h: btnH };
-  const btnUpgrade = { x: px + 16, y: btnY - btnH - 10, w: pw - 32, h: btnH };
-  return { px, py, pw, ph, btnEquip, btnDrop, btnClose, btnUpgrade };
+  const upW = Math.floor((pw - 32 - gap) / 2);
+  const btnUpgrade = { x: px + 16, y: btnY - btnH - 10, w: upW, h: btnH };
+  const btnLock = { x: btnUpgrade.x + upW + gap, y: btnUpgrade.y, w: upW, h: btnH };
+  return { px, py, pw, ph, btnEquip, btnDrop, btnClose, btnUpgrade, btnLock };
 }
 
 function handleInventorySlotInspectClick(mx, my, cw, ch) {
@@ -10659,6 +11113,12 @@ function handleInventorySlotInspectClick(mx, my, cw, ch) {
     pickupMsgTimer = 1.85;
     if (res.ok) player.applyEquipmentBonus(inventory);
     if (!res.ok && res.fail) { /* gold already spent */ }
+    return true;
+  }
+  if (inR(L.btnLock)) {
+    slot.locked = !slot.locked;
+    pickupMsgText = slot.locked ? "Esya kilitlendi." : "Esya kilidi acildi.";
+    pickupMsgTimer = 1.2;
     return true;
   }
   if (inR(L.btnDrop)) {
@@ -10742,27 +11202,73 @@ function renderInventorySlotInspect(ctx, cw, ch) {
   ctx.font = "bold 15px monospace";
   ctx.fillText("E\u015fya", L.px + 16, L.py + 28);
 
-  const iconS = 52;
-  const ix = L.px + 16, iy = L.py + 44;
-  drawItemIconFancy(ctx, slot.id, ix, iy, iconS, { timeMs: performance.now() });
-  ctx.fillStyle = "#f0d050";
-  ctx.font = "bold 14px monospace";
-  const slv = getStackUpgradeLv(slot);
-  ctx.fillText(def.name + (slv > 0 ? "(+" + slv + ")" : "") + (slot.count > 1 ? "  x" + slot.count : ""), ix + iconS + 14, iy + 18);
-  if (def.rarity && def.rarity !== "common") {
-    ctx.fillStyle = getItemRarityColor(slot.id);
-    ctx.font = "bold 11px monospace";
-    ctx.fillText(RARITY_LABEL_TR[def.rarity] || def.rarity, ix + iconS + 14, iy + 38);
+  const cardY = L.py + 44;
+  const cardW = Math.floor((L.pw - 40) / 2);
+  const cardH = 74;
+  const leftX = L.px + 16;
+  const rightX = leftX + cardW + 8;
+  const iconS = 34;
+
+  const drawCompareCard = (x, title, stackRef, emptyText) => {
+    ctx.fillStyle = "rgba(24,30,56,0.95)";
+    ctx.strokeStyle = "#6f84c8";
+    roundRect(ctx, x, cardY, cardW, cardH, 8);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#d4e0ff";
+    ctx.font = "bold 10px monospace";
+    ctx.fillText(title, x + 8, cardY + 14);
+    if (stackRef && stackRef.id && ITEMS[stackRef.id]) {
+      const d0 = ITEMS[stackRef.id];
+      const up0 = getStackUpgradeLv(stackRef);
+      drawItemIconFancy(ctx, stackRef.id, x + 8, cardY + 22, iconS, { timeMs: performance.now(), equipped: title.indexOf("Takili") >= 0 });
+      ctx.fillStyle = "#f3e8b0";
+      ctx.font = "bold 11px monospace";
+      const lockTag = stackRef.locked ? " [Kilitli]" : "";
+      const nm = d0.name + (up0 > 0 ? " (+" + up0 + ")" : "") + lockTag + (stackRef.count > 1 ? " x" + stackRef.count : "");
+      const shortNm = nm.length > 15 ? (nm.slice(0, 15) + "...") : nm;
+      ctx.fillText(shortNm, x + 48, cardY + 38);
+      if (d0.rarity) {
+        ctx.fillStyle = getItemRarityColor(stackRef.id);
+        ctx.font = "10px monospace";
+        ctx.fillText(RARITY_LABEL_TR[d0.rarity] || d0.rarity, x + 48, cardY + 54);
+      }
+    } else {
+      ctx.fillStyle = "#9aa8c8";
+      ctx.font = "11px monospace";
+      ctx.fillText(emptyText || "Bos slot", x + 8, cardY + 44);
+    }
+  };
+
+  drawCompareCard(leftX, "Secili", slot, "Esya yok");
+
+  let cmpSlotKey = null;
+  let cmpEq = null;
+  if (def.equipSlot) {
+    const cands = equipSlotsForItemDef(def);
+    for (const sk of cands) {
+      if (inventory.equipped[sk]) { cmpSlotKey = sk; break; }
+    }
+    if (!cmpSlotKey && cands.length) cmpSlotKey = cands[0];
+    cmpEq = cmpSlotKey ? inventory.equipped[cmpSlotKey] : null;
   }
+  const rightTitle = cmpSlotKey ? ("Takili (" + (EQ_LABELS[cmpSlotKey] || cmpSlotKey) + ")") : "Takili";
+  drawCompareCard(rightX, rightTitle, cmpEq, "Bos slot");
+
   if (def.equipSlot) {
     const eqGateColor = canPlayerEquipItem(def, player).ok ? "#ffffff" : "#ff5a5a";
     ctx.fillStyle = eqGateColor;
     ctx.font = "10px monospace";
-    ctx.fillText("Gerekli Seviye: " + estimateEquipRequiredLevel(def), ix + iconS + 14, iy + 52);
+    ctx.fillText("Gerekli Seviye: " + estimateEquipRequiredLevel(def), leftX + 2, cardY + cardH + 13);
+  }
+  if (slot.locked) {
+    ctx.fillStyle = "#ffd080";
+    ctx.font = "10px monospace";
+    ctx.fillText("Durum: Kilitli", rightX + 2, cardY + cardH + 13);
   }
 
   const layoutTt = buildItemTooltipLayout(ctx, def, slot.id, cw, touchState.mobileUI, { omitPrices: true, omitIdentity: true, stackRef: slot, innerMax: Math.max(200, L.pw - 40) }, []);
-  let ty = iy + iconS + 12;
+  let ty = cardY + cardH + 22;
   const maxY = L.btnUpgrade.y - 6;
   const allLines = layoutTt.lines;
   const scrollRes = renderInspectStatLinesScrollable(ctx, allLines, L.px + 16, ty, maxY, touchState.mobileUI, inventoryInspectScrollY, L.pw - 32);
@@ -10840,6 +11346,17 @@ function renderInventorySlotInspect(ctx, cw, ch) {
   ctx.font = "bold 11px monospace";
   const tUp = canUp ? "Y\u00fckselt (craft)" : "Y\u00fcksetilemez";
   ctx.fillText(tUp, L.btnUpgrade.x + (L.btnUpgrade.w - ctx.measureText(tUp).width) / 2, L.btnUpgrade.y + 22);
+
+  const lockOn = !!slot.locked;
+  ctx.fillStyle = lockOn ? "rgba(108,78,36,0.92)" : "rgba(52,62,80,0.92)";
+  ctx.strokeStyle = lockOn ? "#e0b060" : "#8aa0c8";
+  roundRect(ctx, L.btnLock.x, L.btnLock.y, L.btnLock.w, L.btnLock.h, 6);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = lockOn ? "#fff2d0" : "#dce8ff";
+  ctx.font = "bold 11px monospace";
+  const tLock = lockOn ? "Kilidi Ac" : "Kilitle";
+  ctx.fillText(tLock, L.btnLock.x + (L.btnLock.w - ctx.measureText(tLock).width) / 2, L.btnLock.y + 22);
 
   ctx.fillStyle = "#707890";
   ctx.font = "9px monospace";
@@ -11051,18 +11568,27 @@ function chooseBandByDifficulty(diff) {
   return LEVEL_BAND_VARIANTS[5];
 }
 
+function townSafeScaleCap(col, row) {
+  const d = worldDistanceNorm(col, row);
+  if (d < 0.1) return 0.55;
+  if (d < 0.16) return 0.82;
+  if (d < 0.22) return 1.08;
+  if (d < 0.3) return 1.45;
+  return 999;
+}
+
 function buildVarietyRegionalCamps() {
   const camps = [];
   let id = 0;
-  const stepX = 38, stepY = 30;
+  const stepX = 30, stepY = 24;
   for (let c = 26; c < WORLD_COLS - 26; c += stepX) {
     for (let r = 24; r < WORLD_ROWS - 24; r += stepY) {
       const jx = Math.round((hashXY(c * 5 + 7, r * 9 + 3) - 0.5) * 16);
       const jy = Math.round((hashXY(c * 13 + 19, r * 7 + 23) - 0.5) * 14);
       const cc = c + jx;
       const rr = r + jy;
-      // Kasaba merkezini temiz bırak.
-      if (cc >= VOX - 10 && cc <= VOX + VCOLS + 10 && rr >= VOY - 10 && rr <= VOY + VROWS + 12) continue;
+      // Kasaba merkezi ve yakın çevresi güvenli/low-level kalsın.
+      if (cc >= VOX - 34 && cc <= VOX + VCOLS + 34 && rr >= VOY - 34 && rr <= VOY + VROWS + 36) continue;
       if (!isSafeSpawn(cc, rr)) continue;
       const diff = Math.max(0, Math.min(1, worldDistanceNorm(cc, rr) + islandIsolationBoost(cc, rr)));
       const band = chooseBandByDifficulty(diff);
@@ -11080,7 +11606,7 @@ function buildVarietyRegionalCamps() {
         tier: band.tier,
       });
       const extraRoll = hashXY(cc * 41 + 17, rr * 37 + 29);
-      if (extraRoll > 0.34) {
+      if (extraRoll > 0.2) {
         const cc2 = cc + Math.round((hashXY(cc * 7 + 13, rr * 5 + 19) - 0.5) * 10);
         const rr2 = rr + Math.round((hashXY(cc * 11 + 23, rr * 3 + 31) - 0.5) * 10);
         if (isSafeSpawn(cc2, rr2)) {
@@ -11110,6 +11636,17 @@ const MONSTER_CAMPS = [
   { id: "orc_squad_mid", name: "Ork Mangası", col: 160, row: 122, members: ["orc", "orc", "skeleton", "wolf", "skeleton"], scale: 1.35, tier: "elite" },
   { id: "dark_patrol_west", name: "Kara Devriye", col: 92, row: 168, members: ["dark_knight", "skeleton", "wolf", "orc", "crystalline"], scale: 1.55, tier: "elite" },
   { id: "marsh_raiders_south", name: "Batak Baskını", col: 204, row: 186, members: ["bog_troll", "spore_creeper", "vine_horror", "orc", "dark_knight"], scale: 1.8, tier: "heroic" },
+  { id: "apex_forge_east", name: "Dogu Cehennem Ocağı", col: 286, row: 198, members: ["iron_behemoth","storm_wraith","void_hound","crystalline","dark_knight"], scale: 2.35, tier: "heroic" },
+  { id: "ashen_guard_south", name: "Kul Nöbeti", col: 246, row: 248, members: ["volcanic_titan","iron_behemoth","storm_wraith","void_hound","golem"], scale: 2.75, tier: "apex" },
+  { id: "thunder_lane_far", name: "Fırtına Geçidi", col: 366, row: 156, members: ["thunder_lord","storm_wraith","void_hound","crystalline","dark_knight"], scale: 2.68, tier: "apex" },
+  { id: "abyss_ring_west", name: "Uçurum Çemberi", col: 64, row: 236, members: ["abyss_crab","golem","iron_behemoth","void_hound","storm_wraith"], scale: 2.7, tier: "apex" },
+  { id: "beast_frontier", name: "Yırtıcı Hudut", col: 420, row: 320, members: ["godzilla","thunder_lord","iron_behemoth","void_hound","storm_wraith"], scale: 3.05, tier: "apex" },
+  { id: "desert_blade_wall", name: "Çöl Kılıç Duvarı", col: 420, row: 80, members: ["scorpion_king","dune_raider","void_hound","dark_knight","crystalline"], scale: 2.45, tier: "heroic" },
+  { id: "jungle_massif", name: "Muson Kalesi", col: 320, row: 248, members: ["jungle_behemoth","vine_horror","spore_creeper","storm_wraith","bog_troll"], scale: 2.5, tier: "heroic" },
+  { id: "ice_ward_high", name: "Don Karakolu", col: 498, row: 56, members: ["ice_queen","frost_spirit","crystalline","void_hound","storm_wraith"], scale: 2.55, tier: "heroic" },
+  { id: "obsidian_front", name: "Obsidyen Cephe", col: 520, row: 276, members: ["volcanic_titan","iron_behemoth","dark_knight","storm_wraith","void_hound"], scale: 2.85, tier: "apex" },
+  { id: "northline_mass", name: "Kuzey Sefer Hattı", col: 260, row: 68, members: ["thunder_lord","frost_spirit","crystalline","storm_wraith","void_hound"], scale: 2.52, tier: "heroic" },
+  { id: "southline_mass", name: "Güney Sefer Hattı", col: 260, row: 356, members: ["abyss_crab","golem","iron_behemoth","storm_wraith","void_hound"], scale: 2.78, tier: "apex" },
 ];
 
 function getCampMetaById(campId) {
@@ -11135,13 +11672,33 @@ function getCampRoleByIndex(idx, count) {
   return "dps";
 }
 
+function pickCampBossType(camp) {
+  if (!camp || !camp.members || !camp.members.length) return null;
+  let best = null;
+  let bestScore = -1;
+  for (const t of camp.members) {
+    const mt = MONSTER_TYPES[t];
+    if (!mt) continue;
+    const score = (mt.hp || 1) * 1.5 + (mt.dmg || 1) * 16 + ((mt.boss ? 1 : 0) * 600);
+    if (score > bestScore) {
+      bestScore = score;
+      best = t;
+    }
+  }
+  return best || camp.members[0];
+}
+
 function spawnMonsterCamp(list, camp) {
   if (!camp || !camp.members || !camp.members.length) return;
   const ring = [
     { dc: 0, dr: 0 }, { dc: 2, dr: 0 }, { dc: -2, dr: 0 }, { dc: 0, dr: 2 },
     { dc: 0, dr: -2 }, { dc: 2, dr: 2 }, { dc: -2, dr: 2 }, { dc: 2, dr: -2 }, { dc: -2, dr: -2 },
   ];
-  const scale = camp.scale || 1;
+  const baseScale = camp.scale || 1;
+  const campDiff = Math.max(0, Math.min(1, worldDistanceNorm(camp.col, camp.row) + islandIsolationBoost(camp.col, camp.row)));
+  const diffScale = 0.32 + campDiff * 5.9;
+  const safeCap = townSafeScaleCap(camp.col, camp.row);
+  const scale = Math.min(Math.max(baseScale * 0.58, Math.min(baseScale * 1.85, diffScale)), safeCap);
   const tier = camp.tier || "normal";
   for (let i = 0; i < camp.members.length; i++) {
     const p = ring[i % ring.length];
@@ -11155,6 +11712,64 @@ function spawnMonsterCamp(list, camp) {
       campScale: scale,
       campRole: role,
       socialAggroRange: TILE_SIZE * (tier === "heroic" ? 8.5 : tier === "elite" ? 7.2 : 6.2),
+    }));
+  }
+  const bossType = pickCampBossType(camp);
+  const bp = ring[camp.members.length % ring.length];
+  const bc = camp.col + bp.dc;
+  const br = camp.row + bp.dr;
+  if (bossType && isSafeSpawn(bc, br)) {
+    const bossTier = tier === "normal" ? "elite" : (tier === "elite" ? "heroic" : "apex");
+    list.push(new Monster(bc, br, bossType, scale * 1.28, {
+      campId: camp.id || ("camp_" + camp.col + "_" + camp.row),
+      campTier: bossTier,
+      campScale: scale * 1.28,
+      campRole: "tank",
+      groupBoss: true,
+      socialAggroRange: TILE_SIZE * 9.2,
+    }));
+  }
+}
+
+function findCornerDragonSpawn(cornerId) {
+  const cornerIsland = ISLANDS.find((isl) => isl && isl.dragonCorner && isl.cornerKey === cornerId);
+  if (cornerIsland) {
+    const sp = findBossSpawn(cornerIsland);
+    if (sp && isSafeSpawn(sp.col, sp.row)) return sp;
+  }
+  const pads = 8;
+  const maxDepth = 52;
+  for (let d = 0; d <= maxDepth; d++) {
+    let c = pads, r = pads;
+    if (cornerId === "ne") { c = WORLD_COLS - 1 - pads - d; r = pads + d; }
+    else if (cornerId === "sw") { c = pads + d; r = WORLD_ROWS - 1 - pads - d; }
+    else if (cornerId === "se") { c = WORLD_COLS - 1 - pads - d; r = WORLD_ROWS - 1 - pads - d; }
+    else { c = pads + d; r = pads + d; } // nw
+    c = Math.max(1, Math.min(WORLD_COLS - 2, c));
+    r = Math.max(1, Math.min(WORLD_ROWS - 2, r));
+    if (isSafeSpawn(c, r)) return { col: c, row: r };
+  }
+  return null;
+}
+
+function spawnCornerAncientDragons(list) {
+  const defs = [
+    { corner: "nw", type: "ancient_dragon_air", scale: 5.4, campId: "corner_air" },
+    { corner: "ne", type: "ancient_dragon_water", scale: 5.5, campId: "corner_water" },
+    { corner: "sw", type: "ancient_dragon_earth", scale: 5.8, campId: "corner_earth" },
+    { corner: "se", type: "ancient_dragon_fire", scale: 5.6, campId: "corner_fire" },
+  ];
+  for (const d of defs) {
+    const sp = findCornerDragonSpawn(d.corner);
+    if (!sp) continue;
+    list.push(new Monster(sp.col, sp.row, d.type, d.scale, {
+      campId: d.campId,
+      campTier: "apex",
+      campScale: d.scale,
+      campRole: "tank",
+      ultraBoss: true,
+      groupBoss: true,
+      socialAggroRange: TILE_SIZE * 12,
     }));
   }
 }
@@ -11174,12 +11789,23 @@ function spawnMonsters() {
       const ry = isl.ry != null ? isl.ry : isl.r;
       const mc = Math.floor(ctr.cx + Math.cos(angle) * rx * 0.45);
       const mr = Math.floor(ctr.cy + Math.sin(angle) * ry * 0.45);
-      if (isSafeSpawn(mc, mr)) list.push(new Monster(mc, mr, mList[i], isl.scale || 1));
+      if (isSafeSpawn(mc, mr)) {
+        const dNorm = Math.max(0, Math.min(1, worldDistanceNorm(mc, mr) + islandIsolationBoost(mc, mr)));
+        const distScale = 0.46 + dNorm * 6.2;
+        const srcScale = isl.scale || 1;
+        const spawnScale = Math.min(
+          Math.max(srcScale * 0.6, Math.min(srcScale * 2.1, distScale)),
+          townSafeScaleCap(mc, mr)
+        );
+        list.push(new Monster(mc, mr, mList[i], spawnScale));
+      }
     }
     if (isl.boss && MONSTER_TYPES[isl.boss]) {
       const sp = findBossSpawn(isl);
       if (sp) {
-        const bossScale = (isl.scale || 1) * 1.65;
+        const dNormBoss = Math.max(0, Math.min(1, worldDistanceNorm(sp.col, sp.row) + islandIsolationBoost(sp.col, sp.row)));
+        const baseBossScale = Math.max((isl.scale || 1) * 1.2, 0.7 + dNormBoss * 6.8);
+        const bossScale = Math.min(baseBossScale * 1.65, townSafeScaleCap(sp.col, sp.row) * 1.25);
         list.push(new Monster(sp.col, sp.row, isl.boss, bossScale));
         const dist = worldDistanceNorm(sp.col, sp.row);
         const ultraChance = Math.max(0, Math.min(0.8, (dist - 0.58) * 1.15 + ((isl.scale || 1) - 1.2) * 0.22));
@@ -11206,6 +11832,7 @@ function spawnMonsters() {
     }
   }
   for (const camp of MONSTER_CAMPS) spawnMonsterCamp(list, camp);
+  spawnCornerAncientDragons(list);
   return list;
 }
 const monsters = spawnMonsters();
@@ -11243,6 +11870,21 @@ function alertCampAllies(monsters, source, player) {
 function processCampSupport(monsters, dt) {
   for (const h of monsters) {
     if (!h || !h.alive || h.state === "dying") continue;
+    if (h.groupBoss) {
+      h.groupAuraPulseCd = (h.groupAuraPulseCd || 0) - dt;
+      if (h.groupAuraPulseCd <= 0) {
+        h.groupAuraPulseCd = 3.8 + Math.random() * 1.6;
+        for (const m of monsters) {
+          if (!m || !m.alive || m.state === "dying" || m.campId !== h.campId || m === h) continue;
+          const dd = Math.hypot(m.cx - h.cx, m.cy - h.cy);
+          if (dd > TILE_SIZE * 8.4) continue;
+          m.groupAuraTimer = Math.max(m.groupAuraTimer || 0, 4.2);
+          const minorHeal = Math.max(2, Math.floor(m.maxHp * 0.025));
+          m.hp = Math.min(m.maxHp, m.hp + minorHeal);
+        }
+        spawnDamageFloater(h.cx, h.y - 14, "AURA", false, "#ffd27a");
+      }
+    }
     if (!h.campId || h.campRole !== "healer") continue;
     h.supportHealCd = (h.supportHealCd || 0) - dt;
     if (h.supportHealCd > 0) continue;
@@ -11339,6 +11981,7 @@ function dropMonsterLoot(m, worldItems) {
   const canDropForMonsterLevel = (itemId) => {
     const d = ITEMS[itemId];
     if (!d) return false;
+    if (d.dropOnlyMonster && d.dropOnlyMonster !== m.type) return false;
     if (!d.equipSlot) return false;
     const reqLv = estimateGenericDropLevel(d);
     if (reqLv > mLevel + 6) return false;
@@ -11500,6 +12143,17 @@ function dropMonsterLoot(m, worldItems) {
       pushDrop(extra, 1);
     }
   }
+  const cornerDragonGuaranteed = {
+    ancient_dragon_air: "dragon_air_crown",
+    ancient_dragon_water: "dragon_water_heart",
+    ancient_dragon_earth: "dragon_earth_plate",
+    ancient_dragon_fire: "dragon_fire_fang",
+  };
+  const guaranteedId = cornerDragonGuaranteed[m.type];
+  if (guaranteedId) {
+    if (!dropped.some((x) => x.id === guaranteedId)) pushDrop(guaranteedId, 1);
+    if (Math.random() < 0.85) pushDrop("boss_chest", 1);
+  }
 }
 
 function getBossLootRateSummary(type) {
@@ -11510,6 +12164,14 @@ function getBossLootRateSummary(type) {
   const legend = Math.round(Math.min(0.95, preset.bossAnyLegendaryChance * bRate.legendMul) * 100);
   const hiTier = Math.round(Math.min(0.98, preset.strongBossHiTierChance * bRate.hiTierMul) * 100);
   return " L%" + legend + " H%" + hiTier;
+}
+
+function dealPlayerDamageToMonster(monster, rawDamage, opts) {
+  if (!monster || !monster.alive || monster.state === "dying") return 0;
+  const dealt = applyOutgoingPlayerDamage(rawDamage, player, inventory, Object.assign({ monster }, opts || {}));
+  monster.takeDamage(dealt);
+  triggerEquippedItemSpecialOnHit(monster, dealt, opts || {});
+  return dealt;
 }
 
 const MELEE_RANGE = 46;
@@ -11569,7 +12231,7 @@ function tryPlayerMeleeAttack(player, inventory, monsters) {
   }
   if (!best) return false;
   const rawMelee = player.getMeleeDamage();
-  best.takeDamage(applyOutgoingPlayerDamage(rawMelee, player, inventory, { monster: best }));
+  dealPlayerDamageToMonster(best, rawMelee, {});
   player.meleeCooldown = 0.48;
   player.swingAnim = 0.28;
   player.gainXP(2);
@@ -11592,6 +12254,7 @@ function tryReleasePowerShotClick() {
     const aim = arrowAimAssist(sx, sy, player.angle, monsters);
     const pa = new Arrow(sx, sy, aim.angle);
     pa.power = true;
+    pa.pierceLeft = 5;
     pa.furyShot = player.rageBurstTimer > 0;
     pa.damage = applyOutgoingPlayerDamage(player.getPowerDamage(), player, inventory, {});
     pa.speed *= 1.5;
@@ -11659,7 +12322,7 @@ function tryMeleeOrRangedClick() {
           .slice(0, 3);
         for (const x of chainTargets) {
           const rawChain = player.getRangedDamage() * 0.95;
-          x.m.takeDamage(applyOutgoingPlayerDamage(rawChain, player, inventory, { monster: x.m, armorPiercePct: 28 }));
+          dealPlayerDamageToMonster(x.m, rawChain, { armorPiercePct: 28 });
         }
         addScreenShake(4.2);
         pickupMsgText = "MINI ULTI! Zincir + Delici + Hızlı Atış";
@@ -11733,7 +12396,7 @@ function skillCastWhirl() {
     if (!m.alive || m.state === "dying") continue;
     if (m.distTo(px, py) > R) continue;
     const raw = player.getMeleeDamage() * 0.62;
-    m.takeDamage(applyOutgoingPlayerDamage(raw, player, inventory, { monster: m }));
+    dealPlayerDamageToMonster(m, raw, {});
     n++;
   }
   player.swingAnim = Math.max(player.swingAnim, 0.38);
@@ -11749,7 +12412,7 @@ function skillCastNova() {
     if (!m.alive || m.state === "dying") continue;
     if (m.distTo(px, py) > R) continue;
     const raw = player.getRangedDamage() * 0.95;
-    m.takeDamage(applyOutgoingPlayerDamage(raw, player, inventory, { monster: m }));
+    dealPlayerDamageToMonster(m, raw, {});
     n++;
   }
   player.skillAuraT = Math.max(player.skillAuraT || 0, 0.48);
@@ -11812,7 +12475,7 @@ function skillCastThunder() {
   }
   const raw = player.getRangedDamage() * 1.25;
   for (const { m } of hits) {
-    m.takeDamage(applyOutgoingPlayerDamage(raw, player, inventory, { monster: m }));
+    dealPlayerDamageToMonster(m, raw, {});
   }
   addScreenShake(3.5);
   player.gainXP(2 * hits.length);
@@ -11921,16 +12584,6 @@ function tryAutoAttackWhileHeld() {
   const mouseHeld = canvasMouse0Down && !touchState.mobileUI;
   const mobileAttackHeld = touchState.mobileUI && touchState.attackId >= 0;
   if (!mouseHeld && !mobileAttackHeld) return;
-  if (mouseHeld && !player.inBoat && playerHasBowEquipped(inventory)) {
-    const holdMs = performance.now() - mouseAttackT0;
-    if (holdMs >= DESKTOP_POWER_HOLD_MS && inventory.countItem("arrow") > 0 && player.mana >= player.manaCostPower) {
-      if (!player.powerCharging) {
-        player.powerCharging = true;
-        player.powerCharge = 0;
-      }
-      return;
-    }
-  }
   if (mobileAttackHeld) {
     const dur = performance.now() - touchState.attackT0;
     if (dur < MOBILE_ATTACK_INTERACT_MS && mobileInteractEligible()) return;
@@ -12015,7 +12668,7 @@ canvas.addEventListener("mousemove", (e) => {
 window.addEventListener("mouseup", (e) => {
   if (e.button === 0) {
     canvasMouse0Down = false;
-    if (player.powerCharging && (performance.now() - mouseAttackT0) >= DESKTOP_POWER_HOLD_MS) {
+    if (player.powerCharging && (isDown("ShiftLeft") || isDown("ShiftRight")) && (performance.now() - mouseAttackT0) >= DESKTOP_POWER_HOLD_MS) {
       tryReleasePowerShotClick();
     } else if (!(isDown("ShiftLeft") || isDown("ShiftRight"))) {
       player.powerCharging = false;
@@ -12430,6 +13083,51 @@ let pickupMsgTimer = 0;
 let pickupMsgText = "";
 
 const CHOP_TREE_RANGE = TILE_SIZE * 1.7;
+const TREE_MAX_HP = 6;
+const POWER_SHOT_TREE_DAMAGE = 2;
+const ARROW_TREE_DAMAGE = 1;
+const treeHpMap = new Map();
+
+function treeCellKey(col, row) {
+  return col + "," + row;
+}
+
+function isTreeAtCell(map, col, row) {
+  return map.getDetail(col, row) === TileType.TREE || map.getTile(col, row) === TileType.TREE;
+}
+
+function clearTreeAtCell(map, col, row) {
+  if (map.getDetail(col, row) === TileType.TREE) {
+    map.setDetail(col, row, -1);
+  } else if (map.getTile(col, row) === TileType.TREE) {
+    map.setTile(col, row, TileType.GRASS);
+    map.setDetail(col, row, -1);
+  }
+}
+
+function treeHpRatioAt(col, row) {
+  const k = treeCellKey(col, row);
+  const hp = treeHpMap.has(k) ? treeHpMap.get(k) : TREE_MAX_HP;
+  return Math.max(0, Math.min(1, hp / TREE_MAX_HP));
+}
+
+function damageTree(map, col, row, dmg) {
+  if (!isTreeAtCell(map, col, row)) return false;
+  const k = treeCellKey(col, row);
+  const cur = treeHpMap.has(k) ? treeHpMap.get(k) : TREE_MAX_HP;
+  const next = cur - Math.max(1, dmg | 0);
+  if (next > 0) {
+    treeHpMap.set(k, next);
+    return true;
+  }
+  treeHpMap.delete(k);
+  clearTreeAtCell(map, col, row);
+  if (typeof worldItems !== "undefined" && worldItems) {
+    const woodCount = 2 + Math.floor(Math.random() * 3);
+    worldItems.push(new WorldItem(col, row, "wood", woodCount, false));
+  }
+  return true;
+}
 
 /** Teknede iken ayak ve g\u00f6vde merkezi su karosunda m\u0131? K\u0131y\u0131da biri karada kal\u0131nca inme / \u00e7arp\u0131\u015fma i\u00e7in kullan\u0131l\u0131r. */
 function playerBoatFullyOnWater(map, player) {
@@ -12464,6 +13162,7 @@ function tryChopTree(player, map, inventory) {
   } else {
     return false;
   }
+  treeHpMap.delete(treeCellKey(col, row));
   const woodAmt = 3 + Math.floor(Math.random() * 3);
   inventory.addItem("wood", woodAmt);
   player.gainXP(1);
@@ -12590,6 +13289,11 @@ const MOBILE_MONSTER_FAR_UPDATE_DIST = TILE_SIZE * 16;
 const MOBILE_MONSTER_FAR_UPDATE_STAGGER = 3;
 const MOBILE_MONSTER_RENDER_DIST = TILE_SIZE * 13;
 const MOBILE_MAX_VISIBLE_MONSTERS = 55;
+const DESKTOP_MONSTER_CROWDED_THRESHOLD = 260;
+const DESKTOP_MONSTER_FAR_UPDATE_DIST = TILE_SIZE * 20;
+const DESKTOP_MONSTER_FAR_UPDATE_STAGGER = 4;
+const DESKTOP_MONSTER_RENDER_DIST = TILE_SIZE * 22;
+const DESKTOP_MAX_VISIBLE_MONSTERS = 220;
 
 /* ── Kayıt slotları (localStorage) — prefix/say\u0131 yukar\u0131da, fonksiyonlar burada ─── */
 
@@ -13208,7 +13912,7 @@ function gameLoop(now) {
 
   const dt = Math.min((now - lastTime) / 1000, 0.1);
   lastTime = now;
-  if (touchState.mobileUI) mobilePerfFrame = (mobilePerfFrame + 1) % 2048;
+  mobilePerfFrame = (mobilePerfFrame + 1) % 2048;
 
   if (now >= nextAutoSaveAt && currentSaveSlot >= 0) {
     saveGameToSlot(currentSaveSlot);
@@ -13354,11 +14058,10 @@ function gameLoop(now) {
   craftPanel.update(dt);
   const uiOpen = dialog.active || inventory.open || bankPanel.open || petPanel.open || shop.open || craftPanel.open || charPanel.open || !!worldItemInspect || !!inventorySlotInspect;
 
-  const desktopPowerHold = canvasMouse0Down && !touchState.mobileUI && (performance.now() - mouseAttackT0) >= DESKTOP_POWER_HOLD_MS;
-  if ((isDown("ShiftLeft") || isDown("ShiftRight") || desktopPowerHold) && !uiOpen && !player.inBoat) {
+  if ((isDown("ShiftLeft") || isDown("ShiftRight")) && !uiOpen && !player.inBoat) {
     if (!player.powerCharging) { player.powerCharging = true; player.powerCharge = 0; }
   } else if (player.powerCharging && player.powerCharge < 0.1 &&
-    !isDown("ShiftLeft") && !isDown("ShiftRight") && !desktopPowerHold) {
+    !isDown("ShiftLeft") && !isDown("ShiftRight")) {
     player.powerCharging = false; player.powerCharge = 0;
   }
 
@@ -13374,6 +14077,12 @@ function gameLoop(now) {
     const pr = cycleLootPreset();
     pickupMsgText = "Loot preset: " + pr.label + " (L)";
     pickupMsgTimer = 1.2;
+  }
+  if (wasJustPressed("KeyO") && !uiOpen) {
+    const n = inventory.autoEquipBestAvailable();
+    player.applyEquipmentBonus(inventory);
+    pickupMsgText = n > 0 ? ("En iyi ekipman otomatik giyildi: " + n + " slot (O)") : "Daha iyi giyilecek eşya bulunamadı.";
+    pickupMsgTimer = 1.4;
   }
   if (wasJustPressed("BracketRight") && !uiOpen) {
     const v = gameAudio.nudgeMaster(0.08);
@@ -13450,10 +14159,14 @@ function gameLoop(now) {
   if (activePet) activePet.update(dt, player, map, worldItems, inventory, monsters);
 
   if (!uiOpen) {
+    const crowdedDesktop = !touchState.mobileUI && monsters.length > DESKTOP_MONSTER_CROWDED_THRESHOLD;
     if (!touchState.mobileUI || (mobilePerfFrame % 2) === 0) {
-      processCampSupport(monsters, touchState.mobileUI ? dt * 2 : dt);
+      if (!crowdedDesktop || (mobilePerfFrame % 2) === 0) {
+        processCampSupport(monsters, touchState.mobileUI ? dt * 2 : (crowdedDesktop ? dt * 1.35 : dt));
+      }
     }
     const farUpdateDistSq = MOBILE_MONSTER_FAR_UPDATE_DIST * MOBILE_MONSTER_FAR_UPDATE_DIST;
+    const farUpdateDistSqDesktop = DESKTOP_MONSTER_FAR_UPDATE_DIST * DESKTOP_MONSTER_FAR_UPDATE_DIST;
     for (let mi = 0; mi < monsters.length; mi++) {
       const m = monsters[mi];
       let stepDt = dt;
@@ -13464,6 +14177,15 @@ function gameLoop(now) {
         if (farMonster) {
           if (((mobilePerfFrame + mi) % MOBILE_MONSTER_FAR_UPDATE_STAGGER) !== 0) continue;
           stepDt *= MOBILE_MONSTER_FAR_UPDATE_STAGGER;
+        }
+      }
+      if (crowdedDesktop && !m.boss && m.alive) {
+        const mdx = m.cx - player.centerX;
+        const mdy = m.cy - player.centerY;
+        const farMonsterDesktop = (mdx * mdx + mdy * mdy) > farUpdateDistSqDesktop;
+        if (farMonsterDesktop) {
+          if (((mobilePerfFrame + mi) % DESKTOP_MONSTER_FAR_UPDATE_STAGGER) !== 0) continue;
+          stepDt *= DESKTOP_MONSTER_FAR_UPDATE_STAGGER;
         }
       }
       const r = m.update(stepDt, map, player);
@@ -13518,7 +14240,15 @@ function gameLoop(now) {
       for (const m of monsters) {
         if (!m.alive || m.state === "dying") continue;
         if (a.x >= m.x - 2 && a.x <= m.x + m.w + 2 && a.y >= m.y - 2 && a.y <= m.y + m.h + 2) {
+          if (a.power) {
+            if (a.hitMonsters.has(m)) continue;
+            a.hitMonsters.add(m);
+            m.takeDamage(a.damage);
+            triggerEquippedItemSpecialOnHit(m, a.damage, { ranged: true, projectile: true });
+            continue;
+          }
           m.takeDamage(a.damage);
+          triggerEquippedItemSpecialOnHit(m, a.damage, { ranged: true, projectile: true });
           a.alive = false;
           break;
         }
@@ -13680,7 +14410,10 @@ function gameLoop(now) {
   if (!player.inBoat) renderables.push(player);
   for (const wp of wildPets) if (wp.alive) renderables.push(wp);
   const mobRenderDistSq = MOBILE_MONSTER_RENDER_DIST * MOBILE_MONSTER_RENDER_DIST;
+  const crowdedDesktopRender = !touchState.mobileUI && monsters.length > DESKTOP_MONSTER_CROWDED_THRESHOLD;
+  const desktopRenderDistSq = DESKTOP_MONSTER_RENDER_DIST * DESKTOP_MONSTER_RENDER_DIST;
   let mobileVisibleMonsterCount = 0;
+  let desktopVisibleMonsterCount = 0;
   for (const m of monsters) {
     if (!m.alive) continue;
     if (touchState.mobileUI && !m.boss) {
@@ -13689,6 +14422,13 @@ function gameLoop(now) {
       if ((dxm * dxm + dym * dym) > mobRenderDistSq) continue;
       if (mobileVisibleMonsterCount >= MOBILE_MAX_VISIBLE_MONSTERS) continue;
       mobileVisibleMonsterCount++;
+    }
+    if (crowdedDesktopRender && !m.boss) {
+      const dxm = m.cx - player.centerX;
+      const dym = m.cy - player.centerY;
+      if ((dxm * dxm + dym * dym) > desktopRenderDistSq) continue;
+      if (desktopVisibleMonsterCount >= DESKTOP_MAX_VISIBLE_MONSTERS) continue;
+      desktopVisibleMonsterCount++;
     }
     renderables.push(m);
   }
