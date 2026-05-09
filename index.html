@@ -11077,7 +11077,7 @@ class BankPanel {
   this._bankGridY = gridTop;
   this._invGridY = gridTop;
 
-  this._lastLayout = { x, y, w, h, pad };
+  this._lastLayout = { x, y, w, h, pad, cbx: x + w - 28, cby: y + 6 };
 
   for (let r = 0; r < bankRows; r++) {
   for (let c = 0; c < bankCols; c++) {
@@ -11107,8 +11107,14 @@ class BankPanel {
   this._invTotalPages = invTotalPages;
 
   ctx.fillStyle = "#506080";
-  ctx.font = "10px monospace";
-  ctx.fillText("[Esc] Kapat", x + pad, y + h - 6);
+  const cbx = x + w - 28;
+  const cby = y + 6;
+  ctx.fillStyle = "rgba(70,30,30,0.7)";
+  roundRect(ctx, cbx, cby, 22, 22, 4); ctx.fill();
+  ctx.strokeStyle = "#a06050"; ctx.lineWidth = 1;
+  roundRect(ctx, cbx, cby, 22, 22, 4); ctx.stroke();
+  ctx.fillStyle = "#e0a0a0"; ctx.font = "bold 12px monospace";
+  ctx.fillText("\u2715", cbx + 11 - ctx.measureText("\u2715").width / 2, cby + 16);
   } catch(e) { console.error("BankPanel render:", e); }
   }
   tryBeginScroll(id, mx, my) { return false; }
@@ -11117,6 +11123,7 @@ class BankPanel {
   const L = this._lastLayout;
   if (!L) return false;
   if (mx < L.x || mx >= L.x + L.w || my < L.y || my >= L.y + L.h) return false;
+  if (L.cbx && mx >= L.cbx && mx < L.cbx + 22 && my >= L.cby && my < L.cby + 22) { this.close(); return true; }
 
   if (this._prevBtn) {
   const pb = this._prevBtn;
