@@ -553,22 +553,18 @@ function mobileButtonsLayout(cw, ch) {
   x: adminBtnX, y: skillsY - adminBtnR, w: adminBtnR * 2, h: adminBtnR * 2,
   cx: adminBtnX + adminBtnR, cy: skillsY, r: adminBtnR});
   }
-  // PW button - attack butonunun hemen sağında
-  const pwR = G.skillR;
-  // Can/Mana iksir butonları — en sağ skill butonunun üstünde
-  var potR = Math.max(11, Math.floor(G.skillR * 0.75));
-  var skill2Btn = out[0]; // attack butonunun konumu
-  var skill2Cx = skill2Btn.cx, skill2Cy = skill2Btn.cy;
-  var potY = skill2Cy - G.skillR - potR - 60;
-  var potOffsetX = 36;
+  // Can/Mana iksir butonları — SALDIRI butonunun hemen SAĞINDA, üst üste (kırmızı üstte, mavi altta)
+  var potR = Math.max(11, Math.floor(G.skillR * 0.85));
+  var atkBtn0 = out[0];
+  var potCx = atkBtn0.cx + G.atkR + 8 + potR;
   out.push({
   key: "hpPotion", kind: "potion", potType: "hp",
-  label: "+", cx: skill2Cx + potOffsetX, cy: potY, r: potR,
-  x: skill2Cx + potOffsetX - potR, y: potY - potR, w: potR * 2, h: potR * 2});
+  label: "+", cx: potCx, cy: atkBtn0.cy - potR - 4, r: potR,
+  x: potCx - potR, y: atkBtn0.cy - potR - 4 - potR, w: potR * 2, h: potR * 2});
   out.push({
   key: "mpPotion", kind: "potion", potType: "mp",
-  label: "+", cx: skill2Cx - potR * 2 - 3 + potOffsetX, cy: potY, r: potR,
-  x: skill2Cx - potR * 3 - 3 + potOffsetX, y: potY - potR, w: potR * 2, h: potR * 2});
+  label: "+", cx: potCx, cy: atkBtn0.cy + potR + 4, r: potR,
+  x: potCx - potR, y: atkBtn0.cy + potR + 4 - potR, w: potR * 2, h: potR * 2});
   // Üst butonlar (yatayda sağ üstte, dikeyde üstte sıralı)
   var topBtnR = 16;
   var topBtnY = topBtnR + 14;
@@ -593,7 +589,6 @@ function mobileButtonsLayout(cw, ch) {
   { key: "KeyK", kind: "menu", label: function(){return "\u2728";}, r: topBtnR },
   { key: "KeyF", kind: "menu", label: function(){return "\uD83C\uDFE9";}, r: topBtnR },
   { key: "KeyJ", kind: "menu", label: function(){return "\uD83D\uDC64";}, r: topBtnR },
-  { key: "KeyG", kind: "menu", label: function(){return "\uD83C\uDFC6";}, r: topBtnR },
   ];
   for (var bi = 0; bi < topBtns.length; bi++) {
   var tb = topBtns[bi];
@@ -873,8 +868,6 @@ boots_leather: { id: "boots_leather", name: "Yosun Bot", stackable: false, rarit
   mimic_chest_item: { id: "mimic_chest_item", name: "Kutu Mimic", stackable: true, maxStack: 99, rarity: "epic", desc: "Hazine Canavarı'ndan düşen efsane kutu. Açınca yalnızca EPİK veya EFSANEVI eşya + bol ok/iksir/malzeme verir.", buyPrice: 0, sellPrice: 0 },
   forest_chest: { id: "forest_chest", name: "Orman Sandığı", stackable: false, rarity: "legendary", desc: "Açınca altın, ok, iksir ve güzel eşyalar düşürür.", buyPrice: 0, sellPrice: 0 },
   special_kutu: { id: "special_kutu", name: "Gizli Orman Kutusu", stackable: false, rarity: "legendary", desc: "Ormanın derinliklerinde saklı özel kutu. Açınca zengin ganimet düşürür.", buyPrice: 0, sellPrice: 0 },
-  axe: { id: "axe", name: "Balta", rarity: "common", stackable: false, minLevel: 1, durability: 100,
-  desc: "Orman ağaçlarını kesmek için. Ağacın yanında [E]'ye bas. Ormandaki özel kutulara baltayla ulaşırsın.", buyPrice: 250, sellPrice: 40 },
   // Taşlar
   stone_red:  { id: "stone_red",  name: "Kırmızı Taş",  stackable: true, maxStack: 99, stoneStats: { rangedDmg: 1 } },
   stone_blue:  { id: "stone_blue",  name: "Mavi Taş",  stackable: true, maxStack: 99, stoneStats: { maxMana: 5 } },
@@ -4524,16 +4517,17 @@ function getShopBuyPriceForItem(itemId) {
 const PLAYER_SKILL_DEFS = [
   { id: "shadow_step", name: "Gölge Adımı", minLevel: 1, gold: 0, type: "active", icon: "\uD83C\uDF2A", mana: 0, cooldown: 8, desc: "3sn boyunca hızlan + görünmez ol (kaçış)." },
   { id: "elektrik_oku", name: "Elektrik Oku", minLevel: 3, gold: 0, type: "active", icon: "\u26A1", mana: 2, cooldown: 3, desc: "1 canavara çarpar; ona yakın canavarlara zincirler ve hepsine aynı anda hasar verir (3sn bekleme)." },
-  { id: "multi_arrow", name: "Çoklu Ok", minLevel: 5, gold: 0, type: "active", icon: "3\u2191", mana: 1, cooldown: 0.25, desc: "3 ok yelpaze şeklinde, her biri %65 hasar. Normal atış gibi arka arkaya kullanılabilir (Buton 1 - kısa bas)" },
+  { id: "multi_arrow", name: "Çoklu Ok", minLevel: 5, gold: 0, type: "active", icon: "3\u2191", mana: 1, cooldown: 0.25, desc: "3 ok yelpaze şeklinde, her biri %50 hasar. Üçü de aynı canavara vurursa 3x hasar (normal atış gibi arka arkaya kullanılabilir - Buton 1 kısa bas)" },
   { id: "gozlem_oku", name: "Gözlem Oku", minLevel: 5, gold: 0, type: "active", icon: "\uD83D\uDC41", mana: 2, cooldown: 10, desc: "Hasar vermez; her engelin içinden geçip uzak bölgeleri haritada açar. İZLE ile takip edebilirsin (10sn bekleme)." },
-  { id: "freeze_arrow", name: "Dondurucu Ok", minLevel: 7, gold: 0, type: "active", icon: "\u2744", mana: 4, cooldown: 12, desc: "Hedefi 2sn dondurur (boss 1sn) (Buton 1 - basılı tut)" },
+  { id: "freeze_arrow", name: "Dondurucu Ok", minLevel: 7, gold: 0, type: "active", icon: "\u2744", mana: 4, cooldown: 12, desc: "Buz ok atar: 15 hasar + hedefi 5 sn dondurur + 0.5 sn'de bir 1 hasar (5 kez). (Buton 1 - basılı tut)" },
   { id: "bomba_oku", name: "Bomba Oku", minLevel: 8, gold: 0, type: "active", icon: "\uD83D\uDCA3", mana: 5, cooldown: 5, desc: "Canavara değdiği an patlar; çap içindeki tüm canavarlara aynı anda hasar verir (5sn bekleme)." },
-  { id: "fire_arrow_skill", name: "Ateş Oku", minLevel: 10, gold: 0, type: "active", icon: "\uD83D\uDD25", mana: 5, cooldown: 10, desc: "4sn yanma, sn'de 2 hasar (Buton 2 - kısa bas)" },
+  { id: "fire_arrow_skill", name: "Ateş Oku", minLevel: 10, gold: 0, type: "active", icon: "\uD83D\uDD25", mana: 5, cooldown: 10, desc: "Ateş ok atar: ilk vuruş 1.5x hasar + 0.5 sn'de bir 3 hasar (5 kez yanar). (Buton 2 - kısa bas)" },
   { id: "yagmur_oku", name: "Yağmur Oku", minLevel: 10, gold: 0, type: "active", icon: "\uD83C\uDF27", mana: 8, cooldown: 10, desc: "Canavara değdiği an 3sn boyunca o bölgedeki canavarlara birkaç kez hasar verir (10sn bekleme)." },
-  { id: "poison_arrow_skill", name: "Zehirli Ok", minLevel: 10, gold: 0, type: "active", icon: "\u2620", mana: 4, cooldown: 10, desc: "6sn zehir, sn'de 1 hasar (Buton 2 - basılı tut)" },
+  { id: "poison_arrow_skill", name: "Zehirli Ok", minLevel: 10, gold: 0, type: "active", icon: "\u2620", mana: 4, cooldown: 10, desc: "Zehirli ok atar: ilk vuruş 1.5x hasar + 0.5 sn'de bir 3 hasar (5 kez zehirler). (Buton 2 - basılı tut)" },
   { id: "hizli_ates", name: "Hızlı Ateş", minLevel: 16, gold: 0, type: "active", icon: "\u26A1", mana: 8, cooldown: 25, desc: "5sn boyunca 3x atış hızı (Buton 3 - kısa bas)" },
   { id: "gazap", name: "Okçu'nun Gazabı", minLevel: 20, gold: 0, type: "active", icon: "\uD83D\uDD25", mana: 15, cooldown: 60, desc: "10sn boyunca 2x hasar, %100 kritik (Buton 3 - basılı tut)" },
   { id: "guc_oku", name: "Güç Oku", minLevel: 15, gold: 0, type: "active", icon: "\u26A1", mana: 10, cooldown: 30, desc: "Tek güçlü ok fırlatırsın: %100 kritik, 10x hasar. 30 sn'de bir dolabilir." },
+  { id: "besli_ok", name: "5'li Ok", minLevel: 12, gold: 0, type: "active", icon: "5\u2191", mana: 6, cooldown: 8, desc: "5 ok yelpaze şeklinde, her biri %50 hasar. Aynı canavara çoğu vurursa çok daha fazla hasar (8 sn bekleme)." },
 ];
 
 const equipInfoPanel = {
@@ -6563,7 +6557,8 @@ handleClick(mx, my, canvasW, canvasH, rightClick = false) {
   const px = Math.floor((canvasW - panelW) / 2);
   var maxPh = canvasH - 56;
   if (panelH > maxPh) panelH = Math.max(250, maxPh);
-  const py = Math.max(44, Math.min(canvasH - panelH - 12, Math.floor((canvasH - panelH) / 2)));
+  // ÜSTE YASLA: panel aşağı kaymasın
+  const py = Math.min(44, Math.max(4, canvasH - panelH - 12));
 
   const previewX = px + 12;
   const eqGridX = previewX + previewW + previewGap;
@@ -6622,7 +6617,8 @@ handleClick(mx, my, canvasW, canvasH, rightClick = false) {
 
   const contentH = titleH + 4 + previewH + 4 + eqLabelH + eqGridH + 6 + statH + 6 + invGridH + 6 + 24 + 28 + 24 + 2;
   const panelH = Math.min(contentH, canvasH - 54);
-  const py = Math.max(48, Math.min(canvasH - panelH - 8, Math.floor((canvasH - panelH) / 2)));
+  // ÜSTE YASLA: panel aşağı kaymasın
+  const py = Math.min(48, Math.max(4, canvasH - panelH - 8));
 
   const previewX = px + 8;
   const previewY = py + titleH + 4;
@@ -6693,7 +6689,8 @@ handleClick(mx, my, canvasW, canvasH, rightClick = false) {
 
   var sidePad = touchState.mobileUI ? 4 : 6;
   const px = Math.max(sidePad, Math.floor((canvasW - panelW) / 2));
-  const py = Math.max(b.top, Math.min(canvasH - panelH - b.bottom, Math.floor((canvasH - panelH) / 2)));
+  // ÜSTE YASLA: panel aşağı kaymasın (sığmıyorsa tabandan yukarı)
+  const py = Math.min(b.top, Math.max(4, canvasH - panelH - b.bottom));
 
   const toolbarOffset = 65;
 
@@ -7641,7 +7638,7 @@ class Player {
   /** Karadan B ile indikten sonra hemen yeniden otomatik binmeyi engeller (sn). */
   this.boatAutoBoardCooldown = 0;
 
-this.level = 0;
+this.level = 1;
 this.xp = 0;
 this.xpToNext = 10;
 
@@ -7728,9 +7725,12 @@ this.hp = 5;
 
   gainXP(amount) {
   this.xp += amount;
+  const oldLvG = this.level;
+  let levelsG = 0;
   while (this.xp >= this.xpToNext) {
   this.xp -= this.xpToNext;
   this.level++;
+  levelsG++;
   this.xpToNext = getXpToNext(this.level);
   this.baseMaxHp += 5;
   this.baseMaxMana += 5;
@@ -7774,6 +7774,11 @@ this.hp = 5;
   color: ["#ffffff","#ffd700","#ffec8b","#fff8dc","#ffe4b5","#ffaa00"][Math.floor(Math.random()*6)],
   size: 0.8 + Math.random() * 1.8});
   }
+  }
+  // Seviye atlandı: her seviye için +1 stat puanı kazanıldı
+  if (levelsG > 0) {
+  pickupMsgText = "Seviye " + this.level + "! +" + levelsG + " stat puanı (toplam " + this.statPoints + ")";
+  pickupMsgTimer = 2.5;
   }
   }
 
@@ -13696,6 +13701,11 @@ class Monster {
   }
   return;
   }
+  // BUZ: donmuş canavar hiçbir şey yapamaz (hareket yok, saldırı yok) — süre bitince normalleşir
+  if (this._freezeTimer > 0) {
+  this._freezeTimer -= dt;
+  if (this._freezeTimer > 0) return;
+  }
   // Kasaba içine girerse eve geri döner (savunmasız köy)
   if (typeof isInsideVillage === "function" &&
   isInsideVillage(Math.floor(this.cx / TILE_SIZE), Math.floor(this.cy / TILE_SIZE)) &&
@@ -15745,6 +15755,9 @@ class Shop {
   _shopUnitPrice(si) {
   const def = ITEMS[si.id];
   if (!def) return 0;
+  // SINIRSIZ OK (15+ pasif): ok satın almak BEDAVA — oyuncu zaten sınırsız oka sahip,
+  // altın kaybettirip sayısı 999 göstererek 'ok gelmedi' hissi yaratmasın
+  if (si.id === "arrow" && typeof player !== "undefined" && player && player._passives && player._passives.sonsuzOk) return 0;
   return si.price != null && si.price > 0 ? si.price : (def.buyPrice > 0 ? def.buyPrice : getShopBuyPriceForItem(si.id));
   }
 
@@ -17111,23 +17124,24 @@ function renderRegionAnnounce(ctx, cw, ch) {
   const alpha = Math.min(1, remain / 0.5, (regionAnnounce.dur - remain) / 0.4 + 0.1);
   const death = regionAnnounce.name === "Ölüm Bölgesi";
   const icon = death ? "☠" : "📍";
-  const txt = icon + " " + regionAnnounce.name;
-  const sub = death ? "EN ÖLÜMCÜL BÖLGE — DİKKATLİ OL!" : "Bölgeye girdin";
+  const txt = icon + " " + regionAnnounce.name + (death ? " — EN ÖLÜMCÜL BÖLGE!" : " — Bölgeye girdin");
   ctx.save();
   ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
-  ctx.textAlign = "center";
-  ctx.font = "bold 34px monospace";
-  const tw = ctx.measureText(txt).width;
-  const bx = cw / 2 - tw / 2 - 26, by = ch * 0.32 - 44, bw = tw + 52, bh = 84;
-  ctx.fillStyle = "rgba(8,10,22,0.85)";
-  roundRect(ctx, bx, by, bw, bh, 12); ctx.fill();
-  ctx.strokeStyle = regionAnnounce.color; ctx.lineWidth = 3;
-  roundRect(ctx, bx, by, bw, bh, 12); ctx.stroke();
+  // PvP geri sayım banner'ıyla AYNI boyut/stil, hemen altında (PvP y=44, yükseklik 26 → y=76)
+  ctx.fillStyle = "rgba(20,30,45,0.82)";
+  const w = Math.min(340, cw - 40);
+  const x = (cw - w) / 2;
+  const y = 76;
+  roundRect(ctx, x, y, w, 26, 13);
+  ctx.fill();
+  ctx.strokeStyle = regionAnnounce.color; ctx.lineWidth = 1.5;
+  roundRect(ctx, x, y, w, 26, 13);
+  ctx.stroke();
   ctx.fillStyle = regionAnnounce.color;
-  ctx.fillText(txt, cw / 2, ch * 0.32 + 4);
-  ctx.font = "bold 15px monospace";
-  ctx.fillStyle = death ? "#ff9090" : "#d8e8ff";
-  ctx.fillText(sub, cw / 2, ch * 0.32 + 26);
+  ctx.font = "bold 13px monospace";
+  ctx.textAlign = "center";
+  ctx.fillText(txt, cw / 2, y + 18);
+  ctx.textAlign = "start";
   ctx.restore();
 }
 
@@ -17233,7 +17247,7 @@ function tryUseExpScroll(itemId) {
   gameAudio.playLevelUp();
   }
   if (player.level > oldLevel) {
-  pickupMsgText = "Seviye " + player.level + "! (+3 stat)";
+  pickupMsgText = "Seviye " + player.level + "! (+1 stat puanı)";
   pickupMsgTimer = 2.5;
   } else {
   pickupMsgText = "+" + finalExp + " EXP (x" + levelMultiplier.toFixed(1) + ")";
@@ -18786,7 +18800,6 @@ function materialDropRateFor(mid) {
 }
 
 const CRAFT_RECIPES = [
-  { result: "axe", count: 1, ing: { wood: 6, leather: 3, ore: 2, bone: 1 }, label: "Balta" },
   { result: "helm_epic", count: 1, ing: { ore: 8, bone: 4, death_essence: 2 }, label: "Epik Miğfer" },
   { result: "chest_epic", count: 1, ing: { ore: 10, bone: 5, death_essence: 3 }, label: "Epik Göğüslük" },
   { result: "boots_epic", count: 1, ing: { ore: 6, leather: 4, death_essence: 2 }, label: "Epik Çizme" },
@@ -18805,7 +18818,6 @@ const CRAFT_RECIPES = [
   { result: "bow_hunter", count: 1, ing: { wood: 8, leather: 4, bone: 2 }, label: "Avcı Yayı" },
   { result: "helm_iron", count: 1, ing: { ore: 4, bone: 2 }, label: "Demir Miğfer" },
   { result: "chest_steel", count: 1, ing: { ore: 5, bone: 2 }, label: "Çelik Göğüslük" },
-  { result: "axe", count: 1, ing: { wood: 6, leather: 3, ore: 2, bone: 1 }, label: "Balta" },
 ];
 
 class CraftPanel {
@@ -20061,10 +20073,13 @@ class BotPlayer {
   this.upgradeTimer = 3 + Math.random() * 5;
   this._navFailTimer = 0;
   this._navStuckTimer = 0;
+  // Otomatik can iksiri (can düşünce içer)
+  this._potionCd = 0;
   this._initEquip();
-  // Kuşanmış yaya göre hasar (4 + seviye + yay bonusu) — 1 hasar bot canavar kesemiyordu
+  // Kuşanmış yaya göre hasar — OYUNCUYLA AYNI: yayın hasarı (basit yay = 1)
   const startBow = ITEMS[this.equip.bow];
-  this.dmg = 4 + this.level + botBowDmgBonus(startBow);
+  const st = startBow && startBow.stats ? (startBow.stats.rangedDmg || 0) : 0;
+  this.dmg = Math.max(1, st);
   this._initInventoryByLevel();
   }
   _initEquip() {
@@ -20188,7 +20203,7 @@ class BotPlayer {
   switch (skillId) {
   case "multi_arrow": {
   for (const off of [-0.18, 0, 0.18]) {
-  const m = mk(ang + off, 0.65);
+  const m = mk(ang + off, 0.5);
   arrows.push(m);
   }
   break;
@@ -20197,6 +20212,13 @@ class BotPlayer {
   const a = mk(ang, 0.8);
   a.chainArrow = true; a.chainRange = 90; a.element = "lightning";
   arrows.push(a);
+  break;
+  }
+  case "besli_ok": {
+  for (const off of [-0.2, -0.1, 0, 0.1, 0.2]) {
+  const m = mk(ang + off, 0.5);
+  arrows.push(m);
+  }
   break;
   }
   case "freeze_arrow": {
@@ -20304,16 +20326,16 @@ class BotPlayer {
   return arrows < 15;
   }
   _restockTarget() {
-  // Ok stokları kaldırıldı; kasabaya GİRİNCE ok otomatik 25'e doluyor — kasaba merkezine gider
+  // Ok stokları kaldırıldı; kasabaya GİRİNCE ok otomatik 25'e doluyor.
+  // Kasaba MERKEZİ yerine rastgele bir kasaba noktası seç (oyuncunun doğduğu yerde toplanmasın)
+  for (let i = 0; i < 40; i++) {
+  const c = VOX + 2 + Math.floor(Math.random() * (VCOLS - 4));
+  const r = VOY + 2 + Math.floor(Math.random() * (VROWS - 4));
+  if (map.isSolid(c, r)) continue;
+  if (isInsideVillage(c, r)) return { x: c, y: r };
+  }
   const tc = VOX + Math.floor(VCOLS / 2), tr = VOY + Math.floor(VROWS / 2);
-  let c = tc, r = tr;
-  if (map.isSolid(c, r)) {
-  for (let dx = -3; dx <= 3 && map.isSolid(c, r); dx++) for (let dy = -3; dy <= 3 && map.isSolid(c, r); dy++) {
-  const nc = tc + dx, nr = tr + dy;
-  if (nc >= 0 && nr >= 0 && nc < map.cols && nr < map.rows && !map.isSolid(nc, nr)) { c = nc; r = nr; break; }
-  }
-  }
-  return { x: c, y: r };
+  return { x: tc, y: tr };
   }
   /* Atış noktasından hedefe ok yolu açık mı (duvar/ağaç engel değil mi). */
   _hasClearShot(tx, ty, mtx, mty) {
@@ -20404,6 +20426,26 @@ class BotPlayer {
   }
   }
   /* EŞYA GÜÇLENDİRME: bot altın biriktirince kuşanmış eşyasını güçlendirir (yay önce, sonra zırh). */
+  /* OTOMATİK CAN İKSİRİ: canı %45'in altına düşünce envanterden can iksiri içer. */
+  _tryAutoPotion() {
+  if (this.isDead) return;
+  if (this._potionCd > 0) return;
+  const hpR = this.maxHp > 0 ? this.hp / this.maxHp : 1;
+  if (hpR < 0.45) {
+  for (let i = 0; i < this.inventory.length; i++) {
+  if (this.inventory[i] && this.inventory[i].id === "potion") {
+  this.inventory[i].count--;
+  if (this.inventory[i].count <= 0) this.inventory.splice(i, 1);
+  const healAmt = Math.max(5, Math.floor(this.maxHp * 0.5));
+  this.hp = Math.min(this.maxHp, this.hp + healAmt);
+  this._potionCd = 1.5;
+  spawnDamageFloater(this.cx, this.y - 10, "+" + healAmt, false, "#60ff80");
+  this.chat = "Can iksiri içtim!"; this.chatTimer = 1.5;
+  return;
+  }
+  }
+  }
+  }
   _tryUpgradeEquipment() {
   if ((this.level || 1) < 3) return;
   if (this.upgradeTimer > 0) return;
@@ -20464,7 +20506,8 @@ class BotPlayer {
   const cur = this.equip.bow && ITEMS[this.equip.bow] && ITEMS[this.equip.bow].stats ? (ITEMS[this.equip.bow].stats.rangedDmg || 0) : 0;
   if ((def.stats.rangedDmg || 0) > cur) {
   this.equip.bow = id;
-  this.dmg = 4 + this.level + botBowDmgBonus(def) + (this.equipUpgrade.bow || 0);
+  // OYUNCUYLA AYNI: hasar = yayın hasarı + güçlendirme seviyesi
+  this.dmg = Math.max(1, (def.stats.rangedDmg || 0)) + (this.equipUpgrade.bow || 0);
   this.chat = "Yeni yay taktım!"; this.chatTimer = 2;
   }
   } else if (def.equipSlot === "chest" && def.stats) {
@@ -20563,6 +20606,19 @@ class BotPlayer {
   return;
   }
   }
+  // 1.5) Can iksiri azsa (3'ten az) tüccardan can iksiri al
+  let potCount = 0;
+  for (const s of this.inventory) if (s.id === "potion") potCount += s.count;
+  const potPrice = Math.max(10, getShopBuyPriceForItem("potion") || 30);
+  if (potCount < 3 && this.gold >= potPrice + 30) {
+  const buyN = Math.min(3 - potCount, Math.floor(this.gold / potPrice));
+  if (buyN > 0) {
+  this.gold -= buyN * potPrice;
+  this._addItem("potion", buyN);
+  this.chat = "Can iksiri aldım (x" + buyN + ")"; this.chatTimer = 2.5;
+  return;
+  }
+  }
   // 2) Eşya al: yalnızca yeterli birikimi varsa (150+ altın), seviyeye uygun
   if (this.gold < 150) return;
   let stock = [];
@@ -20657,6 +20713,9 @@ class BotPlayer {
   if (this._slowTimer > 0) this._slowTimer -= dt;
   if (this._fleeTimer > 0) this._fleeTimer -= dt;
   if (this._navFailTimer > 0) this._navFailTimer -= dt;
+  if (this._potionCd > 0) this._potionCd -= dt;
+  // Otomatik can iksiri: can düşünce içer
+  this._tryAutoPotion();
   if (this.mktTimer <= 0) { this.mktTimer = 6 + Math.random() * 10; const mr = Math.random(); if (mr < 0.45) this._sellItems(); else if (mr < 0.8) this._buyFromMarket(); else this._buyFromMerchant(); }
   // Eşya güçlendirme: altın biriktirince kuşanmış eşyasını yükseltir
   this._tryUpgradeEquipment();
@@ -20968,7 +21027,8 @@ function spawnBots() {
   const out = [];
   const used = new Set();
   const usedNames = new Set();
-  const n = 8 + Math.floor(Math.random() * 4);
+  // OYUNCU + 8 BOT = toplam 9 oyuncu
+  const n = 8;
   let attempts = 0;
   while (out.length < n && attempts < 400) {
   attempts++;
@@ -21540,43 +21600,59 @@ function closeAllPanelsOnDeath() {
 }
 
 /* Bot kesince sağ tarafta ganimet paneli: küçük kutu içinde eşya + adet + gelen altın. */
+/* Görev panelinin (HUD) alt kenarının yaklaşık Y'si — bot düşüş paneli bunun altına yerleşir. */
+function questHUDBottomY() {
+  try {
+  if (typeof questTracker === "undefined" || !questTracker || !questTracker.questHUDVisible) return 50;
+  const q = questTracker.getCurrentQuest();
+  if (!q) return 50;
+  const lineH = 13;
+  let rewN = 0;
+  if (q.rewards) {
+  rewN += q.rewards.xp ? 1 : 0;
+  rewN += q.rewards.gold ? 1 : 0;
+  rewN += q.rewards.items ? q.rewards.items.length : 0;
+  }
+  const rewH = rewN > 0 ? 16 + (rewN - 1) * 13 + 6 : 0;
+  const panelH = 38 + q.objectives.length * lineH + rewH + 20;
+  return 50 + panelH;
+  } catch (e) { return 50; }
+}
+
 function renderBotLootPanel(ctx, cw, ch) {
   if (!botLootPanel) return;
   const p = botLootPanel;
   const alpha = Math.min(1, p.timer / 0.4);
-  const panelW = 168, panelH = 132;
-  const x = cw - panelW - 16;
-  const y = (ch - panelH) / 2;
+  const panelW = 84, panelH = 76;
+  // SOL TARAF: görev bilgisinin hemen altında, karakter can barının üstünde
+  const x = 8;
+  const y = Math.min(questHUDBottomY() + 8, ch - panelH - 64);
   ctx.save();
   ctx.globalAlpha = alpha;
   ctx.fillStyle = "rgba(12,18,34,0.95)";
-  ctx.strokeStyle = "#ffd050"; ctx.lineWidth = 2;
-  roundRect(ctx, x, y, panelW, panelH, 10); ctx.fill(); ctx.stroke();
+  ctx.strokeStyle = "#ffd050"; ctx.lineWidth = 1.5;
+  roundRect(ctx, x, y, panelW, panelH, 8); ctx.fill(); ctx.stroke();
   if (p.item) {
-  const boxS = 56;
+  const boxS = 40;
   const bx = x + (panelW - boxS) / 2;
-  const by = y + 12;
+  const by = y + 4;
   ctx.fillStyle = "rgba(22,26,44,0.95)";
-  roundRect(ctx, bx, by, boxS, boxS, 7); ctx.fill();
-  ctx.strokeStyle = "#ffd700"; ctx.lineWidth = 2.5;
-  roundRect(ctx, bx, by, boxS, boxS, 7); ctx.stroke();
-  if (ITEMS[p.item.id]) drawItemIcon(ctx, p.item.id, bx + 5, by + 5, boxS - 10);
+  roundRect(ctx, bx, by, boxS, boxS, 5); ctx.fill();
+  ctx.strokeStyle = "#ffd700"; ctx.lineWidth = 1.8;
+  roundRect(ctx, bx, by, boxS, boxS, 5); ctx.stroke();
+  if (ITEMS[p.item.id]) drawItemIcon(ctx, p.item.id, bx + 3, by + 3, boxS - 6);
   // ADET her zaman yazılır: xN
-  ctx.fillStyle = "#ffffff"; ctx.font = "bold 11px monospace";
+  ctx.fillStyle = "#ffffff"; ctx.font = "bold 8px monospace";
   const ct = "x" + p.item.count;
-  ctx.fillText(ct, bx + boxS - 5 - ctx.measureText(ct).width, by + boxS - 6);
-  ctx.fillStyle = "#e8ecff"; ctx.font = "bold 11px monospace";
-  const nm = ITEMS[p.item.id] ? ITEMS[p.item.id].name : p.item.id;
-  const fit = fitTextLines(ctx, nm, panelW - 16, 1, 11, 11);
-  ctx.font = "bold " + fit.font + "px monospace";
-  ctx.fillText(fit.lines[0], x + panelW / 2, by + boxS + 13);
+  ctx.fillText(ct, bx + boxS - 4 - ctx.measureText(ct).width, by + boxS - 4);
   } else {
-  ctx.fillStyle = "#9090a8"; ctx.font = "10px monospace";
-  ctx.fillText("Eşya yok", x + panelW / 2, y + 50);
+  ctx.fillStyle = "#9090a8"; ctx.font = "8px monospace";
+  ctx.fillText("Eşya yok", x + panelW / 2, y + 26);
   }
+  // ALTIN: kutu dışında, eşyanın hemen altında
   ctx.fillStyle = "#ffd050";
-  ctx.font = "bold 14px monospace";
-  ctx.fillText("\u26C1 +" + p.gold + " Alt\u0131n", x + panelW / 2, y + panelH - 13);
+  ctx.font = "bold 10px monospace";
+  ctx.fillText("\u26C1+" + p.gold, x + panelW / 2, y + panelH - 6);
   ctx.textAlign = "start";
   ctx.restore();
 }
@@ -23847,6 +23923,12 @@ const playersPanel = {
 /* ── LİDERLİK TABLOSU ──────────────────────────────────────
    Ekranın sağ üstünde (koordinat panelinin altında) oyuncuları
    SAVAŞ GÜCÜNE göre 1., 2., 3. ... şeklinde sıralar. Aynı butonla aç/kapat. */
+/* Sağ üst köşedeki aç/kapat (🏆) butonunun son çizilen dikdörtgeni (tıklama testi için). */
+let leaderboardBtnRect = null;
+function leaderboardButtonRect(cw, ch) {
+  const r = 16;
+  return { x: cw - r - 10, y: r + 6, w: r * 2, h: r * 2, cx: cw - 10, cy: r + 6 };
+}
 const leaderboardPanel = {
   open: false,
   toggle() { this.open = !this.open; },
@@ -23877,8 +23959,18 @@ const leaderboardPanel = {
   },
   _layout(cw, ch) {
   const pw = 156;
-  const px = cw - pw - 10;
-  const py = 52;
+  const px = cw - pw - 8;
+  // Özel SKILL butonlarının hemen üstünden başla (mobil savaş kümesi)
+  let py = 8;
+  try {
+  const G = mobileCombatClusterGeom(cw, ch);
+  const skillGap = 4;
+  const skillsY = G.centerY - G.atkR - G.skillR - skillGap;
+  const skillsTop = skillsY - G.skillR;
+  const entries = this._entries();
+  const ph = Math.min(24 + entries.length * 20, ch - 14);
+  py = Math.max(4, skillsTop - ph - 2);
+  } catch (e) { py = 8; }
   return { px, py, pw };
   },
   render(ctx, cw, ch) {
@@ -23886,8 +23978,9 @@ const leaderboardPanel = {
   const entries = this._entries();
   const P = this._layout(cw, ch);
   const rowH = 20;
-  const headerH = 24;
-  const ph = Math.min(headerH + entries.length * rowH + 10, ch - P.py - 10);
+const headerH = 24;
+  // Alt boşluk YOK: panel son satırla birlikte biter (9. satır kesilmez)
+  const ph = Math.min(headerH + entries.length * rowH, ch - P.py - 10);
   this._h = ph;
   ctx.save();
   ctx.fillStyle = "rgba(12,16,34,0.93)";
@@ -23910,7 +24003,8 @@ const leaderboardPanel = {
   ctx.textAlign = "start";
   let y = P.py + headerH + 6;
   for (let i = 0; i < entries.length; i++) {
-  if (y + rowH > P.py + ph) break;
+  // Satır kutusunun üstü panelin altına taşıyorsa kes (metin taban çizgisi değil)
+  if (y - 14 > P.py + ph - 2) break;
   const e = entries[i];
   if (i % 2 === 1) {
   ctx.fillStyle = "rgba(255,255,255,0.04)";
@@ -24320,6 +24414,7 @@ const questTracker = {
   questCycleLBtnRect = null;
   questCycleRBtnRect = null;
   questTitleBtnRect = null;
+  questCloseBtnRect = null;
   const curQuest = this.getCurrentQuest();
   let quest = null;
   if (this.viewQuestId) quest = QUEST_DEFS.find(q => q.id === this.viewQuestId) || null;
@@ -24376,6 +24471,17 @@ const questTracker = {
   const py = 50;
   ctx.fillStyle = "rgba(10,12,30,0.82)"; ctx.strokeStyle = "rgba(240,208,80,0.6)"; ctx.lineWidth = 1;
   roundRect(ctx, px, py, panelW, panelH, 8); ctx.fill(); ctx.stroke();
+  // KAPAT (✕) butonu: panelin sağ üstünde — görev bilgisini gizler (liderlikteki gibi)
+  const qCloseX = px + panelW - 20, qCloseY = py + 3, qCloseSz = 16;
+  questCloseBtnRect = { x: qCloseX, y: qCloseY, w: qCloseSz, h: qCloseSz };
+  ctx.fillStyle = "rgba(80,30,30,0.85)";
+  roundRect(ctx, qCloseX, qCloseY, qCloseSz, qCloseSz, 4); ctx.fill();
+  ctx.strokeStyle = "#d08070"; ctx.lineWidth = 1;
+  roundRect(ctx, qCloseX, qCloseY, qCloseSz, qCloseSz, 4); ctx.stroke();
+  ctx.fillStyle = "#ffb0a0"; ctx.font = "bold 10px monospace";
+  ctx.textAlign = "center";
+  ctx.fillText("\u2715", qCloseX + qCloseSz / 2, qCloseY + 12);
+  ctx.textAlign = "start";
   ctx.fillStyle = "#ffe080";
   ctx.font = "bold 10px monospace";
   const titlePrefix = isCompleted ? "\u2713 " : isCurrent ? "\u25b6 " : "\u25c7 ";
@@ -24894,14 +25000,15 @@ function spawnMonsters() {
   // Kalabalık bantlarda yer bulamayan gruplar retry ile garanti yerleştirilir
   let placed = false;
   for (let try_i = 0; try_i < 16 && !placed; try_i++) {
-  const ang = Math.PI * 0.9 + Math.random() * 0.7;
+  // Grupları kasabanın çevresine HER YÖNE yay (doğu, kuzey, batı — güneyde yer az)
+  const ang = Math.random() * Math.PI;
   const d = (terr.minNorm + Math.random() * (terr.maxNorm - terr.minNorm)) * ZONE_MAX_DIST;
   const gc = Math.round(vx + Math.cos(ang) * d);
   const gr = Math.round(vy - Math.sin(ang) * d);
   if (gc < 4 || gc >= WORLD_COLS - 4 || gr < 4 || gr >= WORLD_ROWS - 4) continue;
   if (isInsideVillage(gc, gr)) continue;
   if (nearRoad(gc, gr, 2)) continue;
-  if (groupCollides(gc, gr, 6)) continue;
+  if (groupCollides(gc, gr, 8)) continue;
   if (!isSafeSpawn(gc, gr)) continue;
   groupCenters.push({ col: gc, row: gr });
   placed = true;
@@ -24924,6 +25031,28 @@ function spawnMonsters() {
   if (memberType === terr.type && hasArchers) mon._passive = true;
   list.push(mon);
   }
+  }
+  }
+
+  /* KASABA ÇIKIŞI KOLAY CANAVAR GRUPLARI: üst, sağ ve sol kapıların hemen dışında
+     worm + balçık — oyuncu çıkışta hızlıca level kassın. */
+  const gateCenterR = VOY + Math.floor(VROWS / 2);
+  const starterGroups = [
+  { c: VOX + Math.floor(VCOLS / 2), r: VOY - 5 },       // ÜST kapı
+  { c: VOX + VCOLS + 5, r: gateCenterR },               // SAĞ kapı
+  { c: VOX - 5, r: gateCenterR }                        // SOL kapı
+  ];
+  for (const sg of starterGroups) {
+  for (let sgi = 0; sgi < 7; sgi++) {
+  const mc = sg.c + (Math.random() < 0.5 ? -1 : 1) * Math.floor(Math.random() * 3);
+  const mr = sg.r + Math.floor(Math.random() * 3) - 1;
+  if (mc < 4 || mc >= WORLD_COLS - 4 || mr < 4 || mr >= WORLD_ROWS - 4) continue;
+  if (isInsideVillage(mc, mr)) continue;
+  if (map.isSolid(mc, mr)) continue;
+  const type = sgi < 4 ? "worm" : "slime";
+  const mon = new Monster(mc, mr, type, 0.7 + Math.random() * 0.3, {
+  campId: "starter", campTier: "normal", campRole: "minion", socialAggroRange: TILE_SIZE * 8 });
+  list.push(mon);
   }
   }
   }
@@ -25992,13 +26121,17 @@ function skillCastDash() {
 
 function skillCastFreezeShot() {
   if (!playerHasBowEquipped(inventory)) { pickupMsgText = "Dondurucu Ok için yay gerekli!"; pickupMsgTimer = 0.9; return false; }
-  var targetMon = findNearestMonster();
-  if (!targetMon) { pickupMsgText = "Hedef canavar yok!"; pickupMsgTimer = 0.9; return false; }
-  var isBoss = MONSTER_TYPES[targetMon.type] && MONSTER_TYPES[targetMon.type].boss;
-  targetMon.slowTimer = isBoss ? 1.0 : 2.0;
-  targetMon.slowFactor = 0.01;
-  spawnDamageFloater(targetMon.cx, targetMon.cy - 12, 0, false, "#60d0ff");
-  pickupMsgText = isBoss ? "Boss yavaşladı (1sn)!" : "Hedef donduruldu (2sn)!";
+  const sx = player.centerX + Math.cos(player.angle) * 14;
+  const sy = player.centerY + Math.sin(player.angle) * 14;
+  const aim = arrowAimAssist(sx, sy, player.angle, monsters);
+  const a = new Arrow(sx, sy, aim.angle);
+  a.element = "ice";
+  // İLK VURUŞ 15 hasar; canavarı 5 sn dondurur + 0.5 sn'de bir 1 hasar ×5 (buz tikleri)
+  a.damage = 15;
+  arrows.push(a);
+  registerRangedAimTarget(aim.target);
+  player.shootAnim = 0.3;
+  pickupMsgText = "Dondurucu Ok! 15 hasar + 5sn donma + buz hasarı";
   pickupMsgTimer = 1;
   gameAudio.playSkill();
   return true;
@@ -26006,11 +26139,17 @@ function skillCastFreezeShot() {
 
 function skillCastFireArrow() {
   if (!playerHasBowEquipped(inventory)) { pickupMsgText = "Ateş Oku için yay gerekli!"; pickupMsgTimer = 0.9; return false; }
-  var targetMon = findNearestMonster();
-  if (!targetMon) { pickupMsgText = "Hedef canavar yok!"; pickupMsgTimer = 0.9; return false; }
-  targetMon._burnTimer = (targetMon._burnTimer || 0) + 4;
-  spawnDamageFloater(targetMon.cx, targetMon.cy - 12, 0, false, "#ff8040");
-  pickupMsgText = "Ateş Oku! 4sn yanma (8 hasar)";
+  const sx = player.centerX + Math.cos(player.angle) * 14;
+  const sy = player.centerY + Math.sin(player.angle) * 14;
+  const aim = arrowAimAssist(sx, sy, player.angle, monsters);
+  const a = new Arrow(sx, sy, aim.angle);
+  a.element = "fire";
+  // İLK VURUŞ: normalin 1.5 katı hasar (ör. normal 10 → 15). Sonra 0.5 sn'de bir 3 hasar ×5 (15).
+  a.damage = Math.max(1, Math.floor(applyOutgoingPlayerDamage(player.getRangedDamage(), player, inventory, {}) * 1.5));
+  arrows.push(a);
+  registerRangedAimTarget(aim.target);
+  player.shootAnim = 0.3;
+  pickupMsgText = "Ateş Oku! İlk vuruş 1.5x + yanma (0.5sn'de 3 hasar ×5)";
   pickupMsgTimer = 1;
   gameAudio.playSkill();
   return true;
@@ -26018,11 +26157,17 @@ function skillCastFireArrow() {
 
 function skillCastPoisonArrow() {
   if (!playerHasBowEquipped(inventory)) { pickupMsgText = "Zehirli Ok için yay gerekli!"; pickupMsgTimer = 0.9; return false; }
-  var targetMon = findNearestMonster();
-  if (!targetMon) { pickupMsgText = "Hedef canavar yok!"; pickupMsgTimer = 0.9; return false; }
-  targetMon._poisonTimer = (targetMon._poisonTimer || 0) + 6;
-  spawnDamageFloater(targetMon.cx, targetMon.cy - 12, 0, false, "#70ff60");
-  pickupMsgText = "Zehirli Ok! 6sn zehir (6 hasar)";
+  const sx = player.centerX + Math.cos(player.angle) * 14;
+  const sy = player.centerY + Math.sin(player.angle) * 14;
+  const aim = arrowAimAssist(sx, sy, player.angle, monsters);
+  const a = new Arrow(sx, sy, aim.angle);
+  a.element = "poison";
+  // İLK VURUŞ: normalin 1.5 katı hasar (ör. normal 10 → 15). Sonra 0.5 sn'de bir 3 hasar ×5 (15).
+  a.damage = Math.max(1, Math.floor(applyOutgoingPlayerDamage(player.getRangedDamage(), player, inventory, {}) * 1.5));
+  arrows.push(a);
+  registerRangedAimTarget(aim.target);
+  player.shootAnim = 0.3;
+  pickupMsgText = "Zehirli Ok! İlk vuruş 1.5x + zehir (0.5sn'de 3 hasar ×5)";
   pickupMsgTimer = 1;
   gameAudio.playSkill();
   return true;
@@ -26111,13 +26256,15 @@ function skillCastTripleShot() {
   const aim = arrowAimAssist(player.centerX, player.centerY, base, monsters);
   const targetAngle = aim.angle;
   const spread = 0.08;
+  // Normal tek ok hasarı = hedefin asıl gördüğü hasar. Üçlü ok her biri BUNUN TAM YARISI.
+  const halfNormal = Math.max(1, Math.floor(applyOutgoingPlayerDamage(player.getRangedDamage(), player, inventory, {}) * 0.5));
   for (let k = -1; k <= 1; k++) {
   if (!player.adminMode && !(player._passives && player._passives.sonsuzOk)) inventory.removeItem("arrow", 1);
   const ang = targetAngle + k * spread;
   const sx = player.centerX + Math.cos(ang) * 14;
   const sy = player.centerY + Math.sin(ang) * 14;
   const a = new Arrow(sx, sy, ang);
-  a.damage = applyOutgoingPlayerDamage(player.getRangedDamage() * 0.65, player, inventory, {});
+  a.damage = halfNormal;
   arrows.push(a);
   }
   registerRangedAimTarget(aim.target);
@@ -26141,13 +26288,15 @@ function skillCastSpreadShot() {
   const aim = arrowAimAssist(player.centerX, player.centerY, base, monsters);
   const targetAngle = aim.angle;
   const spread = 0.10;
+  // Normal tek ok hasarı = hedefin asıl gördüğü hasar. 5'li ok her biri BUNUN TAM YARISI.
+  const halfNormal = Math.max(1, Math.floor(applyOutgoingPlayerDamage(player.getRangedDamage(), player, inventory, {}) * 0.5));
   for (let k = -2; k <= 2; k++) {
   if (!player.adminMode && !(player._passives && player._passives.sonsuzOk)) inventory.removeItem("arrow", 1);
   const ang = targetAngle + k * spread;
   const sx = player.centerX + Math.cos(ang) * 14;
   const sy = player.centerY + Math.sin(ang) * 14;
   const a = new Arrow(sx, sy, ang);
-  a.damage = applyOutgoingPlayerDamage(player.getRangedDamage() * 0.5, player, inventory, {});
+  a.damage = halfNormal;
   arrows.push(a);
   }
   registerRangedAimTarget(aim.target);
@@ -26493,6 +26642,7 @@ function tryCastActiveSkill(slotIndex) {
   case "hizli_ates": ok = skillCastHizliAtes(); break;
   case "gazap": ok = skillCastGazap(); break;
   case "guc_oku": ok = skillCastPowerArrow(); break;
+  case "besli_ok": ok = skillCastSpreadShot(); break;
   case "poison_arrow_skill": ok = skillCastPoisonArrow(); break;
   case "hizli_ates": ok = skillCastHizliAtes(); break;
   case "gazap": ok = skillCastGazap(); break;
@@ -26565,6 +26715,17 @@ canvas.addEventListener("mousedown", (e) => {
   handlePlayerEquipInspectClick(e.clientX, e.clientY);
   e.preventDefault();
   return;
+  }
+
+  // Sağ üst köşe LİDERLİK aç/kapat (🏆) butonu
+  if (e.button === 0 && leaderboardBtnRect) {
+  const lbr = leaderboardBtnRect;
+  const dlx = e.clientX - lbr.cx, dly = e.clientY - lbr.cy;
+  if (dlx * dlx + dly * dly <= (lbr.w / 2 + 4) * (lbr.w / 2 + 4)) {
+  leaderboardPanel.toggle();
+  e.preventDefault();
+  return;
+  }
   }
 
   // Seviye liderlik tablosu: yalnız panelin içine tıklanırsa yutulur (dışarı tıklama listeyi kapatmaz)
@@ -26640,6 +26801,15 @@ canvas.addEventListener("mousedown", (e) => {
   }
   if (qr2 && e.clientX >= qr2.x && e.clientX <= qr2.x + qr2.w && e.clientY >= qr2.y && e.clientY <= qr2.y + qr2.h) {
   questTracker.cycleQuestView(1);
+  e.preventDefault();
+  return;
+  }
+  }
+  // Görev bilgisini KAPAT (✕) butonu — gizler
+  if (e.button === 0 && questCloseBtnRect) {
+  const qc = questCloseBtnRect;
+  if (e.clientX >= qc.x && e.clientX <= qc.x + qc.w && e.clientY >= qc.y && e.clientY <= qc.y + qc.h) {
+  questTracker.questHUDVisible = false;
   e.preventDefault();
   return;
   }
@@ -27057,6 +27227,14 @@ function handleCanvasTouchStart(e) {
   continue;
   }
   }
+  // Görev bilgisini KAPAT (✕) butonu — gizler (mobil)
+  if (questCloseBtnRect) {
+  const qc2 = questCloseBtnRect;
+  if (mx >= qc2.x && mx <= qc2.x + qc2.w && my >= qc2.y && my <= qc2.y + qc2.h) {
+  questTracker.questHUDVisible = false;
+  continue;
+  }
+  }
   // Görev başlığına dokununca görevi aktifleştir (mobil)
   if (!minimap.fullMap && questTitleBtnRect) {
   const qt = questTitleBtnRect;
@@ -27232,6 +27410,15 @@ function handleCanvasTouchStart(e) {
   const pr = gozlemPopButtonRect(canvasW, canvasH);
   if (mx >= pr.x && mx <= pr.x + pr.w && my >= pr.y && my <= pr.y + pr.h) {
   explodeGozlemArrow();
+  continue;
+  }
+  }
+  // Sağ üst köşe LİDERLİK aç/kapat (🏆) butonu
+  if (leaderboardBtnRect) {
+  const lbr = leaderboardBtnRect;
+  const dlx2 = mx - lbr.cx, dly2 = my - lbr.cy;
+  if (dlx2 * dlx2 + dly2 * dly2 <= (lbr.w / 2 + 4) * (lbr.w / 2 + 4)) {
+  leaderboardPanel.toggle();
   continue;
   }
   }
@@ -28098,33 +28285,23 @@ function facingTree(player, map) {
 
 function canChopFacingTree(player, map, inventory) {
   if (!facingTree(player, map)) return false;
-  if (!getUsableAxeStack(inventory)) return false;
   return true;
 }
 
 function tryChopTree(player, map, inventory) {
   if (!canChopFacingTree(player, map, inventory)) return false;
   const t = treeFacingTile(player);
-  const axe = getUsableAxeStack(inventory);
-  ensureStackAxeDurability(axe);
   const dmg = 20; // TREE_MAX_HP 50 -> ~3 vuruş
   const broken = damageTree(t.col, t.row, dmg);
-  axe.durability = (axe.durability > 0 ? axe.durability : getAxeDurabilityMax(axe)) - 1;
-  if (axe.durability <= 0) {
-  const si = inventory.slots.indexOf(axe);
-  if (si >= 0) inventory.slots[si] = null;
-  else {
-  const hi = inventory.hotbar.indexOf(axe);
-  if (hi >= 0) inventory.hotbar[hi] = null;
-  }
-  pickupMsgText = "Baltan kırıldı! Zanaat Atölyesi'nde yeniden üretebilirsin.";
-  pickupMsgTimer = 2;
-  }
   if (broken) {
   map.detail[t.row * WORLD_COLS + t.col] = -1;
   const w = new WorldItem(t.col, t.row, "wood", 2 + Math.floor(Math.random() * 3), false);
   worldItems.push(w);
-  pickupMsgText = "Ağaç kesildi! +Odun";
+  // Ağaç kesilince 2 altın düşer + 1 XP gelir
+  const gc = new WorldItem(t.col, t.row, "coin", 2, false);
+  worldItems.push(gc);
+  if (typeof player !== "undefined" && player && typeof player.gainXP === "function") player.gainXP(1);
+  pickupMsgText = "Ağaç kesildi! +Odun, +2 Altın, +1 XP";
   pickupMsgTimer = 1.5;
   gameAudio.playChop();
   spawnDamageFloater(t.col * TILE_SIZE + 16, t.row * TILE_SIZE, "Kesildi!", false, "#ffa050");
@@ -28171,12 +28348,6 @@ function handleInteraction() {
   }
 
   if (tryChopTree(player, map, inventory)) return;
-
-  if (facingTree(player, map)) {
-  pickupMsgText = "Balta gerekiyor! Zanaat Atölyesi'nde üretebilirsin (odun + deri + cevher + kemik).";
-  pickupMsgTimer = 2.2;
-  return;
-  }
 
   for (const npc of npcs) {
   if (npc.isNearPlayer(player)) {
@@ -29245,6 +29416,7 @@ let questLocBtnRect = null;
 let questCycleLBtnRect = null;
 let questCycleRBtnRect = null;
 let questTitleBtnRect = null;
+let questCloseBtnRect = null;
 /* Görev Konum butonu ile işaretlenen görevin id'si (alttaki "İşaretle" butonu bu akışta gizlenir). */
 let questMarkQuestId = null;
 
@@ -31788,15 +31960,27 @@ if (bossArenaState.active) {
   }
   }
   const r = m.update(stepDt, map, player);
-  if (m.alive && m._burnTimer > 0) {
-  m._burnTimer -= stepDt;
-  m.takeDamage(8 * stepDt, { dot: true });
-  if (Math.random() < 0.3) spawnDamageFloater(m.centerX, m.y - 6, "\uD83D\uDD25", false, "#ff8040");
+  // ATEŞ/ZEHİR/BUZ OKU DOT'U: her 0.5 sn'de bir hasar (ateş/zehir 3, buz 1)
+  if (m.alive && (m._burnTicks > 0 || m._poisonTicks > 0 || m._iceTicks > 0)) {
+  m._dotTickTimer = (m._dotTickTimer || 0) - stepDt;
+  if (m._dotTickTimer <= 0) {
+  m._dotTickTimer = 0.5;
+  if (m._burnTicks > 0) {
+  m.takeDamage(3, { dot: true });
+  m._burnTicks--;
+  if (Math.random() < 0.4) spawnDamageFloater(m.centerX, m.y - 6, "\uD83D\uDD25", false, "#ff8040");
   }
-  if (m.alive && m._poisonTimer > 0) {
-  m._poisonTimer -= stepDt;
-  m.takeDamage(6 * stepDt, { dot: true });
-  if (Math.random() < 0.3) spawnDamageFloater(m.centerX, m.y - 6, "\u2620", false, "#70ff60");
+  if (m._poisonTicks > 0) {
+  m.takeDamage(3, { dot: true });
+  m._poisonTicks--;
+  if (Math.random() < 0.4) spawnDamageFloater(m.centerX, m.y - 6, "\u2620", false, "#70ff60");
+  }
+  if (m._iceTicks > 0) {
+  m.takeDamage(1, { dot: true });
+  m._iceTicks--;
+  if (Math.random() < 0.4) spawnDamageFloater(m.centerX, m.y - 6, "\u2744", false, "#80d0ff");
+  }
+  }
   }
   if (m.alertAlliesTimer > 0 && (m.state === "chase" || m.state === "attack")) {
   alertCampAllies(monsters, m, player);
@@ -31952,12 +32136,15 @@ if (bossArenaState.active) {
   m.takeDamage(a.damage);
   }
   if (a.element === "fire") {
-  m._burnTimer = (m._burnTimer || 0) + 3;
+  m._burnTicks = (m._burnTicks || 0) + 5;
   } else if (a.element === "ice") {
-  m.slowTimer = 2.5;
-  m.slowFactor = 0.45;
+  // BUZ: 5 sn tam donma (hareket yok, saldırı yok) + 0.5 sn'de bir 1 hasar ×5
+  m.slowTimer = 5;
+  m.slowFactor = 0;
+  m._freezeTimer = 5;
+  m._iceTicks = (m._iceTicks || 0) + 5;
   } else if (a.element === "poison") {
-  m._poisonTimer = (m._poisonTimer || 0) + 4;
+  m._poisonTicks = (m._poisonTicks || 0) + 5;
   } else if (a.element === "lightning") {
   m.slowTimer = 1.5;
   m.slowFactor = 0.3;
@@ -32281,8 +32468,8 @@ if (bossArenaState.active) {
   hud.showInteractPrompt("[B] Karaya veya kıyıya yaklaş");
   }
   } else if (!uiOpen && facingTree(player, map)) {
-  if (getUsableAxeStack(inventory)) hud.showInteractPrompt(interactPromptActionHint() + " Ağacı kes");
-  else hud.showInteractPrompt("⛏ Balta gerekiyor — Zanaat Atölyesi'nde üret");
+  // Ağaç kesme artık BALTA GEREKTİRMEZ
+  hud.showInteractPrompt(interactPromptActionHint() + " Ağacı kes");
   } else if (!uiOpen && !player.hasBoat) {
   hud.clearInteractPrompt();
   } else {
@@ -32664,14 +32851,15 @@ if (bossArenaState.active) {
   }
   questTracker.renderQuestLog(ctx, canvasW, canvasH);
 
-  // SAVAŞ GÜCÜ rozeti (üst orta, şeffaf) — yalnızca değiştiğinde 5 sn görünür
+  // SAVAŞ GÜCÜ rozeti — karakterin CAN BARININ HEMEN ÜSTÜNDE (yalnızca değiştiğinde 5 sn görünür)
   refreshCombatPower();
   if (combatPowerTimer > 0) {
   combatPowerTimer -= dt;
   const alpha = Math.min(1, combatPowerTimer / 0.5);
   const cpW = 230, cpH = 34;
   const cpX = (canvasW - cpW) / 2;
-  const cpY = 46;
+  const badgeBarY = touchState.mobileUI ? canvasH - 60 : canvasH - 30;
+  const cpY = badgeBarY - cpH - 6;
   ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
   // şeffaf arka plan (kutu yok) + yazı gölgesi
   ctx.shadowColor = "rgba(0,0,0,0.7)";
@@ -32808,7 +32996,6 @@ if (bossArenaState.active) {
   { key: "KeyK", label: "\u2728" },
   { key: "KeyF", label: "\uD83C\uDFE9" },
   { key: "KeyJ", label: "\uD83D\uDC64" },
-  { key: "KeyG", label: "\uD83C\uDFC6" },
   ];
   for (let di = 0; di < sideDeskBtns.length; di++) {
   const sb2 = sideDeskBtns[di];
@@ -32858,32 +33045,54 @@ if (bossArenaState.active) {
   drawCombatPotions(ctx, canvasW, canvasH, inventory);
   }
 
-  // Sağ üst bilgi paneli (koordinat + ok + altın + ekipman gücü)
-  if (typeof player !== "undefined" && player && typeof inventory !== "undefined") {
-  var tileX = Math.floor(player.centerX / TILE_SIZE);
-  var tileY = Math.floor(player.centerY / TILE_SIZE);
-  var coordStr = "X:" + tileX + " Y:" + tileY;
-  var arrowCnt = inventory.countItem("arrow");
-  var goldCnt = inventory.countItem("coin");
-  var infoLines = [coordStr, "Ok:" + arrowCnt, "\u26C1:" + goldCnt];
-  if (player.equipPowerToastTimer > 0 && player.equipPowerToastText) {
-  infoLines.push(player.equipPowerToastText);
-  }
-  var maxW = 0;
-  for (var ii = 0; ii < infoLines.length; ii++) {
-  var iw2 = ctx.measureText(infoLines[ii]).width;
-  if (iw2 > maxW) maxW = iw2;
-  }
-  var infoH = infoLines.length * 13 + 4;
-  for (var ii = 0; ii < infoLines.length; ii++) {
-  var cols = ["#b0b8d0", "#c0d8f0", "#f0d050"];
-  ctx.fillStyle = ii < 3 ? cols[ii] : (player.equipPowerToastColor || "#ffffff");
-  ctx.font = "9px monospace";
-  ctx.fillText(infoLines[ii], canvasW - maxW - 13, 15 + ii * 13);
-  }
-  }
-  // SEVİYE LİDERLİK TABLOSU: koordinat panelinin hemen altında
+  // SEVİYE LİDERLİK TABLOSU: en sağ üst köşede
   leaderboardPanel.render(ctx, canvasW, canvasH);
+
+  // OK + ALTIN + KOORDİNAT: her zaman ekranda (liderlik tablosu üstünde, yan yana)
+  if (typeof player !== "undefined" && player && typeof inventory !== "undefined") {
+  const lbP = leaderboardPanel._layout(canvasW, canvasH);
+  const arrowCnt = inventory.countItem("arrow");
+  const goldCnt = inventory.countItem("coin");
+  // KOORDİNAT: başlangıç kasabasının doğma noktası (0,0) kabul edilir
+  const tileX = Math.floor(player.centerX / TILE_SIZE) - PLAYER_START.col;
+  const tileY = Math.floor(player.centerY / TILE_SIZE) - PLAYER_START.row;
+  const infoY = lbP.py - 2;
+  ctx.save();
+  ctx.font = "bold 13px monospace";
+  let ix = lbP.px - 24;
+  const drawInfo = (txt, color) => {
+  ctx.fillStyle = color;
+  ctx.fillText(txt, ix, infoY);
+  ix += ctx.measureText(txt).width + 8;
+  };
+  drawInfo("Ok:" + arrowCnt, "#c0d8f0");
+  drawInfo("\u26C1:" + goldCnt, "#f0d050");
+  drawInfo("X/Y:" + tileX + "/" + tileY, "#b0b8d0");
+  ctx.restore();
+  }
+
+  // Sağ üst köşe LİDERLİK AÇ/KAPAT (🏆) butonu — liderlik kapalıyken görünür
+  const lbRect = leaderboardButtonRect(canvasW, canvasH);
+  leaderboardBtnRect = lbRect;
+  if (!leaderboardPanel.open && !leaderboardPanel._blocked()) {
+  const lbPulse = 0.9 + Math.sin(performance.now() * 0.005) * 0.1;
+  ctx.save();
+  ctx.globalAlpha = lbPulse;
+  ctx.fillStyle = "rgba(42,42,68,0.95)";
+  ctx.beginPath();
+  ctx.arc(lbRect.cx, lbRect.cy, lbRect.w / 2, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = "#50c0a0"; ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(lbRect.cx, lbRect.cy, lbRect.w / 2, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.fillStyle = "#ffd050";
+  ctx.font = "bold 14px monospace";
+  ctx.textAlign = "center";
+  ctx.fillText("\uD83C\uDFC6", lbRect.cx, lbRect.cy + 5);
+  ctx.textAlign = "start";
+  ctx.restore();
+  }
 
   // PvP koruma geri sayımı + açılış duyurusu
   if (pvpGraceTimer > 0) {
@@ -32891,10 +33100,12 @@ if (bossArenaState.active) {
   var pvpS = Math.floor(pvpGraceTimer % 60);
   var pvpStr = "🛡 PvP savaşı başlamasına: " + pvpM + ":" + (pvpS < 10 ? "0" : "") + pvpS;
   ctx.save();
-  ctx.fillStyle = "rgba(20,30,45,0.82)";
+  // ŞEFFAF arka plan: geri sayım yazısı öne çıksın
+  ctx.fillStyle = "rgba(20,30,45,0.12)";
   var pvpW = Math.min(280, canvasW - 40);
   var pvpX = (canvasW - pvpW) / 2;
-  var pvpY = 14;
+  // Canavar can barının (y≈2-38) ALTINDA: PvP geri sayımı y=44'te
+  var pvpY = 44;
   roundRect(ctx, pvpX, pvpY, pvpW, 26, 13);
   ctx.fill();
   ctx.strokeStyle = "#50a0ff";
@@ -32934,7 +33145,8 @@ if (bossArenaState.active) {
   var qAlpha = Math.min(1, questNotifyTimer / 0.4);
   ctx.save();
   ctx.globalAlpha = qAlpha;
-  ctx.fillStyle = "rgba(20,50,20,0.85)";
+  // ŞEFFAF arka plan: görev bitti yazısı öne çıksın
+  ctx.fillStyle = "rgba(20,50,20,0.10)";
   var qtw = Math.min(380, canvasW - 40);
   var qtx = (canvasW - qtw) / 2;
   var qty = Math.floor(canvasH * 0.28);
