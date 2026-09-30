@@ -660,7 +660,8 @@ function pulseJust(code) {
 /* XP eğrisi: erken seviyeler hızlı, ilerledikçe çok daha yavaş (oyunun hızlı bitmesini önler). */
 function getXpToNext(level) {
   if (level < 1) return 10;
-  return Math.floor(8 + level * 5 + level * level * 0.3);
+  // DİK EĞRİ: seviye attıkça XP ihtiyacı belirgin artar (oyun çok hızlı bitmesin)
+  return Math.floor(15 + level * 8 + level * level * 0.6);
 }
 
 /* ── PRESTİJ (YENİDEN DOĞUŞ) ─────────────────────────────────
@@ -1752,6 +1753,7 @@ function copyStackMetaTo(target, src) {
   if (src._slv) target._slv = src._slv | 0;
   if (Array.isArray(src._sockets)) target._sockets = src._sockets.map((x) => ({ id: x.id, lv: x.lv | 0 || 1 }));
   if (src._stone) target._stone = src._stone;
+  if (src._bowAffix) target._bowAffix = src._bowAffix;
   var def = ITEMS[target.id];
   if (def && def.equipSlot) {
   var mx = getItemDurabilityMax(def);
@@ -1773,6 +1775,31 @@ function upgradeGoldCost(def, currentLv, starLv) {
 
 const MAX_ITEM_UPGRADE = 10;
 const MAX_ITEM_STAR = 5;
+
+/* ── YAY EK ÖZELLİKLERİ (AFFIX) ──────────────────────────────
+   Her yaya rastgele ek özellik gelebilir: Ateşli, Zehirli, Buzlu,
+   Hızlı, Güçlü. Yığının _bowAffix alanında saklanır. */
+const BOW_AFFIX_DEFS = {
+  fire: { name: "Ateşli", color: "#ff7040" },
+  poison: { name: "Zehirli", color: "#80e060" },
+  ice: { name: "Buzlu", color: "#70c8ff" },
+  fast: { name: "Hızlı", color: "#60ffff" },
+  strong: { name: "Güçlü", color: "#ffd060" },
+};
+function bowAffixName(a) { return (a && BOW_AFFIX_DEFS[a]) ? BOW_AFFIX_DEFS[a].name : null; }
+function bowAffixColor(a) { return (a && BOW_AFFIX_DEFS[a]) ? BOW_AFFIX_DEFS[a].color : "#fff"; }
+function maybeApplyBowAffix(stack) {
+  if (!stack || !stack.id) return;
+  const def = ITEMS[stack.id];
+  if (!def || def.equipSlot !== "bow") return;
+  if (stack._bowAffix) return;
+  const rr = rarityRank(def.rarity || "common");
+  const chance = 0.22 + rr * 0.12; // sıradan %22, efsanevi ~%70
+  if (Math.random() < chance) {
+  const keys = Object.keys(BOW_AFFIX_DEFS);
+  stack._bowAffix = keys[Math.floor(Math.random() * keys.length)];
+  }
+}
 
 function upgradeSuccessPct(currentLv) {
   if (currentLv >= MAX_ITEM_UPGRADE) return 0;
@@ -2791,6 +2818,11 @@ function buildItemTooltipLayout(ctx, def, itemId, canvasW, mobile, metaOpts, tra
   if (def.rarity) {
   const rlab = RARITY_LABEL_TR[def.rarity] || String(def.rarity).toUpperCase();
   measurePush(fonts.rare, getItemRarityColor(itemId), rlab);
+  }
+  // YAY EK ÖZELLİĞİ (affix)
+  const afShow = metaOpts.stackRef && metaOpts.stackRef._bowAffix;
+  if (afShow) {
+  measurePush(fonts.rare, bowAffixColor(afShow), "✨ " + bowAffixName(afShow) + " Yay");
   }
   const pw = getItemPowerScoreLine(def);
   if (pw) measurePush(fonts.meta, "#c8c0e8", pw);
@@ -6749,15 +6781,19 @@ class Inventory {
   // PRESTİJ: her doğuşta +%10 altın (kalıcı)
   if ((typeof player !== "undefined") && player && (player.prestigeLevel || 0) > 0) count = Math.floor(count * (1 + player.prestigeLevel * 0.10));
   this.gold += count;
+  if (count > 0) { goldGainAccum += count; goldGainTimer = 3; }
   if (this.autoEquipOnPickup) this._scanAutoEquipAllEmpty();
   if (count > 0 && typeof pushHistory === "function") pushHistory("+" + count + " altın", "#f0d050", "gold");
   return 0;
   }
 
   const _histItemGain = (addedCount) => {
-  if (addedCount <= 0 || typeof pushHistory !== "function") return;
+  if (addedCount <= 0) return;
+  if (itemId === "arrow") { arrowGainAccum += addedCount; arrowGainTimer = 3; }
+  if (addedCount > 0 && typeof pushHistory === "function") {
   const nm = ITEMS[itemId] ? ITEMS[itemId].name : itemId;
   pushHistory("+" + addedCount + " " + nm, "#8ae0a8", "item");
+  }
   };
 
   if (def.stackable) {
@@ -6785,6 +6821,7 @@ class Inventory {
 const stack = { id: itemId, count: add, upgrade: u };
   copyStackMetaTo(stack, sourceMeta);
   container[i] = stack;
+  maybeApplyBowAffix(stack);
   count -= add;
   if (count <= 0) {
   _histItemGain(add);
@@ -6804,6 +6841,7 @@ const stack = { id: itemId, count: add, upgrade: u };
   const stack = { id: itemId, count: 1, upgrade: u };
   copyStackMetaTo(stack, sourceMeta);
   container[i] = stack;
+  maybeApplyBowAffix(stack);
   _histItemGain(1);
   if (this.autoEquipOnPickup) this._scanAutoEquipAllEmpty();
   return 0;
@@ -10786,9 +10824,10 @@ function renderMonsterMeleeFx(ctx) {
 }
 
 class MonSpell {
-  constructor(x, y, tx, ty, damage, kind) {
+  constructor(x, y, tx, ty, damage, kind, mon) {
   this.x = x;
   this.y = y;
+  this.mon = mon || null;
   const d0 = Math.hypot(tx - x, ty - y) || 1;
   this.dx = (tx - x) / d0;
   this.dy = (ty - y) / d0;
@@ -10862,6 +10901,8 @@ class MonSpell {
   player.poisonTimer = Math.max(player.poisonTimer || 0, 2.8);
   }
   const dk = this.kind === "meteor" ? "fire" : (this.kind === "arrow" || this.kind === "rock" ? "physical" : this.kind);
+  // ÖLDÜREN BİLGİSİ: bu menzilli saldırının sahibi canavarı kaydet
+  if (this.mon) recordMonsterKiller(this.mon);
   if (this.kind === "web") {
   player._webTimer = 2.0;
   player.takeDamage(Math.floor(dm * 0.5), { kind: "physical", monster: true });
@@ -14938,6 +14979,7 @@ class Monster {
   const ld = Math.hypot(player.centerX - (this.x + this.w / 2), player.centerY - (this.y + this.h / 2));
   if (ld < this.w + player.w) {
   player.takeDamage(Math.max(1, Math.floor(this.dmg * 0.9)), { kind: "physical", monster: true });
+  recordMonsterKiller(this);
   spawnDamageFloater(player.centerX, player.y - 10, Math.max(1, Math.floor(this.dmg * 0.9)), false, "#ff8040");
   }
   }
@@ -14947,7 +14989,7 @@ class Monster {
   _skillRockThrow() {
   if (typeof player === "undefined" || !player) return;
   if (typeof monsterSpells === "undefined") return;
-  monsterSpells.push(new MonSpell(this.cx, this.cy, player.centerX, player.centerY, Math.max(1, Math.floor(this.dmg * 1.0)), "rock"));
+  monsterSpells.push(new MonSpell(this.cx, this.cy, player.centerX, player.centerY, Math.max(1, Math.floor(this.dmg * 1.0)), "rock", this));
   if (typeof gameAudio !== "undefined" && gameAudio.playSplash) gameAudio.playSplash();
   spawnDamageFloater(this.cx, this.cy - 8, 0, false, "#c0a080");
   }
@@ -15299,7 +15341,7 @@ class Monster {
   if (canRanged) {
   lastHitMonsterInfo = { name: MONSTER_TYPES[this.type] ? MONSTER_TYPES[this.type].name : this.type, level: this.level };
   lastHitBotInfo = null;
-  monsterSpells.push(new MonSpell(this.cx, this.cy, player.centerX, player.centerY, this.dmg, this.rangedKind));
+  monsterSpells.push(new MonSpell(this.cx, this.cy, player.centerX, player.centerY, this.dmg, this.rangedKind, this));
   playMonsterAttackSound(this.type, this.rangedKind);
   const isAncientDragon = this.type === "skywing_dragon" || this.type === "ancient_flame_dragon" || this.type === "frost_ancient_wyrm" || this.type === "storm_sovereign_dragon" || this.type === "void_ancient_dragon";
   if (this.boss) addScreenShake(isAncientDragon ? 6.5 : 3.5);
@@ -15307,15 +15349,13 @@ class Monster {
   if (this.type === "bog_troll") {
   // Çıyan sarılma
   player._grappleTimer = 1.5;
-  lastHitMonsterInfo = { name: MONSTER_TYPES[this.type] ? MONSTER_TYPES[this.type].name : this.type, level: this.level };
-  lastHitBotInfo = null;
+  recordMonsterKiller(this);
   player.takeDamage(this.dmg, { kind: "physical", monster: true });
   playMonsterAttackSound(this.type, null);
   pickupMsgText = "Çıyan sana sarıldı! Kurtulmak için [Boşluk]'a bas!";
   pickupMsgTimer = 1.5;
   } else {
-  lastHitMonsterInfo = { name: MONSTER_TYPES[this.type] ? MONSTER_TYPES[this.type].name : this.type, level: this.level };
-  lastHitBotInfo = null;
+  recordMonsterKiller(this);
   player.takeDamage(this.dmg, { kind: "physical", monster: true });
   playMonsterAttackSound(this.type, null);
   }
@@ -16649,6 +16689,7 @@ class Shop {
   this.buySort = "default";
   this.sellRarityFilter = "all";
   this.sellPicker = null;
+  this.bulkSellConfirm = null;
   /** Satın al onay diyaloğu: { stockIndex, itemId } */
   this.buyPicker = null;
   /** Son çizilen satın al diyaloğu için boyut (ımleça tıklaması ile aynı hizada). */
@@ -16680,6 +16721,7 @@ class Shop {
   this.buyFilter = "all";
   this.buySort = "default";
   this.sellRarityFilter = "all";
+  this.bulkSellConfirm = null;
   }
 
   rebuildStockFromTemplate() {
@@ -16967,6 +17009,44 @@ class Shop {
   return { filters, bulkBtn };
   }
 
+  _bulkConfirmLayout(L) {
+  const pw = 340, ph = 130;
+  const px = L.px + (L.pw - pw) / 2;
+  const py = L.py + (L.ph - ph) / 2;
+  return { pw, ph, px, py,
+  yes: { x: px + 22, y: py + ph - 44, w: 130, h: 30 },
+  no: { x: px + pw - 152, y: py + ph - 44, w: 130, h: 30 } };
+  }
+
+  _renderBulkSellConfirm(ctx, L) {
+  if (!this.bulkSellConfirm) return;
+  const c = this._bulkConfirmLayout(L);
+  ctx.fillStyle = "rgba(0,0,0,0.6)"; ctx.fillRect(0, 0, canvasW, canvasH);
+  ctx.fillStyle = "rgba(18,20,40,0.98)";
+  ctx.strokeStyle = "#d8a060"; ctx.lineWidth = 2;
+  roundRect(ctx, c.px, c.py, c.pw, c.ph, 10); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = "#ffd060"; ctx.font = "bold 14px monospace";
+  ctx.textAlign = "center";
+  ctx.fillText("Emin misiniz?", c.px + c.pw / 2, c.py + 26);
+  ctx.fillStyle = "#e0e4f0"; ctx.font = "12px monospace";
+  ctx.fillText(this.bulkSellConfirm.count + " eşya toplu satılacak!", c.px + c.pw / 2, c.py + 52);
+  ctx.fillStyle = "#f0d080";
+  ctx.fillText("Kazanç: +" + this.bulkSellConfirm.gold + " altın", c.px + c.pw / 2, c.py + 70);
+  ctx.textAlign = "start";
+  ctx.fillStyle = "rgba(60,140,60,0.95)"; ctx.strokeStyle = "#70e090";
+  roundRect(ctx, c.yes.x, c.yes.y, c.yes.w, c.yes.h, 6); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = "#e0ffe0"; ctx.font = "bold 12px monospace";
+  ctx.textAlign = "center";
+  ctx.fillText("Evet", c.yes.x + c.yes.w / 2, c.yes.y + 20);
+  ctx.textAlign = "start";
+  ctx.fillStyle = "rgba(60,60,60,0.95)"; ctx.strokeStyle = "#909090";
+  roundRect(ctx, c.no.x, c.no.y, c.no.w, c.no.h, 6); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = "#e0e0e0"; ctx.font = "bold 12px monospace";
+  ctx.textAlign = "center";
+  ctx.fillText("Hayır", c.no.x + c.no.w / 2, c.no.y + 20);
+  ctx.textAlign = "start";
+  }
+
   _getFilteredSellableEntries(inventory) {
   const src = this._getSellableEntries(inventory);
   if (this.sellRarityFilter === "all") return src;
@@ -16977,34 +17057,49 @@ class Shop {
   });
   }
 
+  _bulkSellPreview(inventory) {
+  const list = this._getFilteredSellableEntries(inventory);
+  const onlyLeg = this.sellRarityFilter === "legendary";
+  let totalGold = 0, totalItems = 0;
+  for (const e of list) {
+  const slot = e.containerRef[e.slotIdx];
+  if (!slot || slot.id !== e.slot.id) continue;
+  const d = ITEMS[slot.id];
+  if (!d || d.sellPrice <= 0) continue;
+  if (slot.id === "arrow" || slot.id.startsWith("potion")) continue;
+  // Efsane eşyalar yalnızca "Efs." filtresinde toplu satışa dahil edilir
+  if (d.rarity === "legendary" && !onlyLeg) continue;
+  totalItems += slot.count | 0;
+  totalGold += (slot.count | 0) * d.sellPrice;
+  }
+  return { count: totalItems, gold: totalGold };
+}
+
   _sellAllByRarity(inventory) {
   const list = this._getFilteredSellableEntries(inventory);
   if (!list.length) {
   this._showFeedback("Filtrede satilacak esya yok.", "#d04040");
   return;
   }
+  const onlyLeg = this.sellRarityFilter === "legendary";
   let totalGold = 0;
   let totalItems = 0;
-  let skippedItems = 0;
   for (const e of list) {
   const slot = e.containerRef[e.slotIdx];
   if (!slot || slot.id !== e.slot.id) continue;
   const d = ITEMS[slot.id];
   if (!d || d.sellPrice <= 0) continue;
-  // Oklar, iksirler ve efsanevi esyalar toplu satista korunur
-  if (slot.id === "arrow" || slot.id.startsWith("potion") || d.rarity === "legendary") {
-  skippedItems += slot.count | 0;
-  continue;
-  }
+  // Oklar ve iksirler korunur; efsane eşyalar YALNIZCA "Efs." filtresinde satılır
+  if (slot.id === "arrow" || slot.id.startsWith("potion")) continue;
+  if (d.rarity === "legendary" && !onlyLeg) continue;
   totalItems += slot.count | 0;
   totalGold += (slot.count | 0) * d.sellPrice;
   e.containerRef[e.slotIdx] = null;
   }
   if (totalGold > 0) inventory.addItem("coin", totalGold);
   this.sellPicker = null;
-  let msg = totalItems + " esya toplu satildi! +" + totalGold + " altin";
-  if (skippedItems > 0) msg += " (" + skippedItems + " esya korundu: ok/iksir/efsanevi)";
-  this._showFeedback(msg, "#f0d050");
+  this.bulkSellConfirm = null;
+  this._showFeedback(totalItems + " esya toplu satildi! +" + totalGold + " altin", "#f0d050");
   }
 
   _sellPickerLiveSlot(picker, inventory) {
@@ -17553,6 +17648,13 @@ class Shop {
   } else {
   if (button !== 0) return true;
   const sCtl = this._sellRarityControlsLayout(L);
+  // TOPLU SATIŞ ONAY açıkken: yalnızca Evet/Hayır çalışır
+  if (this.bulkSellConfirm) {
+  const cL0 = this._bulkConfirmLayout(L);
+  if (this._pointInRect(mx, my, cL0.yes)) { this._sellAllByRarity(inventory); return true; }
+  if (this._pointInRect(mx, my, cL0.no)) { this.bulkSellConfirm = null; return true; }
+  return true;
+  }
   for (const f of sCtl.filters) {
   if (this._pointInRect(mx, my, f)) {
   this.sellRarityFilter = f.id;
@@ -17562,7 +17664,12 @@ class Shop {
   }
   }
   if (this._pointInRect(mx, my, sCtl.bulkBtn)) {
-  this._sellAllByRarity(inventory);
+  const preview = this._bulkSellPreview(inventory);
+  if (preview.count <= 0) {
+  this._showFeedback("Filtrede satılacak eşya yok.", "#d04040");
+  } else {
+  this.bulkSellConfirm = { count: preview.count, gold: preview.gold };
+  }
   return true;
   }
   const U0 = this._sellPickerLayout(L);
@@ -17847,6 +17954,7 @@ class Shop {
 
   if (this.tab === 1 && this.sellPicker) this._renderSellPicker(ctx, L, inventory);
   if (this.tab === 0 && this.buyPicker) this._renderBuyPicker(ctx, L, inventory);
+  if (this.tab === 1) this._renderBulkSellConfirm(ctx, L);
 
   if (this.tooltipItem) {
   const def = ITEMS[this.tooltipItem];
@@ -22932,6 +23040,9 @@ let gozlemAimActive = false;
    İksirle dirilince öldüğün yerde doğar, 3 sn kalkan kazanır
    (canavarlar vuramaz, ateş edemez ama yürüyebilirsin). */
 let playerDead = false;
+/* Ok/altın kazanım göstergesi: +N miktar, 3 sn toplanır ve gösterilir. */
+let arrowGainAccum = 0, arrowGainTimer = 0;
+let goldGainAccum = 0, goldGainTimer = 0;
 /* HARDCODE MOD: ölünce altın + eşyanın bir kısmı yere düşer (geri toplanabilir). */
 let hardcoreMode = false;
 let hardcoreDropSummary = null;
@@ -22952,6 +23063,13 @@ let deathSummary = null;
 let lastDamageTaken = 0;
 let lastHitMonsterInfo = null;
 let lastHitBotInfo = null;
+/* Öldüren canavarı kaydet (melee/menzilli/leap tüm canavar vuruşları) — yedek için de saklanır. */
+function recordMonsterKiller(m) {
+  if (!m) return;
+  lastHitMonsterInfo = { name: MONSTER_TYPES[m.type] ? MONSTER_TYPES[m.type].name : m.type, level: m.level };
+  lastHitBotInfo = null;
+  if (typeof player !== "undefined" && player) player._lastMonsterHit = lastHitMonsterInfo;
+}
 let deathStolenItems = [];
 let deathGoldLost = 0;
 let deathPos = { x: 0, y: 0 };
@@ -23549,6 +23667,17 @@ function openInventorySlotInspect(kind, idx) {
 }
 
 /* Alınan kutunun içinden rastgele ödül üretir (silah/giysi/takı kutusu). */
+/* Kutu ödülü için yıldız şansı: 1-5 yıldız (5 en nadir). */
+function rollChestStar() {
+  const r = Math.random();
+  if (r < 0.002) return 5;
+  if (r < 0.007) return 4;
+  if (r < 0.02) return 3;
+  if (r < 0.06) return 2;
+  if (r < 0.16) return 1;
+  return 0;
+}
+
 function rollChestReward(chestId) {
   const isGold = chestId.indexOf("gold_") === 0;
   const baseId = isGold ? chestId.replace("gold_", "") : chestId;
@@ -23566,25 +23695,27 @@ function rollChestReward(chestId) {
   return d && d.equipSlot && d.rarity && ["ring","amulet"].indexOf(d.equipSlot) >= 0;
   });
   }
-  // ALTIN KUTU: efsanevi eşya/giysi/yay/takı düşebilir (%10) — normal kutu düşüremez
+  // ALTIN KUTU: efsanevi eşya/giysi/yay/takı düşebilir (%10) — EFSANE DE yıldızlı olabilir (1-5)
   if (isGold) {
   const legendPool = pool.filter(id => {
   const d = ITEMS[id];
   if (BOSS_ONLY_BOW_IDS.has(id)) return false;
   if (EJDERHA_SET_PIECES.indexOf(id) >= 0) return true;
-  return d && d.rarity === "legendary" && (!d.minLevel || d.minLevel <= 60);
+  return d && d.rarity === "legendary" && (!d.minLevel || d.minLevel <= 70);
   });
   if (legendPool.length && Math.random() < 0.1) {
-  return { itemId: legendPool[Math.floor(Math.random() * legendPool.length)], star: 0 };
+  let pick = legendPool[Math.floor(Math.random() * legendPool.length)];
+  // GIYSI KUTUSU: ZIRH 1/2/3 (chest slotu) efsaneleri %60 öncelikli — 3 slot da efsane alsın
+  if (baseId === "armor_chest") {
+  const zirahLeg = legendPool.filter(id => ITEMS[id] && ITEMS[id].equipSlot === "chest");
+  if (zirahLeg.length && Math.random() < 0.6) pick = zirahLeg[Math.floor(Math.random() * zirahLeg.length)];
+  }
+  return { itemId: pick, star: rollChestStar() };
   }
   }
   // Normal (ve gold kalan) havuz: efsanevi hariç
   const normalPool = isGold ? pool.filter(id => ITEMS[id] && ITEMS[id].rarity !== "legendary") : pool;
-  const roll = Math.random();
-  let starRoll = 0;
-  if (roll < 0.005) starRoll = 3;
-  else if (roll < 0.025) starRoll = 2;
-  else if (roll < 0.075) starRoll = 1;
+  const starRoll = rollChestStar();
   if (starRoll > 0) {
   const eligible = normalPool.filter(id => ITEMS[id] && ITEMS[id].equipSlot);
   if (eligible.length) return { itemId: eligible[Math.floor(Math.random() * eligible.length)], star: starRoll };
@@ -23616,6 +23747,13 @@ function openAllChestsOfType(container, idx) {
   return opened;
 }
 
+function inventoryHasEmptySlot() {
+  for (const container of [inventory.slots, inventory.hotbar]) {
+  for (const s of container) if (!s) return true;
+  }
+  return false;
+}
+
 function tryOpenBossChestInContainer(inv, container, idx) {
   const slot = container[idx];
   if (!slot || slot.count <= 0) return false;
@@ -23624,6 +23762,12 @@ function tryOpenBossChestInContainer(inv, container, idx) {
   const SHOP_CHESTS = ["weapon_chest","armor_chest","accessory_chest","gold_weapon_chest","gold_armor_chest","gold_accessory_chest"];
   const isShopChest = SHOP_CHESTS.indexOf(slot.id) >= 0;
   if (slot.id !== "boss_chest" && !isMimic && !isLegendBox && !isShopChest) return false;
+  // ENVANTER DOLU: kutu açılmaz, tüketilmez (içindekiler kaybolmaz)
+  if (!inventoryHasEmptySlot()) {
+  pickupMsgText = "Envanter dolu! Önce yer aç.";
+  pickupMsgTimer = 1.5;
+  return false;
+  }
   slot.count--;
   if (slot.count <= 0) container[idx] = null;
   if (isShopChest) {
@@ -23654,7 +23798,7 @@ function tryOpenBossChestInContainer(inv, container, idx) {
   const legendPool = Object.keys(ITEMS).filter((id) => {
   const d = ITEMS[id];
   if (BOSS_ONLY_BOW_IDS.has(id)) return false;
-  return d && d.equipSlot && d.rarity === "legendary" && (!d.minLevel || d.minLevel <= 60);
+  return d && d.equipSlot && d.rarity === "legendary" && (!d.minLevel || d.minLevel <= 70);
   });
   if (legendPool.length) dropItem = legendPool[Math.floor(Math.random() * legendPool.length)];
   }
@@ -23682,7 +23826,7 @@ function tryOpenBossChestInContainer(inv, container, idx) {
   if (!d || !d.equipSlot) return false;
   if (BOSS_ONLY_BOW_IDS.has(id)) return false;
   if (EJDERHA_SET_PIECES.indexOf(id) >= 0) return true;
-  return d.rarity === "legendary" && (!d.minLevel || d.minLevel <= 60);
+  return d.rarity === "legendary" && (!d.minLevel || d.minLevel <= 70);
   });
   const drops = [];
   // 1-2 güçlü ekipman (epik-adlı) + %60 şansla 1 efsanevi ekipman — oyuncu seviyesine ölçekli
@@ -24091,6 +24235,7 @@ function renderInventorySlotInspect(ctx, cw, ch) {
   drawItemIconFancy(ctx, stackRef.id, x + 8, cardY + 22, iconS, { star: stackRef.star || 0 });
   ctx.fillStyle = "#ffffff";
   var nm = d0.name + (up0 > 0 ? " (+" + up0 + ")" : "");
+  if (stackRef._bowAffix && ITEMS[stackRef.id] && ITEMS[stackRef.id].equipSlot === "bow") nm += " [" + bowAffixName(stackRef._bowAffix) + "]";
   var nameMaxW2 = Math.max(40, cardW - 54);
   var fitNm = fitTextLines(ctx, nm, nameMaxW2, 2, 11, 7);
   ctx.font = "bold " + fitNm.font + "px monospace";
@@ -24723,6 +24868,17 @@ const bowCombinePanel = new BowCombinePanel();
    Envanterden eşya koyup satışa çıkarırsın; bir süre sonra bir
    "oyuncu" (bot) satın alır ve altın hesabına yatar. */
 const MARKET_SLOTS = 12;
+/* Pazar eşya kategorisi: yay / giysi / takı / malzeme / diğer */
+function marketItemCategory(id) {
+  const d = ITEMS[id];
+  if (!d) return "other";
+  if (d.equipSlot === "bow") return "bow";
+  if (["head","chest","feet","waist","arms","cloak"].indexOf(d.equipSlot) >= 0) return "armor";
+  if (["ring","amulet"].indexOf(d.equipSlot) >= 0) return "acc";
+  if (d.stackable) return "mat";
+  return "other";
+}
+
 class MarketPanel {
   constructor() {
   this.open = false;
@@ -24738,6 +24894,7 @@ class MarketPanel {
   this.invPickerScroll = 0;
   this.sellPopupActive = false;
   this.buyPage = 0;
+  this.marketCatFilter = "all";
   this.notice = ""; this.noticeTimer = 0;
   this._r = {}; this._invRows = []; this._listRows = []; this._botRows = [];
   }
@@ -24856,6 +25013,28 @@ class MarketPanel {
   // Kutu ızgarası: eşyalar envanter gibi kutu simgeleriyle
   ctx.fillStyle = "#c0c8e0"; ctx.font = "bold 11px monospace";
   ctx.fillText("Satışta (kutuya tıkla → satın al)", px + 16, bodyY + 4);
+  // KATEGORİ FİLTRELERİ: Tüm / Yay / Giysi / Takı / Malzeme
+  const catDefs = [
+  { id: "all", label: "Tüm" },
+  { id: "bow", label: "Yay" },
+  { id: "armor", label: "Giysi" },
+  { id: "acc", label: "Takı" },
+  { id: "mat", label: "Malzeme" },
+  ];
+  const catW = 52, catH = 18, catGap = 5;
+  let catX = px + 16;
+  this._catBtns = [];
+  for (const cd of catDefs) {
+  const active = this.marketCatFilter === cd.id;
+  ctx.fillStyle = active ? "rgba(120,90,40,0.9)" : "rgba(30,40,60,0.8)";
+  ctx.strokeStyle = active ? "#f0c070" : "#5a6288";
+  roundRect(ctx, catX, bodyY + 16, catW, catH, 4); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = active ? "#fff0d8" : "#aeb6d6"; ctx.font = "bold 9px monospace"; ctx.textAlign = "center";
+  ctx.fillText(cd.label, catX + catW / 2, bodyY + 29);
+  ctx.textAlign = "start";
+  this._catBtns.push({ id: cd.id, x: catX, y: bodyY + 16, w: catW, h: catH });
+  catX += catW + catGap;
+  }
   const merged = [];
   for (let bi = 0; bi < this.botListings.length; bi++) {
   const bl = this.botListings[bi];
@@ -24866,18 +25045,23 @@ class MarketPanel {
   if (l) merged.push({ itemId: l.itemId, count: l.count, price: l.price, owner: "Sen", ts: l.placedAt || 0, mine: true, slotIdx: i });
   }
   merged.sort((a, b) => (a.ts || 0) - (b.ts || 0));
-  const gridX = px + 16, gridY = bodyY + 12;
+  // KATEGORİ FİLTRESİ
+  let mergedShow = merged;
+  if (this.marketCatFilter !== "all") {
+  mergedShow = merged.filter(m => marketItemCategory(m.itemId) === this.marketCatFilter);
+  }
+  const gridX = px + 16, gridY = bodyY + 42;
   const cols = 4, gap = 8;
   const boxW = Math.floor((pw - 32 - gap * (cols - 1)) / cols);
   const boxH = 74;
-  const maxRows = Math.max(1, Math.floor((bodyH - 26) / (boxH + gap)));
+  const maxRows = Math.max(1, Math.floor((bodyH - 26 - 30) / (boxH + gap)));
   const perPage = cols * maxRows;
-  const totalPages = Math.max(1, Math.ceil(merged.length / perPage));
+  const totalPages = Math.max(1, Math.ceil(mergedShow.length / perPage));
   if (this.buyPage >= totalPages) this.buyPage = totalPages - 1;
   const start = this.buyPage * perPage;
-  const end = Math.min(merged.length, start + perPage);
+  const end = Math.min(mergedShow.length, start + perPage);
   for (let i = start; i < end; i++) {
-  const bl = merged[i];
+  const bl = mergedShow[i];
   const gi = i - start;
   const bx2 = gridX + (gi % cols) * (boxW + gap);
   const by2 = gridY + Math.floor(gi / cols) * (boxH + gap);
@@ -24900,9 +25084,9 @@ class MarketPanel {
   ctx.textAlign = "start";
   this._botRows.push({ x: bx2, y: by2, w: boxW, h: boxH, idx: bl.mine ? bl.slotIdx : bl.srcIdx, mine: bl.mine, slotIdx: bl.slotIdx });
   }
-  if (merged.length === 0) {
+  if (mergedShow.length === 0) {
   ctx.fillStyle = "#55607e"; ctx.font = "10px monospace";
-  ctx.fillText("Şu an satışta eşya yok. Biraz bekle, oyuncular eşya koysun.", px + 20, bodyY + 30);
+  ctx.fillText("Şu an satışta eşya yok. Biraz bekle, oyuncular eşya koysun.", px + 20, bodyY + 40);
   } else {
   // Sayfa gezinme
   const navY = gridY + Math.min(maxRows, Math.ceil((end - start) / cols)) * (boxH + gap) + 2;
@@ -25190,6 +25374,12 @@ class MarketPanel {
   if (hit(r.tabBuy)) { this.view = "buy"; this.pending = null; this.buyPending = null; return; }
   if (hit(r.tabMine)) { this.view = "mine"; this.buyPending = null; return; }
   if (this.view === "buy") {
+  // KATEGORİ FİLTRESİ
+  if (this._catBtns) {
+  for (const cb of this._catBtns) {
+  if (hit(cb)) { this.marketCatFilter = cb.id; this.buyPage = 0; return; }
+  }
+  }
   if (this.buyPending) {
   if (hit(r.buyMinusQ)) { marketHoldKey = "buyMinus"; marketHoldTimer = 0; this.adjustBuyQty(-1); this.qtyInputActive = false; return; }
   if (hit(r.buyPlusQ)) { marketHoldKey = "buyPlus"; marketHoldTimer = 0; this.adjustBuyQty(1); this.qtyInputActive = false; return; }
@@ -27572,6 +27762,17 @@ function findNearestMonster() {
   return best;
 }
 
+/* Yay ek özelliğini oka uygular: Ateşli/Zehirli/Buzlu element, Güçlü hasar. */
+function applyBowAffixToArrow(a, inv) {
+  const es = inv && inv.equipped ? inv.equipped.bow : null;
+  const af = es && es._bowAffix;
+  if (!af || !a) return;
+  if (af === "fire") { a.element = "fire"; a.speed = 330; }
+  else if (af === "poison") { a.element = "poison"; a.speed = 300; }
+  else if (af === "ice") { a.element = "ice"; a.speed = 290; }
+  else if (af === "strong") { a.damage = Math.floor(a.damage * 1.25); }
+}
+
 function tryMeleeOrRangedClick() {
   if (playerDead || (player.resurrectShieldTimer > 0)) return false;
   if (player.shootCooldown <= 0 && inventory.countItem("arrow") > 0) {
@@ -27592,8 +27793,9 @@ function tryMeleeOrRangedClick() {
   }
   const rapid = player.archerRapidFireTimer > 0;
   const powerModeOn = player.powerModeTimer > 0;
-  // GÜÇ MODU: 2x atış hızı (normal vuruş %100 kritik + hasar bonusu applyOutgoingPlayerDamage içinde)
-  player.shootCooldown = (powerModeOn ? 0.35 : (rapid ? 0.45 : 0.7)) * player.getAttackSpeedMultiplier();
+  const bowIsFast = !!(inventory.equipped && inventory.equipped.bow && inventory.equipped.bow._bowAffix === "fast");
+  // GÜÇ MODU: 2x atış hızı / HIZLI yay: daha hızlı atış
+  player.shootCooldown = (powerModeOn ? 0.35 : (bowIsFast ? 0.5 : (rapid ? 0.45 : 0.7))) * player.getAttackSpeedMultiplier();
   player.shootAnim = 0.25;
   const sx = player.centerX + Math.cos(player.angle) * 14;
   const sy = player.centerY + Math.sin(player.angle) * 14;
@@ -27602,6 +27804,8 @@ function tryMeleeOrRangedClick() {
   na.furyShot = player.rageBurstTimer > 0;
   // GÜÇ MODU hasarı getRangedDamage içinde 2x olarak uygulanır
   na.damage = applyOutgoingPlayerDamage(player.getRangedDamage(), player, inventory, {});
+  // YAY EK ÖZELLİĞİ (Ateşli/Zehirli/Buzlu/Güçlü)
+  applyBowAffixToArrow(na, inventory);
   arrows.push(na);
   // POWER: normal ok atışı güç doldurur (10 ok = tam) — GÜÇ MODU sırasında dolmaz
   if (!(player.powerModeTimer > 0)) {
@@ -33471,6 +33675,8 @@ function gameLoop(now) {
   if (pickupMsgTimer > 0) pickupMsgTimer -= dt;
   if (adminItemsAddFlash > 0) adminItemsAddFlash -= dt;
   if (adminMonstersSpawnFlash > 0) adminMonstersSpawnFlash -= dt;
+  if (arrowGainTimer > 0) { arrowGainTimer -= dt; if (arrowGainTimer <= 0) { arrowGainTimer = 0; arrowGainAccum = 0; } }
+  if (goldGainTimer > 0) { goldGainTimer -= dt; if (goldGainTimer <= 0) { goldGainTimer = 0; goldGainAccum = 0; } }
   if (questNotifyTimer > 0) questNotifyTimer -= dt;
   if (lootNotifyItems.length > 0) {
   for (var li = lootNotifyItems.length - 1; li >= 0; li--) {
@@ -34037,10 +34243,11 @@ if (bossArenaState.active) {
   // HARDCODE MOD: ölünce altın + eşyanın bir kısmı yere düşer (geri toplanabilir)
   hardcoreDropSummary = hardcoreDropOnDeath();
   // Ölüm özeti: seni kim öldürdü + son hasar + kaybedilen eşyalar + altın
+  const lastMon = lastHitMonsterInfo || (player && player._lastMonsterHit) || null;
   if (lastHitBotInfo) {
   deathSummary = { killer: lastHitBotInfo.name, killerType: "bot", level: lastHitBotInfo.level, damage: lastDamageTaken, stolen: deathStolenItems.slice(), goldLost: deathGoldLost };
-  } else if (lastHitMonsterInfo) {
-  deathSummary = { killer: lastHitMonsterInfo.name, killerType: "monster", level: lastHitMonsterInfo.level, damage: lastDamageTaken, stolen: deathStolenItems.slice(), goldLost: deathGoldLost };
+  } else if (lastMon) {
+  deathSummary = { killer: lastMon.name, killerType: "monster", level: lastMon.level, damage: lastDamageTaken, stolen: deathStolenItems.slice(), goldLost: deathGoldLost };
   } else {
   deathSummary = { killer: "Bilinmeyen", killerType: "other", level: null, damage: lastDamageTaken, stolen: deathStolenItems.slice(), goldLost: deathGoldLost };
   }
@@ -34916,6 +35123,22 @@ if (bossArenaState.active) {
   };
   drawInfo2("Ok:" + arrowCnt, "#c0d8f0");
   drawInfo2("\u26C1:" + goldCnt, "#f0d050");
+  // KAZANIM GÖSTERGELERİ: ok/altın artışı (+N) — bilginin HEMEN üstünde, 3 sn
+  const gainY = hpBarTop - 22;
+  if (arrowGainTimer > 0 && arrowGainAccum > 0) {
+  ctx.globalAlpha = Math.min(1, arrowGainTimer / 0.5);
+  ctx.fillStyle = "#50ff80";
+  ctx.font = "bold 11px monospace";
+  ctx.fillText("+ " + arrowGainAccum, 4 + ctx.measureText("Ok:").width, gainY);
+  ctx.globalAlpha = 1;
+  }
+  if (goldGainTimer > 0 && goldGainAccum > 0) {
+  ctx.globalAlpha = Math.min(1, goldGainTimer / 0.5);
+  ctx.fillStyle = "#f0d050";
+  ctx.font = "bold 11px monospace";
+  ctx.fillText("+ " + goldGainAccum, 72, gainY);
+  ctx.globalAlpha = 1;
+  }
   ctx.restore();
   }
 
