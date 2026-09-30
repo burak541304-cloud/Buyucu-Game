@@ -605,6 +605,7 @@ function mobileButtonsLayout(cw, ch) {
   { key: "KeyK", kind: "menu", label: function(){return "\u2728";}, r: topBtnR },
   { key: "KeyF", kind: "menu", label: function(){return "\uD83C\uDFE9";}, r: topBtnR },
   { key: "KeyJ", kind: "menu", label: function(){return "\uD83D\uDC64";}, r: topBtnR },
+  { key: "playerHistory", kind: "menu", label: function(){return "\uD83D\uDCDC";}, r: topBtnR },
   ];
   for (var bi = 0; bi < topBtns.length; bi++) {
   var tb = topBtns[bi];
@@ -660,6 +661,46 @@ function pulseJust(code) {
 function getXpToNext(level) {
   if (level < 1) return 10;
   return Math.floor(8 + level * 5 + level * level * 0.3);
+}
+
+/* ── PRESTİJ (YENİDEN DOĞUŞ) ─────────────────────────────────
+   Seviye 50'ye ulaşınca prestij yap: seviye/XP sıfırlanır (eşyalar kalır),
+   kalıcı bonus kazanırsın: +%10 hasar, +%10 altın, +%10 XP (her prestijde artar). */
+const PRESTIGE_MIN_LEVEL = 50;
+function prestigeBonusMult() {
+  const p = (typeof player !== "undefined" && player) ? (player.prestigeLevel || 0) : 0;
+  return 1 + p * 0.10;
+}
+function canPrestige() {
+  return !!(typeof player !== "undefined" && player && player.level >= PRESTIGE_MIN_LEVEL);
+}
+function performPrestige() {
+  if (!canPrestige()) return { ok: false, msg: "Prestij için Seviye " + PRESTIGE_MIN_LEVEL + " gerekli." };
+  if (typeof player === "undefined" || !player) return { ok: false, msg: "Hata!" };
+  player.prestigeLevel = (player.prestigeLevel || 0) + 1;
+  player.level = 1;
+  player.xp = 0;
+  player.xpToNext = getXpToNext(1);
+  player.statPoints = 0;
+  player._bonusDmg = 0;
+  player._bonusSpd = 0;
+  player._bonusHp = 0;
+  player._bonusMana = 0;
+  player._bonusRegen = 0;
+  player._bonusCrit = 0;
+  // Zone sıfırlanır (güçlü canavarların olduğu dünya baştan)
+  if (typeof gameZone === "number") gameZone = 0;
+  player.baseMaxHp = 20;
+  player.baseMaxMana = 10;
+  player.hp = player.maxHp;
+  player.mana = player.maxMana;
+  player._pendingFullHeal = true;
+  player.applyEquipmentBonus(inventory);
+  pickupMsgText = "⭐ PRESTİJ! " + player.prestigeLevel + ". doğuş — +%10 hasar/altın/XP (kalıcı)";
+  pickupMsgTimer = 3;
+  gameAudio.playLevelUp();
+  if (typeof addScreenShake === "function") addScreenShake(2);
+  return { ok: true, msg: "Prestij tamamlandı!" };
 }
 
 function getMovementVector() {
@@ -838,6 +879,16 @@ const ITEMS = {
   chest_epic:  { id: "chest_epic",  name: "Orman Kalbi",  stackable: false, rarity: "common",  equipSlot: "chest",  stats: { maxHp: 40, maxMana: 15 }, advanced: { defense: 12 },
   desc: "Eski ağaç ruhunun gücü.", buyPrice: 0, sellPrice: 150 },
   chest_legendary:{ id: "chest_legendary",name: "Gölge Pelerini",  stackable: false, rarity: "legendary", equipSlot: "chest",  minLevel: 70, stats: { str: 8, agi: 5, wis: 4, maxHp: 60, maxMana: 25 }, advanced: { defense: 25 }, desc: "Karanlığın efsanevi kıyafeti.", buyPrice: 0, sellPrice: 500 },
+  // ZIRH 1/2/3 slotlarına özel efsanevi zırhlar
+  chest_guardian_legendary: { id: "chest_guardian_legendary", name: "Efsanevi Koruyucu Zırhı", stackable: false, rarity: "legendary", equipSlot: "chest", minLevel: 56,
+  stats: { str: 10, agi: 2, wis: 2, maxHp: 55, maxMana: 10 }, advanced: { defense: 30 },
+  desc: "Zırh 1 slotuna takılır: yüksek savunma, koruyucu zırh.", buyPrice: 0, sellPrice: 520 },
+  chest_warlord_legendary: { id: "chest_warlord_legendary", name: "Efsanevi Savaş Lordu Zırhı", stackable: false, rarity: "legendary", equipSlot: "chest", minLevel: 58,
+  stats: { str: 14, agi: 3, wis: 0, maxHp: 70, maxMana: 0 }, advanced: { defense: 26, attackPower: 18 },
+  desc: "Zırh 2 slotuna takılır: güç + savunma.", buyPrice: 0, sellPrice: 560 },
+  chest_eternal_legendary: { id: "chest_eternal_legendary", name: "Efsanevi Ebedi Zırh", stackable: false, rarity: "legendary", equipSlot: "chest", minLevel: 60,
+  stats: { str: 8, agi: 6, wis: 5, maxHp: 80, maxMana: 20 }, advanced: { defense: 28 },
+  desc: "Zırh 3 slotuna takılır: dayanıklılık + büyü direnci.", buyPrice: 0, sellPrice: 600 },
   boots_swift:  { id: "boots_swift",  name: "Hızlı Botlar",  stackable: false, rarity: "common",  equipSlot: "feet",  stats: { maxHp: 0, maxMana: 0 }, advanced: { defense: 0 }, desc: "Hareket hızını artırır.", buyPrice: 0, sellPrice: 40 },
   boots_epic:  { id: "boots_epic",  name: "Rüzgar Adımları",  stackable: false, rarity: "common",  equipSlot: "feet",  stats: { maxHp: 10, maxMana: 8 }, advanced: { defense: 0 }, desc: "Hafif ve büyülü.", buyPrice: 0, sellPrice: 110 },
   waist_cloth:  { id: "waist_cloth",  name: "Oduncu Pantolonu", stackable: false, rarity: "common", equipSlot: "waist", minLevel: 0,
@@ -1631,18 +1682,37 @@ function decreaseItemDurability(stack) {
   stack.durability = Math.max(0, stack.durability - 1);
   if (stack.durability <= 0) {
   var def = ITEMS[stack.id];
-  pickupMsgText = (def ? def.name : stack.id) + " kırıldı! Tamirci'ye götür!";
+  pickupMsgText = (def ? def.name : stack.id) + " kırıldı! Envantere döndü — Tamir Et ile tamirle.";
   pickupMsgTimer = 2.5;
-  // Equipped slot item kırılınca kuşanmayı kaldır
+  // Equipped slot item kırılınca kuşanmayı kaldır VE eşyayı envantere geri koy
   if (typeof inventory !== "undefined" && inventory && inventory.equipped) {
   for (var sk3 in inventory.equipped) {
   if (inventory.equipped[sk3] === stack) {
   inventory.equipped[sk3] = null;
+  // KIRIK EŞYA ENVANTERE GERİ DÖNER (seviye/yıldız/takılı taşlar korunur, tamir edilebilir)
+  const upB = getStackUpgradeLv(stack);
+  const leftB = inventory.addItem(stack.id, 1, upB, stack);
+  if (leftB === 0) {
+  // KIRIK olarak geri dönsün: yeni eklenen yığının dayanıklılığını 0 yap
+  const mxB = getItemDurabilityMax(def);
+  outerB: for (const cc of [inventory.slots, inventory.hotbar]) {
+  for (let si2 = 0; si2 < cc.length; si2++) {
+  const sIt = cc[si2];
+  if (sIt && sIt.id === stack.id && sIt.durability === mxB) { sIt.durability = 0; break outerB; }
+  }
+  }
+  } else {
+  // Envanter doluysa yere düşer (kaybolmaz)
+  const tcB = Math.floor(player.centerX / TILE_SIZE), trB = Math.floor(player.centerY / TILE_SIZE);
+  const wiB = new WorldItem(tcB, trB, stack.id, 1, false);
+  if (upB > 0) wiB.upgrade = upB;
+  worldItems.push(wiB);
+  }
+  if (typeof player !== "undefined" && player && player.applyEquipmentBonus) player.applyEquipmentBonus(inventory);
   break;
   }
   }
   }
-  // count sıfırlanmaz — eşya envanterde kalır, tamir edilebilir
   }
 }
 
@@ -1948,7 +2018,8 @@ function getEffectiveItemStatsMerged(def, upgradeLv, starLv) {
   if (typeof advanced[k] === "number") advanced[k] = Math.round(advanced[k] * starMul);
   }
   }
-  if (def.equipSlot && (advanced.attackPower == null)) {
+  // Saldırı gücü yalnızca YAY (silah) için hesaplanır — zırh/pelerin/takı hasar zeminine katkı YAPMAZ
+  if (def.equipSlot === "bow" && (advanced.attackPower == null)) {
   const melee = Math.max(0, stats.meleeDmg || 0);
   const ranged = Math.max(0, stats.rangedDmg || 0);
   const str = Math.max(0, stats.str || 0);
@@ -1957,8 +2028,7 @@ function getEffectiveItemStatsMerged(def, upgradeLv, starLv) {
   const hp = Math.max(0, stats.maxHp || 0);
   const mp = Math.max(0, stats.maxMana || 0);
   let ap = melee * 6 + ranged * 6 + str * 2.1 + agi * 1.7 + wis * 1.35 + hp / 14 + mp / 8;
-  if (def.equipSlot === "bow") ap *= 1.22;
-  else ap *= 0.7;
+  ap *= 1.22;
   // Rarity bonus - legendary always highest, then epic, then rare
   const rarityBonus = def.rarity === "legendary" ? 1.0 : def.rarity === "epic" ? 0.5 : def.rarity === "rare" ? 0.15 : 0;
   ap *= (1 + rarityBonus);
@@ -1988,6 +2058,18 @@ function sumEquipmentEffective(inv) {
 function getEquipmentAttackPowerTotal(inv) {
   const s = sumEquipmentEffective(inv);
   return Math.max(0, Math.floor((s.advanced && s.advanced.attackPower) || 0));
+}
+
+/* Bir ekipman slotunun hareket hızına toplam agi katkısı (ham agi + pctAgi bonusu).
+   Hız hesabında YALNIZCA çizme (feet) kullanılır — diğer eşyalar hızı etkilemez. */
+function getSlotSpeedAgi(inv, slotKey) {
+  const es = inv && inv.equipped ? inv.equipped[slotKey] : null;
+  if (!es || !es.id || !ITEMS[es.id]) return 0;
+  const m = getEffectiveItemStatsMerged(ITEMS[es.id], getStackUpgradeLv(es), es.star || 0);
+  let a = (m.stats && m.stats.agi) || 0;
+  const pctAgi = (m.advanced && m.advanced.pctAgi) || 0;
+  if (pctAgi > 0 && typeof player !== "undefined" && player) a += Math.floor((player.agi || 0) * pctAgi / 100);
+  return a;
 }
 
 /* ── SAVAŞ GÜCÜ ──────────────────────────────────────────────
@@ -2511,6 +2593,23 @@ function drawItemIconFancy(ctx, itemId, x, y, size, opts) {
   ctx.fillText(starStr, x + size / 2, y + size * 0.28);
   ctx.textAlign = "left";
   }
+  // TAŞ SEVİYESİ rozeti (Sv1-10)
+  if (opts.stackRef && typeof isStoneId === "function" && isStoneId(opts.stackRef.id)) {
+  const slv = getStoneLevel(opts.stackRef);
+  const bsz = Math.max(8, Math.floor(size * 0.34));
+  ctx.fillStyle = "rgba(10,14,30,0.85)";
+  roundRect(ctx, x + size - bsz, y + size - bsz, bsz, bsz, 3);
+  ctx.fill();
+  ctx.strokeStyle = "rgba(200,180,255,0.7)";
+  ctx.lineWidth = 1;
+  roundRect(ctx, x + size - bsz, y + size - bsz, bsz, bsz, 3);
+  ctx.stroke();
+  ctx.fillStyle = "#e0d0ff";
+  ctx.font = "bold " + Math.max(6, bsz * 0.6) + "px monospace";
+  ctx.textAlign = "center";
+  ctx.fillText("S" + slv, x + size - bsz / 2, y + size - bsz / 2 + Math.max(2, bsz * 0.2));
+  ctx.textAlign = "left";
+  }
 }
 
 function collectItemStatParts(def) {
@@ -2715,6 +2814,22 @@ function buildItemTooltipLayout(ctx, def, itemId, canvasW, mobile, metaOpts, tra
   const lblM = { rangedDmg: "Saldırı", meleeDmg: "Yakın Saldırı", defense: "Defans", critPct: "Kritik Şans", lifesteal: "Can Çalma", maxHp: "Max Can", maxMana: "Max Mana", spd: "Hız" };
   for (const sk of Object.keys(sVals)) {
   measurePush(fonts.stat, "#b090ff", (lblM[sk] || sk) + ": +" + sVals[sk] + (sk === "critPct" || sk === "lifesteal" ? "%" : ""));
+  }
+  }
+  // TAKILI TAŞLAR: eşyaya takılı taşların bonusları (oyuncuya eklediği güç)
+  if (metaOpts.stackRef && metaOpts.stackRef._sockets && metaOpts.stackRef._sockets.length && !def.stoneStats) {
+  const eqSocks = getItemSockets(metaOpts.stackRef);
+  if (eqSocks.length) {
+  measurePush(fonts.rare, "#a080ff", "--- Takılı Taşlar (" + eqSocks.length + ") ---");
+  const lblM2 = { rangedDmg: "Saldırı", meleeDmg: "Yakın Saldırı", defense: "Defans", critPct: "Kritik Şans", lifesteal: "Can Çalma", maxHp: "Max Can", maxMana: "Max Mana", spd: "Hız" };
+  for (const so of eqSocks) {
+  const sd2 = ITEMS[so.id];
+  if (!sd2 || !sd2.stoneStats) continue;
+  const vals2 = getStoneStatVal(sd2, so.lv || 1);
+  for (const k of Object.keys(vals2)) {
+  measurePush(fonts.stat, "#b090ff", (lblM2[k] || k) + ": +" + vals2[k] + (k === "critPct" || k === "lifesteal" ? "%" : ""));
+  }
+  }
   }
   }
   const meta = collectItemMetaLines(def, itemId, metaOpts);
@@ -3127,6 +3242,27 @@ function drawItemIcon(ctx, itemId, x, y, size, opts) {
   ctx.beginPath(); ctx.arc(cx, cy+s*0.1, s*0.22, Math.PI*0.1, Math.PI*0.55); ctx.stroke();
   break;
   }
+  case "dirilme_iksiri": {
+  // DİRİLME İKSİRİ: altın amber şişe + beyaz haç + ışıma
+  ctx.fillStyle = "rgba(255,215,120,0.28)";
+  ctx.beginPath(); ctx.arc(cx, cy + s*0.1, s*0.36, 0, Math.PI*2); ctx.fill();
+  const dg2 = ctx.createRadialGradient(cx - s*0.06, cy + s*0.05, 0, cx, cy + s*0.1, s*0.28);
+  dg2.addColorStop(0, "#ffe9a0"); dg2.addColorStop(0.5, "#f0b030"); dg2.addColorStop(1, "#804010");
+  ctx.fillStyle = dg2;
+  ctx.beginPath(); ctx.arc(cx, cy + s*0.1, s*0.22, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = "rgba(255,255,255,0.5)";
+  ctx.beginPath(); ctx.arc(cx - s*0.07, cy + s*0.02, s*0.08, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = "#c8a060"; ctx.fillRect(cx - s*0.06, y + s*0.12, s*0.12, s*0.2);
+  ctx.fillStyle = "#a08040"; ctx.fillRect(cx - s*0.1, y + s*0.1, s*0.2, s*0.06);
+  // Beyaz haç (dirilme sembolü)
+  ctx.strokeStyle = "#ffffff"; ctx.lineWidth = Math.max(1.5, s*0.055); ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(cx - s*0.08, cy + s*0.1); ctx.lineTo(cx + s*0.08, cy + s*0.1);
+  ctx.moveTo(cx, cy + s*0.02); ctx.lineTo(cx, cy + s*0.18);
+  ctx.stroke();
+  ctx.lineCap = "butt";
+  break;
+  }
   case "seed":
   ctx.fillStyle = "#8a6a30";
   ctx.beginPath(); ctx.arc(cx-s*0.12, cy+s*0.05, s*0.1, 0, Math.PI*2); ctx.fill();
@@ -3411,6 +3547,64 @@ function drawItemIcon(ctx, itemId, x, y, size, opts) {
   ctx.textAlign = "start"; ctx.textBaseline = "alphabetic";
   break;
   }
+  case "stone_saldiri":
+  case "stone_defans":
+  case "stone_kritik":
+  case "stone_can":
+  case "stone_canmax":
+  case "stone_mana":
+  case "stone_hiz": {
+  // ÖZEL TAŞLAR: altıgen kesimli değerli taş (yuvarlak eski taşlardan ayrışır)
+  var gemStone = (c1, c2, c3, sym) => {
+  ctx.save();
+  const gpts = [];
+  for (let a = 0; a < 6; a++) {
+  const ang = Math.PI / 6 + (a * Math.PI) / 3;
+  gpts.push([cx + Math.cos(ang) * s * 0.38, cy + Math.sin(ang) * s * 0.38]);
+  }
+  const gg2 = ctx.createLinearGradient(cx - s * 0.3, cy - s * 0.3, cx + s * 0.3, cy + s * 0.3);
+  gg2.addColorStop(0, c1); gg2.addColorStop(0.5, c2); gg2.addColorStop(1, c3);
+  ctx.fillStyle = gg2;
+  ctx.beginPath();
+  ctx.moveTo(gpts[0][0], gpts[0][1]);
+  for (let p = 1; p < 6; p++) ctx.lineTo(gpts[p][0], gpts[p][1]);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = "rgba(255,255,255,0.6)";
+  ctx.lineWidth = 1.2;
+  ctx.stroke();
+  // İç faset çizgileri (elmas parlaması)
+  ctx.strokeStyle = "rgba(255,255,255,0.35)";
+  ctx.lineWidth = 0.8;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - s * 0.38);
+  ctx.lineTo(cx + s * 0.2, cy + s * 0.12);
+  ctx.lineTo(cx, cy + s * 0.38);
+  ctx.lineTo(cx - s * 0.2, cy + s * 0.12);
+  ctx.closePath();
+  ctx.stroke();
+  // Parlama
+  ctx.fillStyle = "rgba(255,255,255,0.45)";
+  ctx.beginPath();
+  ctx.ellipse(cx - s * 0.1, cy - s * 0.14, s * 0.09, s * 0.05, -0.4, 0, Math.PI * 2);
+  ctx.fill();
+  // Sembol
+  ctx.fillStyle = "#fff";
+  ctx.font = "bold " + (s * 0.24) + "px monospace";
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.fillText(sym, cx, cy + 1);
+  ctx.textAlign = "start"; ctx.textBaseline = "alphabetic";
+  ctx.restore();
+  };
+  if (itemId === "stone_saldiri") gemStone("#ff9090", "#e04040", "#7a0a0a", "\u2694");
+  else if (itemId === "stone_defans") gemStone("#98c8f0", "#4070c0", "#0e3060", "\u25C6");
+  else if (itemId === "stone_kritik") gemStone("#ff90e0", "#d040a0", "#680060", "\u2726");
+  else if (itemId === "stone_can") gemStone("#ff8080", "#c03030", "#640808", "\u2765");
+  else if (itemId === "stone_canmax") gemStone("#a0ffb0", "#40c060", "#0a5c1e", "\u2605");
+  else if (itemId === "stone_mana") gemStone("#88b8ff", "#3050d0", "#0a1060", "\u263E");
+  else gemStone("#d8a8ff", "#9040d0", "#3c1060", "\u00BB");
+  break;
+  }
   case "arrow":
   ctx.save(); ctx.translate(cx, cy); ctx.rotate(-0.6);
   ctx.fillStyle = "#8B6B3D"; ctx.fillRect(-s*0.03, -s*0.35, s*0.06, s*0.6);
@@ -3679,6 +3873,9 @@ function drawItemIcon(ctx, itemId, x, y, size, opts) {
   case "chest_steel":
   case "chest_epic":
   case "chest_legendary":
+  case "chest_guardian_legendary":
+  case "chest_warlord_legendary":
+  case "chest_eternal_legendary":
   case "chest_chain":
   case "chest_mithril": {
   const isLegendary = itemId.includes("legendary");
@@ -4640,7 +4837,7 @@ const PLAYER_SKILL_DEFS = [
   { id: "poison_arrow_skill", name: "Zehirli Ok", minLevel: 10, gold: 0, type: "active", icon: "\u2620", mana: 4, cooldown: 10, desc: "Zehirli ok atar: ilk vuruş 1.5x hasar + 0.5 sn'de bir 3 hasar (5 kez zehirler). (Buton 2 - basılı tut)" },
   { id: "hizli_ates", name: "Hızlı Ateş", minLevel: 16, gold: 0, type: "active", icon: "\u26A1", mana: 8, cooldown: 25, desc: "5sn boyunca 3x atış hızı (Buton 3 - kısa bas)" },
   { id: "gazap", name: "Okçu'nun Gazabı", minLevel: 20, gold: 0, type: "active", icon: "\uD83D\uDD25", mana: 15, cooldown: 60, desc: "10sn boyunca 2x hasar, %100 kritik (Buton 3 - basılı tut)" },
-  { id: "guc_oku", name: "Güç Oku", minLevel: 15, gold: 0, type: "active", icon: "\u26A1", mana: 10, cooldown: 30, desc: "Tek güçlü ok fırlatırsın: %100 kritik, 10x hasar. 30 sn'de bir dolabilir." },
+  { id: "guc_oku", name: "Güç Oku", minLevel: 15, gold: 0, type: "active", icon: "\uD83D\uDCA5", mana: 10, cooldown: 30, desc: "Tek güçlü ok fırlatırsın: %100 kritik, 10x hasar. 30 sn'de bir dolabilir." },
   { id: "besli_ok", name: "5'li Ok", minLevel: 12, gold: 0, type: "active", icon: "5\u2191", mana: 6, cooldown: 8, desc: "5 ok yelpaze şeklinde, her biri %50 hasar. Aynı canavara çoğu vurursa çok daha fazla hasar (8 sn bekleme)." },
 ];
 
@@ -4848,6 +5045,13 @@ close() { this.open = false; equipInfoPanel.open = false; statHoldKey = null; st
   if (this._in(mx, my, L.closeR)) { this.close(); return true; }
   // Ekipman bonusları butonu
   if (this._equipInfoBtn && this._in(mx, my, this._equipInfoBtn)) { equipInfoPanel.open = true; return true; }
+  // PRESTİJ butonu
+  if (this._prestigeBtn && this._in(mx, my, this._prestigeBtn)) {
+  const resPre = performPrestige();
+  pickupMsgText = resPre.msg;
+  pickupMsgTimer = 2.5;
+  return true;
+  }
   // Stat dağıtım butonları
   if (player.statPoints > 0 && this._statBtns) {
   for (var sbi = 0; sbi < this._statBtns.length; sbi++) {
@@ -4930,7 +5134,6 @@ close() { this.open = false; equipInfoPanel.open = false; statHoldKey = null; st
   const leftX = px + L.pad;
   const statDefs = [
   { label: "Hasar", key: "_bonusDmg", val: player._bonusDmg || 0, color: "#60d0ff" },
-  { label: "Hız", key: "_bonusSpd", val: player._bonusSpd || 0, color: "#60ffff" },
   { label: "Can", key: "_bonusHp", val: player._bonusHp || 0, color: "#ff8080" },
   { label: "Mana", key: "_bonusMana", val: player._bonusMana || 0, color: "#6090e0" },
   { label: "Yenileme", key: "_bonusRegen", val: player._bonusRegen || 0, color: "#80d080" },
@@ -4964,6 +5167,22 @@ close() { this.open = false; equipInfoPanel.open = false; statHoldKey = null; st
   var by = statStartY + 4 + idx * statRowH - 4;
   return { key: sd.key, x: bx, y: by, w: 18, h: 18 };
   });
+  // PRESTİJ (Yeniden Doğuş) butonu — stat dağıtımının altında
+  const prestY = statStartY + 4 + statDefs.length * statRowH + 6;
+  ctx.fillStyle = "#b090d0"; ctx.font = "bold 9px monospace";
+  ctx.fillText("⭐ Prestij: " + (player.prestigeLevel || 0) + " — her biri +%10 hasar/altın/XP", leftX, prestY - 4);
+  const prestBtn = { x: leftX, y: prestY + 2, w: leftW, h: 30 };
+  this._prestigeBtn = prestBtn;
+  const canPre = canPrestige();
+  ctx.fillStyle = canPre ? "rgba(120,50,120,0.95)" : "rgba(40,40,52,0.7)";
+  ctx.strokeStyle = canPre ? "#d080ff" : "#505060";
+  roundRect(ctx, prestBtn.x, prestBtn.y, prestBtn.w, prestBtn.h, 6); ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = canPre ? "#f0dcff" : "#707080";
+  ctx.font = "bold 10px monospace";
+  ctx.textAlign = "center";
+  ctx.fillText(canPre ? "⭐ PRESTİJ YAP (Lv" + PRESTIGE_MIN_LEVEL + "+)" : "Prestij için Lv" + PRESTIGE_MIN_LEVEL, prestBtn.x + prestBtn.w / 2, prestBtn.y + 20);
+  ctx.textAlign = "left";
   // â”€â”€ Section 3: SavaÅŸ Bilgisi (saÄŸ sÃ¼tun) â”€â”€
   const rightW = (L.pw / 2) - L.pad - 4;
   const rightX = midX + 6;
@@ -5175,6 +5394,13 @@ const settingsPanel = {
   if (mx < L.px || mx > L.px + L.pw || my < L.py || my > L.py + L.ph) { this.close(); return true; }
   var cx = L.px + L.pw - 28, cy = L.py + 8;
   if (mx >= cx && mx <= cx + 20 && my >= cy && my <= cy + 20) { this.close(); return true; }
+  // HARDCODE MOD anahtarı
+  if (this._hardcoreBtn && mx >= this._hardcoreBtn.x && mx <= this._hardcoreBtn.x + this._hardcoreBtn.w && my >= this._hardcoreBtn.y && my <= this._hardcoreBtn.y + this._hardcoreBtn.h) {
+  hardcoreMode = !hardcoreMode;
+  pickupMsgText = hardcoreMode ? "☠ Hardcore Mod AÇIK — ölünce eşya/altın düşer!" : "Hardcore Mod KAPALI";
+  pickupMsgTimer = 2;
+  return true;
+  }
   return true;
   },
   render(ctx, cw, ch) {
@@ -5190,7 +5416,18 @@ const settingsPanel = {
   ctx.fillStyle = "#8090b0"; ctx.font = "12px monospace";
   var y = L.py + 56;
   ctx.fillText("Ses Efektleri: [ESC] ile kapat/aç", L.px + 20, y); y += 24;
-  ctx.fillText("Müzik: [ESC] ile kapat/aç", L.px + 20, y); y += 24;
+  ctx.fillText("Müzik: [ESC] ile kapat/aç", L.px + 20, y); y += 26;
+  // HARDCODE MOD anahtarı
+  ctx.fillStyle = "#8090b0"; ctx.font = "12px monospace";
+  ctx.fillText("Hardcore Mod (ölünce altın + eşya düşer):", L.px + 20, y); y += 20;
+  this._hardcoreBtn = { x: L.px + 20, y, w: 150, h: 28 };
+  ctx.fillStyle = hardcoreMode ? "rgba(160,40,40,0.95)" : "rgba(40,50,70,0.9)";
+  roundRect(ctx, this._hardcoreBtn.x, this._hardcoreBtn.y, this._hardcoreBtn.w, this._hardcoreBtn.h, 5); ctx.fill();
+  ctx.strokeStyle = hardcoreMode ? "#ff7060" : "#8090b0"; ctx.lineWidth = 1;
+  roundRect(ctx, this._hardcoreBtn.x, this._hardcoreBtn.y, this._hardcoreBtn.w, this._hardcoreBtn.h, 5); ctx.stroke();
+  ctx.fillStyle = hardcoreMode ? "#ffe0d8" : "#c0c8e0"; ctx.font = "bold 11px monospace";
+  ctx.fillText(hardcoreMode ? "☠ AÇIK" : "KAPALI", this._hardcoreBtn.x + 12, this._hardcoreBtn.y + 19);
+  y += 40;
   ctx.fillText("Çıkış:", L.px + 20, y); y += 22;
   ctx.fillStyle = "rgba(60,50,50,0.9)"; roundRect(ctx, L.px + 20, y, 140, 30, 5); ctx.fill();
   ctx.fillStyle = "#ddd"; ctx.font = "bold 11px monospace";
@@ -5508,6 +5745,121 @@ let inventoryInspectScrollTouchId = -1;
 let inventoryInspectScrollLastY = 0;
 let inventoryInspectScrollRect = null;
 let inventoryInspectSocketRects = [];
+let stoneSocketPicker = null; // taş takılacak eşya seçici listesi
+
+/* ── OYUNCU GEÇMİŞİ (gelen eşya / XP / altın / seviye / öldürme) ── */
+let playerHistory = [];
+let playerHistoryOpen = false;
+let playerHistoryScroll = 0;
+const PLAYER_HISTORY_MAX = 200;
+function pushHistory(text, color, cat) {
+  if (typeof playerHistory === "undefined") return;
+  playerHistory.push({ t: Date.now(), text, color: color || "#c0c8e0", cat: cat || "" });
+  if (playerHistory.length > PLAYER_HISTORY_MAX) playerHistory.splice(0, playerHistory.length - PLAYER_HISTORY_MAX);
+  if (playerHistoryScroll > 0) playerHistoryScroll++;
+}
+function clearPlayerHistory() {
+  playerHistory = [];
+  playerHistoryScroll = 0;
+}
+
+function playerHistoryLayout(cw, ch) {
+  const b = uiModalBounds(cw, ch);
+  const pw = Math.min(400, b.maxW);
+  const ph = Math.min(cw > ch * 1.02 ? 460 : 420, b.maxH);
+  const px = Math.floor((cw - pw) / 2);
+  const py = Math.max(b.top, Math.min(ch - ph - b.bottom, Math.floor((ch - ph) / 2)));
+  return { px, py, pw, ph };
+}
+
+function renderPlayerHistory(ctx, cw, ch) {
+  if (!playerHistoryOpen) return;
+  const L = playerHistoryLayout(cw, ch);
+  ctx.fillStyle = "rgba(0,0,0,0.6)";
+  ctx.fillRect(0, 0, cw, ch);
+  ctx.fillStyle = "rgba(14,16,36,0.98)";
+  ctx.strokeStyle = "#6f84c8";
+  ctx.lineWidth = 2;
+  roundRect(ctx, L.px, L.py, L.pw, L.ph, 12);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = "#ffd060";
+  ctx.font = "bold 14px monospace";
+  ctx.fillText("📜 OYUNCU GEÇMİŞİ", L.px + 12, L.py + 22);
+  ctx.fillStyle = "#8090b0";
+  ctx.font = "9px monospace";
+  ctx.fillText("Gelen eşyalar, XP, altın, seviye ve öldürmeler", L.px + 12, L.py + 36);
+  // Kapat ✕
+  ctx.fillStyle = "rgba(60,55,70,0.92)";
+  ctx.strokeStyle = "#807090";
+  roundRect(ctx, L.px + L.pw - 34, L.py + 8, 24, 22, 6);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = "#ddd";
+  ctx.font = "bold 12px monospace";
+  ctx.fillText("✕", L.px + L.pw - 34 + 8, L.py + 8 + 16);
+  // Liste (en yeni en üstte)
+  const lineH = 22;
+  const listTop = L.py + 46;
+  const listBot = L.py + L.ph - 12;
+  const avail = listBot - listTop;
+  const items = playerHistory.slice().reverse();
+  const maxScroll = Math.max(0, items.length * lineH - avail);
+  playerHistoryScroll = Math.max(0, Math.min(playerHistoryScroll, maxScroll));
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(L.px + 8, listTop - 4, L.pw - 16, avail + 8);
+  ctx.clip();
+  for (let i = 0; i < items.length; i++) {
+  const rowY = listTop + i * lineH - playerHistoryScroll;
+  if (rowY > listBot + lineH || rowY + lineH < listTop) continue;
+  const it = items[i];
+  // Zaman
+  const d = new Date(it.t);
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  const ss = String(d.getSeconds()).padStart(2, "0");
+  ctx.fillStyle = "#5a6888";
+  ctx.font = "9px monospace";
+  ctx.fillText(hh + ":" + mm + ":" + ss, L.px + 12, rowY + 10);
+  // Kategori simgesi / metin
+  ctx.fillStyle = it.color || "#c0c8e0";
+  ctx.font = "11px monospace";
+  const txt = it.text.length > 44 ? it.text.slice(0, 44) + "…" : it.text;
+  ctx.fillText(txt, L.px + 64, rowY + 10);
+  ctx.strokeStyle = "rgba(80,90,130,0.25)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(L.px + 10, rowY + 16);
+  ctx.lineTo(L.px + L.pw - 10, rowY + 16);
+  ctx.stroke();
+  }
+  ctx.restore();
+  if (maxScroll > 0) {
+  ctx.fillStyle = "rgba(180,195,230," + (playerHistoryScroll > 0 ? 0.55 : 0.2) + ")";
+  ctx.font = "bold 11px monospace";
+  ctx.fillText("▲", L.px + L.pw - 20, listTop);
+  ctx.fillStyle = "rgba(180,195,230," + (playerHistoryScroll < maxScroll ? 0.55 : 0.2) + ")";
+  ctx.fillText("▼", L.px + L.pw - 20, listBot + 4);
+  ctx.fillStyle = "#5a6888";
+  ctx.font = "9px monospace";
+  ctx.fillText("Tekerlek: kaydır · " + playerHistory.length + " kayıt", L.px + 12, L.py + L.ph - 5);
+  }
+}
+
+function handlePlayerHistoryClick(mx, my, cw, ch) {
+  if (!playerHistoryOpen) return false;
+  const L = playerHistoryLayout(cw, ch);
+  if (mx >= L.px + L.pw - 34 && mx <= L.px + L.pw - 10 && my >= L.py + 8 && my <= L.py + 30) {
+  playerHistoryOpen = false;
+  return true;
+  }
+  if (mx < L.px || mx >= L.px + L.pw || my < L.py || my >= L.py + L.ph) {
+  playerHistoryOpen = false;
+  return false;
+  }
+  return true;
+}
 
 /* ── ADMIN: TÜM EŞYALAR PANELİ ───────────────────────────────── */
 let adminItemsOpen = false;
@@ -6086,6 +6438,9 @@ class Inventory {
   this.autoEquipOnPickup = false;
   this.repairMode = false;
   this.upgradeMode = true;
+  this._socketSelectMode = false;
+  this._socketStoneId = null;
+  this._socketStoneLv = 1;
   
   // Gelişmiş envanter özellikleri
   this.searchQuery = "";
@@ -6391,10 +6746,19 @@ class Inventory {
   }
 
   if (itemId === "coin") {
+  // PRESTİJ: her doğuşta +%10 altın (kalıcı)
+  if ((typeof player !== "undefined") && player && (player.prestigeLevel || 0) > 0) count = Math.floor(count * (1 + player.prestigeLevel * 0.10));
   this.gold += count;
   if (this.autoEquipOnPickup) this._scanAutoEquipAllEmpty();
+  if (count > 0 && typeof pushHistory === "function") pushHistory("+" + count + " altın", "#f0d050", "gold");
   return 0;
   }
+
+  const _histItemGain = (addedCount) => {
+  if (addedCount <= 0 || typeof pushHistory !== "function") return;
+  const nm = ITEMS[itemId] ? ITEMS[itemId].name : itemId;
+  pushHistory("+" + addedCount + " " + nm, "#8ae0a8", "item");
+  };
 
   if (def.stackable) {
   for (const container of [this.slots, this.hotbar]) {
@@ -6406,6 +6770,7 @@ class Inventory {
   s.count += add;
   count -= add;
   if (count <= 0) {
+  _histItemGain(add);
   if (this.autoEquipOnPickup) this._scanAutoEquipAllEmpty();
   return 0;
   }
@@ -6417,11 +6782,12 @@ class Inventory {
   for (let i = 0; i < container.length; i++) {
   if (!container[i]) {
   const add = Math.min(count, def.maxStack);
-      const stack = { id: itemId, count: add, upgrade: u };
-      copyStackMetaTo(stack, sourceMeta);
+const stack = { id: itemId, count: add, upgrade: u };
+  copyStackMetaTo(stack, sourceMeta);
   container[i] = stack;
   count -= add;
   if (count <= 0) {
+  _histItemGain(add);
   if (this.autoEquipOnPickup) this._scanAutoEquipAllEmpty();
   return 0;
   }
@@ -6438,6 +6804,7 @@ class Inventory {
   const stack = { id: itemId, count: 1, upgrade: u };
   copyStackMetaTo(stack, sourceMeta);
   container[i] = stack;
+  _histItemGain(1);
   if (this.autoEquipOnPickup) this._scanAutoEquipAllEmpty();
   return 0;
   }
@@ -6532,6 +6899,8 @@ class Inventory {
   if (!this.open) return;
   this._combineSelectMode = false;
   this._marketSelectMode = false;
+  this._socketSelectMode = false;
+  this._socketStoneId = null;
   this.repairMode = false;
   this.upgradeMode = true;
   this._mergeSlotCoinsIntoGold();
@@ -6619,19 +6988,32 @@ class Inventory {
   }
 
   _scanAutoEquipAllEmpty() {
+  const autoScore = (slot) => {
+  const d = ITEMS[slot.id];
+  if (!d) return 0;
+  const up = getStackUpgradeLv(slot);
+  const m = getEffectiveItemStatsMerged(d, up, slot.star || 0);
+  const ap = (m.advanced && m.advanced.attackPower) || 0;
+  const effDmg = (m.stats && (m.stats.rangedDmg || 0)) + (m.stats && (m.stats.meleeDmg || 0)) + ap;
+  const rarity = rarityRank(d.rarity || "common");
+  // Yüksek nadirlik ve yükseltme ağır basar (basit eşya efsane/yükseltilmişi EZEMEZ)
+  return effDmg * 2 + ap * 0.5 + rarity * 30 + up * 18;
+  };
   for (const sk of EQ_SLOTS) {
   if (this.equipped[sk]) continue;
+  let best = null, bestSc = -1;
   for (const container of [this.hotbar, this.slots]) {
   for (let i = 0; i < container.length; i++) {
   const s = container[i];
   if (!s) continue;
   const d = ITEMS[s.id];
   if (d && itemFitsEquipSlot(d, sk) && canPlayerEquipItem(d, player).ok) {
-  this._equipFromContainerSlot(container, i);
-  break;
+  const sc = autoScore(s);
+  if (sc > bestSc) { bestSc = sc; best = { container, i }; }
   }
   }
   }
+  if (best) this._equipFromContainerSlot(best.container, best.i);
   }
   }
 
@@ -6679,7 +7061,7 @@ class Inventory {
   }
 
 // Efsanevi eşyalar sıradanlardan açıkça daha güçlü olsun: nadirlik skora güçlü yansır
-  return base * 3 + ap * 0.35 + rarity * 22 + up * 10 + dmgBonus;
+  return base * 3 + ap * 0.6 + rarity * 40 + up * 20 + dmgBonus;
   };
 
   // Set bonusu gücü: kademe bonuslarını tek skora çevirir (set tamamlanınca büyük artış)
@@ -6866,6 +7248,44 @@ handleClick(mx, my, canvasW, canvasH, rightClick = false) {
   if (equipInfoPanel.open) return equipInfoPanel.handleClick(mx, my, canvasW, canvasH);
   const layout = this._invLayout(canvasW, canvasH);
   const inR = (r) => !!r && mx >= r.x && mx < r.x + r.w && my >= r.y && my < r.y + r.h;
+  // TAŞ TAKMA MODU: küçük uyarı görünür; envanter veya karakterdeki eşyaya tıkla → taş takılır
+  if (this._socketSelectMode) {
+  // İPTAL butonu: takma modundan çık
+  if (this._socketCancelBtn && mx >= this._socketCancelBtn.x && mx <= this._socketCancelBtn.x + this._socketCancelBtn.w && my >= this._socketCancelBtn.y && my <= this._socketCancelBtn.y + this._socketCancelBtn.h) {
+  this._socketSelectMode = false;
+  this._socketStoneId = null;
+  this._socketCancelBtn = null;
+  return true;
+  }
+  if (mx < layout.px || mx >= layout.px + layout.panelW || my < layout.py || my >= layout.py + layout.panelH) {
+  this._socketSelectMode = false;
+  this._socketStoneId = null;
+  return true;
+  }
+  const eqHitS = this._hitTestEquipGrid(mx, my, layout);
+  if (eqHitS) {
+  const esS = this.equipped[eqHitS];
+  if (esS && esS.id && ITEMS[esS.id] && getItemSocketCount(esS.id) > 0 && getItemSockets(esS).length < getItemSocketCount(esS.id)) {
+  this._doSocketStone(esS);
+  } else {
+  pickupMsgText = "Bu eşyada boş taş yuvası yok!";
+  pickupMsgTimer = 1.5;
+  }
+  return true;
+  }
+  const invIdxS = this._hitTestSlots(mx, my, layout.slotsX, layout.slotsY, INV_PAGE_SLOTS, INV_COLS, layout.slotSize, layout.slotGap);
+  if (invIdxS >= 0) {
+  const stackS = this.slots[layout.invPageStart + invIdxS];
+  if (stackS && stackS.id && ITEMS[stackS.id] && ITEMS[stackS.id].equipSlot && getItemSocketCount(stackS.id) > 0 && getItemSockets(stackS).length < getItemSocketCount(stackS.id)) {
+  this._doSocketStone(stackS);
+  } else {
+  pickupMsgText = "Bu eşyada boş taş yuvası yok!";
+  pickupMsgTimer = 1.5;
+  }
+  return true;
+  }
+  return true;
+  }
   // Ekipman bonusları butonu
   if (this._equipInfoBtn && inR(this._equipInfoBtn)) { equipInfoPanel.open = true; return true; }
   // PAZAR seçim modu: envanter dışına tıklayınca iptal → pazara dön
@@ -7000,6 +7420,25 @@ handleClick(mx, my, canvasW, canvasH, rightClick = false) {
   }
   }
   return null;
+  }
+
+  /* Taş takma modunda hedef eşyaya taşı takar. */
+  _doSocketStone(targetStack) {
+  if (!this._socketStoneId || !targetStack) { this._socketSelectMode = false; this._socketStoneId = null; return; }
+  const stoneId = this._socketStoneId;
+  const stoneLv = this._socketStoneLv || 1;
+  if (socketStoneToItem(targetStack, stoneId, stoneLv)) {
+  this.removeItem(stoneId, 1);
+  pickupMsgText = (ITEMS[stoneId] ? ITEMS[stoneId].name : stoneId) + " (Sv." + stoneLv + ") " + (ITEMS[targetStack.id] ? ITEMS[targetStack.id].name : targetStack.id) + " eşyasına takıldı!";
+  pickupMsgTimer = 1.6;
+  player.applyEquipmentBonus(inventory);
+  this._socketSelectMode = false;
+  this._socketStoneId = null;
+  closeInventorySlotInspect();
+  } else {
+  pickupMsgText = "Bu eşyada boş taş yuvası yok!";
+  pickupMsgTimer = 1.5;
+  }
   }
 
   _equipSlotClick(slotKey, rightClick) {
@@ -7143,7 +7582,14 @@ handleClick(mx, my, canvasW, canvasH, rightClick = false) {
   } else {
   if (this.heldItem && inventorySlotInspect) closeInventorySlotInspect();
   if (!this.heldItem && slot) {
-  openInventorySlotInspect(container === this.slots ? "slots" : "hb", idx);
+  // Aynı slot zaten inceleniyorsa KAPAT (toggle) — bilgi paneli ekranı kapatmasın,
+  // hızlı çift tıklama/satış sırasında açık kalmasın
+  const srcKind = container === this.slots ? "slots" : "hb";
+  if (inventorySlotInspect && inventorySlotInspect.kind === srcKind && inventorySlotInspect.idx === idx) {
+  closeInventorySlotInspect();
+  return;
+  }
+  openInventorySlotInspect(srcKind, idx);
   return;
   }
   this._swapOrMerge(container, idx);
@@ -7465,6 +7911,33 @@ handleClick(mx, my, canvasW, canvasH, rightClick = false) {
   ctx.textAlign = "left";
   }
 
+  // TAŞ TAKMA MODU banner'ı: karakter ekipman kutularının (3 yanyana) HEMEN ÜZERİNDE, tam 3 kutu genişliği
+  if (this._socketSelectMode) {
+  const bW = 3 * layout.eqCellSize + 2 * layout.eqGridGap;
+  const bH = 22;
+  const bX = layout.eqInnerX;
+  const bY = layout.eqInnerY - bH - 16;
+  ctx.fillStyle = "rgba(40,80,120,0.97)";
+  roundRect(ctx, bX, bY, bW, bH, 6); ctx.fill();
+  ctx.strokeStyle = "#60b0e0"; ctx.lineWidth = 1.5;
+  roundRect(ctx, bX, bY, bW, bH, 6); ctx.stroke();
+  // İPTAL butonu (banner sağında)
+  const cancW = 44;
+  this._socketCancelBtn = { x: bX + bW - cancW - 3, y: bY, w: cancW, h: bH };
+  ctx.fillStyle = "rgba(120,40,40,0.95)";
+  roundRect(ctx, this._socketCancelBtn.x, this._socketCancelBtn.y, this._socketCancelBtn.w, this._socketCancelBtn.h, 5); ctx.fill();
+  ctx.strokeStyle = "#ff8060"; ctx.lineWidth = 1;
+  roundRect(ctx, this._socketCancelBtn.x, this._socketCancelBtn.y, this._socketCancelBtn.w, this._socketCancelBtn.h, 5); ctx.stroke();
+  ctx.fillStyle = "#ffe0d8"; ctx.font = "bold 8px monospace"; ctx.textAlign = "center";
+  ctx.fillText("✕ İptal", this._socketCancelBtn.x + this._socketCancelBtn.w / 2, this._socketCancelBtn.y + 14);
+  ctx.textAlign = "left";
+  // Not metni (İptal butonu sola kaydırılmış alanda ortalanır)
+  const txtCX = bX + (this._socketCancelBtn.x - bX) / 2;
+  ctx.fillStyle = "#d8f0ff"; ctx.font = "bold 9px monospace"; ctx.textAlign = "center";
+  ctx.fillText("\uD83D\uDC8E Eşyaya tıkla", txtCX, bY + 15);
+  ctx.textAlign = "left";
+  }
+
   ctx.fillStyle = "#888"; ctx.font = "11px monospace";
   const clX = layout.px + layout.panelW - 28;
   const clY = layout.py + 6;
@@ -7594,6 +8067,42 @@ handleClick(mx, my, canvasW, canvasH, rightClick = false) {
   ctx.strokeText(ut, sx + padI, sy + cell - padI - 1);
   ctx.fillText(ut, sx + padI, sy + cell - padI - 1);
   }
+  // TAŞ YUVALARI: kutucuğun köşelerinde küçük yuvarlaklar (dolu = taş + seviye, boş = koyu)
+  if (es && getItemSocketCount(es.id) > 0) {
+  const sockList = getItemSockets(es);
+  const sockMax = getItemSocketCount(es.id);
+  const dotR = Math.max(3, Math.floor(cell * 0.085));
+  const cPos = [
+  [sx + dotR + 2, sy + cell - dotR - 2],
+  [sx + cell - dotR - 2, sy + cell - dotR - 2],
+  [sx + dotR + 2, sy + dotR + 2],
+  [sx + cell - dotR - 2, sy + dotR + 2],
+  [sx + cell / 2, sy + cell - dotR - 2]
+  ];
+  for (let si = 0; si < sockMax; si++) {
+  const so = si < sockList.length ? sockList[si] : null;
+  const dpx = cPos[si][0], dpy = cPos[si][1];
+  ctx.beginPath();
+  ctx.arc(dpx, dpy, dotR, 0, Math.PI * 2);
+  if (so) {
+  ctx.fillStyle = stoneSocketColor(so.id);
+  ctx.fill();
+  ctx.strokeStyle = "#ffffff";
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "bold " + Math.max(5, dotR) + "px monospace";
+  ctx.textAlign = "center";
+  ctx.fillText(String(so.lv || 1), dpx, dpy + dotR * 0.4);
+  ctx.textAlign = "left";
+  } else {
+  ctx.fillStyle = "rgba(0,0,0,0.6)";
+  ctx.strokeStyle = "#90a0c8";
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  }
+  }
+  }
   } else {
   ctx.strokeStyle = "rgba(100,120,160,0.35)";
   ctx.setLineDash([3, 3]);
@@ -7662,7 +8171,8 @@ handleClick(mx, my, canvasW, canvasH, rightClick = false) {
   const sortTxt = this.sortStrongFirst ? "\u25BC G\u00fc\u00e7l\u00fcden G\u00fc\u00e7s\u00fcze S\u0131rala" : "\u25B2 G\u00fc\u00e7s\u00fczden G\u00fc\u00e7l\u00fcye S\u0131rala";
   ctx.fillText(sortTxt, layout.invSortBtn.x + 8, layout.invSortBtn.y + 16);
 
-  if (this.tooltipSlot) {
+  // Hover tooltip: basılı tutup sürüklerken ÇIKMAZ (inspect paneli de açıkken gizli)
+  if (this.tooltipSlot && !inventorySlotInspect && !canvasMouse0Down) {
   const def = ITEMS[this.tooltipSlot.id];
   if (def) {
   const mob = touchState.mobileUI;
@@ -7694,7 +8204,7 @@ handleClick(mx, my, canvasW, canvasH, rightClick = false) {
   if (broken) {
   ctx.globalAlpha = 0.5;
   }
-  drawItemIconFancy(ctx, slot.id, sx, sy, slotSz, { star: slot.star || 0 });
+  drawItemIconFancy(ctx, slot.id, sx, sy, slotSz, { star: slot.star || 0, stackRef: slot });
   // Set işareti (küçük harf, sol üst köşe)
   const setMark = { orman: "O", demir: "Ç", kompozit: "K", efsanevi: "E" }[getItemSetId(slot.id)];
   if (setMark) {
@@ -8376,6 +8886,7 @@ this.hp = 5;
   this.levelUpTimer = 0;
   this.powerCharge = 0;
   this.powerModeTimer = 0;
+  this.powerShotModeTimer = 0;
   this.powerModeDuration = 5;
   this.powerModeCooldown = 0;
   /** 0\u20131: canavara her vuruşta dolar; [G] ile tüketilir. */
@@ -8388,6 +8899,7 @@ this.hp = 5;
   this.rageBurstTimer = 0;
 
   this.statPoints = 0;
+  this.prestigeLevel = 0;
   this.levelDamageBonus = 0;
   this._bonusDmg = 0;
   this._bonusSpd = 0;
@@ -8418,9 +8930,14 @@ this.hp = 5;
   }
 
   gainXP(amount) {
+  // PRESTİJ: her doğuşta +%10 XP (kalıcı)
+  if ((this.prestigeLevel || 0) > 0) amount = Math.floor(amount * (1 + this.prestigeLevel * 0.10));
   this.xp += amount;
   const oldLvG = this.level;
   let levelsG = 0;
+  if (amount > 0 && typeof pushHistory === "function") {
+  pushHistory("+" + Math.floor(amount) + " XP", "#80d0ff", "xp");
+  }
   while (this.xp >= this.xpToNext) {
   this.xp -= this.xpToNext;
   this.level++;
@@ -8473,6 +8990,9 @@ this.hp = 5;
   if (levelsG > 0) {
   pickupMsgText = "Seviye " + this.level + "! +" + levelsG + " stat puanı (toplam " + this.statPoints + ")";
   pickupMsgTimer = 2.5;
+  if (typeof pushHistory === "function") {
+  pushHistory("⭐ Seviye " + this.level + " oldun! (+" + levelsG + " stat puanı)", "#ffd700", "level");
+  }
   }
   }
 
@@ -8648,6 +9168,8 @@ this.hp = 5;
   } else {
   d = this.getDamage() + this._eqRangedDmg;
   }
+  // PRESTİJ: her doğuşta +%10 hasar (kalıcı)
+  if ((this.prestigeLevel || 0) > 0) d = Math.floor(d * (1 + this.prestigeLevel * 0.10));
   return d;
   }
 
@@ -8762,7 +9284,7 @@ this.hp = 5;
   this.boatAutoBoardCooldown -= dt;
   }
 
-  const agiBonus = 1 + (this.agi + this._eqAgi) * 0.008;
+  const agiBonus = 1 + (this.agi + getSlotSpeedAgi(inventory, "feet")) * 0.008;
   const spd = (this.inBoat ? 160 : this.speed) * agiBonus * (this.powerModeTimer > 0 ? 1.25 : 1) * (this._setBonusSpdPct > 0 ? 1 + this._setBonusSpdPct / 100 : 1) * (this._monsterSlowTimer > 0 ? 0.55 : 1) * (this._shadowStepTimer > 0 ? 1.6 : 1);
 
   if (this.moving) {
@@ -10058,15 +10580,15 @@ class Arrow {
   ctx.globalAlpha = 1;
   }
 
-  const fs = this.furyShot ? 1.75 : 1;
+  const fs = this.furyShot ? 1.75 : (this.power ? 1.35 : 1);
   ctx.save();
   ctx.translate(Math.round(this.x), Math.round(this.y));
   ctx.scale(fs, fs);
   ctx.rotate(this.angle);
 
   if (this.power) {
-  ctx.shadowColor = "#d080ff";
-  ctx.shadowBlur = 8;
+  ctx.shadowColor = "#ffb040";
+  ctx.shadowBlur = 16 + Math.sin(performance.now() * 0.02) * 5;
   }
 
   let shaft = "#8B6B3D", tip = "#c0c0c0", feather = "#d04040";
@@ -10103,18 +10625,162 @@ class Arrow {
   ctx.shadowColor = "#ff5020";
   ctx.shadowBlur = 16 + Math.sin(performance.now() * 0.02) * 4;
   }
-  ctx.fillStyle = this.power ? "#b060e0" : shaft;
+  ctx.fillStyle = this.power ? "#ffd060" : shaft;
   const shaftLen = this.pierceArrow ? 20 : 16;
   ctx.fillRect(-shaftLen / 2, -1, shaftLen, 2);
-  ctx.fillStyle = this.power ? "#f0c0ff" : tip;
+  ctx.fillStyle = this.power ? "#fff8d8" : tip;
   const tipX = shaftLen / 2;
   ctx.beginPath(); ctx.moveTo(tipX, 0); ctx.lineTo(tipX - 3, -3); ctx.lineTo(tipX - 3, 3); ctx.fill();
-  ctx.fillStyle = this.power ? "#a040d0" : feather;
+  ctx.fillStyle = this.power ? "#ff8020" : feather;
   const featherX = -shaftLen / 2;
   ctx.fillRect(featherX, -2, 1.5, 4);
   ctx.fillRect(featherX + 1.5, -1.5, 1, 3);
 
   ctx.shadowBlur = 0;
+  ctx.restore();
+  }
+}
+
+/* ── CANAVAR YAKIN SALDIRI EFEKTLERİ ─────────────────────────
+   Melee vuruşunda türe göre kesik/pençe/vuruş/ısırık animasyonları. */
+let monsterMeleeFx = [];
+
+function getMonsterMeleeTheme(type) {
+  const t = String(type || "");
+  const m = MONSTER_TYPES[type];
+  const isBoss = !!(m && m.boss);
+  if (t.indexOf("slime") >= 0) return { color: "#7ae05a", kind: "squish", boss: isBoss };
+  if (t.indexOf("wolf") >= 0) return { color: "#c0c8d8", kind: "claw", boss: isBoss };
+  if (t.indexOf("rat") >= 0) return { color: "#b09080", kind: "bite", boss: isBoss };
+  if (t.indexOf("skeleton") >= 0) return { color: "#e8e8f0", kind: "slash", boss: isBoss };
+  if (t.indexOf("orc") >= 0) return { color: "#c06840", kind: "smash", boss: isBoss };
+  if (t.indexOf("golem") >= 0) return { color: "#90a0b0", kind: "smash", boss: isBoss };
+  if (t.indexOf("treant") >= 0 || t.indexOf("root") >= 0) return { color: "#6a9a4a", kind: "sweep", boss: isBoss };
+  if (t.indexOf("dragon") >= 0) return { color: "#ff7a30", kind: "flame", boss: isBoss };
+  if (t.indexOf("spider") >= 0) return { color: "#b0b8d8", kind: "claw", boss: isBoss };
+  if (t.indexOf("troll") >= 0 || t.indexOf("ogre") >= 0) return { color: "#6a7a5a", kind: "smash", boss: isBoss };
+  if (t.indexOf("bog") >= 0) return { color: "#5a8a6a", kind: "squish", boss: isBoss };
+  if (isBoss) return { color: "#e05030", kind: "slash", boss: true };
+  return { color: "#a0a8c0", kind: "slash", boss: false };
+}
+
+function spawnMonsterMeleeFx(m) {
+  if (!m) return;
+  const th = getMonsterMeleeTheme(m.type);
+  const dir = m.direction != null ? m.direction : (m.ang != null ? m.ang : 0);
+  monsterMeleeFx.push({
+  x: m.cx, y: m.cy + (m.h || 20) * 0.35,
+  dir, kind: th.kind, color: th.color,
+  t: 0, dur: th.boss ? 0.5 : 0.38,
+  boss: th.boss, big: !!(m.boss),
+  seed: Math.random() * 100 });
+}
+
+function updateMonsterMeleeFx(dt) {
+  for (let i = monsterMeleeFx.length - 1; i >= 0; i--) {
+  const f = monsterMeleeFx[i];
+  f.t += dt;
+  if (f.t >= f.dur) monsterMeleeFx.splice(i, 1);
+  }
+}
+
+function renderMonsterMeleeFx(ctx) {
+  for (const f of monsterMeleeFx) {
+  const k = Math.min(1, f.t / f.dur);
+  const out = 1 - k; // 1->0
+  const sc = f.big ? 1.35 : 1;
+  ctx.save();
+  ctx.translate(f.x, f.y);
+  ctx.rotate(f.dir + Math.PI / 2);
+  ctx.globalAlpha = Math.max(0, out) * (f.boss ? 0.95 : 0.85);
+  ctx.lineCap = "round";
+  const sz = (10 + out * 26) * sc;
+  if (f.kind === "slash" || f.kind === "sweep") {
+  // Kavisli kılıç/balta kesiği
+  ctx.strokeStyle = f.color;
+  ctx.lineWidth = (3 + out * 5) * sc;
+  ctx.beginPath();
+  const r = sz, a0 = -0.9 - out * 0.8, a1 = 0.9 + out * 0.8;
+  ctx.arc(0, 0, r, a0, a1);
+  ctx.stroke();
+  ctx.strokeStyle = "rgba(255,255,255,0.7)";
+  ctx.lineWidth = (1 + out * 2) * sc;
+  ctx.beginPath();
+  ctx.arc(0, 0, r * 0.72, a0, a1);
+  ctx.stroke();
+  } else if (f.kind === "claw") {
+  // 3 paralel pençe çizgisi
+  ctx.strokeStyle = f.color;
+  ctx.lineWidth = (2 + out * 3) * sc;
+  for (let ci = -1; ci <= 1; ci++) {
+  ctx.beginPath();
+  ctx.moveTo(ci * 5 * sc, 0);
+  ctx.quadraticCurveTo(ci * 7 * sc + out * 10, -sz * 0.5, ci * 6 * sc, -sz);
+  ctx.stroke();
+  }
+  ctx.strokeStyle = "rgba(255,255,255,0.6)";
+  ctx.lineWidth = (0.8 + out) * sc;
+  for (let cj = -1; cj <= 1; cj++) {
+  ctx.beginPath();
+  ctx.moveTo(cj * 5 * sc + 1, 1);
+  ctx.quadraticCurveTo(cj * 7 * sc + out * 10 + 1, -sz * 0.5 + 1, cj * 6 * sc + 1, -sz + 1);
+  ctx.stroke();
+  }
+  } else if (f.kind === "smash") {
+  // Aşağı çekiç vuruşu + şok çizgileri
+  ctx.strokeStyle = f.color;
+  ctx.lineWidth = (4 + out * 6) * sc;
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(0, -sz);
+  ctx.stroke();
+  for (let sdi = 0; sdi < 4; sdi++) {
+  const sa = -0.8 + (sdi / 3) * 1.6;
+  ctx.globalAlpha = Math.max(0, out) * (f.boss ? 0.9 : 0.7) * (1 - sdi / 5);
+  ctx.strokeStyle = f.color;
+  ctx.lineWidth = (2 + out * 3) * sc;
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(Math.cos(sa) * sz * 0.8, Math.sin(sa) * sz * 0.8);
+  ctx.stroke();
+  }
+  } else if (f.kind === "squish") {
+  // Radial sıçrama halkası
+  ctx.strokeStyle = f.color;
+  ctx.lineWidth = (2.5 + out * 4) * sc;
+  ctx.beginPath();
+  ctx.arc(0, 0, sz * 0.5 + out * 6, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.strokeStyle = "rgba(255,255,255,0.5)";
+  ctx.lineWidth = (1 + out) * sc;
+  ctx.beginPath();
+  ctx.arc(0, 0, sz * 0.35 + out * 4, 0, Math.PI * 2);
+  ctx.stroke();
+  } else if (f.kind === "bite") {
+  // Çene ısırık (iki yay)
+  ctx.strokeStyle = f.color;
+  ctx.lineWidth = (3 + out * 4) * sc;
+  ctx.beginPath();
+  ctx.arc(sz * 0.3, 0, sz * 0.5, Math.PI * 0.7, Math.PI * 1.3);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(-sz * 0.3, 0, sz * 0.5, -Math.PI * 0.3, Math.PI * 0.3);
+  ctx.stroke();
+  } else if (f.kind === "flame") {
+  // Alev nefesi konisi
+  const g = ctx.createRadialGradient(0, 0, 2, 0, 0, sz * 1.4);
+  g.addColorStop(0, "rgba(255,255,180,0.9)");
+  g.addColorStop(0.4, "rgba(255,140,40,0.8)");
+  g.addColorStop(1, "rgba(255,60,10,0)");
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.moveTo(0, -8 * sc);
+  ctx.lineTo(sz, -sz * 0.45);
+  ctx.lineTo(sz, sz * 0.45);
+  ctx.lineTo(0, 8 * sc);
+  ctx.closePath();
+  ctx.fill();
+  }
   ctx.restore();
   }
 }
@@ -14612,6 +15278,7 @@ class Monster {
   if (this.atkTimer >= this.atkCd) {
   this.atkTimer = 0;
   this.atkAnim = 0.25;
+  spawnMonsterMeleeFx(this);
   if (guardTgt) {
   // Muhafıza yakın vuruş
   damageGuard(guardTgt, this.dmg);
@@ -16472,7 +17139,7 @@ class Shop {
   const def = ITEMS[si.id];
   if (!def) return false;
 
-  // Kutu satın al: kutu envantere eklenir, envanterden "Aç" ile açılır
+  // Kutu satın al: adet = picker.amount (maks: para/stoğun yeteceği), envantere eklenir
   var chestTypes = ["weapon_chest","armor_chest","accessory_chest","gold_weapon_chest","gold_armor_chest","gold_accessory_chest"];
   if (chestTypes.indexOf(si.id) >= 0) {
   var isGold = si.id.indexOf("gold_") === 0;
@@ -16480,18 +17147,21 @@ class Shop {
   var currencyName = isGold ? "altın" : "elmas";
   var currencyId = isGold ? "coin" : "diamond";
   var have = inventory.countItem(currencyId);
-  if (have < cost) {
+  var maxN = Math.floor(have / cost);
+  if (maxN <= 0) {
   this._showFeedback(cost + " " + currencyName + " gerekli! (" + currencyName + ": " + have + ")", "#d04040");
   return false;
   }
-  inventory.removeItem(currencyId, cost);
-  var left = inventory.addItem(si.id, 1);
-  if (left > 0) {
-  inventory.addItem(currencyId, cost);
-  this._showFeedback("Envanter dolu!", "#d04040");
-  return false;
+  var chestN = Math.max(1, Math.min(picker.amount != null ? picker.amount : 1, maxN));
+  var chestTotal = cost * chestN;
+  inventory.removeItem(currencyId, chestTotal);
+  var chestLeft = inventory.addItem(si.id, chestN);
+  if (chestLeft > 0) {
+  inventory.addItem(currencyId, chestTotal - cost * (chestN - chestLeft));
+  this._showFeedback("Envanter dolu! " + (chestN - chestLeft) + " kutu eklendi.", "#80ffa0");
+  return true;
   }
-  this._showFeedback((ITEMS[si.id] ? ITEMS[si.id].name : si.id) + " envantere eklendi! Açmak için envanterden \"Aç\"a bas.", "#80ffa0");
+  this._showFeedback((ITEMS[si.id] ? ITEMS[si.id].name : si.id) + " x" + chestN + " envantere eklendi! Açmak için envanterden \"Aç\"a bas.", "#80ffa0");
   gameAudio.playPickup();
   return true;
   }
@@ -16676,6 +17346,12 @@ class Shop {
   ctx.strokeStyle = "#c0a050";
   ctx.stroke();
 
+  // GÜNCEL ADET: imleçle seçilen sayı track'ın üstünde görünür
+  ctx.fillStyle = "#ffd060";
+  ctx.font = "bold 13px monospace";
+  const amtTxt = "Adet: " + amt;
+  ctx.fillText(amtTxt, tr.x + tr.w / 2 - ctx.measureText(amtTxt).width / 2, tr.y - 8);
+
   ctx.fillStyle = "#c8c8e8";
   ctx.font = "bold 14px monospace";
   ctx.fillText("\u2212", B.btnMinus.x + 9, B.btnMinus.y + 16);
@@ -16693,7 +17369,7 @@ class Shop {
   ctx.stroke();
   ctx.fillStyle = "#e8ecff";
   ctx.font = "bold 9px monospace";
-  const mxL = "En fazla";
+  const mxL = maxB > 0 ? ("Max (" + maxB + ")") : "En fazla";
   ctx.fillText(mxL, B.btnMax.x + (B.btnMax.w - ctx.measureText(mxL).width) / 2, B.btnMax.y + 18);
 
   if (!canBuy && maxB > 0) {
@@ -20886,7 +21562,7 @@ class BotPlayer {
   const ang = Math.atan2((target.y + target.h / 2) - (this.y + this.h / 2), (target.x + target.w / 2) - (this.x + this.w / 2));
   const mk = (ang2, dmgMult) => {
   const a = new Arrow(this.x + this.w / 2 + Math.cos(ang2) * 12, this.y + this.h / 2 + Math.sin(ang2) * 12, ang2);
-  a.damage = Math.max(1, Math.floor(this.dmg * dmgMult));
+  a.damage = Math.max(1, Math.floor(this.dmg * dmgMult * this._botCritMult()));
   a.speed = 330;
   a._botArrow = true;
   a._botRef = this;
@@ -20994,12 +21670,18 @@ class BotPlayer {
   }
   const ang = Math.atan2((target.y + target.h / 2) - (this.y + this.h / 2), (target.x + target.w / 2) - (this.x + this.w / 2));
   const a = new Arrow(this.x + this.w / 2 + Math.cos(ang) * 12, this.y + this.h / 2 + Math.sin(ang) * 12, ang);
-  a.damage = this.dmg;
+  a.damage = Math.max(1, Math.floor(this.dmg * this._botCritMult()));
   a.speed = 320;
   a._botArrow = true;
   a._botRef = this;
   if (target && target.type) target._botAttacker = this;
   arrows.push(a);
+  }
+  /* Bot kritik: _bCrit yüzdesi kadar şansla 1.5x hasar. */
+  _botCritMult() {
+  const c = this._bCrit || 0;
+  if (c > 0 && Math.random() * 100 < c) return 1.5;
+  return 1;
   }
   /* Kasabaya girince ok 25'e dolar (25'ten azsa). */
   _ensureArrows25() {
@@ -21114,8 +21796,23 @@ class BotPlayer {
   this.hp = this.maxHp;
   this.dmg += 1;
   this._grantLevelUpgrades();
+  this._autoStatAlloc();
   this.chat = "Level " + this.level + " oldum!"; this.chatTimer = 2.5;
   }
+  }
+  /* OTOMATİK STAT: her seviyede 1 puan (HIZ HARİÇ) ağırlıklı rastgele dağıtılır.
+     Hasar/Can çok, Kritik/Yenileme az. */
+  _autoStatAlloc() {
+  const opts = [
+  { w: 3, key: "dmg", apply: () => { this.dmg += 1; } },
+  { w: 3, key: "hp", apply: () => { this.maxHp += 12; this.hp = Math.min(this.maxHp, this.hp + 12); } },
+  { w: 2, key: "crit", apply: () => { this._bCrit = (this._bCrit || 0) + 1; } },
+  { w: 1, key: "regen", apply: () => { this._bRegen = (this._bRegen || 0) + 0.5; } },
+  ];
+  const totalW = opts.reduce((s, o) => s + o.w, 0);
+  let r = Math.random() * totalW;
+  for (const o of opts) { r -= o.w; if (r <= 0) { o.apply(); return; } }
+  opts[0].apply();
   }
   /* EŞYA GÜÇLENDİRME: bot altın biriktirince kuşanmış eşyasını güçlendirir (yay önce, sonra zırh). */
   /* OTOMATİK CAN İKSİRİ: canı %45'in altına düşünce envanterden can iksiri içer. */
@@ -21459,6 +22156,10 @@ class BotPlayer {
   if (this._fleeTimer > 0) this._fleeTimer -= dt;
   if (this._navFailTimer > 0) this._navFailTimer -= dt;
   if (this._potionCd > 0) this._potionCd -= dt;
+  // Yenileme statı: saniyede _bRegen kadar can geri gelir
+  if (this._bRegen > 0 && this.hp < this.maxHp && !this.isDead) {
+  this.hp = Math.min(this.maxHp, this.hp + this._bRegen * dt);
+  }
   // Otomatik can iksiri: can düşünce içer
   this._tryAutoPotion();
   if (this.mktTimer <= 0) { this.mktTimer = 6 + Math.random() * 10; const mr = Math.random(); if (mr < 0.35) this._sellItems(); else if (mr < 0.6) this._buyFromMarket(); else if (mr < 0.8) this._buyFromMerchant(); else this._refreshListings(); }
@@ -22231,6 +22932,9 @@ let gozlemAimActive = false;
    İksirle dirilince öldüğün yerde doğar, 3 sn kalkan kazanır
    (canavarlar vuramaz, ateş edemez ama yürüyebilirsin). */
 let playerDead = false;
+/* HARDCODE MOD: ölünce altın + eşyanın bir kısmı yere düşer (geri toplanabilir). */
+let hardcoreMode = false;
+let hardcoreDropSummary = null;
 /* Oyun başında 3 dk PvP koruması: kimse birbirine vuramaz, herkes canavar keser. */
 let pvpGraceTimer = 180;
 function pvpGraceActive() { return pvpGraceTimer > 0; }
@@ -22284,6 +22988,7 @@ function resurrectAtTown() {
   if (dungeonState.active) endDungeon(false);
   playerDead = false;
   deathSummary = null;
+  hardcoreDropSummary = null;
   lastDamageTaken = 0;
   lastHitMonsterInfo = null;
   lastHitBotInfo = null;
@@ -22303,6 +23008,7 @@ function resurrectAtDeathSpot() {
   player.resurrectShieldTimer = 3;
   playerDead = false;
   deathSummary = null;
+  hardcoreDropSummary = null;
   lastDamageTaken = 0;
   lastHitMonsterInfo = null;
   lastHitBotInfo = null;
@@ -22441,6 +23147,13 @@ function renderDeathScreen(ctx) {
   ctx.fillStyle = "#80c080";
   ctx.font = "11px monospace";
   ctx.fillText("Kaybedilen eşya yok", sx, sy);
+  }
+  // HARDCODE MOD: yere düşen altın/eşyalar
+  if (hardcoreDropSummary) {
+  sy += rowGap;
+  ctx.fillStyle = "#ff9060";
+  ctx.font = "bold 12px monospace";
+  ctx.fillText("☠ Hardcore: Yere düştü: " + hardcoreDropSummary.join(", ") + " (geri topla!)", sx, sy);
   }
   ctx.textAlign = "start";
   }
@@ -22776,6 +23489,7 @@ function closeInventorySlotInspect() {
   upgradeHoldActive = false;
   upgradeHoldTimer = 0;
   upgradeHoldCharge = 0;
+  stoneSocketPicker = null;
   inventorySlotInspect = null;
   inventoryInspectScrollY = 0;
   inventoryInspectScrollMax = 0;
@@ -22824,6 +23538,8 @@ function openInventorySlotInspect(kind, idx) {
   // Taşlar için inceleme paneli açma engeli kaldırıldı — özellikler görünsün
   // Action butonları renderInventorySlotInspect içinde taşlar için gizlenir
   if (worldItemInspect) closeWorldItemInspect();
+  inventory.tooltipSlot = null;
+  inventory.tooltipSource = null;
   inventorySlotInspect = { kind, idx };
   inventoryInspectScrollY = 0;
   inventoryInspectScrollMax = 0;
@@ -22876,6 +23592,28 @@ function rollChestReward(chestId) {
   if (normalPool.length) return { itemId: normalPool[Math.floor(Math.random() * normalPool.length)], star: 0 };
   const fallback = ["arrow", "potion", "potion_mana", "coin"];
   return { itemId: fallback[Math.floor(Math.random() * fallback.length)], star: 0 };
+}
+
+/* TÜMÜNÜ AÇ: envanterdeki kutu yığınının tamamını açar. */
+function openAllChestsOfType(container, idx) {
+  if (!container || !container[idx]) return 0;
+  let opened = 0, guard = 0;
+  while (container[idx] && container[idx].count > 0 && guard < 300) {
+  const before = container[idx].count;
+  const ok = tryOpenBossChestInContainer(inventory, container, idx);
+  if (!ok) break;
+  opened++;
+  guard++;
+  if (!container[idx]) break;
+  if (container[idx].count >= before) break;
+  }
+  if (opened > 0) {
+  pickupMsgText = opened + " kutu açıldı!";
+  pickupMsgTimer = 2;
+  }
+  closeInventorySlotInspect();
+  player.applyEquipmentBonus(inventory);
+  return opened;
 }
 
 function tryOpenBossChestInContainer(inv, container, idx) {
@@ -23018,7 +23756,7 @@ function dropInventorySlotStackToWorld(kind, idx) {
   return false;
 }
 
-function inventorySlotInspectLayout(cw, ch, compact) {
+function inventorySlotInspectLayout(cw, ch, compact, hasRepair) {
   const b = uiModalBounds(cw, ch);
   const land = cw > ch * 1.02;
   const pw = Math.min(compact ? 200 : (land ? 430 : 320), b.maxW);
@@ -23029,7 +23767,8 @@ function inventorySlotInspectLayout(cw, ch, compact) {
   // Dinamik yükseklik: başlık + kart + tooltip + buton alanı
   // Kompakt mod: kart kutusu yok, sadece ad + ikon (60px) + tooltip
   if (compact) {
-  ph = Math.min(Math.max(120, 60 + toolH), b.maxH);
+  // Taşlar: Yükselt + Eşyaya Tak butonları için biraz daha yüksek panel
+  ph = Math.min(Math.max(222, 60 + toolH), b.maxH);
   } else {
   ph = Math.min(Math.max(280, 44 + 74 + 10 + toolH + btnAreaH), b.maxH);
   }
@@ -23038,15 +23777,16 @@ function inventorySlotInspectLayout(cw, ch, compact) {
   const btnH = 34;
   const btnY = py + ph - btnH - 14;
   const gap = 8;
-  const nBtn = inventory && inventory.repairMode ? 4 : 3;
+  const nBtn = (inventory && inventory.repairMode) || hasRepair ? 4 : 3;
   const bw = Math.floor((pw - 32 - gap * (nBtn - 1)) / nBtn);
   const btnEquip = { x: px + 16, y: btnY, w: bw, h: btnH };
   const btnDrop = { x: px + 16 + bw + gap, y: btnY, w: bw, h: btnH };
-  const btnRepair = inventory && inventory.repairMode ? { x: px + 16 + (bw + gap) * 2, y: btnY, w: bw, h: btnH } : null;
+  const btnRepair = ((inventory && inventory.repairMode) || hasRepair) ? { x: px + 16 + (bw + gap) * 2, y: btnY, w: bw, h: btnH } : null;
   const btnClose = { x: px + 16 + (bw + gap) * (nBtn - 1), y: btnY, w: bw, h: btnH };
   const btnUpgrade = { x: px + 16, y: btnY - 50, w: pw - 32, h: 44 };
-  const btnStoneUp = { x: px + 16, y: btnY - 44, w: pw - 32, h: 34 };
-  return { px, py, pw, ph, btnEquip, btnDrop, btnClose, btnUpgrade, btnRepair, btnStoneUp };
+  const btnStoneUp = { x: px + 16, y: btnY - 36, w: pw - 32, h: 30 };
+  const btnSocket = { x: px + 16, y: btnY, w: pw - 32, h: 30 };
+  return { px, py, pw, ph, btnEquip, btnDrop, btnClose, btnUpgrade, btnRepair, btnStoneUp, btnSocket };
 }
 
 function handleInventorySlotInspectClick(mx, my, cw, ch) {
@@ -23060,7 +23800,8 @@ function handleInventorySlotInspectClick(mx, my, cw, ch) {
   return true;
   }
   const defClick = ITEMS[slot.id];
-  const L = inventorySlotInspectLayout(cw, ch, !(defClick && defClick.equipSlot));
+  const isBrokenClick = slot.durability != null && slot.durability <= 0 && defClick && defClick.equipSlot;
+  const L = inventorySlotInspectLayout(cw, ch, !(defClick && defClick.equipSlot), isBrokenClick);
   const inR = (r) => mx >= r.x && mx < r.x + r.w && my >= r.y && my < r.y + r.h;
   // TAŞ YUVASI tıklaması: takılı taşı çıkar (envantere geri döner)
   if (inventoryInspectSocketRects && inventoryInspectSocketRects.length) {
@@ -23088,6 +23829,15 @@ function handleInventorySlotInspectClick(mx, my, cw, ch) {
   pickupMsgText = resUp.msg;
   pickupMsgTimer = 1.8;
   if (resUp.ok) player.applyEquipmentBonus(inventory);
+  return true;
+  }
+  // TAŞ: EŞYAYA TAK butonu → TAKMA MODU başlat (liste yok, ekipman kutularının üstünde uyarı)
+  if (isStoneId(slot.id) && inR(L.btnSocket)) {
+  inventory._socketSelectMode = true;
+  inventory._socketStoneId = slot.id;
+  inventory._socketStoneLv = getStoneLevel(slot);
+  stoneSocketPicker = null;
+  closeInventorySlotInspect();
   return true;
   }
   // Giyilemeyen eşyalar için (taş, ok, halat vb.) sadece kapatma butonu çalışsın
@@ -23126,6 +23876,14 @@ function handleInventorySlotInspectClick(mx, my, cw, ch) {
   upgradeHoldActive = true;
   upgradeHoldTimer = 0;
   }
+  return true;
+  }
+  // TÜMÜNÜ AÇ butonu (kutular, adet > 1): btnDrop konumunda — btnDrop işleyicisinden ÖNCE
+  if (!fromEquip && slot.count > 1 && inR(L.btnDrop) &&
+  (slot.id === "boss_chest" || slot.id === "mimic_chest_item" || slot.id === "legend_box" || slot.id.endsWith("_legend_box") ||
+  slot.id === "weapon_chest" || slot.id === "armor_chest" || slot.id === "accessory_chest" ||
+  slot.id === "gold_weapon_chest" || slot.id === "gold_armor_chest" || slot.id === "gold_accessory_chest")) {
+  openAllChestsOfType(container, idx);
   return true;
   }
   if (inR(L.btnDrop)) {
@@ -23283,7 +24041,8 @@ function renderInventorySlotInspect(ctx, cw, ch) {
   return;
   }
   const isNonEquip = !def.equipSlot;
-  const L = inventorySlotInspectLayout(cw, ch, !def.equipSlot);
+  const isBrokenR = slot.durability != null && slot.durability <= 0 && def && def.equipSlot;
+  const L = inventorySlotInspectLayout(cw, ch, !def.equipSlot, isBrokenR);
   ctx.fillStyle = "rgba(0,0,0,0.55)";
   ctx.fillRect(0, 0, cw, ch);
 
@@ -23307,6 +24066,25 @@ function renderInventorySlotInspect(ctx, cw, ch) {
   ctx.fillStyle = "#d4e0ff";
   ctx.font = "bold 10px monospace";
   ctx.fillText(title, x + 8, cardY + 14);
+  // Takılı taşların minik görselleri (başlığın yanında)
+  if (stackRef && stackRef.id && ITEMS[stackRef.id] && getItemSocketCount(stackRef.id) > 0) {
+  const sockList = getItemSockets(stackRef);
+  if (sockList.length) {
+  const tW2 = ctx.measureText(title).width;
+  const stoneS2 = 12;
+  let sx2 = x + 8 + tW2 + 6;
+  for (let sti = 0; sti < sockList.length; sti++) {
+  const so2 = sockList[sti];
+  drawItemIcon(ctx, so2.id, sx2, cardY + 2, stoneS2, {});
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "bold 6px monospace";
+  ctx.textAlign = "center";
+  ctx.fillText(String(so2.lv || 1), sx2 + stoneS2 / 2, cardY + 2 + stoneS2 + 5);
+  ctx.textAlign = "left";
+  sx2 += stoneS2 + 13;
+  }
+  }
+  }
   if (stackRef && stackRef.id && ITEMS[stackRef.id]) {
   var d0 = ITEMS[stackRef.id];
   var up0 = getStackUpgradeLv(stackRef);
@@ -23391,41 +24169,9 @@ function renderInventorySlotInspect(ctx, cw, ch) {
   }
   }
   }
-  // TAŞ YUVALARI (soketler): dolu / boş — tıklayınca takılı taş çıkar
+  // Taş bilgileri "Takılan" başlığı yanındaki görsellerde + tooltip'te gösterilir;
+  // inceleme panelinde bilgilerin üzerine binen yuva çemberleri KALDIRILDI
   inventoryInspectSocketRects = [];
-  var sockCnt = getItemSocketCount(slot.id);
-  var sockList = getItemSockets(slot);
-  if (sockCnt > 0) {
-  var sockX0 = L.px + 16, sockY0 = L.btnUpgrade.y - 36;
-  ctx.fillStyle = "#9aa8c8"; ctx.font = "bold 9px monospace";
-  ctx.fillText("Taş Yuvaları (" + sockList.length + "/" + sockCnt + ")", sockX0, sockY0 - 8);
-  for (var si = 0; si < sockCnt; si++) {
-  var sx = sockX0 + si * 22, sy = sockY0;
-  var so = si < sockList.length ? sockList[si] : null;
-  ctx.beginPath();
-  ctx.arc(sx + 8, sy, 8, 0, Math.PI * 2);
-  if (so) {
-  ctx.fillStyle = stoneSocketColor(so.id);
-  ctx.fill();
-  ctx.strokeStyle = "#ffffff";
-  ctx.lineWidth = 1;
-  ctx.stroke();
-  ctx.fillStyle = "#ffffff";
-  ctx.font = "bold 8px monospace";
-  var sl = String(so.lv || 1);
-  ctx.fillText(sl, sx + 8 - ctx.measureText(sl).width / 2, sy + 3);
-  } else {
-  ctx.fillStyle = "rgba(0,0,0,0.5)";
-  ctx.strokeStyle = "#505870";
-  ctx.lineWidth = 1;
-  ctx.stroke();
-  ctx.fillStyle = "#505870";
-  ctx.font = "bold 11px monospace";
-  ctx.fillText("+", sx + 5, sy + 4);
-  }
-  inventoryInspectSocketRects.push({ x: sx, y: sy - 8, w: 16, h: 16, so: so, slotIdx: si });
-  }
-  }
   } else {
 // Giyilemeyen eşyalar: tek küçük panel
   ctx.fillStyle = "rgba(14,16,36,0.97)";
@@ -23438,11 +24184,34 @@ function renderInventorySlotInspect(ctx, cw, ch) {
   ctx.fillStyle = "#e8e8f0";
   ctx.font = "bold 13px monospace";
   ctx.fillText(def.name || slot.id, L.px + 12, L.py + 18);
-  drawItemIconFancy(ctx, slot.id, L.px + 12, L.py + 26, 54, { star: slot.star || 0 });
+  if (!isStoneId(slot.id)) drawItemIconFancy(ctx, slot.id, L.px + 12, L.py + 26, 54, { star: slot.star || 0 });
   var nonEquipCardY = L.py + 26;
 
   var ty = nonEquipCardY + 10;
   var maxY = L.py + L.ph - 16;
+  if (isStoneId(slot.id)) {
+  // TAŞ: büyük ikon + seviye bazlı istatistikler (genel tooltip yerine)
+  drawItemIconFancy(ctx, slot.id, L.px + 14, L.py + 30, 62, { stackRef: slot });
+  var sLv0 = getStoneLevel(slot);
+  var sVals = getStoneStatVal(def, sLv0);
+  var lblM = { rangedDmg: "Saldırı", meleeDmg: "Yakın Saldırı", defense: "Defans", critPct: "Kritik Şans", lifesteal: "Can Çalma", maxHp: "Max Can", maxMana: "Max Mana", spd: "Hız" };
+  var sy0 = L.py + 42;
+  var keys = Object.keys(sVals);
+  var maxLines = 6;
+  for (var ki = 0; ki < keys.length && ki < maxLines; ki++) {
+  const kk = keys[ki];
+  ctx.fillStyle = "#b090ff";
+  ctx.font = "bold 9px monospace";
+  ctx.fillText((lblM[kk] || kk) + ":", L.px + 86, sy0);
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "bold 9px monospace";
+  ctx.fillText("+" + sVals[kk] + (kk === "critPct" || kk === "lifesteal" ? "%" : ""), L.px + 156, sy0);
+  sy0 += 15;
+  }
+  ctx.fillStyle = "#c8c8f0";
+  ctx.font = "bold 9px monospace";
+  ctx.fillText("Seviye " + sLv0 + " / 10", L.px + 86, sy0 + 2);
+  } else {
   const layoutTt = buildItemTooltipLayout(ctx, def, slot.id, cw, touchState.mobileUI, { omitPrices: true, omitIdentity: true, stackRef: slot, innerMax: Math.max(isNonEquip ? L.pw - 24 : 200, L.pw - 40) }, []);
   const allLines = layoutTt.lines;
   var tooltipX = L.px + 68;
@@ -23461,14 +24230,13 @@ function renderInventorySlotInspect(ctx, cw, ch) {
   ctx.fillStyle = "rgba(180, 195, 230, " + (inventoryInspectScrollY < inventoryInspectScrollMax ? 0.55 : 0.2) + ")";
   ctx.fillText("\u25bc", L.px + L.pw - 24, maxY + 2);
   }
-  // TAŞ: seviye bilgisi + yükseltme butonu (Sv1-10)
+  }
+  // TAŞ: yükseltme + Eşyaya Tak butonları (en altta)
   if (isStoneId(slot.id)) {
   inventoryInspectSocketRects = [];
   var sLv2 = getStoneLevel(slot);
   var btnSU = L.btnStoneUp;
-  ctx.fillStyle = "#c8c8f0";
-  ctx.font = "bold 11px monospace";
-  ctx.fillText("Seviye " + sLv2 + " / 10", L.px + 12, L.py + L.ph - 26);
+  var btnSK = L.btnSocket;
   if (sLv2 < 10) {
   var upCost = stoneUpgradeCost(sLv2);
   var goldNow = inventory.countItem("coin");
@@ -23479,14 +24247,23 @@ function renderInventorySlotInspect(ctx, cw, ch) {
   ctx.fill();
   ctx.stroke();
   ctx.fillStyle = canAffordSU ? "#e8dcff" : "#807090";
-  ctx.font = "bold 11px monospace";
+  ctx.font = "bold 10px monospace";
   var tUp = "\u2699 Yükselt (" + formatGold(upCost) + " altın)";
-  ctx.fillText(tUp, btnSU.x + (btnSU.w - ctx.measureText(tUp).width) / 2, btnSU.y + 22);
+  ctx.fillText(tUp, btnSU.x + (btnSU.w - ctx.measureText(tUp).width) / 2, btnSU.y + 19);
   } else {
   ctx.fillStyle = "#ffd060";
-  ctx.font = "bold 11px monospace";
-  ctx.fillText("\u2605 Maksimum seviye!", btnSU.x + 12, btnSU.y + 22);
+  ctx.font = "bold 10px monospace";
+  ctx.fillText("\u2605 Maksimum seviye!", btnSU.x + 12, btnSU.y + 19);
   }
+  // EŞYAYA TAK butonu: seçili/kuşanılmış eşyaya takar
+  ctx.fillStyle = "rgba(50,90,120,0.95)";
+  ctx.strokeStyle = "#60b0e0";
+  roundRect(ctx, btnSK.x, btnSK.y, btnSK.w, btnSK.h, 6);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = "#d0ecff";
+  ctx.font = "bold 10px monospace";
+  ctx.fillText("\uD83D\uDC8E Eşyaya Tak", btnSK.x + 10, btnSK.y + 19);
   }
   }
 
@@ -23531,6 +24308,19 @@ function renderInventorySlotInspect(ctx, cw, ch) {
   tEq = canEq ? ("Giy Lv" + gate.needLevel) : ("Lv" + gate.needLevel);
   }
   ctx.fillText(tEq, L.btnEquip.x + (L.btnEquip.w - ctx.measureText(tEq).width) / 2, L.btnEquip.y + 22);
+  }
+  // TÜMÜNÜ AÇ: adet > 1 olan kutular için (btnDrop konumunda)
+  if (canUse && slot.count > 1) {
+  ctx.fillStyle = "rgba(120,80,30,0.92)";
+  ctx.strokeStyle = "#e0b060";
+  roundRect(ctx, L.btnDrop.x, L.btnDrop.y, L.btnDrop.w, L.btnDrop.h, 6);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = "#fff0c8";
+  ctx.font = "bold 10px monospace";
+  ctx.textAlign = "center";
+  ctx.fillText("Tümünü Aç", L.btnDrop.x + L.btnDrop.w / 2, L.btnDrop.y + 22);
+  ctx.textAlign = "left";
   }
 
   if (!isNonEquip) {
@@ -26160,8 +26950,8 @@ function dropMonsterLoot(m, worldItems) {
   }
   }
   }
-  // Taş düşme şansı: boss'larda yüksek (%25), güçlü canavarlarda düşük (%4)
-  if (Math.random() < (m.boss ? 0.25 : 0.04)) {
+  // Taş düşme şansı: NADİR — boss'larda %8, normal canavarlarda %1.2 (tek tek, yığın yok)
+  if (Math.random() < (m.boss ? 0.08 : 0.012)) {
   const stonePool = ["stone_saldiri", "stone_defans", "stone_kritik", "stone_can", "stone_canmax", "stone_mana", "stone_hiz"];
   const sPick = stonePool[Math.floor(Math.random() * stonePool.length)];
   const tc2 = Math.floor(m.cx / TILE_SIZE), tr2 = Math.floor(m.cy / TILE_SIZE);
@@ -26538,12 +27328,13 @@ function tryActivatePowerMode(skipCharge) {
   pickupMsgTimer = 0.9;
   return false;
   }
+  // GÜÇ MODU: 3sn %100 kritik + 2x atış hızı (normal vuruş güçlenir)
   player.powerModeTimer = 3;
   player.powerModeCooldown = 0;
   player.powerCharge = 0;
   player.shootCooldown = 0;
-  pickupMsgText = "GÜÇ MODU! 3sn: %100 KRİTİK, 2x atış hızı, hızlı beceriler!";
-  pickupMsgTimer = 2;
+  pickupMsgText = "GÜÇ MODU! 3sn: %100 KRİTİK + 2x ATIŞ HIZI!";
+  pickupMsgTimer = 2.2;
   if (typeof gameAudio !== "undefined" && gameAudio.playPowerShoot) gameAudio.playPowerShoot();
   if (typeof addScreenShake === "function") addScreenShake(1.5);
   return true;
@@ -26722,6 +27513,14 @@ function botKillReward(victim, arrowRef) {
   player.gainXP(xpVal);
   // SAĞ TARAF GANİMET KUTUSU: eşya + adet + altın (metin bildirimi YOK)
   botLootPanel = { item: lootItem ? { id: lootItem.id, count: lootItem.count } : null, gold: goldSteal, timer: 4.5 };
+  // GEÇMİŞ: bot kesince düşen eşya/altın/XP net bir PvP kaydı olarak yazılır
+  if (typeof pushHistory === "function") {
+  const parts = [];
+  if (lootItem) parts.push((ITEMS[lootItem.id] ? ITEMS[lootItem.id].name : lootItem.id) + " x" + lootItem.count);
+  if (goldSteal > 0) parts.push(goldSteal + " altın");
+  if (xpVal > 0) parts.push(Math.floor(xpVal) + " XP");
+  pushHistory("⚔ " + victim.name + " yendin (PvP)! " + (parts.length ? "Düşen: " + parts.join(", ") : ""), "#ff7070", "pvp");
+  }
   gameAudio.playKill();
   }
   victim._die();
@@ -26793,7 +27592,7 @@ function tryMeleeOrRangedClick() {
   }
   const rapid = player.archerRapidFireTimer > 0;
   const powerModeOn = player.powerModeTimer > 0;
-  // GÜÇ MODU: 2x atış hızı
+  // GÜÇ MODU: 2x atış hızı (normal vuruş %100 kritik + hasar bonusu applyOutgoingPlayerDamage içinde)
   player.shootCooldown = (powerModeOn ? 0.35 : (rapid ? 0.45 : 0.7)) * player.getAttackSpeedMultiplier();
   player.shootAnim = 0.25;
   const sx = player.centerX + Math.cos(player.angle) * 14;
@@ -27593,6 +28392,14 @@ canvas.addEventListener("mousedown", (e) => {
   return;
   }
   }
+  // OYUNCU GEÇMİŞİ paneli
+  if (playerHistoryOpen && e.button === 0) {
+  if (handlePlayerHistoryClick(e.clientX, e.clientY, canvasW, canvasH)) {
+  canvasMouse0Down = false;
+  e.preventDefault();
+  return;
+  }
+  }
 
   // Pazar satış popup'ı: envanterin üzerindeyken tıklamalar popup'a gider
   if (marketPanel.sellPopupActive && e.button === 0) {
@@ -27782,6 +28589,21 @@ canvas.addEventListener("mousedown", (e) => {
   materialBook.toggle();
   e.preventDefault();
   return;
+  }
+  // Yan butonlar (çanta=I, savaş=C, banka=K, ev=F, oyuncular=J, geçmiş)
+  const sideBtnR2m = 16;
+  const sideGap2m = 38;
+  const sideStartY2m = bBtnY + sideGap2m;
+  const sideKeysm = ["KeyI", "KeyC", "KeyK", "KeyF", "KeyJ", "playerHistory"];
+  for (let si = 0; si < sideKeysm.length; si++) {
+  const sby2m = sideStartY2m + si * sideGap2m;
+  const ddx2 = e.clientX - btnX, ddy2 = e.clientY - sby2m;
+  if (ddx2 * ddx2 + ddy2 * ddy2 <= sideBtnR2m * sideBtnR2m) {
+  if (sideKeysm[si] === "playerHistory") playerHistoryOpen = !playerHistoryOpen;
+  else pulseJust(sideKeysm[si]);
+  e.preventDefault();
+  return;
+  }
   }
   }
   }
@@ -28045,6 +28867,11 @@ canvas.addEventListener("wheel", (e) => {
   e.preventDefault();
   return;
   }
+  if (playerHistoryOpen) {
+  playerHistoryScroll = Math.max(0, playerHistoryScroll + e.deltaY);
+  e.preventDefault();
+  return;
+  }
   if (shop.open) {
   const land = canvasW > canvasH * 1.02;
   const dy = e.deltaY > 0 ? (land ? 2.2 : 1) : (land ? -2.2 : -1);
@@ -28066,7 +28893,7 @@ function handleCanvasTouchStart(e) {
 
   // ADMIN panelleri EN ÜSTTE: dokunuşlar joystick/aim/attack BAŞLATMAZ,
   // tıklama touchend'de işlenir (✕, eşya, butonlar)
-  if (adminItemsOpen || adminMonstersOpen) {
+  if (adminItemsOpen || adminMonstersOpen || playerHistoryOpen) {
   continue;
   }
 
@@ -28501,6 +29328,7 @@ function pulseMobileButtonKey(key) {
   else if (key === "KeyL") pulseJust("KeyL");
   else if (key === "KeyT") pulseJust("KeyT");
   else if (key === "KeyB") pulseJust("KeyB");
+  else if (key === "playerHistory") { playerHistoryOpen = !playerHistoryOpen; return; }
   // Görev NPC üzerinden açılır, KeyJ kaldırıldı
 }
 
@@ -28522,6 +29350,9 @@ function handleCanvasTouchEnd(e) {
   continue;
   }
   if (adminMonstersOpen && handleAdminMonstersClick(mx, my, canvasW, canvasH)) {
+  continue;
+  }
+  if (playerHistoryOpen && handlePlayerHistoryClick(mx, my, canvasW, canvasH)) {
   continue;
   }
 
@@ -28931,6 +29762,7 @@ function worldBossActive() {
 /* Dünya boss'undan düşen ÇOK İYİ eşya: efsanevi kutu veya güçlü ekipman/yay. */
 function rollWorldBossReward() {
   const pool = ["bow_savas", "bow_ay", "bow_gunes", "bow_kompozit", "chest_epic", "helm_epic", "boots_epic", "diamond", "legend_box",
+  "chest_guardian_legendary", "chest_warlord_legendary", "chest_eternal_legendary",
   "stone_saldiri", "stone_defans", "stone_kritik", "stone_can"];
   const pick = pool[Math.floor(Math.random() * pool.length)];
   let cnt = pick === "diamond" ? 10 + Math.floor(Math.random() * 10) : 1;
@@ -29500,7 +30332,7 @@ function playerToSave(p) {
   manaCostShoot: p.manaCostShoot, manaCostPower: p.manaCostPower,
   dmgFlashTimer: p.dmgFlashTimer, levelUpTimer: p.levelUpTimer, powerCharge: p.powerCharge, powerModeTimer: p.powerModeTimer || 0, powerModeCooldown: p.powerModeCooldown || 0,
   rageMeter: p.rageMeter || 0, rageBurstTimer: p.rageBurstTimer || 0,
-  statPoints: p.statPoints, _bonusDmg: p._bonusDmg || 0, _bonusSpd: p._bonusSpd || 0, _bonusHp: p._bonusHp || 0, _bonusMana: p._bonusMana || 0, _bonusRegen: p._bonusRegen || 0, _bonusCrit: p._bonusCrit || 0,
+  statPoints: p.statPoints, prestigeLevel: p.prestigeLevel || 0, _bonusDmg: p._bonusDmg || 0, _bonusSpd: p._bonusSpd || 0, _bonusHp: p._bonusHp || 0, _bonusMana: p._bonusMana || 0, _bonusRegen: p._bonusRegen || 0, _bonusCrit: p._bonusCrit || 0,
   skills: Object.assign({}, p.skills || {}),
   _pendingFullHeal: !!p._pendingFullHeal,
   poisonTimer: p.poisonTimer || 0,
@@ -30848,15 +31680,20 @@ const materialBook = {
   _layout(cw, ch) {
   const b = uiModalBounds(cw, ch);
   const panW = Math.min(780, b.maxW);
-  const panH = Math.min(440, b.maxH);
+  // MOBİL: rehber biraz daha kısa (440 -> 400), masaüstü 440 kalır
+  const panH = Math.min(touchState.mobileUI ? 400 : 440, b.maxH);
   const px = Math.floor((cw - panW) / 2);
-  const py = Math.max(b.top, Math.min(ch - panH - b.bottom, Math.floor((ch - panH) / 2)));
+  // MOBİL: paneli sağ üst koordinat yazısının (y≈20) hemen ALTINA sabitle
+  const py = touchState.mobileUI
+  ? 24
+  : Math.max(b.top, Math.min(ch - panH - b.bottom, Math.floor((ch - panH) / 2)));
   const closeR = { x: px + panW - 28, y: py + 6, w: 22, h: 22 };
+  const bossR = { x: px + panW - 86, y: py + 6, w: 54, h: 22 };
   const prevR = { x: px + 8, y: py + panH / 2 - 18, w: 34, h: 36 };
   const nextR = { x: px + panW - 42, y: py + panH / 2 - 18, w: 34, h: 36 };
   const upR = { x: px + panW - 36, y: py + panH - 62, w: 22, h: 20 };
   const downR = { x: px + panW - 36, y: py + panH - 38, w: 22, h: 20 };
-  return { panW, panH, px, py, closeR, prevR, nextR, upR, downR };
+  return { panW, panH, px, py, closeR, bossR, prevR, nextR, upR, downR };
   },
   _inspectLayout(L) {
   const w = 252, h = 320;
@@ -30942,6 +31779,11 @@ const materialBook = {
   }
 
   if (mx >= L.closeR.x && mx < L.closeR.x + L.closeR.w && my >= L.closeR.y && my < L.closeR.y + L.closeR.h) { this.close(); return; }
+  // BOSS REHBERİ kısayolu: son sayfaya atla
+  if (mx >= L.bossR.x && mx < L.bossR.x + L.bossR.w && my >= L.bossR.y && my < L.bossR.y + L.bossR.h) {
+  this.page = this.pages().length - 1;
+  return;
+  }
   // SON SAYFA (BOSS REHBERİ): boss'u tıkla çağır, altta son boss
   const curPg = this.pages()[this.page % this.pages().length];
   if (curPg.type === "__boss_guide__") {
@@ -31396,10 +32238,10 @@ _renderBossInfo(ctx, L) {
 
   // Büyük, canlı canavar görünümü — zengin "bestiary" portresi
   const spriteCX = leftCX;
-  const spriteCY = py + 120;
+  const spriteCY = py + 108;
   const isWolf = pg.type.indexOf("wolf") === 0;
   // Kurt daha büyük ve belirgin çizilir (detaylar görünsün)
-  const spriteScale = isWolf ? 2.45 : 2.0;
+  const spriteScale = isWolf ? 2.0 : 1.7;
   const theme = (mt && mt.rangedKind) || "";
   const themeRGBA = theme === "fire" ? "rgba(255,120,60,"
   : theme === "ice" ? "rgba(120,200,255,"
@@ -31419,18 +32261,18 @@ _renderBossInfo(ctx, L) {
 
   // Altın süs çerçevesi (iki halka) — canavarın ortasında
   ctx.strokeStyle = themeRGBA + "0.5)"; ctx.lineWidth = 3;
-  ctx.beginPath(); ctx.ellipse(spriteCX, ringCY, 80, 64, 0, 0, Math.PI * 2); ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(spriteCX, ringCY, 66, 50, 0, 0, Math.PI * 2); ctx.stroke();
   ctx.strokeStyle = "rgba(120,90,40,0.45)"; ctx.lineWidth = 1.5;
-  ctx.beginPath(); ctx.ellipse(spriteCX, ringCY, 70, 54, 0, 0, Math.PI * 2); ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(spriteCX, ringCY, 57, 42, 0, 0, Math.PI * 2); ctx.stroke();
 
   // Zemin (çimen/toprak yaması) — sabit ortada
-  const grd = ctx.createLinearGradient(spriteCX - 46, py + 168, spriteCX + 46, py + 176);
+  const grd = ctx.createLinearGradient(spriteCX - 46, py + 150, spriteCX + 46, py + 158);
   grd.addColorStop(0, "#7a6a3a"); grd.addColorStop(0.5, "#5a8a3a"); grd.addColorStop(1, "#6a6a3a");
   ctx.fillStyle = grd;
-  ctx.beginPath(); ctx.ellipse(spriteCX, py + 172, 46, 8, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(spriteCX, py + 154, 46, 8, 0, 0, Math.PI * 2); ctx.fill();
   // Gölge
   ctx.fillStyle = "rgba(0,0,0,0.30)";
-  ctx.beginPath(); ctx.ellipse(spriteCX, py + 171, 36, 6, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(spriteCX, py + 153, 36, 6, 0, 0, Math.PI * 2); ctx.fill();
 
   // Süzülen parıltılar
   const sparkT = performance.now() * 0.001;
@@ -31465,9 +32307,32 @@ _renderBossInfo(ctx, L) {
   }
   }
 
-  // Güç bilgileri (sol sayfa altı)
+  // BOSS ÇAĞIR butonu: KONUM butonunun hemen altında, aynı boyutta
+  const bossT = bossForMonsterType(pg.type);
+  const killsN = (gameStats && gameStats.killsByType[pg.type]) || 0;
+  if (bossT) {
+  const summonReady = killsN >= BOSS_SUMMON_KILLS || (player && player.adminMode);
+  const cBtnW = locBtn.w, cBtnH = locBtn.h;
+  const cBtnX = locBtn.x;
+  const cBtnY = locBtn.y + locBtn.h + 4;
+  ctx.fillStyle = summonReady ? "rgba(60,140,80,0.95)" : "rgba(50,50,60,0.85)";
+  ctx.strokeStyle = summonReady ? "#70e090" : "#505060";
+  ctx.lineWidth = 1.5;
+  roundRect(ctx, cBtnX, cBtnY, cBtnW, cBtnH, 6); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = summonReady ? "#ffffff" : "#707078";
+  ctx.font = "bold 10px monospace";
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  const lockedTxt = summonReady ? "\u2694 BOSS" : "\uD83D\uDD12 " + Math.min(killsN, BOSS_SUMMON_KILLS) + "/" + BOSS_SUMMON_KILLS;
+  ctx.fillText(lockedTxt, cBtnX + cBtnW / 2, cBtnY + cBtnH / 2 + 1);
+  ctx.textAlign = "start"; ctx.textBaseline = "alphabetic";
+  materialBook._summonBtn = { x: cBtnX, y: cBtnY, w: cBtnW, h: cBtnH, bossType: bossT, ready: summonReady, type: pg.type };
+  } else {
+  materialBook._summonBtn = null;
+  }
+
+  // Güç bilgileri (sol sayfa altı) — boşalan alanı doldurmak için yukarı çekildi
   const statX = px + 24;
-  let iy = py + 190;
+  let iy = py + 166;
   const statRows = [];
   if (mt) {
   statRows.push(["Can", mt.hp != null ? mt.hp : "?"]);
@@ -31478,7 +32343,7 @@ _renderBossInfo(ctx, L) {
   const regs = monsterRegions(pg.type);
   statRows.push(["Bölge", regs.length ? regs.join(" · ") : "Her yerde"]);
   ctx.fillStyle = "#5a3a14"; ctx.font = "bold 11px monospace";
-  ctx.fillText("Gücü:", statX, iy); iy += 20;
+  ctx.fillText("Gücü:", statX, iy); iy += 16;
   ctx.font = "11px monospace";
   for (const [k, v] of statRows) {
   const val = String(v);
@@ -31491,7 +32356,7 @@ _renderBossInfo(ctx, L) {
   } else {
   ctx.fillText(val, statX + leftW / 2, iy);
   }
-  iy += 20;
+  iy += 16;
   }
   // TAVSİYE SG vs MEVCUT SG (yan yana, renkli)
   const recSG = recommendedCombatPowerForMonster(pg.type);
@@ -31502,38 +32367,12 @@ _renderBossInfo(ctx, L) {
   ctx.fillStyle = sgOK ? "#2aa040" : "#d04040"; ctx.fillText(String(recSG), statX + 78, iy);
   ctx.fillStyle = "#8a6a34"; ctx.fillText("Mevcut SG:", statX + 148, iy);
   ctx.fillStyle = sgOK ? "#2aa040" : "#d04040"; ctx.fillText(String(mySG), statX + 226, iy);
-  iy += 20;
+  iy += 16;
   // KESTİĞİN sayacı
-  const killsN = (gameStats && gameStats.killsByType[pg.type]) || 0;
   ctx.fillStyle = "#8a6a34"; ctx.fillText("Kestiğin:", statX, iy);
   ctx.fillStyle = "#3a2410";
   ctx.fillText(String(killsN), statX + leftW / 2, iy);
-  iy += 24;
-
-  // BOSS ÇAĞIR butonu (100 kesince aktif; admin modda her zaman açık)
-  const bossT = bossForMonsterType(pg.type);
-  if (bossT) {
-  const summonReady = killsN >= BOSS_SUMMON_KILLS || (player && player.adminMode);
-  const cBtnW = leftW - 40, cBtnH = 30;
-  const cBtnX = px + 4 + (leftW - cBtnW) / 2;
-  const cBtnY = iy + 4;
-  ctx.fillStyle = "#8a6a34"; ctx.font = "bold 10px monospace";
-  ctx.textAlign = "center";
-  ctx.fillText("Boss çağırmak için " + BOSS_SUMMON_KILLS + " kes: " + Math.min(killsN, BOSS_SUMMON_KILLS) + "/" + BOSS_SUMMON_KILLS, leftCX, cBtnY - 6);
-  ctx.textAlign = "start";
-  ctx.fillStyle = summonReady ? "rgba(60,140,80,0.95)" : "rgba(50,50,60,0.8)";
-  ctx.strokeStyle = summonReady ? "#70e090" : "#505060";
-  ctx.lineWidth = 2;
-  roundRect(ctx, cBtnX, cBtnY, cBtnW, cBtnH, 8); ctx.fill(); ctx.stroke();
-  ctx.fillStyle = summonReady ? "#ffffff" : "#707078";
-  ctx.font = "bold 12px monospace";
-  ctx.textAlign = "center"; ctx.textBaseline = "middle";
-  ctx.fillText(summonReady ? "\u2694 BOSS ÇAĞIR" : "\uD83D\uDD12 KİLİTLİ", cBtnX + cBtnW / 2, cBtnY + cBtnH / 2 + 1);
-  ctx.textAlign = "start"; ctx.textBaseline = "alphabetic";
-  materialBook._summonBtn = { x: cBtnX, y: cBtnY, w: cBtnW, h: cBtnH, bossType: bossT, ready: summonReady, type: pg.type };
-  } else {
-  materialBook._summonBtn = null;
-  }
+  iy += 20;
 
   // SAĞ SAYFA: düşen ganimet + malzemeler (kaydırmalı liste)
   const matX = midX + 24;
@@ -31603,6 +32442,17 @@ _renderBossInfo(ctx, L) {
   roundRect(ctx, L.closeR.x, L.closeR.y, L.closeR.w, L.closeR.h, 5); ctx.stroke();
   ctx.fillStyle = "#e0a0a0"; ctx.font = "bold 12px monospace";
   ctx.fillText("\u2715", L.closeR.x + 6, L.closeR.y + 15);
+  // BOSS REHBERİ kısayol butonu (son sayfaya atlar)
+  const onBossPage = pg.type === "__boss_guide__";
+  ctx.fillStyle = onBossPage ? "rgba(60,30,90,0.95)" : "rgba(50,40,90,0.85)";
+  roundRect(ctx, L.bossR.x, L.bossR.y, L.bossR.w, L.bossR.h, 5); ctx.fill();
+  ctx.strokeStyle = onBossPage ? "#a070d0" : "#8060b0"; ctx.lineWidth = 1;
+  roundRect(ctx, L.bossR.x, L.bossR.y, L.bossR.w, L.bossR.h, 5); ctx.stroke();
+  ctx.fillStyle = onBossPage ? "#e8d0ff" : "#c0a8e0";
+  ctx.font = "bold 11px monospace";
+  ctx.textAlign = "center";
+  ctx.fillText(onBossPage ? "☠ Boss" : "☠ Boss", L.bossR.x + L.bossR.w / 2, L.bossR.y + 15);
+  ctx.textAlign = "start";
 
   // İnceleme penceresi (eşya istatistikleri) — en üstte
   if (this.inspectItem) {
@@ -31817,7 +32667,9 @@ function buildTravelingMerchantStock() {
   used.add(pick);
   const def = ITEMS[pick];
   const base = (def.buyPrice > 0 ? def.buyPrice : getShopBuyPriceForItem(pick)) || 50;
-  stock.push({ id: pick, qty: 2, price: Math.max(1, Math.floor(base * 0.8)) });
+  // Taşlar NADİR: tek tek satılır (qty 1), kutular 2'li
+  const qtyT = pick.indexOf("stone_") === 0 ? 1 : 2;
+  stock.push({ id: pick, qty: qtyT, price: Math.max(1, Math.floor(base * 0.8)) });
   }
   return stock;
 }
@@ -31999,6 +32851,7 @@ function advanceZone() {
 }
 
 function resetWorldToNewGameState() {
+  clearPlayerHistory();
   gameZone = 0;
 pvpGraceTimer = 180;
   // Dünya boss'u durumunu sıfırla (yeni oyunda 5 dk sonra yeniden başlar)
@@ -32317,6 +33170,53 @@ window.addEventListener("beforeunload", () => {
   if (currentSaveSlot >= 0) saveGameToSlot(currentSaveSlot);
 });
 
+/* HARDCODE MOD: ölünce altın (%20) + 2 eşya yere düşer (geri toplanabilir). */
+function hardcoreDropOnDeath() {
+  if (!hardcoreMode) return null;
+  const col = Math.floor(deathPos.x / TILE_SIZE);
+  const row = Math.floor(deathPos.y / TILE_SIZE);
+  const notes = [];
+  // ALTIN: %20'si yere düşer
+  const lostGold = Math.floor(inventory.gold * 0.2);
+  if (lostGold > 0) {
+  inventory.gold -= lostGold;
+  let rest = lostGold, gi = 0;
+  while (rest > 0 && gi < 6) {
+  const amt = Math.min(99, rest);
+  worldItems.push(new WorldItem(col + (gi % 2 ? -1 : 1), row + (Math.floor(gi / 2) ? -1 : 0), "coin", amt, false));
+  rest -= amt;
+  gi++;
+  }
+  notes.push(lostGold + " altın");
+  }
+  // EŞYA: envanterden 2 rastgele eşya (ok/iksir/altın hariç)
+  const candidates = [];
+  for (const container of [inventory.slots, inventory.hotbar]) {
+  for (const s of container) {
+  if (!s || s.count <= 0) continue;
+  if (s.id === "arrow" || s.id === "potion" || s.id === "potion_mana" || s.id === "coin") continue;
+  candidates.push(s);
+  }
+  }
+  const nDrops = Math.min(2, candidates.length);
+  const itemNames = [];
+  for (let i = 0; i < nDrops && candidates.length; i++) {
+  const ci = Math.floor(Math.random() * candidates.length);
+  const pick = candidates[ci];
+  candidates.splice(ci, 1);
+  const def = ITEMS[pick.id];
+  const uP = getStackUpgradeLv(pick);
+  inventory.removeItem(pick.id, 1);
+  const drop = new WorldItem(col, row, pick.id, 1, false);
+  if (uP > 0) drop.upgrade = uP;
+  if (pick.star) drop.star = pick.star | 0;
+  worldItems.push(drop);
+  itemNames.push(def ? def.name : pick.id);
+  }
+  if (itemNames.length) notes.push(itemNames.join(", "));
+  return notes.length ? notes : null;
+}
+
 function gameLoop(now) {
   if (currentSaveSlot < 0) {
   lastTime = now;
@@ -32595,6 +33495,7 @@ function gameLoop(now) {
   if (typeof player !== "undefined" && player && player.levelUpTimer > 0) player.levelUpTimer -= dt;
   updateRangedFocusState(dt);
   updateDamageFloaters(dt);
+  updateMonsterMeleeFx(dt);
 
   // Balçık izlerini güncelle ve oyuncu zehirlenmesi
   if (slimeTrails.length > 0) {
@@ -32781,15 +33682,21 @@ if (bossArenaState.active) {
   if (wasJustPressed("KeyN") && !uiOpen) {
   tryShootPierceArrow();
   }
-  // Admin mode toggle (9 tuşu)
+  // Admin mode toggle (9 tuşu) — admin'de SINIRSIZ ALTIN, çıkınca eski altın geri gelir
   if (wasJustPressed("Digit9") && !uiOpen) {
   if (!player.adminMode) {
   player.adminMode = true;
-  pickupMsgText = "Admin Mod AÇIK (9)";
+  if (typeof player._adminGoldBackup !== "number") player._adminGoldBackup = inventory.gold;
+  inventory.gold = 999999999;
+  pickupMsgText = "Admin Mod AÇIK (9) — Sınırsız altın!";
   pickupMsgTimer = 1.5;
   } else {
   player.adminMode = false;
-  pickupMsgText = "Admin Mod KAPALI (9)";
+  if (typeof player._adminGoldBackup === "number") {
+  inventory.gold = player._adminGoldBackup;
+  player._adminGoldBackup = null;
+  }
+  pickupMsgText = "Admin Mod KAPALI (9) — Altın eski haline döndü";
   pickupMsgTimer = 1.5;
   }
   }
@@ -33071,6 +33978,18 @@ if (bossArenaState.active) {
   player.gainXP(m.xpReward);
   inventory.addItem("coin", m.goldReward || 0);
   dropMonsterLoot(m, worldItems);
+  const mtName = (MONSTER_TYPES[m.type] && MONSTER_TYPES[m.type].name) || m.type;
+  pushHistory("⚔ " + mtName + " yendin! (+" + Math.floor(m.xpReward) + " XP, +" + (m.goldReward || 0) + " altın)", "#ffb060", "kill");
+  // SADECE OYUNCU KESİMİ: görev, istatistik, pet ve boss ilerlemesi
+  questTracker.onMonsterKill(m.type);
+  if (pet) pet.giveXp(Math.max(1, Math.floor((m.xpReward || 0) * 0.5)));
+  gameStats.kills++;
+  gameStats.killsByType[m.type] = (gameStats.killsByType[m.type] || 0) + 1;
+  addGoldStat(m.goldReward || 0);
+  const isBossQ = MONSTER_TYPES[m.type] && MONSTER_TYPES[m.type].boss;
+  if (isBossQ) questTracker.onBossKill();
+  updateDailyQuestProgress("kill", isBossQ ? "boss" : m.type);
+  if (m.boss) markBossDefeated(m.type);
   }
   // GUARD kesimi: oyuncuya eşya/altın/XP gelmez
   }
@@ -33084,24 +34003,17 @@ if (bossArenaState.active) {
   gameAudio.playBossRoar();
   }
   }
-  questTracker.onMonsterKill(m.type);
-  if (pet) pet.giveXp(Math.max(1, Math.floor((m.xpReward || 0) * 0.5)));
-  gameStats.kills++;
-  gameStats.killsByType[m.type] = (gameStats.killsByType[m.type] || 0) + 1;
-  addGoldStat(m.goldReward || 0);
-  var isBoss = MONSTER_TYPES[m.type] && MONSTER_TYPES[m.type].boss;
-  if (isBoss) questTracker.onBossKill();
-  updateDailyQuestProgress("kill", isBoss ? "boss" : m.type);
   const mt = MONSTER_TYPES[m.type];
   const btag = mt && mt.boss ? "[BOSS] " : "";
   const campTag = m.campId ? " [GRUP]" : "";
   pickupMsgText = guardKilled
   ? "Muhafız canavarı yendi — +" + (m.goldReward || 0) + " Altın (XP yok)"
-  : "+" + m.xpReward + " XP  +" + (m.goldReward || 0) + " Altın â€” " + btag + (mt ? mt.name : m.type) + campTag + " yendi!";
+  : (m._lastHitByBot
+  ? ((mt ? mt.name : m.type) + " yendi (bot)")
+  : "+" + m.xpReward + " XP  +" + (m.goldReward || 0) + " Altın â€” " + btag + (mt ? mt.name : m.type) + campTag + " yendi!");
   pickupMsgTimer = 1.8;
   }
   // Ortak işlemler
-  if (m.boss) markBossDefeated(m.type);
   if (m._arenaBoss && bossArenaState && bossArenaState.active) endBossArena(true);
   if (m.campId && String(m.campId).indexOf("defense_wave") === 0) gameStats.defenseKills = (gameStats.defenseKills || 0) + 1;
   // Küf Cücesi ölünce spor bulutu bırakır
@@ -33122,6 +34034,8 @@ if (bossArenaState.active) {
   closeAllPanelsOnDeath();
   // 25'ten az ok varsa 25'e tamamla (tekrar canavar kesebilmek için)
   ensureArrowsAfterDeath();
+  // HARDCODE MOD: ölünce altın + eşyanın bir kısmı yere düşer (geri toplanabilir)
+  hardcoreDropSummary = hardcoreDropOnDeath();
   // Ölüm özeti: seni kim öldürdü + son hasar + kaybedilen eşyalar + altın
   if (lastHitBotInfo) {
   deathSummary = { killer: lastHitBotInfo.name, killerType: "bot", level: lastHitBotInfo.level, damage: lastDamageTaken, stolen: deathStolenItems.slice(), goldLost: deathGoldLost };
@@ -33671,6 +34585,7 @@ if (bossArenaState.active) {
   if (!touchState.mobileUI || (mobilePerfFrame % 2) === 0) {
   for (const a of arrows) a.render(ctx);
   for (const s of monsterSpells) s.render(ctx);
+  renderMonsterMeleeFx(ctx);
   }
   // YAĞMUR OKU alanlarını çiz (mavi yağmur bölgesi)
   for (const rz of rainZones) {
@@ -34004,7 +34919,7 @@ if (bossArenaState.active) {
   ctx.restore();
   }
 
-  // DÜNYA BOSS'U KIRMIZI KOORDİNAT BİLGİSİ (ekran köşesinde)
+  // DÜNYA BOSS'U KIRMIZI KOORDİNAT BİLGİSİ — liderlik tablosunun HEMEN ÜZERİNDE
   if (worldBossState.active && worldBossState.boss && worldBossState.boss.alive) {
   const wbC = worldBossState.spawnCol - PLAYER_START.col;
   const wbR = worldBossState.spawnRow - PLAYER_START.row;
@@ -34017,7 +34932,9 @@ if (bossArenaState.active) {
   ctx.shadowColor = "rgba(255,0,0,0.8)";
   ctx.shadowBlur = 8 * wbPulse;
   ctx.fillStyle = "#ff3030";
-  ctx.fillText(wbTxt, canvasW - 12, canvasH - 90);
+  let wbLbY = canvasH - 90;
+  try { wbLbY = leaderboardPanel._layout(canvasW, canvasH).py - 6; } catch (e) {}
+  ctx.fillText(wbTxt, canvasW - 12, wbLbY);
   ctx.shadowBlur = 0;
   ctx.textAlign = "left";
   ctx.restore();
@@ -34192,6 +35109,7 @@ if (bossArenaState.active) {
   { key: "KeyK", label: "\u2728" },
   { key: "KeyF", label: "\uD83C\uDFE9" },
   { key: "KeyJ", label: "\uD83D\uDC64" },
+  { key: "playerHistory", label: "\uD83D\uDCDC" },
   ];
   for (let di = 0; di < sideDeskBtns.length; di++) {
   const sb2 = sideDeskBtns[di];
@@ -34238,6 +35156,7 @@ if (bossArenaState.active) {
   if (inventorySlotInspect) renderInventorySlotInspect(ctx, canvasW, canvasH);
   renderAdminItemsPanel(ctx, canvasW, canvasH);
   renderAdminMonstersPanel(ctx, canvasW, canvasH);
+  renderPlayerHistory(ctx, canvasW, canvasH);
 
   if (!inventory.open && !bankPanel.open && !shop.open && !craftPanel.open) {
   drawCombatPotions(ctx, canvasW, canvasH, inventory);
